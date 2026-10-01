@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isUserRole, isUserStatus } from '@/lib/auth/roles'
-import { getAppBaseUrl } from '@/app/actions/invite'
+import { getAppBaseUrl } from '@/lib/app-url'
 import type { UserRole, UserStatus } from '@/types/profile'
 
 export type UserFormState = {
@@ -133,8 +133,19 @@ export async function inviteUser(
   }
 
   // Password TIDAK pernah kita buat/tahu. Supabase yang mengirim undangan.
-  // URL tujuan dibaca dari header request supaya tidak pernah salah jadi localhost.
-  const baseUrl = await getAppBaseUrl()
+  // URL tujuan SELALU dari APP_URL, tidak dari host request, supaya link
+  // invitation tidak pernah mengarah ke domain preview / localhost.
+  let baseUrl: string
+  try {
+    baseUrl = getAppBaseUrl()
+  } catch (configError) {
+    console.error('APP_URL missing:', (configError as Error).message)
+    return {
+      error:
+        'Server is not configured for invitations. Ask your developer to set APP_URL in the deployment platform.',
+    }
+  }
+
   const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
     data: { full_name: fullName, role },
     redirectTo: `${baseUrl}/accept-invite`,
@@ -162,8 +173,27 @@ export async function inviteUser(
       }
     }
 
-    // Detail error tidak pernah ditampilkan ke user (PRD section 36)
-    console.error('inviteUserByEmail failed:', error.message)
+    // Detail teknis tetap dicatat di server log untuk diagnosa.
+    console.error('[invite] Supabase error:', error.message)
+    console.error('[invite] redirectTo used:', `${baseUrl}/accept-invite`)
+
+    // Supabase menolak URL tujuan kalau domainnya tidak terdaftar di
+    // Authentication > URL Configuration > Redirect URLs.
+    if (/redirect|not allowed|invalid.*url|uri/i.test(error.message)) {
+      return {
+        error:
+          'Supabase rejected the application URL. Ask your developer to check the APP_URL and Supabase Redirect URLs settings.',
+      }
+    }
+
+    // Kuota email pada Supabase project gratis sangat terbatas.
+    if (/rate limit|quota|too many|security purposes/i.test(error.message)) {
+      return {
+        error:
+          'Supabase email rate limit reached. Please wait a few minutes before inviting another user.',
+      }
+    }
+
     return { error: 'Unable to invite user. Please try again.' }
   }
 

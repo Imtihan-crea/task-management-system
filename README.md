@@ -35,7 +35,7 @@ Isi `.env.local`:
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
-NEXT_PUBLIC_SITE_URL=http://localhost:3000
+APP_URL=http://localhost:3000
 ```
 
 Lokasi nilainya: Supabase Dashboard > **Project Settings** > **API**.
@@ -81,8 +81,17 @@ Tambahkan di **Settings** > **Environment Variables**:
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
-NEXT_PUBLIC_SITE_URL=https://task-management-system-jatc.vercel.app
+APP_URL=https://task-management-system-jatc.vercel.app
 ```
+
+> **Penting - pakai `APP_URL`, bukan `NEXT_PUBLIC_SITE_URL`.**
+> Link invitation selalu dibangun dari `APP_URL`, bukan dari domain request.
+> Kalautaken dari domain request, setiap link yang dibuat dari **Preview
+> Deployment** akan mengarah ke domain preview yang tidak terdaftar di
+> Supabase, dan Supabase akan menolak mengirim email.
+>
+> Pastikan `APP_URL` diisi untuk **Production dan Preview** di Vercel
+> (centang semua kolom Environment).
 
 > Jangan set **Output Directory** menjadi `.next` di Vercel.
 > Biarkan default Vercel, kalau diisi manual hasilnya 404 semua halaman.
@@ -92,7 +101,9 @@ NEXT_PUBLIC_SITE_URL=https://task-management-system-jatc.vercel.app
 **Authentication** > **URL Configuration**:
 
 - **Site URL**: `https://task-management-system-jatc.vercel.app`
-- **Redirect URLs**: `https://task-management-system-jatc.vercel.app/**`
+- **Redirect URLs**:
+  - `https://task-management-system-jatc.vercel.app/**`
+  - `http://localhost:3000/**` (untuk development)
 
 > **Penting:** `Site URL` **wajib** diganti ke domain production. Kalau masih
 > `localhost`, link undangan akan mengarah ke `localhost:3000` dan user tidak
@@ -115,8 +126,9 @@ User login dengan email + password tadi
 ```
 
 Admin **tidak pernah** melihat atau membuat password user.
-Link undangan dibuat otomatis dari domain request, jadi tidak bisa salah
-arah ke `localhost` selama production URL sudah benar di Supabase.
+Link undangan selalu dibangun dari env var `APP_URL`, bukan dari domain
+request, jadi tidak akan pernah mengarah ke `localhost` atau ke domain
+preview yang tidak terdaftar di Supabase.
 
 ## 5. Deploy
 
@@ -150,6 +162,7 @@ lib/
     server.ts       Client server (anon key + cookie)
     admin.ts        Client service role - HANYA server
     proxy.ts        Refresh session + jaga route
+  app-url.ts        URL aplikasi untuk link invitation (dari env var)
   auth/
     permissions.ts  Permission matrix per role
     roles.ts        Label + validasi role/status
@@ -192,10 +205,35 @@ Checklist manual (lihat `docs/acceptance-test.md`):
 6. Nonaktifkan Admin terakhir -> ditolak
 7. Admin coba ubah role sendiri jadi non-Admin -> ditolak
 
-## Kendala yang diketahui
+## Troubleshooting
 
-Undangan (`inviteUserByEmail`) membutuhkan **SMTP Supabase**. Pada project
-gratis, email hanya terkirim ke anggota tim project. Kalau email tidak sampai,
-user tetap dibuat dengan status `INVITED` dan aplikasi menampilkan pesan
-khusus. Solusinya: konfigurasi SMTP di **Supabase > Project Settings > Email**,
-lalu kirimkan ulang undangan dari `/users`.
+### `Unable to invite user. Please try again.`
+
+Cek **Vercel > Project > Logs**, cari baris `[invite] Supabase error:`.
+Pesan di situ yang menentukan penyebabnya:
+
+| Pesan di log | Penyebab | Solusi |
+|---|---|---|
+| `redirect_to ... not allowed` | Domain preview tidak terdaftar | Set `APP_URL` untuk Preview juga, atau pakai domain production |
+| `rate limit` / `security purposes` | Kuota email gratis habis | Tunggu 1 jam, atau konfigurasi SMTP |
+| `User already registered` | User masih ada di Supabase Auth | Hapus di **Authentication > Users** |
+
+### `This email is still registered in Supabase Auth.`
+
+User yang dihapus dari tabel `profiles` **masih ada** di Supabase Auth.
+Hapus lewat **Supabase Dashboard > Authentication > Users**, bukan dari
+Table Editor. Profile akan ikut terhapus otomatis karena trigger
+`ON DELETE CASCADE` di `auth.users`.
+
+### Link invitation dianggap expired
+
+Setiap link invitation hanya bisa dibuka **satu kali**. Kalau sudah
+terbuka, minta user membuka email terbaru, atau hapus user di
+Supabase Auth lalu invite ulang.
+
+### Email tidak sampai ke user
+
+Project Supabase gratis hanya bisa mengirim email ke anggota tim project,
+dan kuotanya sangat kecil (sekitar 2 email per jam). Untuk production,
+wajib konfigurasi SMTP di **Supabase > Project Settings > Email**
+(misalnya Resend, Brevo, atau SendGrid).

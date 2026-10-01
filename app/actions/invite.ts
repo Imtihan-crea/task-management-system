@@ -1,6 +1,5 @@
 'use server'
 
-import { headers } from 'next/headers'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
@@ -39,22 +38,4 @@ export async function completeInvite() {
 
   revalidatePath('/dashboard')
   redirect('/dashboard')
-}
-
-/**
- * Menghitung URL aplikasi sendiri, tanpa bergantung env var.
- * Supaya tidak salah kirim ke localhost saat di production.
- */
-export async function getAppBaseUrl(): Promise<string> {
-  const explicit = process.env.NEXT_PUBLIC_SITE_URL?.trim()
-  if (explicit) return explicit.replace(/\/+$/, '')
-
-  const headerList = await headers()
-  const host = headerList.get('host')
-  if (!host) return ''
-
-  const isLocal = host.startsWith('localhost') || host.startsWith('127.0.0.1')
-  const protocol = headerList.get('x-forwarded-proto') ?? (isLocal ? 'http' : 'https')
-
-  return `${protocol}://${host}`
 }
