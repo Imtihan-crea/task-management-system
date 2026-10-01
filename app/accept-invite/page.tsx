@@ -6,9 +6,38 @@ import { completeInvite } from '@/app/actions/invite'
 
 type Phase = 'checking' | 'ready' | 'invalid' | 'saving' | 'done'
 
+/**
+ * Baca pesan error asli dari URL.
+ *
+ * Kalau link sudah pernah dipakai atau kedaluwarsa, Supabase mengarahkan
+ * ke aplikasi kita dengan param error di bagian hash, misalnya:
+ * #error=access_denied&error_code=otp_expired&error_description=...
+ *
+ * Tanpa ini, semua kegagalan akan terlihat sama saja dan sulit diagnosa.
+ */
+function readErrorFromUrl(): string | null {
+  if (typeof window === 'undefined') return null
+
+  const hash = window.location.hash.replace(/^#/, '')
+  const params = new URLSearchParams(hash)
+  const errorCode = params.get('error_code')
+  const description = params.get('error_description')
+
+  if (errorCode === 'otp_expired') {
+    return 'This invitation link has already been used or has expired. Ask your administrator to send a new invitation.'
+  }
+
+  if (errorCode) {
+    return description ? decodeURIComponent(description) : 'This invitation link is no longer valid.'
+  }
+
+  return null
+}
+
 export default function AcceptInvitePage() {
   const [phase, setPhase] = useState<Phase>('checking')
   const [error, setError] = useState('')
+  const [linkError, setLinkError] = useState<string | null>(null)
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
 
@@ -23,6 +52,10 @@ export default function AcceptInvitePage() {
       if (cancelled) return
 
       if (!data.session) {
+        setLinkError(
+          readErrorFromUrl() ??
+            'This invitation link is invalid or has already been used.'
+        )
         setPhase('invalid')
         return
       }
@@ -33,7 +66,7 @@ export default function AcceptInvitePage() {
     check()
 
     // Fallback: kalau cookie belum siap saat mount, coba lagi sekali lagi
-    const timer = setTimeout(check, 1200)
+    const timer = setTimeout(check, 1500)
 
     return () => {
       cancelled = true
@@ -83,11 +116,9 @@ export default function AcceptInvitePage() {
 
         {phase === 'invalid' && (
           <div className="mt-6 text-center">
-            <p className="text-sm font-medium text-red-600">
-              This invitation link is invalid or has expired.
-            </p>
+            <p className="text-sm font-medium text-red-600">{linkError}</p>
             <p className="mt-2 text-sm text-zinc-500">
-              Ask your administrator to send a new invitation.
+              Each invitation link can only be opened once.
             </p>
             <a
               href="/login"

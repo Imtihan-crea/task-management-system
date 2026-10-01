@@ -30,16 +30,40 @@ function validEmail(email: string): boolean {
 /* ------------------------------------------------------------------ */
 
 /** Rule 07: email harus unique. */
-async function emailAlreadyExists(email: string): Promise<boolean> {
+async function findProfileByEmail(email: string) {
   const admin = createAdminClient()
-  const { data, error } = await admin
+  const { data } = await admin
     .from('profiles')
     .select('id')
-    .eq('email', email.toLowerCase())
-    .maybeSingle()
+    .eq('email', email)
+    .maybeSingle<{ id: string }>()
 
-  if (error) return false
-  return Boolean(data)
+  return data ?? null
+}
+
+/**
+ * Cari user di Supabase Auth berdasarkan email.
+ *
+ * Penting: user yang DIHAPUS dari tabel `profiles` masih bisa terdaftar
+ * di `auth.users`. Kalau kita hanya cek `profiles`, invite ulang akan
+ * ditolak Supabase tanpa pesan yang jelas.
+ */
+async function findAuthUserByEmail(email: string) {
+  const admin = createAdminClient()
+
+  for (let page = 1; page <= 20; page += 1) {
+    const { data, error } = await admin.auth.admin.listUsers({ page, perPage: 100 })
+    if (error) return null
+
+    const found = data.users.find(
+      (candidate) => candidate.email?.toLowerCase() === email
+    )
+    if (found) return found
+
+    if (data.users.length < 100) return null
+  }
+
+  return null
 }
 
 /**
@@ -91,11 +115,22 @@ export async function inviteUser(
   if (!validEmail(email)) return { error: 'Please enter a valid email address.' }
   if (!isUserRole(role)) return { error: 'Please choose a valid role.' }
 
-  if (await emailAlreadyExists(email)) {
+  const admin = createAdminClient()
+
+  // Cek di profiles
+  if (await findProfileByEmail(email)) {
     return { error: 'A user with this email already exists.' }
   }
 
-  const admin = createAdminClient()
+  // Cek juga di Supabase Auth. Menghapus baris di tabel `profiles`
+  // TIDAK menghapus user dari Supabase Auth.
+  const existingAuthUser = await findAuthUserByEmail(email)
+  if (existingAuthUser) {
+    return {
+      error:
+        'This email is still registered in Supabase Auth. Delete the user in Supabase Dashboard > Authentication > Users first, then invite again.',
+    }
+  }
 
   // Password TIDAK pernah kita buat/tahu. Supabase yang mengirim undangan.
   // URL tujuan dibaca dari header request supaya tidak pernah salah jadi localhost.
@@ -105,16 +140,6 @@ export async function inviteUser(
     redirectTo: `${baseUrl}/accept-invite`,
   })
 
-  // Kalau user sebenarnya sudah dibuat, meski email gagal terkirim
-  const findProfileByEmail = async () => {
-    const { data: found } = await admin
-      .from('profiles')
-      .select('id')
-      .eq('email', email)
-      .maybeSingle<{ id: string }>()
-    return found ?? null
-  }
-
   if (error) {
     if (/already|registered|exists/i.test(error.message)) {
       return { error: 'A user with this email already exists.' }
@@ -122,7 +147,7 @@ export async function inviteUser(
 
     // Supabase membuat user DULUAN baru mengirim email. Kalau SMTP-nya belum
     // dikonfigurasi, user tetap ada tapi email tidak sampai.
-    const alreadyCreated = await findProfileByEmail()
+    const alreadyCreated = await findProfileByEmail(email)
     if (alreadyCreated) {
       await admin
         .from('profiles')
