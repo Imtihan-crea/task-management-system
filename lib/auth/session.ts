@@ -62,3 +62,17 @@ export async function requireAdmin(): Promise<CurrentProfile> {
 
   return profile
 }
+
+/**
+ * Wajib untuk operasi project/task/workstream.
+ * ADMIN boleh semua, PROJECT_MANAGER boleh (scope "own" dicek per aksi).
+ */
+export async function requireManager(): Promise<CurrentProfile> {
+  const profile = await requireProfile()
+
+  if (profile.role !== 'ADMIN' && profile.role !== 'PROJECT_MANAGER') {
+    redirect('/dashboard?denied=1')
+  }
+
+  return profile
+}

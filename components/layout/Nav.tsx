@@ -9,6 +9,8 @@ import { LogoutButton } from '@/components/auth/LogoutButton'
 
 const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', permission: null },
+  { href: '/projects', label: 'Projects', permission: 'projects.view' },
+  { href: '/tasks', label: 'Tasks', permission: 'tasks.view' },
   { href: '/users', label: 'Users', permission: 'users.view' },
   { href: '/profile', label: 'Profile', permission: null },
 ] as const

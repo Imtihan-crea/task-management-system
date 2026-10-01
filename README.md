@@ -1,7 +1,8 @@
 # Task Management System
 
-Aplikasi internal untuk mengelola user, role, dan permission.
-Status roadmap: **Phase 1 (Foundation) & Phase 2 (User Management) selesai.**
+Aplikasi internal untuk mengelola project, workstream, task, user, dan role.
+Status roadmap: **Phase 1 (Foundation), Phase 2 (User Management), Phase 3 (Task)
+& Phase 4 (Project & Workstream) selesai.**
 
 ## Stack
 
@@ -15,7 +16,12 @@ Status roadmap: **Phase 1 (Foundation) & Phase 2 (User Management) selesai.**
 |---|---|---|
 | `/login` | semua | Login |
 | `/accept-invite` ||Calon user | Set password & aktivasi akun (dari link undangan) |
-| `/dashboard` | semua | Welcome + statistik user (Admin) |
+| `/dashboard` | semua | Welcome + statistik user (Admin) + My Tasks |
+| `/projects` | semua | Project board + progress + create (Admin/PM) |
+| `/projects/[id]` | semua | Detail + workstream + task project + edit (Admin/PM) |
+| `/tasks` | semua (member: miliknya) | List + search/filter/sort + My Tasks |
+| `/tasks/new` | Admin, PM | Create task |
+| `/tasks/[id]` | sesuai scope | Detail + edit + status + delete |
 | `/users` | **Admin saja** | List, search, filter, sort, invite, aktif/nonaktif |
 | `/users/[id]` | **Admin saja** | Detail + edit user |
 | `/profile` | semua | Lihat & ubah nama sendiri |
@@ -146,7 +152,12 @@ Setiap push ke `main` = deploy production otomatis oleh Vercel.
 app/
   login/            Halaman login
   accept-invite/    Set password dari link undangan
-  dashboard/        Welcome + statistik
+  dashboard/        Welcome + statistik + My Tasks
+  projects/         Project board (semua role bisa lihat)
+    [id]/           Detail + workstream + task + edit (Admin/PM)
+  tasks/            Task list + search/filter/sort + My Tasks
+    new/            Create task (Admin, PM)
+    [id]/           Detail + edit + status + delete
   users/            User Management (Admin only)
     [id]/           Detail + edit user
   profile/          Profile self-service
@@ -155,7 +166,10 @@ components/
   auth/             Login form, tombol logout
   layout/           AppShell + navigasi
   profile/          Form ubah nama sendiri
+  projects/         Form project + workstream
+  tasks/            Form task + status + delete
   users/            Form invite, edit, aktivasi
+  ui/               Badge status/priority/overdue
 lib/
   supabase/
     client.ts       Client browser (anon key)
@@ -165,10 +179,15 @@ lib/
   app-url.ts        URL aplikasi untuk link invitation (dari env var)
   auth/
     permissions.ts  Permission matrix per role
-    roles.ts        Label + validasi role/status
-    session.ts      requireProfile() / requireAdmin()
-types/profile.ts    Tipe TypeScript
-database/migrations/  001 (phase 1), 002 (phase 2)
+    roles.ts        Label + validasi role/status project/task
+    session.ts      requireProfile() / requireAdmin() / requireManager()
+  data/
+    users.ts        getActiveUsers() - HANYA server
+    user-options.ts Tipe + label user (aman untuk client)
+  utils/
+    dates.ts        Format tanggal + overdue check
+types/              profile.ts, project.ts, workstream.ts, task.ts
+database/migrations/  001 (phase 1), 002 (phase 2), 003 (phase 3&4)
 docs/               Panduan setup email SMTP + checklist acceptance test
 proxy.ts            Route guard (pengganti middleware di Next 16)
 ```

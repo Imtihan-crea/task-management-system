@@ -16,6 +16,17 @@ export type Permission =
   | 'users.deactivate'
   | 'profile.viewOwn'
   | 'profile.editOwn'
+  | 'projects.view'
+  | 'projects.create'
+  | 'projects.edit'
+  | 'workstreams.create'
+  | 'workstreams.edit'
+  | 'workstreams.delete'
+  | 'tasks.view'
+  | 'tasks.create'
+  | 'tasks.edit'
+  | 'tasks.changeStatusOwn'
+  | 'tasks.delete'
 
 const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ADMIN: [
@@ -27,10 +38,41 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'users.deactivate',
     'profile.viewOwn',
     'profile.editOwn',
+    'projects.view',
+    'projects.create',
+    'projects.edit',
+    'workstreams.create',
+    'workstreams.edit',
+    'workstreams.delete',
+    'tasks.view',
+    'tasks.create',
+    'tasks.edit',
+    'tasks.changeStatusOwn',
+    'tasks.delete',
   ],
-  PROJECT_MANAGER: ['profile.viewOwn', 'profile.editOwn'],
-  TEAM_MEMBER: ['profile.viewOwn', 'profile.editOwn'],
-  VIEWER: ['profile.viewOwn', 'profile.editOwn'],
+  PROJECT_MANAGER: [
+    'profile.viewOwn',
+    'profile.editOwn',
+    'projects.view',
+    'projects.create',
+    'projects.edit',
+    'workstreams.create',
+    'workstreams.edit',
+    'workstreams.delete',
+    'tasks.view',
+    'tasks.create',
+    'tasks.edit',
+    'tasks.changeStatusOwn',
+    'tasks.delete',
+  ],
+  TEAM_MEMBER: [
+    'profile.viewOwn',
+    'profile.editOwn',
+    'projects.view',
+    'tasks.view',
+    'tasks.changeStatusOwn',
+  ],
+  VIEWER: ['profile.viewOwn', 'profile.editOwn', 'projects.view', 'tasks.view'],
 }
 
 export function can(role: UserRole, permission: Permission): boolean {

@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ROLE_LABELS, STATUS_LABELS } from '@/lib/auth/roles'
@@ -39,6 +40,15 @@ export default async function DashboardPage({
   const totalUsers = stats
     ? stats.INVITED + stats.ACTIVE + stats.INACTIVE
     : null
+
+  // Ringkasan task untuk user yang sedang login
+  const admin = createAdminClient()
+  const { count: myOpenTasks } = await admin
+    .from('tasks')
+    .select('id', { count: 'exact', head: true })
+    .eq('assignee_id', profile.id)
+    .eq('is_deleted', false)
+    .neq('status', 'DONE')
 
   return (
     <AppShell>
@@ -83,9 +93,32 @@ export default async function DashboardPage({
 
         <hr className="my-6" />
 
+        <div className="flex flex-wrap gap-2">
+          <Link
+            href="/projects"
+            className="inline-flex min-h-[44px] items-center rounded-lg border px-4 py-2 text-sm font-semibold"
+          >
+            Projects
+          </Link>
+          <Link
+            href="/tasks"
+            className="inline-flex min-h-[44px] items-center rounded-lg border px-4 py-2 text-sm font-semibold"
+          >
+            Tasks
+          </Link>
+          <Link
+            href="/tasks?view=mine"
+            className="inline-flex min-h-[44px] items-center rounded-lg border px-4 py-2 text-sm font-semibold"
+          >
+            My Tasks ({myOpenTasks ?? 0} open)
+          </Link>
+        </div>
+
+        <hr className="my-6" />
+
         <p className="text-sm">Foundation and user management are ready.</p>
         <p className="text-sm text-zinc-500">
-          Task Management will be available in the next phase.
+          Task and project management are now available.
         </p>
       </div>
     </AppShell>
