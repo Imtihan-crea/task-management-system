@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isUserRole, isUserStatus } from '@/lib/auth/roles'
+import { getAppBaseUrl } from '@/app/actions/invite'
 import type { UserRole, UserStatus } from '@/types/profile'
 
 export type UserFormState = {
@@ -97,9 +98,11 @@ export async function inviteUser(
   const admin = createAdminClient()
 
   // Password TIDAK pernah kita buat/tahu. Supabase yang mengirim undangan.
+  // URL tujuan dibaca dari header request supaya tidak pernah salah jadi localhost.
+  const baseUrl = await getAppBaseUrl()
   const { data, error } = await admin.auth.admin.inviteUserByEmail(email, {
     data: { full_name: fullName, role },
-    redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL ?? ''}/login`,
+    redirectTo: `${baseUrl}/accept-invite`,
   })
 
   // Kalau user sebenarnya sudah dibuat, meski email gagal terkirim

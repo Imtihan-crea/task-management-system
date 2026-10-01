@@ -38,7 +38,11 @@ export async function updateSession(request: NextRequest) {
 
   const path = request.nextUrl.pathname
   const isLoginPage = path === '/login'
-  const isProtected = !isLoginPage
+  // Halaman publik: boleh dibuka tanpa session.
+  // /accept-invite memproses token undangan yang datanya di URL hash,
+  // jadi cookie session BELUM ada saat request pertama.
+  const isPublic = path === '/login' || path === '/accept-invite'
+  const isProtected = !isPublic
 
   let response: NextResponse
 
