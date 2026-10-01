@@ -14,6 +14,7 @@ Status roadmap: **Phase 1 (Foundation) & Phase 2 (User Management) selesai.**
 | Route | Untuk siapa | Isi |
 |---|---|---|
 | `/login` | semua | Login |
+| `/accept-invite` ||Calon user | Set password & aktivasi akun (dari link undangan) |
 | `/dashboard` | semua | Welcome + statistik user (Admin) |
 | `/users` | **Admin saja** | List, search, filter, sort, invite, aktif/nonaktif |
 | `/users/[id]` | **Admin saja** | Detail + edit user |
@@ -93,6 +94,30 @@ NEXT_PUBLIC_SITE_URL=https://task-management-system-jatc.vercel.app
 - **Site URL**: `https://task-management-system-jatc.vercel.app`
 - **Redirect URLs**: `https://task-management-system-jatc.vercel.app/**`
 
+> **Penting:** `Site URL` **wajib** diganti ke domain production. Kalau masih
+> `localhost`, link undangan akan mengarah ke `localhost:3000` dan user tidak
+> akan pernah sampai ke halaman `/accept-invite`.
+
+## 4b. Alur onboarding user
+
+```text
+Admin: /users -> Invite User
+        ↓
+Supabase kirim email "You've been invited"
+        ↓
+User klik "Accept invitation"
+        ↓
+/accept-invite  -> user buat password sendiri
+        ↓
+Status otomatis: INVITED -> ACTIVE
+        ↓
+User login dengan email + password tadi
+```
+
+Admin **tidak pernah** melihat atau membuat password user.
+Link undangan dibuat otomatis dari domain request, jadi tidak bisa salah
+arah ke `localhost` selama production URL sudah benar di Supabase.
+
 ## 5. Deploy
 
 ```bash
@@ -108,6 +133,7 @@ Setiap push ke `main` = deploy production otomatis oleh Vercel.
 ```
 app/
   login/            Halaman login
+  accept-invite/    Set password dari link undangan
   dashboard/        Welcome + statistik
   users/            User Management (Admin only)
     [id]/           Detail + edit user
@@ -172,4 +198,4 @@ Undangan (`inviteUserByEmail`) membutuhkan **SMTP Supabase**. Pada project
 gratis, email hanya terkirim ke anggota tim project. Kalau email tidak sampai,
 user tetap dibuat dengan status `INVITED` dan aplikasi menampilkan pesan
 khusus. Solusinya: konfigurasi SMTP di **Supabase > Project Settings > Email**,
-lalu kirimkan *password reset link* ke user.
+lalu kirimkan ulang undangan dari `/users`.
