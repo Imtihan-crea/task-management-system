@@ -37,12 +37,18 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser()
 
   const path = request.nextUrl.pathname
-  const isLoginPage = path === '/login'
-  // Halaman publik: boleh dibuka tanpa session.
-  // /accept-invite memproses token undangan yang datanya di URL hash,
-  // jadi cookie session BELUM ada saat request pertama.
-  const isPublic = path === '/login' || path === '/accept-invite'
+
+  // Halaman publik. Token undangan datang di bagian URL hash (#...),
+  // yang TIDAK pernah dikirim ke server. Jadi halaman ini harus boleh
+  // dibuka tanpa session, dan tidak boleh di-redirect sebelum browser
+  // sempat membaca tokennya.
+  const PUBLIC_PATHS = ['/', '/login', '/accept-invite']
+  const isPublic = PUBLIC_PATHS.includes(path)
   const isProtected = !isPublic
+  const isLoginPage = path === '/login'
+  // Di "/" dan "/accept-invite" JANGAN redirect. Browser masih perlu
+  // membaca token undangan dari bagian hash URL.
+  const isTokenEntry = path === '/' || path === '/accept-invite'
 
   let response: NextResponse
 
@@ -52,7 +58,7 @@ export async function updateSession(request: NextRequest) {
   } else if (user && isLoginPage) {
     // Sudah login tapi buka /login -> ke /dashboard
     response = NextResponse.redirect(new URL('/dashboard', request.url))
-  } else if (user) {
+  } else if (user && !isTokenEntry) {
     // Cek status user. Session aktif harus dianggap tidak valid
     // pada akses berikutnya kalau user sudah di-deactivate (PRD section 21).
     const { data: profile } = await supabase

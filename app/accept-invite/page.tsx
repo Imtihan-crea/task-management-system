@@ -1,10 +1,11 @@
 'use client'
 
 import { useEffect, useState } from 'react'
+import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { completeInvite } from '@/app/actions/invite'
 
-type Phase = 'checking' | 'ready' | 'invalid' | 'saving' | 'done'
+type Phase = 'checking' | 'ready' | 'invalid' | 'saving' | 'done' | 'already-active'
 
 /**
  * Baca pesan error asli dari URL.
@@ -35,13 +36,14 @@ function readErrorFromUrl(): string | null {
 }
 
 export default function AcceptInvitePage() {
+  const router = useRouter()
   const [phase, setPhase] = useState<Phase>('checking')
   const [error, setError] = useState('')
   const [linkError, setLinkError] = useState<string | null>(null)
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
 
-  // Token undangan datang di URL hash (#access_token=...).
+  // Token undangan datang di URL hash (#access_token=...&type=invite).
   // supabase-js membaca & menyimpannya ke cookie secara otomatis.
   useEffect(() => {
     const supabase = createClient()
@@ -60,6 +62,24 @@ export default function AcceptInvitePage() {
         return
       }
 
+      // Kalau user sudah punya password & status ACTIVE, tidak perlu
+      // set password lagi. Langsung ke dashboard saja.
+      const { data: userData } = await supabase.auth.getUser()
+      const email = userData.user?.email
+
+      if (email) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('status')
+          .eq('email', email)
+          .single<{ status: string }>()
+
+        if (profile?.status === 'ACTIVE') {
+          if (!cancelled) setPhase('already-active')
+          return
+        }
+      }
+
       setPhase('ready')
     }
 
@@ -73,6 +93,14 @@ export default function AcceptInvitePage() {
       clearTimeout(timer)
     }
   }, [])
+
+  // Kalau akun sudah ACTIVE, tidak perlu set password lagi.
+  useEffect(() => {
+    if (phase !== 'already-active') return
+    completeInvite().catch(() => {
+      router.replace('/dashboard')
+    })
+  }, [phase, router])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -127,6 +155,12 @@ export default function AcceptInvitePage() {
               Go to Login
             </a>
           </div>
+        )}
+
+        {phase === 'already-active' && (
+          <p className="mt-6 text-center text-sm font-medium text-green-600">
+            Account already activated. Redirecting to dashboard...
+          </p>
         )}
 
         {(phase === 'ready' || phase === 'saving') && (
