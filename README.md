@@ -169,6 +169,7 @@ lib/
     session.ts      requireProfile() / requireAdmin()
 types/profile.ts    Tipe TypeScript
 database/migrations/  001 (phase 1), 002 (phase 2)
+docs/               Panduan setup email SMTP + checklist acceptance test
 proxy.ts            Route guard (pengganti middleware di Next 16)
 ```
 
@@ -234,6 +235,14 @@ Supabase Auth lalu invite ulang.
 ### Email tidak sampai ke user
 
 Project Supabase gratis hanya bisa mengirim email ke anggota tim project,
-dan kuotanya sangat kecil (sekitar 2 email per jam). Untuk production,
-wajib konfigurasi SMTP di **Supabase > Project Settings > Email**
-(misalnya Resend, Brevo, atau SendGrid).
+dengan kuota sekitar 2 email per jam. Untuk production, wajib konfigurasi
+SMTP sendiri. Panduan lengkap ada di
+[`docs/setup-email.md`](docs/setup-email.md).
+
+### Link invitation tidak terkirim (kuota email habis)
+
+Aplikasi otomatis membuat user lalu menampilkan **link invitation** yang bisa
+disalin dan dikirim manual (WhatsApp/email). Ini fallback agar tidak bergantung
+pada email. `generateLink` tidak memakai kuota email.
+
+Link invitation hanya bisa dibuka **satu kali** dan hanya untuk user tersebut.

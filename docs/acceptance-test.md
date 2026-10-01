@@ -40,7 +40,7 @@ Production URL: `https://task-management-system-jatc.vercel.app`
 
 | # | Langkah | Harap |
 |---|---|---|
-| 4.1 | Invite email baru + role | `Invitation sent successfully.` |
+| 4.1 | Invite email baru + role | `Invitation sent successfully.` atau link untuk dikirim manual | |
 | 4.2 | User baru muncul di list | Status `INVITED` |
 | 4.3 | Invite email yang sama | `A user with this email already exists.` |
 | 4.4 | Invite tanpa email | Ditolak, pesan validation |
