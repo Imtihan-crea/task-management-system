@@ -16,6 +16,36 @@ type Phase = 'checking' | 'ready' | 'invalid' | 'saving' | 'done' | 'already-act
  *
  * Tanpa ini, semua kegagalan akan terlihat sama saja dan sulit diagnosa.
  */
+/**
+ * Tukar `token` dari URL hash menjadi session.
+ *
+ * Dua bentuk link yang mungkin kita terima:
+ * 1. `#access_token=...` — dari link email resmi Supabase (sudah session)
+ * 2. `#token=...&type=invite` — dari link yang di-generate di server
+ *    (dipakai saat kuota email Supabase habis, form 2 di bawah)
+ *
+ * Bentuk kedua harus diverifikasi ke server Supabase dulu supaya
+ * menjadi session yang benar.
+ */
+async function exchangeTokenIfPresent(
+  supabase: ReturnType<typeof createClient>
+): Promise<void> {
+  const hash = window.location.hash.replace(/^#/, '')
+  if (!hash) return
+
+  const params = new URLSearchParams(hash)
+  const tokenHash = params.get('token_hash')
+
+  if (!tokenHash) return // bentuk 1, sudah ditangani detectSessionInUrl
+
+  // `token_hash` (bukan `token`) adalah parameter yang benar untuk
+  // verifyOtp dari link email. Mengirim `token` akan ditolak 403.
+  await supabase.auth.verifyOtp({
+    token_hash: tokenHash,
+    type: 'invite',
+  })
+}
+
 function readErrorFromUrl(): string | null {
   if (typeof window === 'undefined') return null
 
@@ -50,6 +80,11 @@ export default function AcceptInvitePage() {
     let cancelled = false
 
     async function check() {
+      // Bentuk link #token_hash=...&type=invite (dipakai saat kuota email habis)
+      if (window.location.hash.includes('token_hash=')) {
+        await exchangeTokenIfPresent(supabase)
+      }
+
       const { data } = await supabase.auth.getSession()
       if (cancelled) return
 
@@ -62,16 +97,15 @@ export default function AcceptInvitePage() {
         return
       }
 
-      // Kalau user sudah punya password & status ACTIVE, tidak perlu
-      // set password lagi. Langsung ke dashboard saja.
+      // Kalau akun sudah ACTIVE, tidak perlu set password lagi.
       const { data: userData } = await supabase.auth.getUser()
-      const email = userData.user?.email
+      const userEmail = userData.user?.email
 
-      if (email) {
+      if (userEmail) {
         const { data: profile } = await supabase
           .from('profiles')
           .select('status')
-          .eq('email', email)
+          .eq('id', userData.user!.id)
           .single<{ status: string }>()
 
         if (profile?.status === 'ACTIVE') {

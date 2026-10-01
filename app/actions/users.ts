@@ -10,6 +10,8 @@ import type { UserRole, UserStatus } from '@/types/profile'
 export type UserFormState = {
   error?: string
   success?: string
+  /** Link undangan, kalau email tidak bisa dikirim. */
+  inviteLink?: string
 } | undefined
 
 /* ------------------------------------------------------------------ */
@@ -151,31 +153,95 @@ export async function inviteUser(
     redirectTo: `${baseUrl}/accept-invite`,
   })
 
+  /**
+   * Fallback saat email tidak bisa dikirim.
+   *
+   * Plan gratis Supabase hanya mengizinkan 2 email per jam, dan hanya ke
+   * anggota tim project. Daripada membuat user bergantung pada email yang
+   * tidak sampai, kita buat user-nya lalu berikan link untuk dikirim
+   * sendiri (WhatsApp, email, atau apa pun).
+   *
+   * `generateLink` tidak memakai kuota email, jadi selalu berhasil.
+   */
+  async function createUserWithoutEmail(): Promise<string | null> {
+    const { data: created, error: createError } = await admin.auth.admin.createUser({
+      email,
+      email_confirm: false,
+      user_metadata: { full_name: fullName, role },
+    })
+
+    if (createError || !created?.user) {
+      console.error('[invite] createUser failed:', createError?.message)
+      return null
+    }
+
+    const userId = created.user.id
+
+    const { data: updated } = await admin
+      .from('profiles')
+      .update({ full_name: fullName, role, status: 'INVITED' })
+      .eq('id', userId)
+      .select('id')
+
+    if (!updated || updated.length === 0) {
+      await admin.from('profiles').insert({
+        id: userId,
+        email,
+        full_name: fullName,
+        role,
+        status: 'INVITED',
+      })
+    }
+
+    const { data: linkData } = await admin.auth.admin.generateLink({
+      type: 'invite',
+      email,
+      options: { redirectTo: `${baseUrl}/accept-invite` },
+    })
+
+    const actionLink = linkData?.properties?.action_link
+    if (!actionLink) return null
+
+    // Link Supabase biasanya lewat server verify-nya sendiri
+    // (verify?token=...&redirect_to=...). Kita ambil tokennya lalu arahkan
+    // LANGSUNG ke /accept-invite, supaya tidak bergantung Redirect URL.
+    const token = new URL(actionLink).searchParams.get('token')
+    if (!token) return null
+
+    return `${baseUrl}/accept-invite#token_hash=${token}&type=invite`
+  }
+
   if (error) {
     if (/already|registered|exists/i.test(error.message)) {
       return { error: 'A user with this email already exists.' }
     }
 
-    // Supabase membuat user DULUAN baru mengirim email. Kalau SMTP-nya belum
-    // dikonfigurasi, user tetap ada tapi email tidak sampai.
-    const alreadyCreated = await findProfileByEmail(email)
-    if (alreadyCreated) {
-      await admin
-        .from('profiles')
-        .update({ full_name: fullName, role, status: 'INVITED' })
-        .eq('id', alreadyCreated.id)
-
-      revalidatePath('/users')
-      revalidatePath('/dashboard')
-      return {
-        error:
-          'User was created, but the invitation email could not be sent. Set up Supabase SMTP, then send the user a password reset link.',
-      }
-    }
-
     // Detail teknis tetap dicatat di server log untuk diagnosa.
     console.error('[invite] Supabase error:', error.message)
-    console.error('[invite] redirectTo used:', `${baseUrl}/accept-invite`)
+
+    const isRateLimit = /rate limit|quota|too many|security purposes/i.test(
+      error.message
+    )
+    const isEmailProblem = /smtp|mail/i.test(error.message)
+
+    if (isRateLimit || isEmailProblem) {
+      const directLink = await createUserWithoutEmail()
+
+      if (directLink) {
+        revalidatePath('/users')
+        revalidatePath('/dashboard')
+        return {
+          success:
+            'User created, but Supabase could not send the email (email limit). Send the invitation link below.',
+          inviteLink: directLink,
+        }
+      }
+
+      return {
+        error:
+          'User created, but the invitation link could not be generated. Ask your developer to check the Vercel logs.',
+      }
+    }
 
     // Supabase menolak URL tujuan kalau domainnya tidak terdaftar di
     // Authentication > URL Configuration > Redirect URLs.
@@ -183,14 +249,6 @@ export async function inviteUser(
       return {
         error:
           'Supabase rejected the application URL. Ask your developer to check the APP_URL and Supabase Redirect URLs settings.',
-      }
-    }
-
-    // Kuota email pada Supabase project gratis sangat terbatas.
-    if (/rate limit|quota|too many|security purposes/i.test(error.message)) {
-      return {
-        error:
-          'Supabase email rate limit reached. Please wait a few minutes before inviting another user.',
       }
     }
 

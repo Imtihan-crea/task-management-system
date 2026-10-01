@@ -77,6 +77,35 @@ export function InviteUserForm() {
           </p>
         )}
 
+        {state?.inviteLink && (
+          <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 dark:border-amber-700 dark:bg-amber-950">
+            <p className="text-sm font-semibold">Kirim link ini ke user</p>
+            <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-300">
+              Salin lalu kirim lewat WhatsApp, email, atau chat apa pun.
+              Link hanya bisa dibuka satu kali dan hanya bisa dipakai user
+              ini.
+            </p>
+            <div className="mt-2 flex flex-col gap-2 sm:flex-row">
+              <input
+                readOnly
+                value={state.inviteLink}
+                aria-label="Invitation link"
+                className="min-h-[44px] flex-1 rounded-lg border bg-white px-3 py-2 text-xs dark:bg-zinc-800"
+                onFocus={(e) => e.currentTarget.select()}
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  await navigator.clipboard.writeText(state.inviteLink ?? '')
+                }}
+                className="min-h-[44px] rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white dark:bg-white dark:text-black"
+              >
+                Copy
+              </button>
+            </div>
+          </div>
+        )}
+
         <button
           type="submit"
           disabled={pending}
