@@ -40,6 +40,8 @@ export const getCurrentProfile = cache(async (): Promise<CurrentProfile | null> 
 export async function requireProfile(): Promise<CurrentProfile> {
   const profile = await getCurrentProfile()
 
+  // INVITED belum boleh masuk halaman internal: dia harus menyelesaikan
+  // pengaturan password dulu di /accept-invite.
   if (!profile || profile.status !== 'ACTIVE') {
     redirect('/login')
   }

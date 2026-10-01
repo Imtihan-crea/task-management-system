@@ -7,18 +7,14 @@ import { createClient } from '@/lib/supabase/client'
 /**
  * Halaman "/" hanya pengarah.
  *
- * Kenapa tidak pakai server redirect?
  * Undangan Supabase datang sebagai token di bagian URL hash
- * (#access_token=...&type=invite). Kalau server langsung redirect ke
- * /dashboard, token itu sempat hilang sebelum sempat dibaca browser,
- * lalu user terjebak di halaman login.
+ * (#access_token=...&type=invite). Token itu TIDAK pernah dikirim ke
+ * server, jadi server tidak tahu ada undangan. Kalau server langsung
+ * redirect ke /login, token hilang sebelum browser sempat memakainya.
  *
- * Jadi di sini kita tunggu browser selesai membaca token dulu,
- * baru tentukan tujuan:
- *
- *   - ada token undangan  -> /accept-invite
- *   - sudah login         -> /dashboard
- *   - belum login         -> /login
+ * Solusinya: jangan pakai redirect sama sekali kalau hash berisi token.
+ * Kita simpan hash itu ke sessionStorage, lalu pindah ke /accept-invite.
+ * Dengan begitu token ikut terbawa walau URL-nya diganti.
  */
 export default function RootPage() {
   const router = useRouter()
@@ -27,20 +23,25 @@ export default function RootPage() {
     const supabase = createClient()
     let cancelled = false
 
+    const hash = window.location.hash
+
+    const params = new URLSearchParams(hash.replace(/^#/, ''))
+    const hasInviteToken =
+      params.has('access_token') ||
+      params.has('token_hash') ||
+      params.get('type') === 'invite' ||
+      params.get('error_code')
+
+    if (hasInviteToken) {
+      // Simpan dulu supaya tetap ada setelah URL berubah.
+      // supabase-js membaca session dari URL, tapi hash ini kita
+      //-keeping supaya halaman tujuan tidak perlu bergantung pada URL.
+      window.sessionStorage.setItem('tms:invite-hash', hash)
+      if (!cancelled) router.replace('/accept-invite')
+      return
+    }
+
     async function route() {
-      // Hash invitation: type=invite / type=recovery / ada access_token
-      const hash = window.location.hash.replace(/^#/, '')
-      const params = new URLSearchParams(hash)
-      const hasInviteToken =
-        params.has('access_token') ||
-        params.get('type') === 'invite' ||
-        params.get('error_code')
-
-      if (hasInviteToken) {
-        if (!cancelled) router.replace('/accept-invite')
-        return
-      }
-
       const { data } = await supabase.auth.getSession()
       if (cancelled) return
 

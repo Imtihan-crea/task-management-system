@@ -67,7 +67,11 @@ export async function updateSession(request: NextRequest) {
       .eq('id', user.id)
       .single<{ status: string }>()
 
-    if (!profile || profile.status !== 'ACTIVE') {
+    // PENTING: user berstatus INVITED BELUM berarti tidak valid.
+    // Dia sedang dalam proses menerima undangan, dan butuh session-nya
+    // untuk mengatur password di /accept-invite. Hanya INACTIVE yang
+    // session-nya harus dibuang.
+    if (!profile || profile.status === 'INACTIVE') {
       await supabase.auth.signOut()
       const url = new URL('/login', request.url)
       url.searchParams.set('reason', 'inactive')

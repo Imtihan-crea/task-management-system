@@ -7,22 +7,37 @@ import { completeInvite } from '@/app/actions/invite'
 
 type Phase = 'checking' | 'ready' | 'invalid' | 'saving' | 'done' | 'already-active'
 
+/** Kunci sessionStorage tempat halaman "/" menitipkan hash undangan. */
+const HASH_KEY = 'tms:invite-hash'
+
 /**
- * Baca pesan error asli dari URL.
+ * Ambil hash undangan dari URL, atau dari sessionStorage kalau URL
+ * sudah bersih karena sempat redirect.
  *
- * Kalau link sudah pernah dipakai atau kedaluwarsa, Supabase mengarahkan
- * ke aplikasi kita dengan param error di bagian hash, misalnya:
- * #error=access_denied&error_code=otp_expired&error_description=...
- *
- * Tanpa ini, semua kegagalan akan terlihat sama saja dan sulit diagnosa.
+ * Halaman "/" menyimpan hash ke sessionStorage sebelum pindah halaman,
+ * supaya token invitation tidak hilang.
  */
+function getInviteHash(): string {
+  if (typeof window === 'undefined') return ''
+
+  if (window.location.hash && window.location.hash.length > 1) {
+    return window.location.hash
+  }
+
+  try {
+    return window.sessionStorage.getItem(HASH_KEY) ?? ''
+  } catch {
+    return ''
+  }
+}
+
 /**
- * Tukar `token` dari URL hash menjadi session.
+ * Tukar `token_hash` dari hash undangan menjadi session.
  *
  * Dua bentuk link yang mungkin kita terima:
  * 1. `#access_token=...` — dari link email resmi Supabase (sudah session)
- * 2. `#token=...&type=invite` — dari link yang di-generate di server
- *    (dipakai saat kuota email Supabase habis, form 2 di bawah)
+ * 2. `#token_hash=...&type=invite` — dari link yang di-generate di server
+ *    (dipakai saat kuota email Supabase habis)
  *
  * Bentuk kedua harus diverifikasi ke server Supabase dulu supaya
  * menjadi session yang benar.
@@ -30,10 +45,7 @@ type Phase = 'checking' | 'ready' | 'invalid' | 'saving' | 'done' | 'already-act
 async function exchangeTokenIfPresent(
   supabase: ReturnType<typeof createClient>
 ): Promise<void> {
-  const hash = window.location.hash.replace(/^#/, '')
-  if (!hash) return
-
-  const params = new URLSearchParams(hash)
+  const params = new URLSearchParams(getInviteHash().replace(/^#/, ''))
   const tokenHash = params.get('token_hash')
 
   if (!tokenHash) return // bentuk 1, sudah ditangani detectSessionInUrl
@@ -46,11 +58,27 @@ async function exchangeTokenIfPresent(
   })
 }
 
+/**
+ * Kalau session tidak ada padahal hash berisi access_token, berarti
+ * supabase-js gagal memproses hash (mis. sudah dibersihkan).
+ * Coba set session manual dari token yang tersimpan.
+ */
+async function restoreSessionFromStoredHash(
+  supabase: ReturnType<typeof createClient>
+): Promise<{ error: { message: string } | null }> {
+  const params = new URLSearchParams(getInviteHash().replace(/^#/, ''))
+  const accessToken = params.get('access_token')
+  const refreshToken = params.get('refresh_token')
+
+  if (!accessToken || !refreshToken) return { error: null }
+
+  return supabase.auth.setSession({ access_token: accessToken, refresh_token: refreshToken })
+}
+
 function readErrorFromUrl(): string | null {
   if (typeof window === 'undefined') return null
 
-  const hash = window.location.hash.replace(/^#/, '')
-  const params = new URLSearchParams(hash)
+  const params = new URLSearchParams(getInviteHash().replace(/^#/, ''))
   const errorCode = params.get('error_code')
   const description = params.get('error_description')
 
@@ -81,11 +109,23 @@ export default function AcceptInvitePage() {
 
     async function check() {
       // Bentuk link #token_hash=...&type=invite (dipakai saat kuota email habis)
-      if (window.location.hash.includes('token_hash=')) {
+      if (getInviteHash().includes('token_hash=')) {
         await exchangeTokenIfPresent(supabase)
       }
 
-      const { data } = await supabase.auth.getSession()
+      let { data } = await supabase.auth.getSession()
+
+      // Cadangan: kalau hash berisi access_token tapi session belum ada,
+      // coba setSession manual. Ini menutup kemungkinan hash sempat
+      // dibersihkan sebelum detectSessionInUrl sempat memakainya.
+      if (!data.session && getInviteHash().includes('access_token=')) {
+        const { error: restoreError } = await restoreSessionFromStoredHash(supabase)
+        if (restoreError) {
+          console.error('[accept-invite] restore session failed:', restoreError.message)
+        }
+        data = (await supabase.auth.getSession()).data
+      }
+
       if (cancelled) return
 
       if (!data.session) {
@@ -156,8 +196,14 @@ export default function AcceptInvitePage() {
     const { error: updateError } = await supabase.auth.updateUser({ password })
 
     if (updateError) {
+      // Dicatat supaya bisaSeen di log server / console browser
+      console.error('[accept-invite] updateUser failed:', updateError.message)
       setPhase('ready')
-      setError('Unable to set password. The invitation link may have expired.')
+      setError(
+        /session|token|jwt|auth/i.test(updateError.message)
+          ? 'Your invitation session expired. Please open the invitation link again.'
+          : 'Unable to set password. Please try again.'
+      )
       return
     }
 
