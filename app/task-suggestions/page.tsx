@@ -5,6 +5,7 @@ import { can } from '@/lib/auth/permissions'
 import { SUGGESTION_STATUSES, SUGGESTION_STATUS_LABELS } from '@/lib/auth/roles'
 import { AppShell } from '@/components/layout/AppShell'
 import { formatDate } from '@/lib/utils/dates'
+import { Pagination, paginate, parsePage } from '@/components/ui/Pagination'
 import type { SuggestionListItem, SuggestionStatus } from '@/types/suggestion'
 
 function sanitize(value: string | undefined): string {
@@ -114,6 +115,10 @@ export default async function SuggestionsPage({
     )
   }
 
+  const page = parsePage(params.page)
+  const { pageItems, totalPages } = paginate(suggestions, page, 25)
+  const safePage = Math.min(page, totalPages)
+
   return (
     <AppShell>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -189,8 +194,9 @@ export default async function SuggestionsPage({
           No suggestions found.
         </p>
       ) : (
+        <>
         <ul className="mt-4 flex flex-col gap-3">
-          {suggestions.map((s) => (
+          {pageItems.map((s) => (
             <li key={s.id}>
               <Link
                 href={`/task-suggestions/${s.id}`}
@@ -212,6 +218,19 @@ export default async function SuggestionsPage({
             </li>
           ))}
         </ul>
+        <Pagination
+          basePath="/task-suggestions"
+          params={{
+            ...(view === 'mine' ? { view: 'mine' } : {}),
+            ...(sanitize(str(params.q)) ? { q: sanitize(str(params.q)) } : {}),
+            ...(fStatus ? { status: fStatus } : {}),
+          }}
+          page={safePage}
+          totalPages={totalPages}
+          total={suggestions.length}
+          label="suggestions"
+        />
+        </>
       )}
     </AppShell>
   )

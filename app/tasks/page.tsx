@@ -5,6 +5,7 @@ import { can } from '@/lib/auth/permissions'
 import { AppShell } from '@/components/layout/AppShell'
 import { PriorityBadge, TaskStatusBadge, OverdueBadge } from '@/components/ui/Badges'
 import { formatDate, isOverdue, todayISO } from '@/lib/utils/dates'
+import { Pagination, paginate, parsePage } from '@/components/ui/Pagination'
 import type { TaskPriority, TaskStatus } from '@/types/task'
 
 type TaskRow = {
@@ -144,6 +145,11 @@ export default async function TasksPage({
   }
 
   const overdueCount = tasks.filter((t) => isOverdue(t.deadline, t.status)).length
+
+  // Pagination setelah semua filter/sort (50 baris/halaman, §29).
+  const page = parsePage(params.page)
+  const { pageItems, totalPages } = paginate(tasks, page, 50)
+  const safePage = Math.min(page, totalPages)
 
   return (
     <AppShell>
@@ -330,7 +336,7 @@ export default async function TasksPage({
                 </tr>
               </thead>
               <tbody>
-                {tasks.map((task) => (
+                {pageItems.map((task) => (
                   <tr key={task.id} className="border-b last:border-0">
                     <td className="px-4 py-3 font-mono text-xs">{task.code}</td>
                     <td className="px-4 py-3">
@@ -355,7 +361,7 @@ export default async function TasksPage({
 
           {/* Mobile cards */}
           <ul className="mt-4 flex flex-col gap-3 md:hidden">
-            {tasks.map((task) => (
+            {pageItems.map((task) => (
               <li key={task.id}>
                 <Link
                   href={`/tasks/${task.id}`}
@@ -384,6 +390,23 @@ export default async function TasksPage({
               </li>
             ))}
           </ul>
+          <Pagination
+            basePath="/tasks"
+            params={{
+              ...(view === 'mine' ? { view: 'mine' } : {}),
+              ...(q ? { q: sanitize(str(params.q)) } : {}),
+              ...(fProject ? { project: fProject } : {}),
+              ...(fWorkstream ? { workstream: fWorkstream } : {}),
+              ...(fStatus ? { status: fStatus } : {}),
+              ...(fPriority ? { priority: fPriority } : {}),
+              ...(fDeadline ? { deadline: fDeadline } : {}),
+              ...(sort !== 'deadline.asc' ? { sort } : {}),
+            }}
+            page={safePage}
+            totalPages={totalPages}
+            total={tasks.length}
+            label="tasks"
+          />
         </>
       )}
     </AppShell>

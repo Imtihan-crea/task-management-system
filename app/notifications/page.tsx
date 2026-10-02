@@ -6,6 +6,7 @@ import {
   NotificationList,
   PreferencesForm,
 } from '@/components/notifications/NotificationComponents'
+import { Pagination, paginate, parsePage } from '@/components/ui/Pagination'
 import type { NotificationItem, NotificationPreferences } from '@/types/notification'
 
 const DEFAULT_PREFS = {
@@ -15,8 +16,13 @@ const DEFAULT_PREFS = {
   email_deadline_alerts: true,
 }
 
-export default async function NotificationsPage() {
+export default async function NotificationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ page?: string }>
+}) {
   const profile = await requireProfile()
+  const params = await searchParams
   const admin = createAdminClient()
 
   const [{ data: items }, { data: prefs }] = await Promise.all([
@@ -36,6 +42,10 @@ export default async function NotificationsPage() {
   const notifications = (items ?? []) as NotificationItem[]
   const unreadCount = notifications.filter((n) => !n.is_read).length
 
+  const page = parsePage(params.page)
+  const { pageItems, totalPages } = paginate(notifications, page, 25)
+  const safePage = Math.min(page, totalPages)
+
   return (
     <AppShell>
       <div className="flex flex-wrap items-center justify-between gap-3">
@@ -49,7 +59,15 @@ export default async function NotificationsPage() {
       </div>
 
       <div className="mt-4">
-        <NotificationList items={notifications} />
+        <NotificationList items={pageItems} />
+        <Pagination
+          basePath="/notifications"
+          params={{}}
+          page={safePage}
+          totalPages={totalPages}
+          total={notifications.length}
+          label="notifications"
+        />
       </div>
 
       <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
