@@ -8,6 +8,11 @@ import { formatDate, isOverdue } from '@/lib/utils/dates'
 import { TaskForm } from '@/components/tasks/TaskForm'
 import { ChangeStatusForm, DeleteTaskForm } from '@/components/tasks/TaskStatusForms'
 import { EvidenceForm } from '@/components/tasks/EvidenceForm'
+import {
+  ActivityTimeline,
+  resolveActorNames,
+  type ActivityEntry,
+} from '@/components/activity/ActivityTimeline'
 import { getActiveUsers } from '@/lib/data/users'
 import { isProjectManager } from '@/lib/data/projects'
 import { can } from '@/lib/auth/permissions'
@@ -84,6 +89,17 @@ export default async function TaskDetailPage({
       ])
     : [{ data: [] }, { data: [] }, []]
 
+  // Activity timeline task ini.
+  const { data: activityData } = await admin
+    .from('activity_logs')
+    .select('*')
+    .eq('entity_type', 'task')
+    .eq('entity_id', id)
+    .order('created_at', { ascending: false })
+    .limit(50)
+  const taskActivity = (activityData ?? []) as ActivityEntry[]
+  const activityActors = await resolveActorNames(taskActivity)
+
   return (
     <AppShell>
       <Link href="/tasks" className="text-sm font-medium text-zinc-500 hover:underline">
@@ -141,6 +157,11 @@ export default async function TaskDetailPage({
               <DeleteTaskForm id={task.id} />
             </div>
           )}
+
+          <div className="mt-4 border-t pt-4 dark:border-zinc-700">
+            <h3 className="mb-2 text-base font-bold">Activity</h3>
+            <ActivityTimeline entries={taskActivity} actorNames={activityActors} />
+          </div>
         </section>
 
         {canFullEdit && (

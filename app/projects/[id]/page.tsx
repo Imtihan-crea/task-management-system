@@ -12,6 +12,11 @@ import {
   DeleteWorkstreamForm,
   EditWorkstreamForm,
 } from '@/components/projects/WorkstreamForms'
+import {
+  ActivityTimeline,
+  resolveActorNames,
+  type ActivityEntry,
+} from '@/components/activity/ActivityTimeline'
 import { getActiveUsers } from '@/lib/data/users'
 import { isProjectManager } from '@/lib/data/projects'
 import type { Project, ProjectProgress } from '@/types/project'
@@ -182,6 +187,17 @@ export default async function ProjectDetailPage({
     })
 
   const managers = canEditThis ? await getActiveUsers(['ADMIN', 'PROJECT_MANAGER']) : []
+
+  // Project Activity: semua event ber-project_id ini
+  // (project, PM, workstream, task, suggestion — semua membawa projectId).
+  const { data: activityData } = await admin
+    .from('activity_logs')
+    .select('*')
+    .eq('project_id', id)
+    .order('created_at', { ascending: false })
+    .limit(50)
+  const projectActivity = (activityData ?? []) as ActivityEntry[]
+  const activityActors = await resolveActorNames(projectActivity)
 
   return (
     <AppShell>
@@ -449,6 +465,12 @@ export default async function ProjectDetailPage({
           )}
         </section>
       )}
+
+      {/* PROJECT ACTIVITY */}
+      <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+        <h2 className="mb-3 text-lg font-bold">Project Activity</h2>
+        <ActivityTimeline entries={projectActivity} actorNames={activityActors} />
+      </section>
 
       {canEditThis && canEditProject && (
         <section className="mt-6">

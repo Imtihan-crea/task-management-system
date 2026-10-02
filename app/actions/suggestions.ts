@@ -7,6 +7,7 @@ import { isTaskPriority } from '@/lib/auth/roles'
 import { isProjectManager } from '@/lib/data/projects'
 import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
+import { logActivity } from '@/lib/activity-log/service'
 import { can } from '@/lib/auth/permissions'
 import type { SuggestionStatus, TaskSuggestion } from '@/types/suggestion'
 import type { TaskPriority } from '@/types/task'
@@ -223,6 +224,17 @@ export async function createSuggestion(
 
   revalidatePath('/task-suggestions')
   revalidatePath('/dashboard')
+
+  await logActivity({
+    actorUserId: profile.id,
+    action: 'SUGGESTION_CREATED',
+    entityType: 'suggestion',
+    entityId: created.id,
+    entityCode: created.code,
+    projectId,
+    metadata: { suggestion_code: created.code, suggestion_title: title },
+  })
+
   return { success: `Suggestion ${created.code} submitted successfully.` }
 }
 
@@ -293,6 +305,17 @@ export async function resubmitSuggestion(
 
   revalidatePath('/task-suggestions')
   revalidatePath(`/task-suggestions/${id}`)
+
+  await logActivity({
+    actorUserId: profile.id,
+    action: 'SUGGESTION_UPDATED',
+    entityType: 'suggestion',
+    entityId: id,
+    entityCode: current.code,
+    projectId: current.project_id,
+    metadata: { suggestion_code: current.code, suggestion_title: title },
+  })
+
   return { success: 'Suggestion resubmitted successfully.' }
 }
 
@@ -356,6 +379,21 @@ export async function reviewSuggestion(
   }
 
   await emitReviewEvent(current, nextStatus, profile, reviewNote)
+
+  await logActivity({
+    actorUserId: profile.id,
+    action:
+      nextStatus === 'REJECTED' ? 'SUGGESTION_REJECTED' : 'SUGGESTION_REVISION_REQUESTED',
+    entityType: 'suggestion',
+    entityId: id,
+    entityCode: current.code,
+    projectId: current.project_id,
+    metadata: {
+      suggestion_code: current.code,
+      suggestion_title: current.title,
+      review_note: reviewNote,
+    },
+  })
 
   revalidatePath('/task-suggestions')
   revalidatePath(`/task-suggestions/${id}`)
@@ -451,6 +489,29 @@ async function approveSuggestionInternal(
   }
 
   await emitReviewEvent(current, 'APPROVED', { id: reviewerId }, '', task.id)
+
+  await logActivity({
+    actorUserId: reviewerId,
+    action: 'SUGGESTION_APPROVED',
+    entityType: 'suggestion',
+    entityId: suggestionId,
+    entityCode: current.code,
+    projectId: current.project_id,
+    metadata: { suggestion_code: current.code, suggestion_title: current.title },
+  })
+  await logActivity({
+    actorUserId: reviewerId,
+    action: 'SUGGESTION_CONVERTED',
+    entityType: 'suggestion',
+    entityId: suggestionId,
+    entityCode: current.code,
+    projectId: current.project_id,
+    metadata: {
+      suggestion_code: current.code,
+      converted_task_id: task.id,
+      converted_task_code: task.code,
+    },
+  })
 
   revalidatePath('/task-suggestions')
   revalidatePath(`/task-suggestions/${suggestionId}`)

@@ -12,6 +12,8 @@ const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', permission: null },
   { href: '/projects', label: 'Projects', permission: 'projects.view' },
   { href: '/tasks', label: 'Tasks', permission: 'tasks.view' },
+  { href: '/notifications', label: 'Notifications', permission: null },
+  { href: '/activity', label: 'Activity', permission: null },
   { href: '/users', label: 'Users', permission: 'users.view' },
   { href: '/profile', label: 'Profile', permission: null },
 ] as const

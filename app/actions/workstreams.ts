@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { requireManager } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isProjectManager } from '@/lib/data/projects'
+import { logActivity } from '@/lib/activity-log/service'
 
 export type WorkstreamFormState = {
   error?: string
@@ -37,16 +38,30 @@ export async function createWorkstream(
     return { error: 'You do not have permission to perform this action.' }
   }
 
-  const { error } = await createAdminClient().from('workstreams').insert({
-    project_id: projectId,
-    name,
-    description: description || null,
-  })
+  const { data: created, error } = await createAdminClient()
+    .from('workstreams')
+    .insert({
+      project_id: projectId,
+      name,
+      description: description || null,
+    })
+    .select('id, code')
+    .single<{ id: string; code: string }>()
 
-  if (error) {
-    console.error('createWorkstream failed:', error.message)
+  if (error || !created) {
+    console.error('createWorkstream failed:', error?.message)
     return { error: 'Unable to create workstream. Please try again.' }
   }
+
+  await logActivity({
+    actorUserId: profile.id,
+    action: 'WORKSTREAM_CREATED',
+    entityType: 'workstream',
+    entityId: created.id,
+    entityCode: created.code,
+    projectId,
+    metadata: { workstream_code: created.code, workstream_name: name },
+  })
 
   revalidatePath('/projects')
   revalidatePath(`/projects/${projectId}`)
@@ -70,9 +85,9 @@ export async function updateWorkstream(
   const admin = createAdminClient()
   const { data: current } = await admin
     .from('workstreams')
-    .select('project_id')
+    .select('project_id, code')
     .eq('id', id)
-    .single<{ project_id: string }>()
+    .single<{ project_id: string; code: string }>()
 
   if (!current) return { error: 'Workstream not found.' }
   if (!(await assertCanManageProject(current.project_id, profile.id, isAdmin))) {
@@ -88,6 +103,16 @@ export async function updateWorkstream(
     console.error('updateWorkstream failed:', error.message)
     return { error: 'Unable to update workstream.' }
   }
+
+  await logActivity({
+    actorUserId: profile.id,
+    action: 'WORKSTREAM_UPDATED',
+    entityType: 'workstream',
+    entityId: id,
+    entityCode: current.code,
+    projectId: current.project_id,
+    metadata: { workstream_code: current.code, workstream_name: name },
+  })
 
   revalidatePath('/projects')
   revalidatePath(`/projects/${current.project_id}`)
@@ -107,9 +132,9 @@ export async function deleteWorkstream(
   const admin = createAdminClient()
   const { data: current } = await admin
     .from('workstreams')
-    .select('project_id')
+    .select('project_id, code, name')
     .eq('id', id)
-    .single<{ project_id: string }>()
+    .single<{ project_id: string; code: string; name: string }>()
 
   if (!current) return { error: 'Workstream not found.' }
   if (!(await assertCanManageProject(current.project_id, profile.id, isAdmin))) {
@@ -135,6 +160,16 @@ export async function deleteWorkstream(
     console.error('deleteWorkstream failed:', error.message)
     return { error: 'Unable to delete workstream.' }
   }
+
+  await logActivity({
+    actorUserId: profile.id,
+    action: 'WORKSTREAM_DELETED',
+    entityType: 'workstream',
+    entityId: id,
+    entityCode: current.code,
+    projectId: current.project_id,
+    metadata: { workstream_code: current.code, workstream_name: current.name },
+  })
 
   revalidatePath('/projects')
   revalidatePath(`/projects/${current.project_id}`)

@@ -7,6 +7,11 @@ import { SUGGESTION_STATUS_LABELS } from '@/lib/auth/roles'
 import { AppShell } from '@/components/layout/AppShell'
 import { formatDate } from '@/lib/utils/dates'
 import { ResubmitForm, ReviewForm } from '@/components/suggestions/SuggestionForms'
+import {
+  ActivityTimeline,
+  resolveActorNames,
+  type ActivityEntry,
+} from '@/components/activity/ActivityTimeline'
 import { getActiveUsers } from '@/lib/data/users'
 import { isProjectManager } from '@/lib/data/projects'
 import type { TaskSuggestion } from '@/types/suggestion'
@@ -86,6 +91,16 @@ export default async function SuggestionDetailPage({
       ])
     : [{ data: [] }, []]
 
+  // Review history dari activity events.
+  const { data: historyData } = await admin
+    .from('activity_logs')
+    .select('*')
+    .eq('entity_type', 'suggestion')
+    .eq('entity_id', id)
+    .order('created_at', { ascending: true })
+  const historyEntries = (historyData ?? []) as ActivityEntry[]
+  const historyActors = await resolveActorNames(historyEntries)
+
   return (
     <AppShell>
       <Link href="/task-suggestions" className="text-sm font-medium text-zinc-500 hover:underline">
@@ -139,6 +154,11 @@ export default async function SuggestionDetailPage({
               View Task {convertedTaskCode}
             </Link>
           )}
+
+          <div className="mt-4 border-t pt-4 dark:border-zinc-700">
+            <h3 className="mb-2 text-base font-bold">Review History</h3>
+            <ActivityTimeline entries={historyEntries} actorNames={historyActors} />
+          </div>
         </section>
 
         <div className="flex flex-col gap-6">

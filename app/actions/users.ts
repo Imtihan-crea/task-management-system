@@ -5,6 +5,7 @@ import { requireAdmin } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isUserRole, isUserStatus } from '@/lib/auth/roles'
 import { getAppBaseUrl } from '@/lib/app-url'
+import { logActivity } from '@/lib/activity-log/service'
 import type { UserRole, UserStatus } from '@/types/profile'
 
 export type UserFormState = {
@@ -107,7 +108,7 @@ export async function inviteUser(
   _prev: UserFormState,
   formData: FormData
 ): Promise<UserFormState> {
-  await requireAdmin()
+  const actor = await requireAdmin()
 
   const fullName = readField(formData, 'full_name')
   const email = readField(formData, 'email').toLowerCase()
@@ -177,6 +178,15 @@ export async function inviteUser(
 
     const userId = created.user.id
 
+    await logActivity({
+      actorUserId: actor.id,
+      action: 'USER_CREATED',
+      entityType: 'user',
+      entityId: userId,
+      entityCode: email,
+      projectId: null,
+      metadata: { email, full_name: fullName, role, via: 'fallback-link' },
+    });
     const { data: updated } = await admin
       .from('profiles')
       .update({ full_name: fullName, role, status: 'INVITED' })
@@ -274,10 +284,33 @@ export async function inviteUser(
         status: 'INVITED',
       })
     }
+
+    await logActivity({
+      actorUserId: actor.id,
+      action: 'USER_CREATED',
+      entityType: 'user',
+      entityId: userId,
+      entityCode: email,
+      projectId: null,
+      metadata: { email, full_name: fullName, role, via: 'fallback-link' },
+    })
   }
 
   revalidatePath('/users')
   revalidatePath('/dashboard')
+
+  if (userId) {
+    await logActivity({
+      actorUserId: actor.id,
+      action: 'USER_CREATED',
+      entityType: 'user',
+      entityId: userId,
+      entityCode: email,
+      projectId: null,
+      metadata: { email, full_name: fullName, role },
+    })
+  }
+
   return { success: 'Invitation sent successfully.' }
 }
 
@@ -335,6 +368,40 @@ export async function updateUser(
   revalidatePath('/dashboard')
 
   const roleChanged = current.role !== role
+  const statusChanged = current.status !== status
+
+  await logActivity({
+    actorUserId: adminProfile.id,
+    action: 'USER_UPDATED',
+    entityType: 'user',
+    entityId: targetId,
+    entityCode: '',
+    projectId: null,
+    metadata: { full_name: fullName },
+  })
+  if (roleChanged) {
+    await logActivity({
+      actorUserId: adminProfile.id,
+      action: 'ROLE_CHANGED',
+      entityType: 'user',
+      entityId: targetId,
+      entityCode: '',
+      projectId: null,
+      metadata: { old_role: current.role, new_role: role },
+    })
+  }
+  if (statusChanged) {
+    await logActivity({
+      actorUserId: adminProfile.id,
+      action: status === 'ACTIVE' ? 'USER_ACTIVATED' : 'USER_DEACTIVATED',
+      entityType: 'user',
+      entityId: targetId,
+      entityCode: '',
+      projectId: null,
+      metadata: { old_status: current.status, new_status: status },
+    })
+  }
+
   return {
     success: roleChanged
       ? 'User role updated successfully.'
@@ -389,6 +456,16 @@ export async function setUserStatus(
   revalidatePath('/users')
   revalidatePath(`/users/${targetId}`)
   revalidatePath('/dashboard')
+
+  await logActivity({
+    actorUserId: adminProfile.id,
+    action: status === 'ACTIVE' ? 'USER_ACTIVATED' : 'USER_DEACTIVATED',
+    entityType: 'user',
+    entityId: targetId,
+    entityCode: '',
+    projectId: null,
+    metadata: { old_status: current.status, new_status: status },
+  })
 
   return {
     success: status === 'ACTIVE' ? 'User activated successfully.' : 'User deactivated successfully.',

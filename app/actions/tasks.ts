@@ -7,6 +7,7 @@ import { isTaskPriority, isTaskStatus } from '@/lib/auth/roles'
 import { isProjectManager } from '@/lib/data/projects'
 import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
+import { logActivity } from '@/lib/activity-log/service'
 import type { TaskPriority, TaskStatus } from '@/types/task'
 
 export type TaskFormState = {
@@ -166,6 +167,23 @@ export async function createTask(
     stamp: created.updated_at,
   })
 
+  await logActivity({
+    actorUserId: profile.id,
+    action: 'TASK_CREATED',
+    entityType: 'task',
+    entityId: created.id,
+    entityCode: created.code,
+    projectId,
+    metadata: {
+      task_code: created.code,
+      task_title: title,
+      assignee_id: assigneeId,
+      priority,
+      status,
+      deadline,
+    },
+  })
+
   revalidatePath('/tasks')
   revalidatePath('/projects')
   revalidatePath(`/projects/${projectId}`)
@@ -218,9 +236,17 @@ export async function updateTask(
   const adminClient = createAdminClient()
   const { data: before } = await adminClient
     .from('tasks')
-    .select('status, assignee_id')
+    .select('status, assignee_id, title, priority, deadline, workstream_id, project_id')
     .eq('id', id)
-    .single<{ status: TaskStatus; assignee_id: string }>()
+    .single<{
+      status: TaskStatus
+      assignee_id: string
+      title: string
+      priority: TaskPriority
+      deadline: string
+      workstream_id: string | null
+      project_id: string
+    }>()
 
   const { data: updated, error } = await adminClient
     .from('tasks')
@@ -270,6 +296,74 @@ export async function updateTask(
       fromStatus: before.status,
       toStatus: status as TaskStatus,
     })
+  }
+
+  // Audit granular (§7, §10): hanya yang berubah yang dicatat.
+  if (before) {
+    const taskMeta = { task_code: updated.code, task_title: title }
+    if (before.assignee_id !== assigneeId) {
+      await logActivity({
+        actorUserId: profile.id,
+        action: 'TASK_ASSIGNED',
+        entityType: 'task',
+        entityId: updated.id,
+        entityCode: updated.code,
+        projectId,
+        metadata: {
+          ...taskMeta,
+          old_assignee_id: before.assignee_id,
+          new_assignee_id: assigneeId,
+        },
+      })
+    }
+    if (before.status !== status) {
+      await logActivity({
+        actorUserId: profile.id,
+        action: 'TASK_STATUS_CHANGED',
+        entityType: 'task',
+        entityId: updated.id,
+        entityCode: updated.code,
+        projectId,
+        metadata: { ...taskMeta, old_status: before.status, new_status: status },
+      })
+    }
+    if (before.priority !== priority) {
+      await logActivity({
+        actorUserId: profile.id,
+        action: 'TASK_PRIORITY_CHANGED',
+        entityType: 'task',
+        entityId: updated.id,
+        entityCode: updated.code,
+        projectId,
+        metadata: { ...taskMeta, old_priority: before.priority, new_priority: priority },
+      })
+    }
+    if (before.deadline !== deadline) {
+      await logActivity({
+        actorUserId: profile.id,
+        action: 'TASK_DEADLINE_CHANGED',
+        entityType: 'task',
+        entityId: updated.id,
+        entityCode: updated.code,
+        projectId,
+        metadata: { ...taskMeta, old_deadline: before.deadline, new_deadline: deadline },
+      })
+    }
+    const generalChanged =
+      before.title !== title ||
+      (before.workstream_id ?? '') !== (workstreamId || '') ||
+      before.project_id !== projectId
+    if (generalChanged) {
+      await logActivity({
+        actorUserId: profile.id,
+        action: 'TASK_UPDATED',
+        entityType: 'task',
+        entityId: updated.id,
+        entityCode: updated.code,
+        projectId,
+        metadata: { ...taskMeta },
+      })
+    }
   }
 
   revalidatePath('/tasks')
@@ -350,6 +444,23 @@ export async function changeTaskStatus(
       projectId: task.project_id,
       fromStatus: before.status,
       toStatus: status as TaskStatus,
+    })
+  }
+
+  if (before.status !== status) {
+    await logActivity({
+      actorUserId: profile.id,
+      action: 'TASK_STATUS_CHANGED',
+      entityType: 'task',
+      entityId: id,
+      entityCode: before.code,
+      projectId: task.project_id,
+      metadata: {
+        task_code: before.code,
+        task_title: before.title,
+        old_status: before.status,
+        new_status: status,
+      },
     })
   }
 
@@ -584,15 +695,27 @@ export async function deleteTask(
   }
 
   // Soft delete: data tetap tersimpan, hilang dari list default.
-  const { error } = await createAdminClient()
+  const { data: deleted, error } = await createAdminClient()
     .from('tasks')
     .update({ is_deleted: true })
     .eq('id', id)
+    .select('id, code, title, project_id')
+    .single<{ id: string; code: string; title: string; project_id: string }>()
 
-  if (error) {
-    console.error('deleteTask failed:', error.message)
+  if (error || !deleted) {
+    console.error('deleteTask failed:', error?.message)
     return { error: 'Unable to delete task.' }
   }
+
+  await logActivity({
+    actorUserId: profile.id,
+    action: 'TASK_DELETED',
+    entityType: 'task',
+    entityId: deleted.id,
+    entityCode: deleted.code,
+    projectId: deleted.project_id,
+    metadata: { task_code: deleted.code, task_title: deleted.title },
+  })
 
   revalidatePath('/tasks')
   revalidatePath(`/tasks/${id}`)
@@ -626,10 +749,10 @@ export async function submitEvidence(
   const admin = createAdminClient()
   const { data: task } = await admin
     .from('tasks')
-    .select('id, assignee_id, project_id')
+    .select('id, code, title, assignee_id, project_id')
     .eq('id', id)
     .eq('is_deleted', false)
-    .single<{ id: string; assignee_id: string; project_id: string }>()
+    .single<{ id: string; code: string; title: string; assignee_id: string; project_id: string }>()
 
   if (!task) return { error: 'Task not found.' }
 
@@ -652,6 +775,16 @@ export async function submitEvidence(
     console.error('submitEvidence failed:', error.message)
     return { error: 'Unable to save evidence.' }
   }
+
+  await logActivity({
+    actorUserId: profile.id,
+    action: 'TASK_EVIDENCE_UPDATED',
+    entityType: 'task',
+    entityId: task.id,
+    entityCode: task.code,
+    projectId: task.project_id,
+    metadata: { task_code: task.code, task_title: task.title },
+  })
 
   revalidatePath('/tasks')
   revalidatePath(`/tasks/${id}`)

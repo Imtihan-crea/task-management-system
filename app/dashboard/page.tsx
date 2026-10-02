@@ -1,11 +1,17 @@
 import Link from 'next/link'
 import { requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient as createUserClient } from '@/lib/supabase/server'
 import { ROLE_LABELS, STATUS_LABELS } from '@/lib/auth/roles'
 import { AppShell } from '@/components/layout/AppShell'
 import { can } from '@/lib/auth/permissions'
 import { formatDate, isOverdue, todayISO } from '@/lib/utils/dates'
 import { PriorityBadge, TaskStatusBadge, OverdueBadge } from '@/components/ui/Badges'
+import {
+  ActivityTimeline,
+  resolveActorNames,
+  type ActivityEntry,
+} from '@/components/activity/ActivityTimeline'
 import type { UserStatus } from '@/types/profile'
 import type { TaskPriority, TaskStatus } from '@/types/task'
 
@@ -57,6 +63,25 @@ function Section({
       <h2 className="mb-3 text-lg font-bold">{title}</h2>
       {children}
     </section>
+  )
+}
+
+async function RecentActivity() {
+  const supabase = await createUserClient()
+
+  const { data } = await supabase
+    .from('activity_logs')
+    .select('*')
+    .order('created_at', { ascending: false })
+    .limit(8)
+
+  const entries = (data ?? []) as ActivityEntry[]
+  const actorNames = await resolveActorNames(entries)
+
+  return (
+    <Section title="Recent Activity">
+      <ActivityTimeline entries={entries} actorNames={actorNames} />
+    </Section>
   )
 }
 
@@ -472,6 +497,9 @@ export default async function DashboardPage({
           )}
         </Section>
       )}
+
+      {/* Recent Activity (scope mengikuti RLS user) */}
+      <RecentActivity />
 
       {/* Quick links */}
       <div className="mt-6 flex flex-wrap gap-2">

@@ -7,6 +7,7 @@ import { isProjectStatus } from '@/lib/auth/roles'
 import { isProjectManager } from '@/lib/data/projects'
 import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
+import { logActivity } from '@/lib/activity-log/service'
 import type { ProjectStatus } from '@/types/project'
 
 function projectAssignedEmail(
@@ -90,7 +91,7 @@ export async function createProject(
   _prev: ProjectFormState,
   formData: FormData
 ): Promise<ProjectFormState> {
-  await requireManager()
+  const actor = await requireManager()
 
   const name = readField(formData, 'name')
   const client = readField(formData, 'client')
@@ -144,6 +145,16 @@ export async function createProject(
     .select('code')
     .eq('id', project.id)
     .single<{ code: string }>()
+
+  await logActivity({
+    actorUserId: actor.id,
+    action: 'PROJECT_CREATED',
+    entityType: 'project',
+    entityId: project.id,
+    entityCode: created?.code ?? '',
+    projectId: project.id,
+    metadata: { project_code: created?.code ?? '', project_name: name },
+  })
 
   const baseUrl = appBaseUrlOrNull()
 
@@ -262,6 +273,40 @@ export async function updateProject(
       entityType: 'project',
       entityId: id,
       email: projectAssignedEmail(baseUrl, id, before?.code ?? '', name),
+    })
+  }
+
+  // Audit: update umum + diff PM.
+  await logActivity({
+    actorUserId: profile.id,
+    action: 'PROJECT_UPDATED',
+    entityType: 'project',
+    entityId: id,
+    entityCode: before?.code ?? '',
+    projectId: id,
+    metadata: { project_code: before?.code ?? '', project_name: name },
+  })
+  const removedManagers = [...oldManagerIds].filter((m) => !managerIds.includes(m))
+  for (const userId of newManagers) {
+    await logActivity({
+      actorUserId: profile.id,
+      action: 'PROJECT_PM_ADDED',
+      entityType: 'project',
+      entityId: id,
+      entityCode: before?.code ?? '',
+      projectId: id,
+      metadata: { added_pm_id: userId },
+    })
+  }
+  for (const userId of removedManagers) {
+    await logActivity({
+      actorUserId: profile.id,
+      action: 'PROJECT_PM_REMOVED',
+      entityType: 'project',
+      entityId: id,
+      entityCode: before?.code ?? '',
+      projectId: id,
+      metadata: { removed_pm_id: userId },
     })
   }
 
