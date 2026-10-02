@@ -82,7 +82,7 @@ export async function createProject(
     return { error: 'Please enter valid dates.' }
   }
   if (startDate && endDate && endDate < startDate) {
-    return { error: 'End date must be after start date.' }
+    return { error: 'Deadline must be after start date.' }
   }
   if (!(await assertActiveUsers(managerIds))) {
     return { error: 'Project managers must be active users.' }
@@ -143,7 +143,7 @@ export async function updateProject(
     return { error: 'Please enter valid dates.' }
   }
   if (startDate && endDate && endDate < startDate) {
-    return { error: 'End date must be after start date.' }
+    return { error: 'Deadline must be after start date.' }
   }
   if (!isAdmin && !(await isProjectManager(id, profile.id))) {
     return { error: 'You do not have permission to perform this action.' }

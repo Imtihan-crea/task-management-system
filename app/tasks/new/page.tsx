@@ -28,7 +28,7 @@ export default async function NewTaskPage({
     projectIds = ((links ?? []) as { project_id: string }[]).map((l) => l.project_id)
   }
 
-  let projectsQuery = admin.from('projects').select('id, name').order('name', { ascending: true }).limit(500)
+  let projectsQuery = admin.from('projects').select('id, code, name').order('name', { ascending: true }).limit(500)
   if (projectIds !== null) {
     projectsQuery = projectIds.length > 0
       ? projectsQuery.in('id', projectIds)
@@ -37,7 +37,7 @@ export default async function NewTaskPage({
 
   const [{ data: projects }, { data: workstreams }, users] = await Promise.all([
     projectsQuery,
-    admin.from('workstreams').select('id, project_id, name').order('name', { ascending: true }).limit(1000),
+    admin.from('workstreams').select('id, project_id, code, name').order('name', { ascending: true }).limit(1000),
     getActiveUsers(),
   ])
 
@@ -51,8 +51,8 @@ export default async function NewTaskPage({
       <div className="mt-4 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
         <TaskForm
           mode="create"
-          projects={(projects ?? []) as { id: string; name: string }[]}
-          workstreams={(workstreams ?? []) as { id: string; project_id: string; name: string }[]}
+          projects={(projects ?? []) as { id: string; code: string; name: string }[]}
+          workstreams={(workstreams ?? []) as { id: string; project_id: string; code: string; name: string }[]}
           users={users}
           initial={{ project_id: presetProject }}
         />

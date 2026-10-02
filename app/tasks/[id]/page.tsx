@@ -65,9 +65,9 @@ export default async function TaskDetailPage({
 
   const [{ data: project }, { data: workstream }, { data: assignee }, { data: creator }] =
     await Promise.all([
-      admin.from('projects').select('id, name').eq('id', task.project_id).single<{ id: string; name: string }>(),
+      admin.from('projects').select('id, code, name').eq('id', task.project_id).single<{ id: string; code: string; name: string }>(),
       task.workstream_id
-        ? admin.from('workstreams').select('id, name').eq('id', task.workstream_id).single<{ id: string; name: string }>()
+        ? admin.from('workstreams').select('id, code, name').eq('id', task.workstream_id).single<{ id: string; code: string; name: string }>()
         : Promise.resolve({ data: null }),
       admin.from('profiles').select('full_name, email').eq('id', task.assignee_id).single<{ full_name: string | null; email: string }>(),
       task.created_by
@@ -78,8 +78,8 @@ export default async function TaskDetailPage({
   // Data untuk form edit (hanya diambil kalau boleh edit penuh)
   const [projectsRes, workstreamsRes, users] = canFullEdit
     ? await Promise.all([
-        admin.from('projects').select('id, name').order('name', { ascending: true }).limit(500),
-        admin.from('workstreams').select('id, project_id, name').order('name', { ascending: true }).limit(1000),
+        admin.from('projects').select('id, code, name').order('name', { ascending: true }).limit(500),
+        admin.from('workstreams').select('id, project_id, code, name').order('name', { ascending: true }).limit(1000),
         getActiveUsers(),
       ])
     : [{ data: [] }, { data: [] }, []]
@@ -91,19 +91,21 @@ export default async function TaskDetailPage({
       </Link>
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
+        <span className="rounded-md bg-zinc-100 px-2 py-1 font-mono text-sm dark:bg-zinc-800">
+          {task.code}
+        </span>
         <h1 className="text-2xl font-bold">{task.title}</h1>
         <TaskStatusBadge status={task.status as TaskStatus} />
         <PriorityBadge priority={task.priority} />
         {isOverdue(task.deadline, task.status) && <OverdueBadge />}
       </div>
-      <p className="mt-1 font-mono text-xs text-zinc-500">ID: {task.id}</p>
 
       <div className="mt-4 grid gap-6 lg:grid-cols-2 lg:items-start">
         <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
           <h2 className="mb-2 text-lg font-bold">Task Detail</h2>
           <dl>
-            <Row label="Project" value={project?.name ?? '-'} />
-            <Row label="Workstream" value={workstream?.name ?? '-'} />
+            <Row label="Project" value={project ? `${project.code} · ${project.name}` : '-'} />
+            <Row label="Workstream" value={workstream ? `${workstream.code} · ${workstream.name}` : '-'} />
             <Row label="Description" value={task.description || '-'} />
             <Row
               label="Assignee"
@@ -146,8 +148,8 @@ export default async function TaskDetailPage({
             <h2 className="mb-4 text-lg font-bold">Edit Task</h2>
             <TaskForm
               mode="edit"
-              projects={(projectsRes.data ?? []) as { id: string; name: string }[]}
-              workstreams={(workstreamsRes.data ?? []) as { id: string; project_id: string; name: string }[]}
+              projects={(projectsRes.data ?? []) as { id: string; code: string; name: string }[]}
+              workstreams={(workstreamsRes.data ?? []) as { id: string; project_id: string; code: string; name: string }[]}
               users={users}
               initial={{
                 id: task.id,

@@ -7,6 +7,8 @@ export type ProjectStatus =
 
 export interface Project {
   id: string
+  /** Kode readable: "001", "002", ... (dibuat otomatis). */
+  code: string
   name: string
   client: string | null
   description: string | null
@@ -20,7 +22,7 @@ export interface Project {
 
 export type ProjectListItem = Pick<
   Project,
-  'id' | 'name' | 'client' | 'end_date' | 'status' | 'created_at'
+  'id' | 'code' | 'name' | 'client' | 'end_date' | 'status' | 'created_at'
 >
 
 export interface ProjectProgress {

@@ -9,6 +9,7 @@ import type { TaskPriority, TaskStatus } from '@/types/task'
 
 type TaskRow = {
   id: string
+  code: string
   title: string
   project_id: string
   workstream_id: string | null
@@ -62,7 +63,7 @@ export default async function TasksPage({
 
   let query = admin
     .from('tasks')
-    .select('id, title, project_id, workstream_id, assignee_id, priority, status, deadline, created_at, updated_at')
+    .select('id, code, title, project_id, workstream_id, assignee_id, priority, status, deadline, created_at, updated_at')
     .eq('is_deleted', false)
     .order('deadline', { ascending: !sort.startsWith('deadline.desc') })
     .limit(500)
@@ -78,14 +79,14 @@ export default async function TasksPage({
 
   // Lookup nama project / workstream / assignee
   const [projectsRes, workstreamsRes] = await Promise.all([
-    admin.from('projects').select('id, name').limit(500),
-    admin.from('workstreams').select('id, project_id, name').limit(1000),
+    admin.from('projects').select('id, code, name').limit(500),
+    admin.from('workstreams').select('id, project_id, code, name').limit(1000),
   ])
-  const projectList = (projectsRes.data ?? []) as { id: string; name: string }[]
-  const workstreamList = (workstreamsRes.data ?? []) as { id: string; project_id: string; name: string }[]
+  const projectList = (projectsRes.data ?? []) as { id: string; code: string; name: string }[]
+  const workstreamList = (workstreamsRes.data ?? []) as { id: string; project_id: string; code: string; name: string }[]
 
-  const projectNames = Object.fromEntries(projectList.map((p) => [p.id, p.name]))
-  const workstreamNames = Object.fromEntries(workstreamList.map((w) => [w.id, w.name]))
+  const projectNames = Object.fromEntries(projectList.map((p) => [p.id, `${p.code} · ${p.name}`]))
+  const workstreamNames = Object.fromEntries(workstreamList.map((w) => [w.id, `${w.code} · ${w.name}`]))
 
   const assigneeIds = [...new Set(tasks.map((t) => t.assignee_id))]
   let assigneeNames: Record<string, string> = {}
@@ -102,12 +103,12 @@ export default async function TasksPage({
     )
   }
 
-  // Search: title, id, project name, assignee name
+  // Search: kode (prefix), nama, project, assignee
   if (q) {
     tasks = tasks.filter(
       (t) =>
+        t.code.toLowerCase().startsWith(q) ||
         t.title.toLowerCase().includes(q) ||
-        t.id.toLowerCase().startsWith(q) ||
         (projectNames[t.project_id] ?? '').toLowerCase().includes(q) ||
         (assigneeNames[t.assignee_id] ?? '').toLowerCase().includes(q)
     )
@@ -196,7 +197,7 @@ export default async function TasksPage({
               name="q"
               type="search"
               defaultValue={sanitize(str(params.q))}
-              placeholder="Nama, ID, project, assignee"
+              placeholder="Kode (T-01), nama, project, assignee"
               className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
             />
           </div>
@@ -213,7 +214,7 @@ export default async function TasksPage({
               <option value="">All</option>
               {projectList.map((p) => (
                 <option key={p.id} value={p.id}>
-                  {p.name}
+                  {p.code} · {p.name}
                 </option>
               ))}
             </select>
@@ -310,6 +311,7 @@ export default async function TasksPage({
             <table className="w-full text-left text-sm">
               <thead className="border-b text-xs uppercase text-zinc-500">
                 <tr>
+                  <th scope="col" className="px-4 py-3">ID</th>
                   <th scope="col" className="px-4 py-3">Task</th>
                   <th scope="col" className="px-4 py-3">Project</th>
                   <th scope="col" className="px-4 py-3">Workstream</th>
@@ -322,6 +324,7 @@ export default async function TasksPage({
               <tbody>
                 {tasks.map((task) => (
                   <tr key={task.id} className="border-b last:border-0">
+                    <td className="px-4 py-3 font-mono text-xs">{task.code}</td>
                     <td className="px-4 py-3">
                       <Link href={`/tasks/${task.id}`} className="font-medium hover:underline">
                         {task.title}
@@ -350,7 +353,12 @@ export default async function TasksPage({
                   href={`/tasks/${task.id}`}
                   className="block rounded-2xl bg-white p-4 shadow dark:bg-zinc-900"
                 >
-                  <p className="font-semibold">{task.title}</p>
+                  <p className="font-semibold">
+                    <span className="mr-2 rounded-md bg-zinc-100 px-1.5 py-0.5 font-mono text-xs dark:bg-zinc-800">
+                      {task.code}
+                    </span>
+                    {task.title}
+                  </p>
                   <p className="mt-0.5 truncate text-sm text-zinc-500">
                     {projectNames[task.project_id] ?? '-'} &middot;{' '}
                     {task.workstream_id ? (workstreamNames[task.workstream_id] ?? '-') : 'No workstream'} &middot;{' '}

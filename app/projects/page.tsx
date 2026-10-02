@@ -71,11 +71,11 @@ export default async function ProjectsPage({
   const admin = createAdminClient()
   let query = admin
     .from('projects')
-    .select('id, name, client, end_date, status, created_at')
+    .select('id, code, name, client, end_date, status, created_at')
     .order('created_at', { ascending: false })
     .limit(200)
 
-  if (q) query = query.or(`name.ilike.%${q}%,client.ilike.%${q}%`)
+  if (q) query = query.or(`code.ilike.${q}%,name.ilike.%${q}%,client.ilike.%${q}%`)
   if (statusFilter) query = query.eq('status', statusFilter)
 
   const { data, error } = await query
@@ -171,7 +171,7 @@ export default async function ProjectsPage({
             name="q"
             type="search"
             defaultValue={q}
-            placeholder="Nama project atau client"
+            placeholder="Kode, nama project, atau client"
             className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base outline-none focus:border-black dark:border-zinc-700 dark:bg-zinc-800"
           />
         </div>
@@ -235,7 +235,12 @@ export default async function ProjectsPage({
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
-                      <p className="truncate font-bold">{project.name}</p>
+                      <p className="truncate font-bold">
+                        <span className="mr-2 rounded-md bg-zinc-100 px-1.5 py-0.5 font-mono text-xs dark:bg-zinc-800">
+                          {project.code}
+                        </span>
+                        {project.name}
+                      </p>
                       <p className="truncate text-sm text-zinc-500">
                         {project.client || 'No client'} &middot;{' '}
                         {(pmNames[project.id] ?? []).join(', ') || '-'}

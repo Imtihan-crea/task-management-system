@@ -1,6 +1,8 @@
 export interface Workstream {
   id: string
   project_id: string
+  /** Kode readable per project: "A", "B", ... (dibuat otomatis). */
+  code: string
   name: string
   description: string | null
   created_at: string
@@ -9,5 +11,5 @@ export interface Workstream {
 
 export type WorkstreamListItem = Pick<
   Workstream,
-  'id' | 'project_id' | 'name' | 'description' | 'created_at'
+  'id' | 'project_id' | 'code' | 'name' | 'description' | 'created_at'
 > & { task_count?: number }

@@ -20,6 +20,7 @@ import type { TaskStatus } from '@/types/task'
 
 type TaskRow = {
   id: string
+  code: string
   title: string
   workstream_id: string | null
   assignee_id: string
@@ -82,12 +83,12 @@ export default async function ProjectDetailPage({
   const [{ data: workstreams }, { data: tasks }, { data: pmLinks }] = await Promise.all([
     admin
       .from('workstreams')
-      .select('id, project_id, name, description, created_at')
+      .select('id, project_id, code, name, description, created_at')
       .eq('project_id', id)
       .order('created_at', { ascending: true }),
     admin
       .from('tasks')
-      .select('id, title, workstream_id, assignee_id, priority, status, deadline')
+      .select('id, code, title, workstream_id, assignee_id, priority, status, deadline')
       .eq('project_id', id)
       .eq('is_deleted', false)
       .order('deadline', { ascending: true })
@@ -127,7 +128,7 @@ export default async function ProjectDetailPage({
     )
   }
 
-  const wsNames = Object.fromEntries(wsList.map((w) => [w.id, w.name]))
+  const wsNames = Object.fromEntries(wsList.map((w) => [w.id, `${w.code} · ${w.name}`]))
 
   // Progress (task-count based, exclude deleted — query sudah filter)
   const progress: ProjectProgress = {
@@ -172,6 +173,9 @@ export default async function ProjectDetailPage({
       </Link>
 
       <div className="mt-2 flex flex-wrap items-center gap-3">
+        <span className="rounded-md bg-zinc-100 px-2 py-1 font-mono text-sm dark:bg-zinc-800">
+          {project.code}
+        </span>
         <h1 className="text-2xl font-bold">{project.name}</h1>
         <ProjectStatusBadge status={project.status} />
       </div>
@@ -183,6 +187,7 @@ export default async function ProjectDetailPage({
         <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
           <h2 className="mb-2 text-lg font-bold">Project Detail</h2>
           <dl>
+            <Row label="Project ID" value={project.code} />
             <Row label="Client" value={project.client || '-'} />
             <Row label="Description" value={project.description || '-'} />
             <Row label="Start Date" value={formatDate(project.start_date)} />
@@ -227,6 +232,9 @@ export default async function ProjectDetailPage({
                   <div className="flex flex-wrap items-center justify-between gap-2">
                     <div>
                       <p className="font-semibold">
+                        <span className="mr-2 rounded-md bg-zinc-100 px-1.5 py-0.5 font-mono text-xs dark:bg-zinc-800">
+                          {ws.code}
+                        </span>
                         {ws.name}{' '}
                         <span className="text-xs font-normal text-zinc-500">
                           ({count} task{count === 1 ? '' : 's'})
@@ -299,7 +307,7 @@ export default async function ProjectDetailPage({
               <option value="">All</option>
               {wsList.map((w) => (
                 <option key={w.id} value={w.id}>
-                  {w.name}
+                  {w.code} · {w.name}
                 </option>
               ))}
             </select>
@@ -359,7 +367,12 @@ export default async function ProjectDetailPage({
                   className="flex flex-col gap-1 rounded-xl border p-3 hover:bg-zinc-50 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-700 dark:hover:bg-zinc-800"
                 >
                   <div className="min-w-0">
-                    <p className="truncate font-medium">{task.title}</p>
+                    <p className="truncate font-medium">
+                      <span className="mr-2 rounded-md bg-zinc-100 px-1.5 py-0.5 font-mono text-xs dark:bg-zinc-800">
+                        {task.code}
+                      </span>
+                      {task.title}
+                    </p>
                     <p className="truncate text-xs text-zinc-500">
                       {task.workstream_id ? (wsNames[task.workstream_id] ?? '-') : 'No workstream'}
                       {' '} &middot; {assigneeNames[task.assignee_id] ?? '-'}

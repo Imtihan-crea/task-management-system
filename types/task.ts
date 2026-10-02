@@ -9,6 +9,8 @@ export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH'
 
 export interface Task {
   id: string
+  /** Kode readable: "T-01", "T-02", ... (dibuat otomatis). */
+  code: string
   project_id: string
   workstream_id: string | null
   title: string

@@ -111,7 +111,7 @@ function FormFields({
         </div>
         <div>
           <label htmlFor="proj_end" className="mb-1 block text-sm font-medium">
-            End Date
+            Deadline
           </label>
           <input
             id="proj_end"

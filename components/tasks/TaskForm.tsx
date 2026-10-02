@@ -8,8 +8,8 @@ import type { TaskPriority, TaskStatus } from '@/types/task'
 
 const INITIAL: TaskFormState = undefined
 
-export type ProjectOption = { id: string; name: string }
-export type WorkstreamOption = { id: string; project_id: string; name: string }
+export type ProjectOption = { id: string; code: string; name: string }
+export type WorkstreamOption = { id: string; project_id: string; code: string; name: string }
 
 export type TaskFormValues = {
   id?: string
@@ -93,7 +93,7 @@ export function TaskForm({
             <option value="">— Pilih —</option>
             {projects.map((p) => (
               <option key={p.id} value={p.id}>
-                {p.name}
+                {p.code} · {p.name}
               </option>
             ))}
           </select>
@@ -112,7 +112,7 @@ export function TaskForm({
             <option value="">— None —</option>
             {filteredWorkstreams.map((w) => (
               <option key={w.id} value={w.id}>
-                {w.name}
+                {w.code} · {w.name}
               </option>
             ))}
           </select>
