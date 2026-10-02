@@ -179,6 +179,14 @@ export default async function TasksPage({
               + Add Task
             </Link>
           )}
+          {can(profile.role, 'suggestions.create') && (
+            <Link
+              href="/task-suggestions/new"
+              className="inline-flex min-h-[44px] items-center rounded-lg border px-4 py-2 text-sm font-semibold"
+            >
+              + Suggest Task
+            </Link>
+          )}
         </div>
       </div>
 

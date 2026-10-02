@@ -7,6 +7,7 @@ import {
   saveNotificationPreferences,
   type PreferenceFormState,
 } from '@/app/actions/notifications'
+import Link from 'next/link'
 import { notificationHref, type NotificationItem, type NotificationPreferences } from '@/types/notification'
 import { formatDate } from '@/lib/utils/dates'
 
@@ -31,9 +32,9 @@ export function NotificationList({ items }: { items: NotificationItem[] }) {
               {n.is_read ? '○' : '●'}
             </span>
             <div className="min-w-0 flex-1">
-              <a href={notificationHref(n.entity_type, n.entity_id)} className="font-semibold hover:underline">
+              <Link href={notificationHref(n.entity_type, n.entity_id)} className="font-semibold hover:underline">
                 {n.title}
-              </a>
+              </Link>
               {n.message && <p className="mt-0.5 text-sm text-zinc-500">{n.message}</p>}
               <p className="mt-1 text-xs text-zinc-400">{formatDate(n.created_at)}</p>
             </div>

@@ -113,6 +113,23 @@ export default async function ProjectDetailPage({
   const wsList = (workstreams ?? []) as WorkstreamListItem[]
   const taskList = (tasks ?? []) as TaskRow[]
 
+  // Suggestions di project ini (scope: admin/PM pemilik lihat semua,
+  // member lihat miliknya). Viewer tidak sampai sini (tidak ada permission).
+  let projectSuggestions: { id: string; code: string; title: string; status: string }[] = []
+  if (can(profile.role, 'suggestions.create') || canEditThis) {
+    let sugQuery = admin
+      .from('task_suggestions')
+      .select('id, code, title, status')
+      .eq('project_id', id)
+      .order('created_at', { ascending: false })
+      .limit(50)
+    if (profile.role === 'TEAM_MEMBER') {
+      sugQuery = sugQuery.eq('suggested_by', profile.id)
+    }
+    const { data: sug } = await sugQuery
+    projectSuggestions = (sug ?? []) as typeof projectSuggestions
+  }
+
   // Nama assignee
   const assigneeIds = [...new Set(taskList.map((t) => t.assignee_id))]
   let assigneeNames: Record<string, string> = {}
@@ -389,6 +406,49 @@ export default async function ProjectDetailPage({
           </ul>
         )}
       </section>
+
+      {/* SUGGESTIONS di project ini */}
+      {(can(profile.role, 'suggestions.create') || canEditThis) && (
+        <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+          <div className="flex flex-wrap items-center justify-between gap-2">
+            <h2 className="text-lg font-bold">
+              Suggestions ({projectSuggestions.length})
+            </h2>
+            {can(profile.role, 'suggestions.create') && (
+              <Link
+                href={`/task-suggestions/new?project=${project.id}`}
+                className="inline-flex min-h-[44px] items-center rounded-lg border px-4 py-2 text-sm font-semibold"
+              >
+                + Suggest Task
+              </Link>
+            )}
+          </div>
+          {projectSuggestions.length === 0 ? (
+            <p className="mt-3 text-sm text-zinc-500">No suggestions yet.</p>
+          ) : (
+            <ul className="mt-3 flex flex-col gap-2">
+              {projectSuggestions.map((s) => (
+                <li key={s.id}>
+                  <Link
+                    href={`/task-suggestions/${s.id}`}
+                    className="flex items-center justify-between gap-2 rounded-xl border p-3 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                  >
+                    <p className="truncate font-medium">
+                      <span className="mr-2 rounded-md bg-zinc-100 px-1.5 py-0.5 font-mono text-xs dark:bg-zinc-800">
+                        {s.code}
+                      </span>
+                      {s.title}
+                    </p>
+                    <span className="shrink-0 text-xs text-zinc-500">
+                      {s.status.replace('_', ' ')}
+                    </span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
+        </section>
+      )}
 
       {canEditThis && canEditProject && (
         <section className="mt-6">

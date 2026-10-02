@@ -78,8 +78,8 @@ export default async function SuggestionDetailPage({
     convertedTaskCode = converted?.code ?? null
   }
 
-  // Data untuk form resubmit (creator saja).
-  const [workstreamsRes, users] = canResubmit
+  // Data untuk form resubmit (creator saja) dan review (reviewer).
+  const [workstreamsRes, users] = canResubmit || canReview
     ? await Promise.all([
         admin.from('workstreams').select('id, project_id, code, name').eq('project_id', suggestion.project_id).order('name', { ascending: true }).limit(200),
         getActiveUsers(),
@@ -145,7 +145,11 @@ export default async function SuggestionDetailPage({
           {canReview && (
             <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
               <h2 className="mb-4 text-lg font-bold">Review Suggestion</h2>
-              <ReviewForm id={suggestion.id} />
+              <ReviewForm
+                id={suggestion.id}
+                users={users}
+                suggestedAssigneeId={suggestion.suggested_assignee_id}
+              />
             </section>
           )}
 

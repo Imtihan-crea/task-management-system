@@ -19,13 +19,20 @@ export function SuggestionForm({
   projects,
   workstreams,
   users,
+  initialProjectId,
 }: {
   projects: ProjectOption[]
   workstreams: WorkstreamOption[]
   users: AssigneeOption[]
+  initialProjectId?: string
 }) {
   const [state, formAction, pending] = useActionState(createSuggestion, INITIAL)
-  const [projectId, setProjectId] = useState('')
+  // Preset dari ?project=, tapi hanya dipakai kalau project itu ada di list.
+  const validPreset =
+    initialProjectId && projects.some((p) => p.id === initialProjectId)
+      ? initialProjectId
+      : ''
+  const [projectId, setProjectId] = useState(validPreset)
   const filteredWorkstreams = workstreams.filter((w) => w.project_id === projectId)
 
   return (
@@ -322,12 +329,39 @@ export function ResubmitForm({
   )
 }
 
-export function ReviewForm({ id }: { id: string }) {
+export function ReviewForm({
+  id,
+  users,
+  suggestedAssigneeId,
+}: {
+  id: string
+  users: { id: string; full_name: string | null; email: string }[]
+  suggestedAssigneeId: string | null
+}) {
   const [state, formAction, pending] = useActionState(reviewSuggestion, INITIAL)
 
   return (
     <form action={formAction} className="flex flex-col gap-3">
       <input type="hidden" name="id" value={id} />
+
+      <div>
+        <label htmlFor="review_assignee" className="mb-1 block text-sm font-medium">
+          Assignee (dipakai saat approve)
+        </label>
+        <select
+          id="review_assignee"
+          name="assignee_id"
+          defaultValue={suggestedAssigneeId ?? ''}
+          className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
+        >
+          <option value="">— Pilih —</option>
+          {users.map((u) => (
+            <option key={u.id} value={u.id}>
+              {u.full_name || u.email} ({u.email})
+            </option>
+          ))}
+        </select>
+      </div>
 
       <div>
         <label htmlFor="review_note" className="mb-1 block text-sm font-medium">

@@ -334,7 +334,8 @@ export async function reviewSuggestion(
   }
 
   if (decision === 'approve') {
-    return approveSuggestionInternal(id, profile.id)
+    const approveAssignee = readField(formData, 'assignee_id')
+    return approveSuggestionInternal(id, profile.id, approveAssignee || null)
   }
 
   const nextStatus = decision === 'revise' ? 'REVISION_REQUESTED' : 'REJECTED'
@@ -375,7 +376,8 @@ export async function reviewSuggestion(
  */
 async function approveSuggestionInternal(
   suggestionId: string,
-  reviewerId: string
+  reviewerId: string,
+  chosenAssigneeId: string | null
 ): Promise<SuggestionFormState> {
   const admin = createAdminClient()
 
@@ -396,12 +398,13 @@ async function approveSuggestionInternal(
   }
 
   // Validasi ulang rule task (assignee bisa saja nonaktif setelah suggest).
-  const assigneeId = current.suggested_assignee_id
-  if (assigneeId && !(await assertActiveUser(assigneeId))) {
-    return { error: 'Suggested assignee is no longer active. Ask the creator to revise.' }
-  }
+  // Reviewer boleh memilih/mengganti assignee langsung di form review.
+  const assigneeId = chosenAssigneeId || current.suggested_assignee_id
   if (!assigneeId) {
-    return { error: 'Suggestion has no assignee. Ask the creator to revise.' }
+    return { error: 'Please select an assignee to approve this suggestion.' }
+  }
+  if (!(await assertActiveUser(assigneeId))) {
+    return { error: 'Selected assignee is not active. Please choose another.' }
   }
 
   // Buat task dengan guard: hanya jika masih PENDING (atomic-ish).

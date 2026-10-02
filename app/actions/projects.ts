@@ -5,8 +5,32 @@ import { requireManager } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isProjectStatus } from '@/lib/auth/roles'
 import { isProjectManager } from '@/lib/data/projects'
+import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
 import type { ProjectStatus } from '@/types/project'
+
+function projectAssignedEmail(
+  baseUrl: string,
+  projectId: string,
+  projectCode: string,
+  projectName: string
+): { subject: string; html: string; category: 'task' } | null {
+  if (!baseUrl) return null
+  return {
+    subject: `[PM] Kamu ditambahkan ke project ${projectCode} ${projectName}`,
+    html: `<p>Halo,</p><p>Kamu ditambahkan sebagai Project Manager di project <strong>${projectCode} ${projectName}</strong>.</p><p>Lihat project:<br><a href="${baseUrl}/projects/${projectId}">${baseUrl}/projects/${projectId}</a></p>`,
+    category: 'task',
+  }
+}
+
+function appBaseUrlOrNull(): string {
+  try {
+    return getAppBaseUrl()
+  } catch {
+    console.error('[notify] APP_URL missing, skipping project email.')
+    return ''
+  }
+}
 
 export type ProjectFormState = {
   error?: string
@@ -121,6 +145,8 @@ export async function createProject(
     .eq('id', project.id)
     .single<{ code: string }>()
 
+  const baseUrl = appBaseUrlOrNull()
+
   await emitNotification({
     key: `project-assigned:${project.id}:created`,
     type: 'PROJECT_ASSIGNED',
@@ -129,7 +155,7 @@ export async function createProject(
     message: `Kamu ditambahkan sebagai PM di project "${name}".`,
     entityType: 'project',
     entityId: project.id,
-    email: null,
+    email: projectAssignedEmail(baseUrl, project.id, created?.code ?? '', name),
   })
 
   revalidatePath('/projects')
@@ -223,9 +249,10 @@ export async function updateProject(
     })
   }
 
-  // Event: PM baru ditambahkan → in-app saja (policy default).
+  // Event: PM baru ditambahkan → in-app + email.
   const newManagers = managerIds.filter((m) => !oldManagerIds.has(m))
   if (newManagers.length > 0) {
+    const baseUrl = appBaseUrlOrNull()
     await emitNotification({
       key: `project-assigned:${id}:${newManagers.sort().join(',')}`,
       type: 'PROJECT_ASSIGNED',
@@ -234,7 +261,7 @@ export async function updateProject(
       message: `Kamu ditambahkan sebagai PM di project "${name}".`,
       entityType: 'project',
       entityId: id,
-      email: null,
+      email: projectAssignedEmail(baseUrl, id, before?.code ?? '', name),
     })
   }
 

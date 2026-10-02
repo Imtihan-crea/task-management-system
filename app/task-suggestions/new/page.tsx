@@ -7,7 +7,11 @@ import { SuggestionForm } from '@/components/suggestions/SuggestionForms'
 import { getSuggestableProjects } from '@/app/actions/suggestions'
 import { getActiveUsers } from '@/lib/data/users'
 
-export default async function NewSuggestionPage() {
+export default async function NewSuggestionPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ project?: string }>
+}) {
   const profile = await requireProfile()
 
   if (!can(profile.role, 'suggestions.create')) {
@@ -20,14 +24,16 @@ export default async function NewSuggestionPage() {
     )
   }
 
+  const params = await searchParams
+  const presetProject = typeof params.project === 'string' ? params.project : ''
+
   const admin = createAdminClient()
-  const [projects, users] = await Promise.all([
+  const [projects, users, workstreamsRes] = await Promise.all([
     getSuggestableProjects(profile.id, profile.role),
     getActiveUsers(),
-  ])
-  const [{ data: workstreams }] = await Promise.all([
     admin.from('workstreams').select('id, project_id, code, name').order('name', { ascending: true }).limit(1000),
   ])
+  const workstreams = workstreamsRes.data ?? []
 
   return (
     <AppShell>
@@ -49,6 +55,7 @@ export default async function NewSuggestionPage() {
             projects={projects}
             workstreams={(workstreams ?? []) as { id: string; project_id: string; code: string; name: string }[]}
             users={users}
+            initialProjectId={presetProject}
           />
         </div>
       )}

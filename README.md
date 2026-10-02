@@ -23,8 +23,8 @@ Status roadmap: **Phase 1 (Foundation), Phase 2 (User Management), Phase 3 (Task
 | `/tasks/new` | Admin, PM (project miliknya) | Create task |
 | `/tasks/[id]` | sesuai scope | Detail + edit + status + evidence + delete |
 | `/task-suggestions` | semua kecuali Viewer | List + My Suggestions + review dalam scope |
-| `/task-suggestions/new` | Admin, PM, Member | Create suggestion (project dalam scope) |
-| `/task-suggestions/[id]` | creator/PM scope/Admin | Detail + review + resubmit + approve→task |
+| `/task-suggestions/new` | Admin, PM, Member | Create suggestion (juga via tombol di Tasks & Project) |
+| `/task-suggestions/[id]` | creator/PM scope/Admin | Detail + review (assignee picker) + resubmit + approve→task |
 | `/notifications` | semua | Center + bell badge + preferensi email |
 | `/users` | **Admin saja** | List, search, filter, sort, invite, aktif/nonaktif |
 | `/users/[id]` | **Admin saja** | Detail + edit user |

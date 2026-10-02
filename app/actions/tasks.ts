@@ -148,8 +148,8 @@ export async function createTask(
       start_date: startDate || null,
       deadline,
     })
-    .select('id, code')
-    .single<{ id: string; code: string }>()
+    .select('id, code, updated_at')
+    .single<{ id: string; code: string; updated_at: string }>()
 
   if (error || !created) {
     console.error('createTask failed:', error?.message)
@@ -163,6 +163,7 @@ export async function createTask(
     taskTitle: title,
     projectId,
     assigneeId,
+    stamp: created.updated_at,
   })
 
   revalidatePath('/tasks')
@@ -255,6 +256,7 @@ export async function updateTask(
       taskTitle: title,
       projectId,
       assigneeId,
+      stamp: updated.updated_at,
     })
   }
 
@@ -398,6 +400,7 @@ async function emitTaskAssigned(input: {
   taskTitle: string
   projectId: string
   assigneeId: string
+  stamp: string
 }): Promise<void> {
   const admin = createAdminClient()
   const { data: project } = await admin
@@ -416,7 +419,9 @@ async function emitTaskAssigned(input: {
   }
 
   await emitNotification({
-    key: `task-assigned:${input.taskId}:${input.assigneeId}`,
+    // Stamp = updated_at saat itu: reassign bolak-balik tetap terkirim,
+    // double-submit dalam satu update tetap satu event.
+    key: `task-assigned:${input.taskId}:${input.assigneeId}:${input.stamp}`,
     type: 'TASK_ASSIGNED',
     userIds: [input.assigneeId],
     title: `Task ${input.taskCode} assigned to you`,
@@ -450,6 +455,30 @@ async function emitTaskStatusChanged(input: {
     .eq('id', input.taskId)
     .single<{ assignee_id: string }>()
 
+  // BLOCKED butuh perhatian: kirim email ke assignee + PM.
+  // Status lain tetap in-app saja (policy Optional).
+  let email: {
+    subject: string
+    html: string
+    category: 'task'
+  } | null = null
+
+  if (input.toStatus === 'BLOCKED') {
+    let baseUrl = ''
+    try {
+      baseUrl = getAppBaseUrl()
+    } catch {
+      console.error('[notify] APP_URL missing, skipping blocked email.')
+    }
+    if (baseUrl) {
+      email = {
+        subject: `[BLOCKED] ${input.taskCode} ${input.taskTitle}`,
+        html: `<p>Halo,</p><p>Task berikut terhambat dan membutuhkan perhatian:</p><ul><li><strong>${input.taskCode} ${input.taskTitle}</strong></li><li><strong>Project:</strong> ${ctx.projectLabel}</li><li><strong>Status sebelumnya:</strong> ${input.fromStatus.replace('_', ' ')}</li></ul><p>Lihat detail:<br><a href="${baseUrl}/tasks/${input.taskId}">${baseUrl}/tasks/${input.taskId}</a></p>`,
+        category: 'task',
+      }
+    }
+  }
+
   await emitNotification({
     // Key mencakup updated_at supaya perubahan berulang tetap terkirim.
     key: `task-status:${input.taskId}:${ctx.task.updated_at}`,
@@ -459,7 +488,7 @@ async function emitTaskStatusChanged(input: {
     message: `"${input.taskTitle}" berubah dari ${input.fromStatus.replace('_', ' ')} menjadi ${input.toStatus.replace('_', ' ')}.`,
     entityType: 'task',
     entityId: input.taskId,
-    email: null, // policy: status change email Optional → tidak dikirim
+    email,
   })
 }
 

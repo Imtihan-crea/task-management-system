@@ -1,5 +1,6 @@
 'use client'
 
+import type { ReactNode } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { UserRole } from '@/types/profile'
@@ -11,12 +12,19 @@ const NAV_ITEMS = [
   { href: '/dashboard', label: 'Dashboard', permission: null },
   { href: '/projects', label: 'Projects', permission: 'projects.view' },
   { href: '/tasks', label: 'Tasks', permission: 'tasks.view' },
-  { href: '/task-suggestions', label: 'Suggestions', permission: 'suggestions.create' },
   { href: '/users', label: 'Users', permission: 'users.view' },
   { href: '/profile', label: 'Profile', permission: null },
 ] as const
 
-export function Nav({ role, email }: { role: UserRole; email: string }) {
+export function Nav({
+  role,
+  email,
+  bell,
+}: {
+  role: UserRole
+  email: string
+  bell?: ReactNode
+}) {
   const pathname = usePathname()
 
   const visibleItems = NAV_ITEMS.filter((item) => {
@@ -37,6 +45,7 @@ export function Nav({ role, email }: { role: UserRole; email: string }) {
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
+          {bell}
           <nav className="flex flex-wrap gap-2" aria-label="Main navigation">
             {visibleItems.map((item) => {
               const active =
