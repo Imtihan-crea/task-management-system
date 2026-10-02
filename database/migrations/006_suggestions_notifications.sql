@@ -46,9 +46,11 @@ where s.id = ranked.id;
 alter table public.task_suggestions alter column code set not null;
 
 create sequence if not exists public.suggestion_code_seq;
+-- is_called=false saat tabel kosong (next = 1 → S-001), true jika sudah ada data.
 select setval(
   'public.suggestion_code_seq',
-  coalesce((select max(substring(code from 3)::integer) from public.task_suggestions), 0)
+  greatest(coalesce((select max(substring(code from 3)::integer) from public.task_suggestions), 0), 1),
+  coalesce((select max(substring(code from 3)::integer) from public.task_suggestions), 0) > 0
 );
 alter table public.task_suggestions
   alter column code set default ('S-' || lpad(nextval('public.suggestion_code_seq')::text, 3, '0'));
