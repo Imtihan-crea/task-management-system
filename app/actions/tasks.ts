@@ -6,7 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { isTaskPriority, isTaskStatus } from '@/lib/auth/roles'
 import { isProjectManager } from '@/lib/data/projects'
 import { getAppBaseUrl } from '@/lib/app-url'
-import { notifyTaskDone } from '@/lib/email/notify'
+import { emitNotification } from '@/lib/notifications/service'
 import type { TaskPriority, TaskStatus } from '@/types/task'
 
 export type TaskFormState = {
@@ -134,23 +134,36 @@ export async function createTask(
     return { error: 'Assignee must be an active user.' }
   }
 
-  const { error } = await createAdminClient().from('tasks').insert({
-    title,
-    description: description || null,
-    project_id: projectId,
-    workstream_id: workstreamId || null,
-    assignee_id: assigneeId,
-    created_by: profile.id,
-    priority: priority as TaskPriority,
-    status: status as TaskStatus,
-    start_date: startDate || null,
-    deadline,
-  })
+  const { data: created, error } = await createAdminClient()
+    .from('tasks')
+    .insert({
+      title,
+      description: description || null,
+      project_id: projectId,
+      workstream_id: workstreamId || null,
+      assignee_id: assigneeId,
+      created_by: profile.id,
+      priority: priority as TaskPriority,
+      status: status as TaskStatus,
+      start_date: startDate || null,
+      deadline,
+    })
+    .select('id, code')
+    .single<{ id: string; code: string }>()
 
-  if (error) {
-    console.error('createTask failed:', error.message)
+  if (error || !created) {
+    console.error('createTask failed:', error?.message)
     return { error: 'Unable to create task. Please try again.' }
   }
+
+  // Event: TASK_ASSIGNED → assignee baru (in-app + email).
+  await emitTaskAssigned({
+    taskId: created.id,
+    taskCode: created.code,
+    taskTitle: title,
+    projectId,
+    assigneeId,
+  })
 
   revalidatePath('/tasks')
   revalidatePath('/projects')
@@ -204,11 +217,11 @@ export async function updateTask(
   const adminClient = createAdminClient()
   const { data: before } = await adminClient
     .from('tasks')
-    .select('status')
+    .select('status, assignee_id')
     .eq('id', id)
-    .single<{ status: TaskStatus }>()
+    .single<{ status: TaskStatus; assignee_id: string }>()
 
-  const { error } = await adminClient
+  const { data: updated, error } = await adminClient
     .from('tasks')
     .update({
       title,
@@ -222,14 +235,39 @@ export async function updateTask(
       deadline,
     })
     .eq('id', id)
+    .select('id, code, updated_at')
+    .single<{ id: string; code: string; updated_at: string }>()
 
-  if (error) {
-    console.error('updateTask failed:', error.message)
+  if (error || !updated) {
+    console.error('updateTask failed:', error?.message)
     return { error: 'Unable to update task.' }
   }
 
   if (before && before.status !== 'DONE' && status === 'DONE') {
     await sendDoneEmail(id)
+  }
+
+  // Event: assignee berubah → TASK_ASSIGNED ke assignee baru.
+  if (before && before.assignee_id !== assigneeId) {
+    await emitTaskAssigned({
+      taskId: updated.id,
+      taskCode: updated.code,
+      taskTitle: title,
+      projectId,
+      assigneeId,
+    })
+  }
+
+  // Event: status berubah (bukan DONE, itu sudah ditangani) → in-app saja.
+  if (before && before.status !== status && status !== 'DONE') {
+    await emitTaskStatusChanged({
+      taskId: updated.id,
+      taskCode: updated.code,
+      taskTitle: title,
+      projectId,
+      fromStatus: before.status,
+      toStatus: status as TaskStatus,
+    })
   }
 
   revalidatePath('/tasks')
@@ -282,10 +320,10 @@ export async function changeTaskStatus(
   // Email notifikasi HANYA saat transisi menjadi DONE.
   const { data: before } = await admin
     .from('tasks')
-    .select('status')
+    .select('status, title, code')
     .eq('id', id)
     .eq('is_deleted', false)
-    .single<{ status: TaskStatus }>()
+    .single<{ status: TaskStatus; title: string; code: string }>()
 
   if (!before) return { error: 'Task not found.' }
   const wasDone = before.status === 'DONE'
@@ -302,6 +340,15 @@ export async function changeTaskStatus(
 
   if (!wasDone && status === 'DONE') {
     await sendDoneEmail(id)
+  } else if (before.status !== status) {
+    await emitTaskStatusChanged({
+      taskId: id,
+      taskCode: before.code,
+      taskTitle: before.title,
+      projectId: task.project_id,
+      fromStatus: before.status,
+      toStatus: status as TaskStatus,
+    })
   }
 
   revalidatePath('/tasks')
@@ -312,28 +359,136 @@ export async function changeTaskStatus(
 }
 
 /**
- * Kirim email ke semua PM saat task menjadi DONE.
- * Gagal kirim tidak menggagalkan update status.
+ * Helper notifikasi task (dipakai create/update/status).
+ * Semua lewat unified service — tidak ada email ad-hoc di sini.
+ */
+async function getTaskContext(taskId: string) {
+  const admin = createAdminClient()
+  const { data: task } = await admin
+    .from('tasks')
+    .select('id, code, title, project_id, assignee_id, updated_at')
+    .eq('id', taskId)
+    .single<{
+      id: string
+      code: string
+      title: string
+      project_id: string
+      assignee_id: string
+      updated_at: string
+    }>()
+
+  if (!task) return null
+
+  const [{ data: project }, { data: managers }] = await Promise.all([
+    admin.from('projects').select('code, name').eq('id', task.project_id).single<{ code: string; name: string }>(),
+    admin.from('project_managers').select('user_id').eq('project_id', task.project_id),
+  ])
+
+  return {
+    task,
+    projectLabel: project ? `${project.code} · ${project.name}` : '-',
+    projectName: project?.name ?? '-',
+    managerIds: ((managers ?? []) as { user_id: string }[]).map((m) => m.user_id),
+  }
+}
+
+async function emitTaskAssigned(input: {
+  taskId: string
+  taskCode: string
+  taskTitle: string
+  projectId: string
+  assigneeId: string
+}): Promise<void> {
+  const admin = createAdminClient()
+  const { data: project } = await admin
+    .from('projects')
+    .select('code, name')
+    .eq('id', input.projectId)
+    .single<{ code: string; name: string }>()
+
+  const projectLabel = project ? `${project.code} · ${project.name}` : '-'
+
+  let baseUrl = ''
+  try {
+    baseUrl = getAppBaseUrl()
+  } catch {
+    console.error('[notify] APP_URL missing, skipping assigned email.')
+  }
+
+  await emitNotification({
+    key: `task-assigned:${input.taskId}:${input.assigneeId}`,
+    type: 'TASK_ASSIGNED',
+    userIds: [input.assigneeId],
+    title: `Task ${input.taskCode} assigned to you`,
+    message: `"${input.taskTitle}" di ${projectLabel} di-assign kepadamu.`,
+    entityType: 'task',
+    entityId: input.taskId,
+    email: baseUrl
+      ? {
+          subject: `[Assigned] ${input.taskCode} ${input.taskTitle}`,
+          html: `<p>Halo,</p><p>Task berikut di-assign kepadamu:</p><ul><li><strong>${input.taskCode} ${input.taskTitle}</strong></li><li><strong>Project:</strong> ${projectLabel}</li></ul><p>Lihat detail:<br><a href="${baseUrl}/tasks/${input.taskId}">${baseUrl}/tasks/${input.taskId}</a></p>`,
+          category: 'task',
+        }
+      : null,
+  })
+}
+
+async function emitTaskStatusChanged(input: {
+  taskId: string
+  taskCode: string
+  taskTitle: string
+  projectId: string
+  fromStatus: TaskStatus
+  toStatus: TaskStatus
+}): Promise<void> {
+  const ctx = await getTaskContext(input.taskId)
+  if (!ctx) return
+
+  const { data } = await createAdminClient()
+    .from('tasks')
+    .select('assignee_id')
+    .eq('id', input.taskId)
+    .single<{ assignee_id: string }>()
+
+  await emitNotification({
+    // Key mencakup updated_at supaya perubahan berulang tetap terkirim.
+    key: `task-status:${input.taskId}:${ctx.task.updated_at}`,
+    type: 'TASK_STATUS_CHANGED',
+    userIds: [...ctx.managerIds, ...(data ? [data.assignee_id] : [])],
+    title: `Task ${input.taskCode} → ${input.toStatus.replace('_', ' ')}`,
+    message: `"${input.taskTitle}" berubah dari ${input.fromStatus.replace('_', ' ')} menjadi ${input.toStatus.replace('_', ' ')}.`,
+    entityType: 'task',
+    entityId: input.taskId,
+    email: null, // policy: status change email Optional → tidak dikirim
+  })
+}
+
+/**
+ * Task menjadi DONE: in-app ke assignee + semua PM, email ke semua PM.
+ * Dijalankan lewat unified service (§52, §69): SATU-SATUNYA mekanisme
+ * DONE notification. Gagal kirim tidak menggagalkan update status.
  */
 async function sendDoneEmail(taskId: string): Promise<void> {
   const admin = createAdminClient()
 
   const { data: task } = await admin
     .from('tasks')
-    .select('id, title, project_id, assignee_id, evidence_url')
+    .select('id, code, title, project_id, assignee_id, evidence_url, updated_at')
     .eq('id', taskId)
     .single<{
       id: string
+      code: string
       title: string
       project_id: string
       assignee_id: string
       evidence_url: string | null
+      updated_at: string
     }>()
 
   if (!task) return
 
   const [{ data: project }, { data: assignee }, { data: managers }] = await Promise.all([
-    admin.from('projects').select('name').eq('id', task.project_id).single<{ name: string }>(),
+    admin.from('projects').select('code, name').eq('id', task.project_id).single<{ code: string; name: string }>(),
     admin
       .from('profiles')
       .select('full_name, email')
@@ -343,33 +498,44 @@ async function sendDoneEmail(taskId: string): Promise<void> {
   ])
 
   const managerIds = ((managers ?? []) as { user_id: string }[]).map((m) => m.user_id)
-  if (managerIds.length === 0) return
-
-  const { data: pmProfiles } = await admin
-    .from('profiles')
-    .select('full_name, email')
-    .in('id', managerIds)
-    .eq('status', 'ACTIVE')
-
-  const pmEmails = ((pmProfiles ?? []) as { full_name: string | null; email: string }[]).map(
-    (pm) => ({ email: pm.email, name: pm.full_name ?? undefined })
-  )
+  const assigneeName = assignee ? assignee.full_name || assignee.email : '-'
+  const projectLabel = project ? `${project.code} · ${project.name}` : '-'
 
   let baseUrl = ''
   try {
     baseUrl = getAppBaseUrl()
   } catch {
-    console.error('[notify] APP_URL is not configured, skipping DONE email.')
+    console.error('[notify] APP_URL is not configured, skipping DONE notification.')
     return
   }
 
-  await notifyTaskDone({
-    pmEmails,
-    taskTitle: task.title,
-    projectName: project?.name ?? '-',
-    assigneeName: assignee ? assignee.full_name || assignee.email : '-',
-    evidenceUrl: task.evidence_url,
-    taskUrl: `${baseUrl}/tasks/${task.id}`,
+  const evidenceBlock = task.evidence_url
+    ? `<p>Link evidence:<br><a href="${task.evidence_url}">${task.evidence_url}</a></p>`
+    : `<p><em>Tidak ada link evidence yang dilampirkan.</em></p>`
+
+  await emitNotification({
+    key: `task-done:${task.id}:${task.updated_at}`,
+    type: 'TASK_DONE',
+    userIds: [...managerIds, task.assignee_id],
+    title: `Task ${task.code} selesai: ${task.title}`,
+    message: `${assigneeName} menyelesaikan task ${task.code} di ${projectLabel}.`,
+    entityType: 'task',
+    entityId: task.id,
+    email: {
+      subject: `[DONE] ${task.code} ${task.title} — ${project?.name ?? '-'}`,
+      html: `<p>Halo,</p>
+<p>Kabar baik — task berikut sudah selesai dan membutuhkan perhatian Anda:</p>
+<ul>
+<li><strong>Task:</strong> ${task.code} ${task.title}</li>
+<li><strong>Project:</strong> ${projectLabel}</li>
+<li><strong>Dikerjakan oleh:</strong> ${assigneeName}</li>
+</ul>
+${evidenceBlock}
+<p>Lihat detail task di sini:<br><a href="${baseUrl}/tasks/${task.id}">${baseUrl}/tasks/${task.id}</a></p>
+<p>Terima kasih.</p>
+<p><em>Email ini dikirim otomatis oleh Task Management System. Mohon tidak membalas email ini.</em></p>`,
+      category: 'task',
+    },
   })
 }
 

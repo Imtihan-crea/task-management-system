@@ -1,6 +1,7 @@
 import type { UserRole, UserStatus } from '@/types/profile'
 import type { ProjectStatus } from '@/types/project'
 import type { TaskPriority, TaskStatus } from '@/types/task'
+import type { SuggestionStatus } from '@/types/suggestion'
 
 export const USER_ROLES: UserRole[] = [
   'ADMIN',
@@ -60,4 +61,24 @@ export function isTaskStatus(value: string): value is TaskStatus {
 
 export function isTaskPriority(value: string): value is TaskPriority {
   return (TASK_PRIORITIES as string[]).includes(value)
+}
+
+export const SUGGESTION_STATUSES: SuggestionStatus[] = [
+  'PENDING',
+  'APPROVED',
+  'REVISION_REQUESTED',
+  'REJECTED',
+  'CONVERTED',
+]
+
+export const SUGGESTION_STATUS_LABELS: Record<SuggestionStatus, string> = {
+  PENDING: 'PENDING',
+  APPROVED: 'APPROVED',
+  REVISION_REQUESTED: 'REVISION REQUESTED',
+  REJECTED: 'REJECTED',
+  CONVERTED: 'CONVERTED',
+}
+
+export function isSuggestionStatus(value: string): value is SuggestionStatus {
+  return (SUGGESTION_STATUSES as string[]).includes(value)
 }

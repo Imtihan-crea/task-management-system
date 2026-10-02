@@ -5,6 +5,7 @@ import { requireManager } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isProjectStatus } from '@/lib/auth/roles'
 import { isProjectManager } from '@/lib/data/projects'
+import { emitNotification } from '@/lib/notifications/service'
 import type { ProjectStatus } from '@/types/project'
 
 export type ProjectFormState = {
@@ -114,6 +115,23 @@ export async function createProject(
     return { error: 'Unable to assign project managers. Please try again.' }
   }
 
+  const { data: created } = await admin
+    .from('projects')
+    .select('code')
+    .eq('id', project.id)
+    .single<{ code: string }>()
+
+  await emitNotification({
+    key: `project-assigned:${project.id}:created`,
+    type: 'PROJECT_ASSIGNED',
+    userIds: managerIds,
+    title: `You are assigned to project ${created?.code ?? ''}`,
+    message: `Kamu ditambahkan sebagai PM di project "${name}".`,
+    entityType: 'project',
+    entityId: project.id,
+    email: null,
+  })
+
   revalidatePath('/projects')
   revalidatePath('/dashboard')
   return { success: 'Project created successfully.' }
@@ -153,6 +171,21 @@ export async function updateProject(
   }
 
   const admin = createAdminClient()
+
+  const { data: before } = await admin
+    .from('projects')
+    .select('status, code')
+    .eq('id', id)
+    .single<{ status: ProjectStatus; code: string }>()
+
+  const { data: oldManagers } = await admin
+    .from('project_managers')
+    .select('user_id')
+    .eq('project_id', id)
+  const oldManagerIds = new Set(
+    ((oldManagers ?? []) as { user_id: string }[]).map((m) => m.user_id)
+  )
+
   const { error } = await admin
     .from('projects')
     .update({
@@ -174,6 +207,35 @@ export async function updateProject(
   if (managerError) {
     console.error('setProjectManagers failed:', managerError.message)
     return { error: 'Project saved, but managers could not be updated.' }
+  }
+
+  // Event: status berubah → in-app ke semua PM (email Optional → skip).
+  if (before && before.status !== status) {
+    await emitNotification({
+      key: `project-status:${id}:${status}`,
+      type: 'PROJECT_STATUS_CHANGED',
+      userIds: managerIds,
+      title: `Project ${before.code} → ${status.replace('_', ' ')}`,
+      message: `"${name}" berubah status menjadi ${status.replace('_', ' ')}.`,
+      entityType: 'project',
+      entityId: id,
+      email: null,
+    })
+  }
+
+  // Event: PM baru ditambahkan → in-app saja (policy default).
+  const newManagers = managerIds.filter((m) => !oldManagerIds.has(m))
+  if (newManagers.length > 0) {
+    await emitNotification({
+      key: `project-assigned:${id}:${newManagers.sort().join(',')}`,
+      type: 'PROJECT_ASSIGNED',
+      userIds: newManagers,
+      title: `You are assigned to project ${before?.code ?? ''}`,
+      message: `Kamu ditambahkan sebagai PM di project "${name}".`,
+      entityType: 'project',
+      entityId: id,
+      email: null,
+    })
   }
 
   revalidatePath('/projects')
