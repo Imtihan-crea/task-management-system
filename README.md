@@ -22,6 +22,10 @@ Status roadmap: **Phase 1 (Foundation), Phase 2 (User Management), Phase 3 (Task
 | `/tasks` | semua (member: miliknya) | List unfinished-first + search/filter/sort + My Tasks + overdue |
 | `/tasks/new` | Admin, PM (project miliknya) | Create task |
 | `/tasks/[id]` | sesuai scope | Detail + edit + status + evidence + delete |
+| `/task-suggestions` | semua kecuali Viewer | List + My Suggestions + review dalam scope |
+| `/task-suggestions/new` | Admin, PM, Member | Create suggestion (project dalam scope) |
+| `/task-suggestions/[id]` | creator/PM scope/Admin | Detail + review + resubmit + approve→task |
+| `/notifications` | semua | Center + bell badge + preferensi email |
 | `/users` | **Admin saja** | List, search, filter, sort, invite, aktif/nonaktif |
 | `/users/[id]` | **Admin saja** | Detail + edit user |
 | `/profile` | semua | Lihat & ubah nama sendiri |
@@ -49,7 +53,12 @@ BREVO_SENDER_NAME=Task Management System
 
 Lokasi nilainya: Supabase Dashboard > **Project Settings** > **API**.
 `BREVO_API_KEY` dari Brevo Dashboard > **SMTP & API** (untuk email notifikasi
-task DONE; panduan SMTP ada di `docs/setup-email.md`).
+task DONE, assignment, dan suggestion; panduan SMTP ada di `docs/setup-email.md`).
+
+Notifikasi terpusat di `lib/notifications/service.ts`: klaim event key dulu
+(idempotent, tidak ada duplikat) → tulis in-app → kirim email sesuai policy
++ preferensi user. Kegagalan email tidak menggagalkan transaksi. Suggestion
+(`S-001`) di-review PM/Admin; approve menghasilkan tepat satu task.
 
 `SUPABASE_SERVICE_ROLE_KEY` hanya boleh dipakai di server. File `.env.local`
 sudah masuk `.gitignore` dan tidak pernah di-push.
@@ -66,6 +75,10 @@ Buka http://localhost:3000
 
 1. **SQL Editor** > New Query > salin `database/migrations/001_create_profiles.sql` > **Run**
 2. **SQL Editor** > New Query > salin `database/migrations/002_user_management.sql` > **Run**
+3. **SQL Editor** > New Query > salin `database/migrations/003_projects_workstreams_tasks.sql` > **Run**
+4. **SQL Editor** > New Query > salin `database/migrations/004_multi_pm_and_evidence.sql` > **Run**
+5. **SQL Editor** > New Query > salin `database/migrations/005_human_readable_codes.sql` > **Run**
+6. **SQL Editor** > New Query > salin `database/migrations/006_suggestions_notifications.sql` > **Run**
 3. **Authentication** > **Users** > **Add user** > buat user pertama:
    - isi Email + Password, centang **Auto Confirm User**
    - lalu **Table Editor** > `profiles` > ubah `role` jadi `ADMIN` dan `status` jadi `ACTIVE`

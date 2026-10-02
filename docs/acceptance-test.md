@@ -140,6 +140,49 @@ Production URL: `https://task-management-system-jatc.vercel.app`
 | 12.13 | Assign ke user INACTIVE | Ditolak |
 | 12.14 | Mobile: /projects, /tasks | Card rapi, tidak geser horizontal |
 
+## 13. Phase 5 — Suggestion
+
+| # | Langkah | Harap |
+|---|---|---|
+| 13.1 | Member buat suggestion (judul+deskripsi+project) | Masuk PENDING, kode S-xxx |
+| 13.2 | PM buka /task-suggestions | Suggestion tampil (dalam scope) |
+| 13.3 | PM approve | Tepat satu task dibuat, suggestion CONVERTED, ada tombol View Task |
+| 13.4 | Approve 2x (double submit) | Tetap satu task, tidak duplikat |
+| 13.5 | PM request revision + note | REVISION_REQUESTED, creator lihat note |
+| 13.6 | Creator edit + resubmit | Kembali PENDING |
+| 13.7 | PM reject + note | REJECTED + alasan tampil |
+| 13.8 | Member coba review suggestion | Ditolak |
+| 13.9 | Viewer buka /task-suggestions | Ditolak |
+| 13.10 | Approve suggestion tanpa assignee | Ditolak, diminta revisi |
+
+## 14. Phase 6 — Notification
+
+| # | Langkah | Harap |
+|---|---|---|
+| 14.1 | Task di-assign ke member | Member dapat in-app + email |
+| 14.2 | Status task berubah | Assignee + PM dapat in-app, tanpa email baru |
+| 14.3 | Task DONE | In-app ke assignee + PM, email ke PM (satu, tidak duplikat) |
+| 14.4 | Suggestion dibuat | Semua PM project dapat in-app + email |
+| 14.5 | Suggestion di-approve/revise/reject | Creator dapat in-app + email |
+| 14.6 | Bell 🔔 | Badge angka = jumlah unread |
+| 14.7 | Klik notifikasi | Membuka entity terkait |
+| 14.8 | Mark read / mark all | Badge berkurang, status tersimpan |
+| 14.9 | Matikan Email Notifications di preferensi | In-app tetap masuk, email berhenti |
+| 14.10 | User A tidak bisa baca notif user B | Ditolak (RLS + server check) |
+
+## 15. Phase 7 — Dashboard
+
+| # | Langkah | Harap |
+|---|---|---|
+| 15.1 | Login Admin | KPI users + projects + tasks + workload + blocked + pending suggestions |
+| 15.2 | Login PM | Hanya project miliknya + tasks + pending suggestions scope-nya |
+| 15.3 | Login Member | My open/due-today/overdue/blocked/completed + suggestion miliknya |
+| 15.4 | Login Viewer | Overview read-only, tanpa tombol mutasi |
+| 15.5 | Filter project/assignee/status/priority (Admin) | Angka + list berubah sesuai filter |
+| 15.6 | Status summary TODO→DONE | Angka cocok dengan data task |
+| 15.7 | Due Today vs Overdue | Task deadline hari ini vs lewat, DONE tidak masuk |
+| 15.8 | Mobile dashboard | Card rapi, tidak geser horizontal |
+
 ## Catatan
 
 Setiap pesan error harus user-friendly, bukan SQL mentah atau `PostgrestError`
