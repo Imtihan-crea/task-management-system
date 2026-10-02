@@ -121,6 +121,25 @@ Production URL: `https://task-management-system-jatc.vercel.app`
 
 ---
 
+## 12. Phase 3 & 4 — Task, Project, Workstream
+
+| # | Langkah | Harap |
+|---|---|---|
+| 12.1 | Admin buat project + 2 PM | Project tersimpan, kedua PM tampil |
+| 12.2 | PM buat workstream + task + assign member | Berhasil, deadline tersimpan |
+| 12.3 | Buka project detail | Progress % = done/total, workstream + task tampil |
+| 12.4 | Member login, buka /tasks | Hanya task miliknya, unfinished di atas |
+| 12.5 | Member ubah status task miliknya ke DONE | Berhasil, PM menerima email + link evidence |
+| 12.6 | Member submit evidence (link) | Link tampil dan bisa diklik di detail |
+| 12.7 | Member buka task orang lain via URL | 404 / tidak bisa akses |
+| 12.8 | PM buka project PM lain | Bisa lihat, tombol edit/tambah tidak ada |
+| 12.9 | PM coba edit project PM lain via aksi langsung | Ditolak |
+| 12.10 | Viewer buka /tasks/new | Ditolak |
+| 12.11 | Hapus workstream yang punya task | Ditolak, pesan jelas |
+| 12.12 | Soft delete task | Hilang dari list, tetap di database |
+| 12.13 | Assign ke user INACTIVE | Ditolak |
+| 12.14 | Mobile: /projects, /tasks | Card rapi, tidak geser horizontal |
+
 ## Catatan
 
 Setiap pesan error harus user-friendly, bukan SQL mentah atau `PostgrestError`

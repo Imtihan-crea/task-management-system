@@ -27,8 +27,8 @@ function sanitize(value: string | undefined): string {
 const PRIORITY_RANK: Record<TaskPriority, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 }
 
 const SORT_OPTIONS = [
-  { value: 'deadline.asc', label: 'Deadline (nearest)' },
-  { value: 'deadline.desc', label: 'Deadline (farthest)' },
+  { value: 'deadline.asc', label: 'Deadline (nearest, unfinished first)' },
+  { value: 'deadline.desc', label: 'Deadline (farthest, unfinished first)' },
   { value: 'priority', label: 'Priority (High first)' },
   { value: 'created_at.desc', label: 'Created (newest)' },
   { value: 'updated_at.desc', label: 'Updated (newest)' },
@@ -126,6 +126,20 @@ export default async function TasksPage({
   // Sort priority khusus
   if (sort === 'priority') {
     tasks = [...tasks].sort((a, b) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority])
+  }
+
+  // Default (deadline): unfinished dulu, DONE paling bawah.
+  if (sort === 'deadline.asc' || sort === 'deadline.desc') {
+    const desc = sort === 'deadline.desc'
+    tasks = [...tasks].sort((a, b) => {
+      const aDone = a.status === 'DONE' ? 1 : 0
+      const bDone = b.status === 'DONE' ? 1 : 0
+      if (aDone !== bDone) return aDone - bDone
+      if (a.deadline === b.deadline) return 0
+      return desc
+        ? (a.deadline < b.deadline ? 1 : -1)
+        : (a.deadline < b.deadline ? -1 : 1)
+    })
   }
 
   const overdueCount = tasks.filter((t) => isOverdue(t.deadline, t.status)).length

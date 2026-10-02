@@ -13,6 +13,7 @@ import {
   EditWorkstreamForm,
 } from '@/components/projects/WorkstreamForms'
 import { getActiveUsers } from '@/lib/data/users'
+import { isProjectManager } from '@/lib/data/projects'
 import type { Project, ProjectProgress } from '@/types/project'
 import type { WorkstreamListItem } from '@/types/workstream'
 import type { TaskStatus } from '@/types/task'
@@ -58,11 +59,27 @@ export default async function ProjectDetailPage({
 
   if (!project) notFound()
 
-  // PM hanya boleh kelola project miliknya; lihat boleh semua.
-  const isOwner = project.project_manager_id === profile.id
-  const canEditThis = profile.role === 'ADMIN' || (profile.role === 'PROJECT_MANAGER' && isOwner)
+  // PM boleh lihat semua project, tapi hanya kelola miliknya (salah satunya).
+  const isOwner =
+    profile.role === 'ADMIN' ||
+    (profile.role === 'PROJECT_MANAGER' && (await isProjectManager(id, profile.id)))
+  const canEditThis = profile.role === 'ADMIN' || isOwner
 
-  const [{ data: workstreams }, { data: tasks }, pmResult] = await Promise.all([
+  // MEMBER hanya boleh buka project yang dia terlibat (punya task aktif).
+  if (profile.role === 'TEAM_MEMBER') {
+    const { count: involved } = await admin
+      .from('tasks')
+      .select('id', { count: 'exact', head: true })
+      .eq('project_id', id)
+      .eq('assignee_id', profile.id)
+      .eq('is_deleted', false)
+
+    if ((involved ?? 0) === 0) {
+      notFound()
+    }
+  }
+
+  const [{ data: workstreams }, { data: tasks }, { data: pmLinks }] = await Promise.all([
     admin
       .from('workstreams')
       .select('id, project_id, name, description, created_at')
@@ -75,15 +92,22 @@ export default async function ProjectDetailPage({
       .eq('is_deleted', false)
       .order('deadline', { ascending: true })
       .limit(500),
-    project.project_manager_id
-      ? admin
-          .from('profiles')
-          .select('full_name, email')
-          .eq('id', project.project_manager_id)
-          .single<{ full_name: string | null; email: string }>()
-      : Promise.resolve({ data: null as { full_name: string | null; email: string } | null }),
+    admin.from('project_managers').select('user_id').eq('project_id', id),
   ])
-  const pm = pmResult.data
+  const pmIds = ((pmLinks ?? []) as { user_id: string }[]).map((l) => l.user_id)
+
+  let pmDisplay = '-'
+  if (pmIds.length > 0) {
+    const { data: pmProfiles } = await admin
+      .from('profiles')
+      .select('full_name, email')
+      .in('id', pmIds)
+
+    pmDisplay =
+      ((pmProfiles ?? []) as { full_name: string | null; email: string }[])
+        .map((u) => u.full_name || u.email)
+        .join(', ') || '-'
+  }
 
   const wsList = (workstreams ?? []) as WorkstreamListItem[]
   const taskList = (tasks ?? []) as TaskRow[]
@@ -124,12 +148,20 @@ export default async function ProjectDetailPage({
   const fStatus = str(query.status)
   const fPriority = str(query.priority)
 
-  const visibleTasks = taskList.filter(
-    (t) =>
-      (!fWs || t.workstream_id === fWs) &&
-      (!fStatus || t.status === fStatus) &&
-      (!fPriority || t.priority === fPriority)
-  )
+  const visibleTasks = taskList
+    .filter(
+      (t) =>
+        (!fWs || t.workstream_id === fWs) &&
+        (!fStatus || t.status === fStatus) &&
+        (!fPriority || t.priority === fPriority)
+    )
+    // Unfinished dulu, lalu deadline terdekat; DONE paling bawah.
+    .sort((a, b) => {
+      const aDone = a.status === 'DONE' ? 1 : 0
+      const bDone = b.status === 'DONE' ? 1 : 0
+      if (aDone !== bDone) return aDone - bDone
+      return a.deadline < b.deadline ? -1 : a.deadline > b.deadline ? 1 : 0
+    })
 
   const managers = canEditThis ? await getActiveUsers(['ADMIN', 'PROJECT_MANAGER']) : []
 
@@ -144,8 +176,7 @@ export default async function ProjectDetailPage({
         <ProjectStatusBadge status={project.status} />
       </div>
       <p className="mt-1 text-sm text-zinc-500">
-        {project.client || 'No client'} &middot; PM:{' '}
-        {pm ? (pm.full_name || pm.email) : '-'}
+        {project.client || 'No client'} &middot; PM: {pmDisplay}
       </p>
 
       <div className="mt-4 grid gap-6 lg:grid-cols-2 lg:items-start">
@@ -356,7 +387,7 @@ export default async function ProjectDetailPage({
               name: project.name,
               client: project.client,
               description: project.description,
-              project_manager_id: project.project_manager_id,
+              project_manager_ids: pmIds,
               start_date: project.start_date,
               end_date: project.end_date,
               status: project.status,

@@ -26,6 +26,7 @@ export type Permission =
   | 'tasks.create'
   | 'tasks.edit'
   | 'tasks.changeStatusOwn'
+  | 'tasks.submitEvidenceOwn'
   | 'tasks.delete'
 
 const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
@@ -48,6 +49,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'tasks.create',
     'tasks.edit',
     'tasks.changeStatusOwn',
+    'tasks.submitEvidenceOwn',
     'tasks.delete',
   ],
   PROJECT_MANAGER: [
@@ -63,6 +65,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'tasks.create',
     'tasks.edit',
     'tasks.changeStatusOwn',
+    'tasks.submitEvidenceOwn',
     'tasks.delete',
   ],
   TEAM_MEMBER: [
@@ -71,6 +74,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'projects.view',
     'tasks.view',
     'tasks.changeStatusOwn',
+    'tasks.submitEvidenceOwn',
   ],
   VIEWER: ['profile.viewOwn', 'profile.editOwn', 'projects.view', 'tasks.view'],
 }

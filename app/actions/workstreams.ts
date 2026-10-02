@@ -3,6 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { requireManager } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { isProjectManager } from '@/lib/data/projects'
 
 export type WorkstreamFormState = {
   error?: string
@@ -16,14 +17,7 @@ function readField(formData: FormData, name: string): string {
 
 async function assertCanManageProject(projectId: string, managerId: string, isAdmin: boolean) {
   if (isAdmin) return true
-
-  const { data } = await createAdminClient()
-    .from('projects')
-    .select('project_manager_id')
-    .eq('id', projectId)
-    .single<{ project_manager_id: string | null }>()
-
-  return data?.project_manager_id === managerId
+  return isProjectManager(projectId, managerId)
 }
 
 export async function createWorkstream(

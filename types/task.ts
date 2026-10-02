@@ -20,6 +20,8 @@ export interface Task {
   start_date: string | null
   deadline: string
   is_deleted: boolean
+  /** Link evidence opsional, tetap bisa diubah setelah DONE. */
+  evidence_url: string | null
   created_at: string
   updated_at: string
 }

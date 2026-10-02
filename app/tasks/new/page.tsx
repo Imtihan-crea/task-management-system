@@ -10,14 +10,33 @@ export default async function NewTaskPage({
 }: {
   searchParams: Promise<{ project?: string }>
 }) {
-  await requireManager()
+  const profile = await requireManager()
 
   const params = await searchParams
   const presetProject = typeof params.project === 'string' ? params.project : ''
 
   const admin = createAdminClient()
+
+  // PM hanya bisa buat task di project miliknya: batasi dropdown.
+  let projectIds: string[] | null = null
+  if (profile.role === 'PROJECT_MANAGER') {
+    const { data: links } = await admin
+      .from('project_managers')
+      .select('project_id')
+      .eq('user_id', profile.id)
+
+    projectIds = ((links ?? []) as { project_id: string }[]).map((l) => l.project_id)
+  }
+
+  let projectsQuery = admin.from('projects').select('id, name').order('name', { ascending: true }).limit(500)
+  if (projectIds !== null) {
+    projectsQuery = projectIds.length > 0
+      ? projectsQuery.in('id', projectIds)
+      : projectsQuery.eq('id', '00000000-0000-0000-0000-000000000000')
+  }
+
   const [{ data: projects }, { data: workstreams }, users] = await Promise.all([
-    admin.from('projects').select('id, name').order('name', { ascending: true }).limit(500),
+    projectsQuery,
     admin.from('workstreams').select('id, project_id, name').order('name', { ascending: true }).limit(1000),
     getActiveUsers(),
   ])

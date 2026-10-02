@@ -7,7 +7,10 @@ import { PriorityBadge, TaskStatusBadge, OverdueBadge } from '@/components/ui/Ba
 import { formatDate, isOverdue } from '@/lib/utils/dates'
 import { TaskForm } from '@/components/tasks/TaskForm'
 import { ChangeStatusForm, DeleteTaskForm } from '@/components/tasks/TaskStatusForms'
+import { EvidenceForm } from '@/components/tasks/EvidenceForm'
 import { getActiveUsers } from '@/lib/data/users'
+import { isProjectManager } from '@/lib/data/projects'
+import { can } from '@/lib/auth/permissions'
 import type { Task, TaskStatus } from '@/types/task'
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -47,13 +50,7 @@ export default async function TaskDetailPage({
   }
   let pmOwnsProject = false
   if (isPM) {
-    const { data: scopeProject } = await admin
-      .from('projects')
-      .select('project_manager_id')
-      .eq('id', task.project_id)
-      .single<{ project_manager_id: string | null }>()
-
-    pmOwnsProject = scopeProject?.project_manager_id === profile.id
+    pmOwnsProject = await isProjectManager(task.project_id, profile.id)
     if (!pmOwnsProject) {
       notFound()
     }
@@ -62,6 +59,9 @@ export default async function TaskDetailPage({
   const canChangeStatus =
     isAdmin || (isPM && pmOwnsProject) || (profile.role === 'TEAM_MEMBER' && isOwner)
   const canDelete = isAdmin || (isPM && pmOwnsProject)
+  const canSubmitEvidence =
+    can(profile.role, 'tasks.submitEvidenceOwn') &&
+    (isAdmin || (isPM && pmOwnsProject) || (profile.role === 'TEAM_MEMBER' && isOwner))
 
   const [{ data: project }, { data: workstream }, { data: assignee }, { data: creator }] =
     await Promise.all([
@@ -124,6 +124,15 @@ export default async function TaskDetailPage({
               <ChangeStatusForm id={task.id} current={task.status as TaskStatus} />
             </div>
           )}
+
+          <div className="mt-4 border-t pt-4 dark:border-zinc-700">
+            <h3 className="mb-2 text-base font-bold">Evidence</h3>
+            <EvidenceForm
+              id={task.id}
+              current={task.evidence_url}
+              canSubmit={canSubmitEvidence}
+            />
+          </div>
 
           {canDelete && (
             <div className="mt-4 max-w-[220px]">

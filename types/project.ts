@@ -10,7 +10,7 @@ export interface Project {
   name: string
   client: string | null
   description: string | null
-  project_manager_id: string | null
+  /** PM project ini tinggal di tabel relasi project_managers. */
   start_date: string | null
   end_date: string | null
   status: ProjectStatus
@@ -20,7 +20,7 @@ export interface Project {
 
 export type ProjectListItem = Pick<
   Project,
-  'id' | 'name' | 'client' | 'project_manager_id' | 'end_date' | 'status' | 'created_at'
+  'id' | 'name' | 'client' | 'end_date' | 'status' | 'created_at'
 >
 
 export interface ProjectProgress {

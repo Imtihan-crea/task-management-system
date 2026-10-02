@@ -17,11 +17,11 @@ Status roadmap: **Phase 1 (Foundation), Phase 2 (User Management), Phase 3 (Task
 | `/login` | semua | Login |
 | `/accept-invite` ||Calon user | Set password & aktivasi akun (dari link undangan) |
 | `/dashboard` | semua | Welcome + statistik user (Admin) + My Tasks |
-| `/projects` | semua | Project board + progress + create (Admin/PM) |
-| `/projects/[id]` | semua | Detail + workstream + task project + edit (Admin/PM) |
-| `/tasks` | semua (member: miliknya) | List + search/filter/sort + My Tasks |
-| `/tasks/new` | Admin, PM | Create task |
-| `/tasks/[id]` | sesuai scope | Detail + edit + status + delete |
+| `/projects` | semua (member: yang dia terlibat) | Project board + progress + create (Admin/PM) |
+| `/projects/[id]` | semua (member: yang dia terlibat) | Detail + workstream + task + edit (Admin/PM pemilik) |
+| `/tasks` | semua (member: miliknya) | List unfinished-first + search/filter/sort + My Tasks + overdue |
+| `/tasks/new` | Admin, PM (project miliknya) | Create task |
+| `/tasks/[id]` | sesuai scope | Detail + edit + status + evidence + delete |
 | `/users` | **Admin saja** | List, search, filter, sort, invite, aktif/nonaktif |
 | `/users/[id]` | **Admin saja** | Detail + edit user |
 | `/profile` | semua | Lihat & ubah nama sendiri |
@@ -42,9 +42,14 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 APP_URL=http://localhost:3000
+BREVO_API_KEY=
+BREVO_SENDER_EMAIL=
+BREVO_SENDER_NAME=Task Management System
 ```
 
 Lokasi nilainya: Supabase Dashboard > **Project Settings** > **API**.
+`BREVO_API_KEY` dari Brevo Dashboard > **SMTP & API** (untuk email notifikasi
+task DONE; panduan SMTP ada di `docs/setup-email.md`).
 
 `SUPABASE_SERVICE_ROLE_KEY` hanya boleh dipakai di server. File `.env.local`
 sudah masuk `.gitignore` dan tidak pernah di-push.
@@ -88,6 +93,9 @@ NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
 APP_URL=https://task-management-system-jatc.vercel.app
+BREVO_API_KEY=
+BREVO_SENDER_EMAIL=
+BREVO_SENDER_NAME=Task Management System
 ```
 
 > **Penting - pakai `APP_URL`, bukan `NEXT_PUBLIC_SITE_URL`.**

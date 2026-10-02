@@ -4,6 +4,9 @@ import { revalidatePath } from 'next/cache'
 import { requireManager, requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isTaskPriority, isTaskStatus } from '@/lib/auth/roles'
+import { isProjectManager } from '@/lib/data/projects'
+import { getAppBaseUrl } from '@/lib/app-url'
+import { notifyTaskDone } from '@/lib/email/notify'
 import type { TaskPriority, TaskStatus } from '@/types/task'
 
 export type TaskFormState = {
@@ -60,14 +63,8 @@ async function assertCanManageTask(taskId: string, managerId: string, isAdmin: b
 
   if (!task) return { allowed: false, projectId: '' }
 
-  const { data: project } = await admin
-    .from('projects')
-    .select('project_manager_id')
-    .eq('id', task.project_id)
-    .single<{ project_manager_id: string | null }>()
-
   return {
-    allowed: project?.project_manager_id === managerId,
+    allowed: await isProjectManager(task.project_id, managerId),
     projectId: task.project_id,
   }
 }
@@ -125,13 +122,7 @@ export async function createTask(
 
   // PM hanya boleh buat task di project miliknya.
   if (profile.role !== 'ADMIN') {
-    const { data: project } = await createAdminClient()
-      .from('projects')
-      .select('project_manager_id')
-      .eq('id', projectId)
-      .single<{ project_manager_id: string | null }>()
-
-    if (project?.project_manager_id !== profile.id) {
+    if (!(await isProjectManager(projectId, profile.id))) {
       return { error: 'You do not have permission to perform this action.' }
     }
   }
@@ -210,7 +201,14 @@ export async function updateTask(
     return { error: 'Assignee must be an active user.' }
   }
 
-  const { error } = await createAdminClient()
+  const adminClient = createAdminClient()
+  const { data: before } = await adminClient
+    .from('tasks')
+    .select('status')
+    .eq('id', id)
+    .single<{ status: TaskStatus }>()
+
+  const { error } = await adminClient
     .from('tasks')
     .update({
       title,
@@ -228,6 +226,10 @@ export async function updateTask(
   if (error) {
     console.error('updateTask failed:', error.message)
     return { error: 'Unable to update task.' }
+  }
+
+  if (before && before.status !== 'DONE' && status === 'DONE') {
+    await sendDoneEmail(id)
   }
 
   revalidatePath('/tasks')
@@ -272,16 +274,21 @@ export async function changeTaskStatus(
     return { error: 'You do not have permission to perform this action.' }
   }
   if (profile.role === 'PROJECT_MANAGER') {
-    const { data: project } = await admin
-      .from('projects')
-      .select('project_manager_id')
-      .eq('id', task.project_id)
-      .single<{ project_manager_id: string | null }>()
-
-    if (project?.project_manager_id !== profile.id) {
+    if (!(await isProjectManager(task.project_id, profile.id))) {
       return { error: 'You do not have permission to perform this action.' }
     }
   }
+
+  // Email notifikasi HANYA saat transisi menjadi DONE.
+  const { data: before } = await admin
+    .from('tasks')
+    .select('status')
+    .eq('id', id)
+    .eq('is_deleted', false)
+    .single<{ status: TaskStatus }>()
+
+  if (!before) return { error: 'Task not found.' }
+  const wasDone = before.status === 'DONE'
 
   const { error } = await admin
     .from('tasks')
@@ -293,11 +300,77 @@ export async function changeTaskStatus(
     return { error: 'Unable to update task status.' }
   }
 
+  if (!wasDone && status === 'DONE') {
+    await sendDoneEmail(id)
+  }
+
   revalidatePath('/tasks')
   revalidatePath(`/tasks/${id}`)
   revalidatePath('/projects')
   revalidatePath(`/projects/${task.project_id}`)
   return { success: 'Task status updated successfully.' }
+}
+
+/**
+ * Kirim email ke semua PM saat task menjadi DONE.
+ * Gagal kirim tidak menggagalkan update status.
+ */
+async function sendDoneEmail(taskId: string): Promise<void> {
+  const admin = createAdminClient()
+
+  const { data: task } = await admin
+    .from('tasks')
+    .select('id, title, project_id, assignee_id, evidence_url')
+    .eq('id', taskId)
+    .single<{
+      id: string
+      title: string
+      project_id: string
+      assignee_id: string
+      evidence_url: string | null
+    }>()
+
+  if (!task) return
+
+  const [{ data: project }, { data: assignee }, { data: managers }] = await Promise.all([
+    admin.from('projects').select('name').eq('id', task.project_id).single<{ name: string }>(),
+    admin
+      .from('profiles')
+      .select('full_name, email')
+      .eq('id', task.assignee_id)
+      .single<{ full_name: string | null; email: string }>(),
+    admin.from('project_managers').select('user_id').eq('project_id', task.project_id),
+  ])
+
+  const managerIds = ((managers ?? []) as { user_id: string }[]).map((m) => m.user_id)
+  if (managerIds.length === 0) return
+
+  const { data: pmProfiles } = await admin
+    .from('profiles')
+    .select('full_name, email')
+    .in('id', managerIds)
+    .eq('status', 'ACTIVE')
+
+  const pmEmails = ((pmProfiles ?? []) as { full_name: string | null; email: string }[]).map(
+    (pm) => ({ email: pm.email, name: pm.full_name ?? undefined })
+  )
+
+  let baseUrl = ''
+  try {
+    baseUrl = getAppBaseUrl()
+  } catch {
+    console.error('[notify] APP_URL is not configured, skipping DONE email.')
+    return
+  }
+
+  await notifyTaskDone({
+    pmEmails,
+    taskTitle: task.title,
+    projectName: project?.name ?? '-',
+    assigneeName: assignee ? assignee.full_name || assignee.email : '-',
+    evidenceUrl: task.evidence_url,
+    taskUrl: `${baseUrl}/tasks/${task.id}`,
+  })
 }
 
 export async function deleteTask(
@@ -330,4 +403,63 @@ export async function deleteTask(
   revalidatePath(`/tasks/${id}`)
   revalidatePath('/projects')
   return { success: 'Task deleted successfully.' }
+}
+
+/**
+ * Submit evidence (link). Assignee boleh untuk task miliknya sendiri,
+ * PM/Admin sesuai scope. Tidak mandatory, dan tetap bisa diubah setelah DONE.
+ */
+export async function submitEvidence(
+  _prev: TaskFormState,
+  formData: FormData
+): Promise<TaskFormState> {
+  const profile = await requireProfile()
+
+  if (profile.role === 'VIEWER') {
+    return { error: 'You do not have permission to perform this action.' }
+  }
+
+  const id = readField(formData, 'id')
+  const evidenceUrl = readField(formData, 'evidence_url')
+
+  if (!id) return { error: 'Task not found.' }
+  if (evidenceUrl && !/^https?:\/\/.+/i.test(evidenceUrl)) {
+    return { error: 'Evidence must be a valid link starting with http(s)://.' }
+  }
+  if (evidenceUrl.length > 2000) return { error: 'Evidence link is too long.' }
+
+  const admin = createAdminClient()
+  const { data: task } = await admin
+    .from('tasks')
+    .select('id, assignee_id, project_id')
+    .eq('id', id)
+    .eq('is_deleted', false)
+    .single<{ id: string; assignee_id: string; project_id: string }>()
+
+  if (!task) return { error: 'Task not found.' }
+
+  const isAdmin = profile.role === 'ADMIN'
+  const isOwner = task.assignee_id === profile.id
+  const isPM =
+    profile.role === 'PROJECT_MANAGER' &&
+    (await isProjectManager(task.project_id, profile.id))
+
+  if (!isAdmin && !isPM && !(profile.role === 'TEAM_MEMBER' && isOwner)) {
+    return { error: 'You do not have permission to perform this action.' }
+  }
+
+  const { error } = await admin
+    .from('tasks')
+    .update({ evidence_url: evidenceUrl || null })
+    .eq('id', id)
+
+  if (error) {
+    console.error('submitEvidence failed:', error.message)
+    return { error: 'Unable to save evidence.' }
+  }
+
+  revalidatePath('/tasks')
+  revalidatePath(`/tasks/${id}`)
+  revalidatePath(`/projects/${task.project_id}`)
+  return { success: 'Evidence saved successfully.' }
 }

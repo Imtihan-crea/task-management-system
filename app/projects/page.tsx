@@ -71,7 +71,7 @@ export default async function ProjectsPage({
   const admin = createAdminClient()
   let query = admin
     .from('projects')
-    .select('id, name, client, project_manager_id, end_date, status, created_at')
+    .select('id, name, client, end_date, status, created_at')
     .order('created_at', { ascending: false })
     .limit(200)
 
@@ -81,29 +81,61 @@ export default async function ProjectsPage({
   const { data, error } = await query
   const projects = (data ?? []) as Project[]
 
-  // Nama PM untuk search/filter tampilan
-  const pmIds = [...new Set(projects.map((p) => p.project_manager_id).filter(Boolean))] as string[]
-  let pmNames: Record<string, string> = {}
-  if (pmIds.length > 0) {
-    const { data: pms } = await admin
-      .from('profiles')
-      .select('id, full_name, email')
-      .in('id', pmIds)
+  // PM setiap project dari tabel relasi (multi-PM).
+  const projectIds = projects.map((p) => p.id)
+  const pmNames: Record<string, string[]> = {}
+  if (projectIds.length > 0) {
+    const { data: links } = await admin
+      .from('project_managers')
+      .select('project_id, user_id')
+      .in('project_id', projectIds)
 
-    pmNames = Object.fromEntries(
-      ((pms ?? []) as { id: string; full_name: string | null; email: string }[]).map(
-        (pm) => [pm.id, pm.full_name || pm.email]
+    const linkRows = (links ?? []) as { project_id: string; user_id: string }[]
+    const pmIds = [...new Set(linkRows.map((l) => l.user_id))]
+
+    let pmLabels: Record<string, string> = {}
+    if (pmIds.length > 0) {
+      const { data: pms } = await admin
+        .from('profiles')
+        .select('id, full_name, email')
+        .in('id', pmIds)
+
+      pmLabels = Object.fromEntries(
+        ((pms ?? []) as { id: string; full_name: string | null; email: string }[]).map(
+          (pm) => [pm.id, pm.full_name || pm.email]
+        )
       )
+    }
+
+    for (const p of projectIds) pmNames[p] = []
+    for (const link of linkRows) {
+      pmNames[link.project_id].push(pmLabels[link.user_id] ?? '-')
+    }
+  }
+
+  // MEMBER hanya melihat project yang dia terlibat (punya task aktif di sana).
+  let visibleProjects = projects
+  if (profile.role === 'TEAM_MEMBER') {
+    const { data: myTasks } = await admin
+      .from('tasks')
+      .select('project_id')
+      .eq('assignee_id', profile.id)
+      .eq('is_deleted', false)
+      .limit(1000)
+
+    const myProjectIds = new Set(
+      ((myTasks ?? []) as { project_id: string }[]).map((t) => t.project_id)
     )
+    visibleProjects = projects.filter((p) => myProjectIds.has(p.id))
   }
 
   // Filter PM by name (dilakukan di server setelah join nama)
   const pmQuery = sanitize(typeof params.pm === 'string' ? params.pm : undefined).toLowerCase()
-  const visibleProjects = pmQuery
-    ? projects.filter((p) =>
-        (p.project_manager_id ? (pmNames[p.project_manager_id] ?? '').toLowerCase() : '').includes(pmQuery)
-      )
-    : projects
+  if (pmQuery) {
+    visibleProjects = visibleProjects.filter((p) =>
+      (pmNames[p.id] ?? []).join(' ').toLowerCase().includes(pmQuery)
+    )
+  }
 
   const progressMap = await getProgressMap(visibleProjects.map((p) => p.id))
   const managers = canCreate ? await getActiveUsers(['ADMIN', 'PROJECT_MANAGER']) : []
@@ -206,9 +238,7 @@ export default async function ProjectsPage({
                       <p className="truncate font-bold">{project.name}</p>
                       <p className="truncate text-sm text-zinc-500">
                         {project.client || 'No client'} &middot;{' '}
-                        {project.project_manager_id
-                          ? (pmNames[project.project_manager_id] ?? '-')
-                          : '-'}
+                        {(pmNames[project.id] ?? []).join(', ') || '-'}
                       </p>
                     </div>
                     <ProjectStatusBadge status={project.status} />

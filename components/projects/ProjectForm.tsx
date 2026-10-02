@@ -12,7 +12,7 @@ type ProjectFormValues = {
   name?: string
   client?: string | null
   description?: string | null
-  project_manager_id?: string | null
+  project_manager_ids?: string[]
   start_date?: string | null
   end_date?: string | null
   status?: string
@@ -74,16 +74,20 @@ function FormFields({
 
       <div>
         <label htmlFor="proj_pm" className="mb-1 block text-sm font-medium">
-          Project Manager <span aria-hidden="true">*</span>
+          Project Managers <span aria-hidden="true">*</span>
         </label>
+        <p className="mb-1 text-xs text-zinc-500">
+          Bisa pilih lebih dari satu (tahan Ctrl/Cmd saat klik).
+        </p>
         <select
           id="proj_pm"
-          name="project_manager_id"
+          name="project_manager_ids"
           required
-          defaultValue={initial.project_manager_id ?? ''}
+          multiple
+          size={Math.min(5, Math.max(managers.length, 3))}
+          defaultValue={initial.project_manager_ids ?? []}
           className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
         >
-          <option value="">— Pilih —</option>
           {managers.map((m) => (
             <option key={m.id} value={m.id}>
               {displayName(m)} ({m.email})
