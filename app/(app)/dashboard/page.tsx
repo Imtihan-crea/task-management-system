@@ -1,13 +1,16 @@
 import Link from 'next/link'
+import { Suspense } from 'react'
 import { requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { createClient as createUserClient } from '@/lib/supabase/server'
-import { ROLE_LABELS, STATUS_LABELS } from '@/lib/auth/roles'
 import { AppShell } from '@/components/layout/AppShell'
 import { can } from '@/lib/auth/permissions'
 import { formatDate, isOverdue, todayISO } from '@/lib/utils/dates'
 import { PriorityBadge, TaskStatusBadge, OverdueBadge } from '@/components/ui/Badges'
 import { KpiCard } from '@/components/ui/primitives'
+import { SkeletonGantt } from '@/components/ui/Skeleton'
+import { ProjectGantt } from '@/components/dashboard/ProjectGantt'
+import { PriorityBars, StatusDonut } from '@/components/dashboard/Charts'
 import {
   ActivityTimeline,
   resolveActorNames,
@@ -30,6 +33,7 @@ type TaskRow = {
   status: TaskStatus
   deadline: string
   updated_at: string
+  created_at: string
 }
 
 type ProjectRow = {
@@ -37,6 +41,7 @@ type ProjectRow = {
   code: string
   name: string
   status: string
+  created_at: string
 }
 
 function sanitize(value: string | undefined): string {
@@ -181,7 +186,7 @@ export default async function DashboardPage({
   /* ---- Ambil data (bounded, server-side) ---- */
   let projectsQuery = admin
     .from('projects')
-    .select('id, code, name, status')
+    .select('id, code, name, status, created_at')
     .order('created_at', { ascending: false })
     .limit(500)
   if (projectIds !== null) {
@@ -194,7 +199,7 @@ export default async function DashboardPage({
 
   let tasksQuery = admin
     .from('tasks')
-    .select('id, code, title, project_id, assignee_id, priority, status, deadline, updated_at')
+    .select('id, code, title, project_id, assignee_id, priority, status, deadline, updated_at, created_at')
     .eq('is_deleted', false)
     .order('deadline', { ascending: true })
     .limit(2000)
@@ -253,15 +258,39 @@ export default async function DashboardPage({
   const overdue = tasks.filter((t) => isOverdue(t.deadline, t.status))
   const dueToday = tasks.filter((t) => t.deadline === today && t.status !== 'DONE')
   const blocked = tasks.filter((t) => t.status === 'BLOCKED')
-  const doneCount = tasks.filter((t) => t.status === 'DONE').length
-  const activeProjects = projects.filter((p) => p.status === 'ACTIVE').length
+  const ongoing = tasks.filter((t) => t.status === 'IN_PROGRESS')
 
-  const statusSummary = (['TODO', 'IN_PROGRESS', 'REVIEW', 'BLOCKED', 'DONE'] as TaskStatus[]).map(
-    (s) => ({ label: s.replace('_', ' '), value: tasks.filter((t) => t.status === s).length })
-  )
+  // Delta bulan lalu untuk KPI utama.
+  const now = new Date()
+  const firstThisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
+  const newProjects = projects.filter((p) => p.created_at.slice(0, 10) >= firstThisMonth).length
+  const newTasks = tasks.filter((t) => t.created_at.slice(0, 10) >= firstThisMonth).length
+
+  // 7 hari ke depan (belum DONE), untuk "Task Terdekat".
+  const weekEnd = new Date()
+  weekEnd.setDate(weekEnd.getDate() + 7)
+  const weekEndISO = weekEnd.toISOString().slice(0, 10)
+  const upcoming = open
+    .filter((t) => t.deadline >= today && t.deadline <= weekEndISO)
+    .sort((a, b) => (a.deadline < b.deadline ? -1 : 1))
+    .slice(0, 7)
+
   const prioritySummary = (['HIGH', 'MEDIUM', 'LOW'] as TaskPriority[]).map((p) => ({
     label: p,
     value: open.filter((t) => t.priority === p).length,
+  }))
+
+  const donutSegments = (
+    [
+      { status: 'IN_PROGRESS', label: 'On Going' },
+      { status: 'DONE', label: 'Done' },
+      { status: 'BLOCKED', label: 'Blocked' },
+      { status: 'TODO', label: 'To Do' },
+      { status: 'REVIEW', label: 'Review' },
+    ] as const
+  ).map((s) => ({
+    ...s,
+    value: tasks.filter((t) => t.status === s.status).length,
   }))
 
   // Workload: active task count per assignee dalam scope.
@@ -335,6 +364,9 @@ export default async function DashboardPage({
         ]).then(([p, u]) => [p.data ?? [], u.data ?? []] as const)
       : [[], []]
 
+  const ganttView = str(params.gantt) === 'week' ? 'week' : 'month'
+  const gOffset = parseInt(str(params.goffset) || '0', 10) || 0
+
   const denied = params.denied === '1'
 
   return (
@@ -345,25 +377,28 @@ export default async function DashboardPage({
         </p>
       )}
 
-      <h1 className="text-2xl font-bold">Dashboard</h1>
+      <h1 className="text-2xl font-bold">
+        Selamat datang, {profile.full_name || profile.email} 👋
+      </h1>
       <p className="mt-1 text-sm text-zinc-500">
-        Welcome, {profile.full_name || profile.email} &middot; {ROLE_LABELS[profile.role]} &middot; {STATUS_LABELS[profile.status]}
+        Berikut ringkasan aktivitas dan progress project di Kasuat.
       </p>
 
-      {/* KPI */}
+      {/* KPI utama */}
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Kpi label="TOTAL PROJECTS" value={projects.length} />
-        <Kpi label="ACTIVE PROJECTS" value={activeProjects} />
-        <Kpi label="OPEN TASKS" value={open.length} />
-        <Kpi label="OVERDUE" value={overdue.length} />
-        <Kpi label="BLOCKED" value={blocked.length} />
-        <Kpi label="COMPLETED" value={doneCount} />
-        <Kpi label="DUE TODAY" value={dueToday.length} />
-        {userStats ? (
-          <Kpi label="ACTIVE MEMBERS" value={userStats.ACTIVE} />
-        ) : (
-          <Kpi label="PENDING SUGGESTIONS" value={pendingSuggestions.length} />
-        )}
+        <KpiCard
+          label="Total Project"
+          value={projects.length}
+        />
+        <KpiCard label="Total Task" value={tasks.length} />
+        <KpiCard label="Task On Going" value={ongoing.length} />
+        <KpiCard label="Task Overdue" value={overdue.length} />
+      </div>
+      <div className="mt-3 grid grid-cols-2 gap-3 text-xs text-zinc-500 sm:grid-cols-4">
+        <p>+{newProjects} dari bulan lalu</p>
+        <p>+{newTasks} dari bulan lalu</p>
+        <p>{tasks.length === 0 ? '0%' : Math.round((ongoing.length / tasks.length) * 100)}% dari total</p>
+        <p>{tasks.length === 0 ? '0%' : Math.round((overdue.length / tasks.length) * 100)}% dari total</p>
       </div>
       {isAdmin && (
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
@@ -373,6 +408,13 @@ export default async function DashboardPage({
           <Kpi label="PENDING SUGGESTIONS" value={pendingSuggestions.length} />
         </div>
       )}
+
+      {/* Global Project Gantt */}
+      <Section title="Timeline Project (Gantt Chart)">
+        <Suspense fallback={<SkeletonGantt rows={5} />}>
+          <ProjectGantt view={ganttView} offset={gOffset} />
+        </Suspense>
+      </Section>
 
       {/* Filter manajemen */}
       {(isAdmin || isPM) && (
@@ -420,17 +462,46 @@ export default async function DashboardPage({
       )}
 
       {/* Status & priority summary */}
-      <Section title="Task Summary">
-        <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
-          {statusSummary.map((s) => (
-            <Kpi key={s.label} label={s.label} value={s.value} />
-          ))}
-        </div>
-        <div className="mt-3 grid grid-cols-3 gap-3">
-          {prioritySummary.map((p) => (
-            <Kpi key={p.label} label={`${p.label} (OPEN)`} value={p.value} />
-          ))}
-        </div>
+      <div className="mt-6 grid gap-6 lg:grid-cols-2">
+        <Section title="Task per Status">
+          <StatusDonut segments={donutSegments} />
+        </Section>
+        <Section title="Task per Priority">
+          <PriorityBars items={prioritySummary} />
+        </Section>
+      </div>
+
+      {/* Task terdekat 7 hari */}
+      <Section title="Task Terdekat (7 hari)">
+        {upcoming.length === 0 ? (
+          <p className="text-sm text-zinc-500">Tidak ada task dalam 7 hari ke depan.</p>
+        ) : (
+          <ul className="flex flex-col gap-2">
+            {upcoming.map((t) => (
+              <li key={t.id}>
+                <Link
+                  href={`/tasks/${t.id}`}
+                  className="flex items-center justify-between gap-2 rounded-xl border p-3 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+                >
+                  <div className="min-w-0">
+                    <p className="truncate text-sm font-medium">
+                      <span className="mr-2 rounded-md bg-zinc-100 px-1.5 py-0.5 font-mono text-xs dark:bg-zinc-800">
+                        {t.code}
+                      </span>
+                      {t.title}
+                    </p>
+                    <p className="truncate text-xs text-zinc-500">
+                      {projectNames[t.project_id] ?? '-'}
+                    </p>
+                  </div>
+                  <span className="shrink-0 text-xs font-medium text-zinc-500">
+                    {formatDate(t.deadline)}
+                  </span>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        )}
       </Section>
 
       {/* Deadline monitoring */}

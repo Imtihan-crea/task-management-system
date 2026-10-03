@@ -1,6 +1,9 @@
+import { Suspense } from 'react'
 import { requireProfile } from '@/lib/auth/session'
 import { createClient } from '@/lib/supabase/server'
 import { AppShell } from '@/components/layout/AppShell'
+import { Tabs } from '@/components/ui/Tabs'
+import { SkeletonRows } from '@/components/ui/Skeleton'
 import {
   ActivityTimeline,
   resolveActorNames,
@@ -46,6 +49,101 @@ function str(v: string | string[] | undefined): string {
   return typeof v === 'string' ? v : ''
 }
 
+export type ActivityFilters = {
+  entity: string
+  action: string
+  actor: string
+  from: string
+  to: string
+  project: string
+  page: number
+}
+
+/**
+ * Hasil activity: fetch sendiri supaya Suspense boundary benar-benar
+ * memisahkan loading timeline dari header/filter (§12, §13).
+ * Query pakai USER client supaya RLS scope otomatis berlaku (§18, §19).
+ */
+async function ActivityResults({ filters }: { filters: ActivityFilters }) {
+  const { entity, action, actor, from, to, project, page } = filters
+  const offset = (page - 1) * PAGE_SIZE
+
+  const supabase = await createClient()
+  let query = supabase
+    .from('activity_logs')
+    .select('*', { count: 'exact' })
+    .order('created_at', { ascending: false })
+    .range(offset, offset + PAGE_SIZE - 1)
+
+  if (entity) query = query.eq('entity_type', entity)
+  if (action) query = query.eq('action', action)
+  if (project) query = query.eq('project_id', project)
+  if (from) query = query.gte('created_at', `${from}T00:00:00`)
+  if (to) query = query.lte('created_at', `${to}T23:59:59`)
+
+  const { data, error, count } = await query
+  let entries = (data ?? []) as ActivityEntry[]
+  const total = count ?? 0
+
+  if (actor) {
+    const needle = actor.toLowerCase()
+    const names = await resolveActorNames(entries)
+    entries = entries.filter((e) => {
+      if (!e.actor_user_id) return 'system'.includes(needle)
+      return (names[e.actor_user_id] ?? '').toLowerCase().includes(needle)
+    })
+  }
+
+  const actorNames = await resolveActorNames(entries)
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
+
+  const qs = (p: number) => {
+    const params = new URLSearchParams()
+    if (entity) params.set('entity', entity)
+    if (action) params.set('action', action)
+    if (actor) params.set('actor', actor)
+    if (from) params.set('from', from)
+    if (to) params.set('to', to)
+    if (project) params.set('project', project)
+    params.set('page', String(p))
+    return `/activity?${params.toString()}`
+  }
+
+  if (error) {
+    return (
+      <p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm font-medium text-red-700 dark:bg-red-950 dark:text-red-300">
+        Something went wrong. Please try again.
+      </p>
+    )
+  }
+
+  return (
+    <>
+      <div className="mt-4 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+        <ActivityTimeline entries={entries} actorNames={actorNames} emptyText="No activity found." />
+      </div>
+
+      <div className="mt-4 flex items-center justify-between">
+        <p className="text-sm text-zinc-500">
+          Page {page} of {totalPages} ({total} entries)
+        </p>
+        <div className="flex gap-2">
+          {page > 1 && (
+            <a href={qs(page - 1)} className="inline-flex min-h-[44px] items-center rounded-lg border px-4 py-2 text-sm font-semibold">
+              Prev
+            </a>
+          )}
+          {page < totalPages && (
+            <a href={qs(page + 1)} className="inline-flex min-h-[44px] items-center rounded-lg border px-4 py-2 text-sm font-semibold">
+              Next
+            </a>
+          )}
+        </div>
+      </div>
+    </>
+  )
+}
+
 export default async function ActivityPage({
   searchParams,
 }: {
@@ -61,67 +159,58 @@ export default async function ActivityPage({
   const fTo = str(params.to)
   const fProject = str(params.project)
   const page = Math.max(1, parseInt(str(params.page) || '1', 10) || 1)
-  const from = (page - 1) * PAGE_SIZE
-  const to = from + PAGE_SIZE - 1
 
-  // Query pakai USER client supaya RLS scope otomatis berlaku (§18, §19).
-  const supabase = await createClient()
-  let query = supabase
-    .from('activity_logs')
-    .select('*', { count: 'exact' })
-    .order('created_at', { ascending: false })
-    .range(from, to)
-
-  if (fEntity) query = query.eq('entity_type', fEntity)
-  if (fAction) query = query.eq('action', fAction)
-  if (fProject) query = query.eq('project_id', fProject)
-  if (fFrom) query = query.gte('created_at', `${fFrom}T00:00:00`)
-  if (fTo) query = query.lte('created_at', `${fTo}T23:59:59`)
-
-  const { data, error, count } = await query
-  let entries = (data ?? []) as ActivityEntry[]
-  const total = count ?? 0
-
-  // Filter actor by name/email (butuh join manual).
-  if (fActor) {
-    const needle = fActor.toLowerCase()
-    const names = await resolveActorNames(entries)
-    entries = entries.filter((e) => {
-      if (!e.actor_user_id) return 'system'.includes(needle)
-      return (names[e.actor_user_id] ?? '').toLowerCase().includes(needle)
-    })
+  const filters: ActivityFilters = {
+    entity: fEntity,
+    action: fAction,
+    actor: fActor,
+    from: fFrom,
+    to: fTo,
+    project: fProject,
+    page,
   }
-
-  const actorNames = await resolveActorNames(entries)
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
-
-  const qs = (overrides: Record<string, string>) => {
-    const p = new URLSearchParams()
-    if (fEntity) p.set('entity', fEntity)
-    if (fAction) p.set('action', fAction)
-    if (fActor) p.set('actor', fActor)
-    if (fFrom) p.set('from', fFrom)
-    if (fTo) p.set('to', fTo)
-    if (fProject) p.set('project', fProject)
-    for (const [k, v] of Object.entries(overrides)) {
-      if (v) p.set(k, v)
-      else p.delete(k)
-    }
-    const s = p.toString()
-    return s ? `/activity?${s}` : '/activity'
-  }
+  const resultsKey = JSON.stringify(filters)
 
   return (
     <AppShell>
-      <h1 className="text-2xl font-bold">Activity</h1>
+      <h1 className="text-2xl font-bold">Activity Log</h1>
       <p className="mt-1 text-sm text-zinc-500">
-        Historical record — append-only, tidak bisa diubah atau dihapus.
+        Riwayat aktivitas penting di seluruh sistem.
       </p>
+
+      <div className="mt-4">
+        <Tabs
+          label="Activity entity"
+          items={[
+            { key: 'all', label: 'All' },
+            { key: 'task', label: 'Tasks' },
+            { key: 'project', label: 'Projects' },
+            { key: 'workstream', label: 'Workstreams' },
+            { key: 'suggestion', label: 'Suggestions' },
+            { key: 'user', label: 'Users' },
+          ].map((t) => {
+            const p = new URLSearchParams()
+            if (fAction) p.set('action', fAction)
+            if (fActor) p.set('actor', fActor)
+            if (fFrom) p.set('from', fFrom)
+            if (fTo) p.set('to', fTo)
+            if (fProject) p.set('project', fProject)
+            if (t.key !== 'all') p.set('entity', t.key)
+            const s = p.toString()
+            return {
+              ...t,
+              href: s ? `/activity?${s}` : '/activity',
+              active: (fEntity || 'all') === t.key,
+            }
+          })}
+        />
+      </div>
 
       <form
         method="get"
         className="mt-4 flex flex-col gap-3 rounded-2xl bg-white p-4 shadow sm:flex-row sm:flex-wrap sm:items-end dark:bg-zinc-900"
       >
+        {fEntity && <input type="hidden" name="entity" value={fEntity} />}
         <div>
           <label htmlFor="f-entity" className="mb-1 block text-sm font-medium">Entity</label>
           <select id="f-entity" name="entity" defaultValue={fEntity} className="min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800">
@@ -161,35 +250,9 @@ export default async function ActivityPage({
         </button>
       </form>
 
-      {error ? (
-        <p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm font-medium text-red-700 dark:bg-red-950 dark:text-red-300">
-          Something went wrong. Please try again.
-        </p>
-      ) : (
-        <>
-          <div className="mt-4 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
-            <ActivityTimeline entries={entries} actorNames={actorNames} emptyText="No activity found." />
-          </div>
-
-          <div className="mt-4 flex items-center justify-between">
-            <p className="text-sm text-zinc-500">
-              Page {page} of {totalPages} ({total} entries)
-            </p>
-            <div className="flex gap-2">
-              {page > 1 && (
-                <a href={qs({ page: String(page - 1) })} className="inline-flex min-h-[44px] items-center rounded-lg border px-4 py-2 text-sm font-semibold">
-                  Prev
-                </a>
-              )}
-              {page < totalPages && (
-                <a href={qs({ page: String(page + 1) })} className="inline-flex min-h-[44px] items-center rounded-lg border px-4 py-2 text-sm font-semibold">
-                  Next
-                </a>
-              )}
-            </div>
-          </div>
-        </>
-      )}
+      <Suspense key={resultsKey} fallback={<SkeletonRows rows={5} />}>
+        <ActivityResults filters={filters} />
+      </Suspense>
     </AppShell>
   )
 }
