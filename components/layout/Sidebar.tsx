@@ -75,9 +75,11 @@ const ICONS: Record<string, string> = {
 
 export function Sidebar({
   role,
+  collapsed,
   onNavigate,
 }: {
   role: UserRole
+  collapsed?: boolean
   onNavigate?: () => void
 }) {
   const pathname = usePathname()
@@ -91,11 +93,12 @@ export function Sidebar({
         if (visible.length === 0) return null
         return (
           <div key={group.title ?? 'main'}>
-            {group.title && (
+            {group.title && !collapsed && (
               <p className="px-3 pb-1 pt-3 text-[11px] font-semibold tracking-wider text-zinc-500">
                 {group.title}
               </p>
             )}
+            {group.title && collapsed && <div className="pt-3" />}
             {visible.map((item) => {
               const active =
                 pathname === item.href ||
@@ -105,15 +108,18 @@ export function Sidebar({
                   key={item.href}
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
+                  title={collapsed ? item.label : undefined}
                   onClick={onNavigate}
                   className={`flex min-h-[40px] items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                    collapsed ? 'justify-center' : ''
+                  } ${
                     active
                       ? 'bg-kasuat-gold text-kasuat-black'
                       : 'text-zinc-200 hover:bg-zinc-800'
                   }`}
                 >
                   <Icon d={ICONS[item.href] ?? ''} />
-                  <span className="truncate">{item.label}</span>
+                  {!collapsed && <span className="truncate">{item.label}</span>}
                 </Link>
               )
             })}
@@ -124,10 +130,21 @@ export function Sidebar({
   )
 }
 
-export function SidebarBrand() {
+export function SidebarBrand({ collapsed }: { collapsed?: boolean }) {
   return (
-    <div className="flex items-center px-3 py-3">
-      <KasuatLogo />
+    <div className={`flex items-center px-3 py-3 ${collapsed ? 'justify-center' : ''}`}>
+      {collapsed ? (
+        // Crop area mark dari aset resmi (bukan redraw).
+        <span className="block w-10 overflow-hidden" aria-hidden="true">
+          <img
+            src="/brand/kasuat-logo-white.png"
+            alt=""
+            style={{ height: 28, width: 'auto', maxWidth: 'none', marginLeft: -4 }}
+          />
+        </span>
+      ) : (
+        <KasuatLogo />
+      )}
     </div>
   )
 }
