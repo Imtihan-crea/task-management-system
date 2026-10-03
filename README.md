@@ -16,17 +16,19 @@ Status roadmap: **Phase 1 (Foundation), Phase 2 (User Management), Phase 3 (Task
 |---|---|---|
 | `/login` | semua | Login |
 | `/accept-invite` ||Calon user | Set password & aktivasi akun (dari link undangan) |
-| `/dashboard` | semua | Welcome + statistik user (Admin) + My Tasks |
+| `/dashboard` | semua | Welcome + KPI + Gantt global + donut + Task Terdekat + Recent Activity |
 | `/projects` | semua (member: yang dia terlibat) | Project board + progress + create (Admin/PM) |
-| `/projects/[id]` | semua (member: yang dia terlibat) | Detail + workstream + task + edit (Admin/PM pemilik) |
-| `/tasks` | semua (member: miliknya) | List unfinished-first + search/filter/sort + My Tasks + overdue |
+| `/projects/[id]` | semua (member: yang dia terlibat) | Workspace tabs: Overview/Workstreams/Tasks/Activity/Members/Settings |
+| `/workstreams` | semua (scope project) | List workstream global + task count |
+| `/tasks` | semua (member: miliknya) | Tabs (All/My/On Going/To Do/Blocked/Done/Overdue) + search debounce + filter/sort |
 | `/tasks/new` | Admin, PM (project miliknya) | Create task |
-| `/tasks/[id]` | sesuai scope | Detail + edit + status + evidence + delete |
-| `/task-suggestions` | semua kecuali Viewer | List + My Suggestions + review dalam scope |
+| `/tasks/[id]` | sesuai scope | Detail + edit + status + evidence + delete + activity |
+| `/task-suggestions` | semua kecuali Viewer (via tombol, tidak di nav) | List + My Suggestions + review dalam scope |
 | `/task-suggestions/new` | Admin, PM, Member | Create suggestion (juga via tombol di Tasks & Project) |
-| `/task-suggestions/[id]` | creator/PM scope/Admin | Detail + review (assignee picker) + resubmit + approve→task |
-| `/notifications` | semua | Center + bell badge + preferensi email |
-| `/activity` | semua (scope per role) | Timeline + filter + pagination |
+| `/task-suggestions/[id]` | creator/PM scope/Admin | Detail + review (assignee picker) + resubmit + approve→task + history |
+| `/notifications` | semua | Center + preferensi email (bell popover di header) |
+| `/activity` | semua (scope per role) | Tabs entity + filter + timeline + pagination |
+| `/settings` | semua | Account + preferensi email |
 | `/users` | **Admin saja** | List, search, filter, sort, invite, aktif/nonaktif |
 | `/users/[id]` | **Admin saja** | Detail + edit user |
 | `/profile` | semua | Lihat & ubah nama sendiri |
@@ -66,7 +68,8 @@ mencatat actor + old/new values; timeline tampil di task/project/suggestion
 dan dashboard. Scheduler deadline (`/api/cron/deadlines`, Bearer `CRON_SECRET`,
 harian) memakai service notifikasi yang sama.
 
-Visual: Kasuat gold + Poppins/Onest + logo; lihat `docs/completion-report-phase89.md`.
+Visual: Kasuat gold + Poppins/Onest + logo; sidebar collapsible + drawer mobile;
+bell popover + profile menu di header; lihat `docs/completion-report-phase10.md`.
 
 `SUPABASE_SERVICE_ROLE_KEY` hanya boleh dipakai di server. File `.env.local`
 sudah masuk `.gitignore` dan tidak pernah di-push.
