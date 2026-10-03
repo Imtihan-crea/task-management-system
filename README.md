@@ -26,6 +26,7 @@ Status roadmap: **Phase 1 (Foundation), Phase 2 (User Management), Phase 3 (Task
 | `/task-suggestions/new` | Admin, PM, Member | Create suggestion (juga via tombol di Tasks & Project) |
 | `/task-suggestions/[id]` | creator/PM scope/Admin | Detail + review (assignee picker) + resubmit + approve→task |
 | `/notifications` | semua | Center + bell badge + preferensi email |
+| `/activity` | semua (scope per role) | Timeline + filter + pagination |
 | `/users` | **Admin saja** | List, search, filter, sort, invite, aktif/nonaktif |
 | `/users/[id]` | **Admin saja** | Detail + edit user |
 | `/profile` | semua | Lihat & ubah nama sendiri |
@@ -59,6 +60,13 @@ Notifikasi terpusat di `lib/notifications/service.ts`: klaim event key dulu
 (idempotent, tidak ada duplikat) → tulis in-app → kirim email sesuai policy
 + preferensi user. Kegagalan email tidak menggagalkan transaksi. Suggestion
 (`S-001`) di-review PM/Admin; approve menghasilkan tepat satu task.
+
+Activity append-only di `lib/activity-log/service.ts`: semua mutation penting
+mencatat actor + old/new values; timeline tampil di task/project/suggestion
+dan dashboard. Scheduler deadline (`/api/cron/deadlines`, Bearer `CRON_SECRET`,
+harian) memakai service notifikasi yang sama.
+
+Visual: Kasuat gold + Poppins/Onest + logo; lihat `docs/completion-report-phase89.md`.
 
 `SUPABASE_SERVICE_ROLE_KEY` hanya boleh dipakai di server. File `.env.local`
 sudah masuk `.gitignore` dan tidak pernah di-push.
@@ -109,6 +117,7 @@ APP_URL=https://task-management-system-jatc.vercel.app
 BREVO_API_KEY=
 BREVO_SENDER_EMAIL=
 BREVO_SENDER_NAME=Task Management System
+CRON_SECRET=string_acak_panjang (untuk /api/cron/deadlines)
 ```
 
 > **Penting - pakai `APP_URL`, bukan `NEXT_PUBLIC_SITE_URL`.**
