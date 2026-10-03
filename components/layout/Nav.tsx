@@ -6,6 +6,7 @@ import { usePathname } from 'next/navigation'
 import type { UserRole } from '@/types/profile'
 import { ROLE_LABELS } from '@/lib/auth/roles'
 import { can } from '@/lib/auth/permissions'
+import { KasuatLogo } from '@/components/brand/KasuatLogo'
 import { LogoutButton } from '@/components/auth/LogoutButton'
 
 const NAV_ITEMS = [
@@ -35,15 +36,15 @@ export function Nav({
   })
 
   return (
-    <header className="border-b bg-white dark:bg-zinc-900">
+    <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
       <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
-        <div className="min-w-0">
-          <p className="text-sm font-bold tracking-tight">
-            TASK MANAGEMENT SYSTEM
-          </p>
-          <p className="truncate text-xs text-zinc-500">
-            {email} &middot; {ROLE_LABELS[role]}
-          </p>
+        <div className="flex min-w-0 items-center gap-3 py-1">
+          <KasuatLogo />
+          <div className="min-w-0">
+            <p className="truncate text-xs text-zinc-500">
+              {email} &middot; {ROLE_LABELS[role]}
+            </p>
+          </div>
         </div>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -61,8 +62,8 @@ export function Nav({
                   aria-current={active ? 'page' : undefined}
                   className={`inline-flex min-h-[44px] items-center rounded-lg border px-3 py-2 text-sm font-medium ${
                     active
-                      ? 'bg-black text-white dark:bg-white dark:text-black'
-                      : 'hover:bg-zinc-100 dark:hover:bg-zinc-800'
+                      ? 'border-kasuat-gold bg-kasuat-gold text-kasuat-black'
+                      : 'border-zinc-300 hover:bg-kasuat-off-white dark:border-zinc-700 dark:hover:bg-zinc-800'
                   }`}
                 >
                   {item.label}

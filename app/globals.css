@@ -1,6 +1,17 @@
 @import "tailwindcss";
 
+/* Kasuat design tokens (§46, §68). Satu-satunya sumber warna/font brand. */
 :root {
+  --kasuat-gold: #BE9B5C;
+  --kasuat-deep-gold: #9C7C3F;
+  --kasuat-light-gold: #D9C08E;
+  --kasuat-black: #221F1F;
+  --kasuat-grey: #A6A6A6;
+  --kasuat-off-white: #F1F2F2;
+
+  --font-heading: var(--font-poppins);
+  --font-body: var(--font-onest);
+
   --background: #ffffff;
   --foreground: #171717;
 }
@@ -8,7 +19,14 @@
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-kasuat-gold: var(--kasuat-gold);
+  --color-kasuat-deep-gold: var(--kasuat-deep-gold);
+  --color-kasuat-light-gold: var(--kasuat-light-gold);
+  --color-kasuat-black: var(--kasuat-black);
+  --color-kasuat-grey: var(--kasuat-grey);
+  --color-kasuat-off-white: var(--kasuat-off-white);
+  --font-sans: var(--font-body);
+  --font-heading: var(--font-poppins), sans-serif;
   --font-mono: var(--font-geist-mono);
 }
 
@@ -22,5 +40,11 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-body), Arial, Helvetica, sans-serif;
+}
+
+h1,
+h2,
+h3 {
+  font-family: var(--font-heading), sans-serif;
 }

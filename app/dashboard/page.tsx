@@ -7,6 +7,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { can } from '@/lib/auth/permissions'
 import { formatDate, isOverdue, todayISO } from '@/lib/utils/dates'
 import { PriorityBadge, TaskStatusBadge, OverdueBadge } from '@/components/ui/Badges'
+import { KpiCard } from '@/components/ui/primitives'
 import {
   ActivityTimeline,
   resolveActorNames,
@@ -43,12 +44,7 @@ function sanitize(value: string | undefined): string {
 }
 
 function Kpi({ label, value }: { label: string; value: number | string }) {
-  return (
-    <div className="rounded-xl border p-4">
-      <p className="text-xs font-semibold tracking-wide text-zinc-500">{label}</p>
-      <p className="mt-1 text-2xl font-bold">{value}</p>
-    </div>
-  )
+  return <KpiCard label={label} value={value} />
 }
 
 function Section({

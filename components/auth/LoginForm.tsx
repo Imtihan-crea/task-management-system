@@ -3,6 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
+import { KasuatLogo } from '@/components/brand/KasuatLogo'
+import { Button } from '@/components/ui/primitives'
 
 export function LoginForm({ inactiveMessage }: { inactiveMessage?: string }) {
   const router = useRouter()
@@ -63,10 +65,15 @@ export function LoginForm({ inactiveMessage }: { inactiveMessage?: string }) {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-zinc-50 px-4 dark:bg-black">
-      <div className="w-full max-w-md rounded-2xl bg-white p-8 shadow dark:bg-zinc-900">
-        <h1 className="text-center text-2xl font-bold">TASK MANAGEMENT SYSTEM</h1>
-        <p className="mt-2 text-center text-sm text-zinc-500">
+    <main className="flex min-h-screen items-center justify-center bg-kasuat-black px-4">
+      <div className="w-full max-w-md rounded-2xl bg-white p-8 dark:bg-zinc-900">
+        <div className="flex justify-center py-2">
+          <KasuatLogo variant="color" height={36} />
+        </div>
+        <p className="mt-2 text-center font-heading text-2xl font-bold text-kasuat-black dark:text-zinc-100">
+          Task Management
+        </p>
+        <p className="mt-1 text-center text-sm text-zinc-500">
           Login untuk lanjut ke dashboard
         </p>
 
@@ -84,7 +91,7 @@ export function LoginForm({ inactiveMessage }: { inactiveMessage?: string }) {
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               placeholder="nama@email.com"
-              className="w-full rounded-lg border px-3 py-2 text-base outline-none focus:border-black dark:border-zinc-700 dark:bg-zinc-800"
+              className="w-full rounded-lg border px-3 py-2 text-base outline-none focus:border-kasuat-gold dark:border-zinc-700 dark:bg-zinc-800"
             />
           </div>
 
@@ -101,7 +108,7 @@ export function LoginForm({ inactiveMessage }: { inactiveMessage?: string }) {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="••••••••"
-              className="w-full rounded-lg border px-3 py-2 text-base outline-none focus:border-black dark:border-zinc-700 dark:bg-zinc-800"
+              className="w-full rounded-lg border px-3 py-2 text-base outline-none focus:border-kasuat-gold dark:border-zinc-700 dark:bg-zinc-800"
             />
           </div>
 
@@ -111,13 +118,9 @@ export function LoginForm({ inactiveMessage }: { inactiveMessage?: string }) {
             </p>
           )}
 
-          <button
-            type="submit"
-            disabled={loading}
-            className="min-h-[44px] w-full rounded-lg bg-black px-4 py-2 font-semibold text-white disabled:opacity-50 dark:bg-white dark:text-black"
-          >
+          <Button type="submit" disabled={loading} variant="primary" className="w-full">
             {loading ? 'Loading...' : 'LOGIN'}
-          </button>
+          </Button>
         </form>
       </div>
     </main>
