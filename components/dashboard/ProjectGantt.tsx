@@ -32,9 +32,11 @@ function monthLabel(dayNum: number): string {
 export async function ProjectGantt({
   view,
   offset,
+  projectId,
 }: {
   view: 'month' | 'week'
   offset: number
+  projectId?: string
 }) {
   const profile = await requireProfile()
   const admin = createAdminClient()
@@ -71,6 +73,7 @@ export async function ProjectGantt({
         : projectsQuery.eq('id', '00000000-0000-0000-0000-000000000000')
   }
 
+  // Opsi dropdown project (scope yang sama).
   const [{ data: projectsData }, { data: tasksData }] = await Promise.all([
     projectsQuery,
     (async () => {
@@ -88,6 +91,30 @@ export async function ProjectGantt({
       return q
     })(),
   ])
+
+  const allProjects = (projectsData ?? []) as {
+    id: string
+    code: string
+    name: string
+    status: string
+    start_date: string | null
+    end_date: string | null
+  }[]
+
+  // Validasi project pilihan (harus dalam scope).
+  const selected = projectId ? allProjects.find((p) => p.id === projectId) ?? null : null
+
+  if (selected) {
+    return (
+      <ProjectTaskGantt
+        project={selected}
+        userId={profile.id}
+        role={role}
+        view={view}
+        offset={offset}
+      />
+    )
+  }
 
   const projects = ((projectsData ?? []) as (GanttProject & {
     start_date: string | null
@@ -139,10 +166,44 @@ export async function ProjectGantt({
     return e >= cols[0].start && s < winEnd
   })
 
-  const baseParams = (o: number, v: 'month' | 'week') => `/dashboard?gantt=${v}&goffset=${o}`
+  const baseParams = (o: number, v: 'month' | 'week', proj?: string) => {
+    const p = new URLSearchParams()
+    p.set('gantt', v)
+    p.set('goffset', String(o))
+    if (proj) p.set('gproject', proj)
+    return `/dashboard?${p.toString()}`
+  }
 
   return (
     <div>
+      <form method="get" className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end">
+        <input type="hidden" name="gantt" value={view} />
+        <input type="hidden" name="goffset" value={String(offset)} />
+        <div className="flex-1">
+          <label htmlFor="gantt-project" className="mb-1 block text-sm font-medium">
+            Project (kosongkan untuk timeline global)
+          </label>
+          <select
+            id="gantt-project"
+            name="gproject"
+            defaultValue=""
+            className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
+          >
+            <option value="">Semua project (global)</option>
+            {allProjects.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.code} · {p.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <button
+          type="submit"
+          className="min-h-[44px] rounded-lg bg-kasuat-gold px-4 py-2 text-sm font-semibold text-kasuat-black"
+        >
+          Tampilkan
+        </button>
+      </form>
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <div className="flex gap-1" role="tablist" aria-label="Gantt view">
           {(['month', 'week'] as const).map((v) => (
@@ -251,6 +312,165 @@ export async function ProjectGantt({
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+/**
+ * Gantt per-task dalam satu project: window auto-fit ke rentang task,
+ * kolom mingguan (maks 12). Bar = start (atau deadline−7 jika kosong)
+ * sampai deadline; status DONE tampil penuh hijau? — tetap gold agar
+ * konsisten, dengan badge status di label.
+ */
+async function ProjectTaskGantt({
+  project,
+  userId,
+  role,
+  view,
+  offset,
+}: {
+  project: { id: string; code: string; name: string }
+  userId: string
+  role: string
+  view: 'month' | 'week'
+  offset: number
+}) {
+  const admin = createAdminClient()
+
+  let q = admin
+    .from('tasks')
+    .select('id, code, title, status, start_date, deadline, workstream_id, assignee_id')
+    .eq('project_id', project.id)
+    .eq('is_deleted', false)
+    .order('deadline', { ascending: true })
+    .limit(500)
+  if (role === 'TEAM_MEMBER') q = q.eq('assignee_id', userId)
+
+  const { data } = await q
+  const tasks = (data ?? []) as {
+    id: string
+    code: string
+    title: string
+    status: string
+    start_date: string | null
+    deadline: string
+    workstream_id: string | null
+    assignee_id: string
+  }[]
+
+  const { data: wsData } = await admin
+    .from('workstreams')
+    .select('id, code, name')
+    .eq('project_id', project.id)
+  const wsNames = Object.fromEntries(
+    ((wsData ?? []) as { id: string; code: string; name: string }[]).map((w) => [
+      w.id,
+      `${w.code} · ${w.name}`,
+    ])
+  )
+
+  const today = toDay(new Date().toISOString().slice(0, 10))
+
+  const clearParams = (o: number, v: 'month' | 'week') =>
+    `/dashboard?gantt=${v}&goffset=${o}`
+
+  if (tasks.length === 0) {
+    return (
+      <div>
+        <p className="mb-2 text-sm">
+          <Link href={`/projects/${project.id}`} className="font-semibold hover:underline">
+            {project.code} · {project.name}
+          </Link>{' '}
+          —{' '}
+          <Link href={clearParams(offset, view)} className="text-kasuat-deep-gold hover:underline">
+            kembali ke global
+          </Link>
+        </p>
+        <p className="text-sm text-zinc-500">No tasks in this project.</p>
+      </div>
+    )
+  }
+
+  // Auto-fit window ke rentang task + padding 7 hari.
+  const starts = tasks.map((t) => toDay(t.start_date ?? t.deadline) - 0)
+  const ends = tasks.map((t) => toDay(t.deadline))
+  const winStart = Math.min(today, ...starts) - 7
+  let winEnd = Math.max(today, ...ends) + 7
+  const totalWeeks = Math.max(2, Math.min(12, Math.ceil((winEnd - winStart) / 7)))
+  winEnd = winStart + totalWeeks * 7
+  const cols = Array.from({ length: totalWeeks }, (_, i) => {
+    const d = winStart + i * 7
+    return { key: String(d), label: `M${i + 1}`, start: d, end: d + 7 }
+  })
+  const winSpan = winEnd - winStart
+
+  return (
+    <div>
+      <p className="mb-3 text-sm">
+        <Link href={`/projects/${project.id}`} className="font-semibold hover:underline">
+          {project.code} · {project.name}
+        </Link>{' '}
+        —{' '}
+        <Link href={clearParams(offset, view)} className="text-kasuat-deep-gold hover:underline">
+          kembali ke global
+        </Link>
+      </p>
+      <div className="overflow-x-auto">
+        <div className="min-w-[560px]">
+          <div
+            className="grid gap-1"
+            style={{ gridTemplateColumns: `200px repeat(${cols.length}, minmax(36px, 1fr))` }}
+          >
+            <div className="px-1 py-1 text-xs font-semibold text-zinc-500">Task</div>
+            {cols.map((c) => (
+              <div key={c.key} className="px-1 py-1 text-center text-xs text-zinc-500">
+                {c.label}
+              </div>
+            ))}
+            {tasks.map((t) => {
+              const s = toDay(t.start_date ?? t.deadline) - (t.start_date ? 0 : 7)
+              const e = toDay(t.deadline)
+              const leftPct = Math.max(0, ((s - winStart) / winSpan) * 100)
+              const rightPct = Math.min(100, ((e - winStart) / winSpan) * 100)
+              const widthPct = Math.max(2, rightPct - leftPct)
+              const done = t.status === 'DONE'
+              const todayPct =
+                today >= winStart && today < winEnd
+                  ? ((today - winStart) / winSpan) * 100
+                  : null
+              return (
+                <div key={t.id} className="contents">
+                  <Link
+                    href={`/tasks/${t.id}`}
+                    className="truncate px-1 py-1.5 text-xs font-medium hover:underline"
+                    title={`${t.code} · ${t.title}${t.workstream_id ? ` · ${wsNames[t.workstream_id] ?? ''}` : ''}`}
+                  >
+                    <span className="mr-1 font-mono text-[11px] text-zinc-500">{t.code}</span>
+                    {t.title}
+                  </Link>
+                  <div className="relative" style={{ gridColumn: `2 / span ${cols.length}` }}>
+                    <div className="relative h-6 rounded-full bg-zinc-100 dark:bg-zinc-800">
+                      <div
+                        className={`absolute top-0 h-6 rounded-full ${done ? 'bg-green-500' : 'bg-kasuat-gold'}`}
+                        style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
+                        title={`${t.code} · ${t.status.replace('_', ' ')}`}
+                      />
+                      {todayPct !== null && (
+                        <div
+                          aria-hidden="true"
+                          className="absolute top-[-4px] h-[32px] w-0.5 bg-red-500"
+                          style={{ left: `${todayPct}%` }}
+                          title="Hari ini"
+                        />
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      </div>
     </div>
   )
 }

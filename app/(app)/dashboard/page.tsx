@@ -386,6 +386,7 @@ export default async function DashboardPage({
 
   const ganttView = str(params.gantt) === 'week' ? 'week' : 'month'
   const gOffset = parseInt(str(params.goffset) || '0', 10) || 0
+  const gProject = str(params.gproject)
 
   const denied = params.denied === '1'
 
@@ -429,7 +430,7 @@ export default async function DashboardPage({
       {/* Global Project Gantt */}
       <Section title="Timeline Project (Gantt Chart)">
         <Suspense fallback={<SkeletonGantt rows={5} />}>
-          <ProjectGantt view={ganttView} offset={gOffset} />
+          <ProjectGantt view={ganttView} offset={gOffset} projectId={gProject || undefined} />
         </Suspense>
       </Section>
 
