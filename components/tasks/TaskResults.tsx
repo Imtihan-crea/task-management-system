@@ -4,22 +4,9 @@ import { formatDate, isOverdue, todayISO } from '@/lib/utils/dates'
 import { PriorityBadge, TaskStatusBadge, OverdueBadge } from '@/components/ui/Badges'
 import { Pagination, paginate } from '@/components/ui/Pagination'
 import { applyTaskTab, type TaskTabKey } from '@/components/tasks/TaskTabs'
+import { fetchTaskLookups, fetchTaskRows } from '@/lib/data/task-list'
 import { EmptyState } from '@/components/ui/primitives'
-import type { TaskPriority, TaskStatus } from '@/types/task'
-
-type TaskRow = {
-  id: string
-  code: string
-  title: string
-  project_id: string
-  workstream_id: string | null
-  assignee_id: string
-  priority: TaskPriority
-  status: TaskStatus
-  deadline: string
-  created_at: string
-  updated_at: string
-}
+import type { TaskPriority } from '@/types/task'
 
 const PRIORITY_RANK: Record<TaskPriority, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 }
 
@@ -42,41 +29,31 @@ export type TaskFilters = {
  * Dijalankan dalam Suspense boundary — hanya area ini yang loading (§12).
  */
 export async function TaskResults({ filters }: { filters: TaskFilters }) {
-  const admin = createAdminClient()
   const { q, tab, userId, role, sort, page } = filters
 
-  let query = admin
-    .from('tasks')
-    .select('id, code, title, project_id, workstream_id, assignee_id, priority, status, deadline, created_at, updated_at')
-    .eq('is_deleted', false)
-    .order('deadline', { ascending: !sort.startsWith('deadline.desc') })
-    .limit(500)
-
-  if (role === 'TEAM_MEMBER') query = query.eq('assignee_id', userId)
-  if (filters.project) query = query.eq('project_id', filters.project)
-  if (filters.workstream) query = query.eq('workstream_id', filters.workstream)
-  if (filters.priority) query = query.eq('priority', filters.priority)
-
-  const { data, error } = await query
-  let tasks = (data ?? []) as TaskRow[]
-
-  const [projectsRes, workstreamsRes] = await Promise.all([
-    admin.from('projects').select('id, code, name').limit(500),
-    admin.from('workstreams').select('id, project_id, code, name').limit(1000),
+  // Fetch bersama TaskTabs via cache() — 1x query per request.
+  const [allTasks, lookups] = await Promise.all([
+    fetchTaskRows({
+      userId,
+      role,
+      project: filters.project,
+      workstream: filters.workstream,
+      priority: filters.priority,
+      deadline: filters.deadline,
+    }),
+    fetchTaskLookups(),
   ])
+  let tasks = allTasks
+
   const projectNames = Object.fromEntries(
-    ((projectsRes.data ?? []) as { id: string; code: string; name: string }[]).map((p) => [
-      p.id,
-      `${p.code} · ${p.name}`,
-    ])
+    lookups.projects.map((p) => [p.id, `${p.code} · ${p.name}`])
   )
   const workstreamNames = Object.fromEntries(
-    ((workstreamsRes.data ?? []) as { id: string; project_id: string; code: string; name: string }[]).map(
-      (w) => [w.id, `${w.code} · ${w.name}`]
-    )
+    lookups.workstreams.map((w) => [w.id, `${w.code} · ${w.name}`])
   )
 
   const assigneeIds = [...new Set(tasks.map((t) => t.assignee_id))]
+  const admin = createAdminClient()
   let assigneeNames: Record<string, string> = {}
   if (assigneeIds.length > 0) {
     const { data: users } = await admin
@@ -145,15 +122,7 @@ export async function TaskResults({ filters }: { filters: TaskFilters }) {
   if (filters.deadline) baseParams.deadline = filters.deadline
   if (sort !== 'deadline.asc') baseParams.sort = sort
 
-  if (error) {
-    return (
-      <p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm font-medium text-red-700 dark:bg-red-950 dark:text-red-300">
-        Something went wrong. Please try again.
-      </p>
-    )
-  }
-
-  if (tasks.length === 0) {
+  if (tasks.length === 0 && allTasks.length === 0) {
     return (
       <div className="mt-4">
         <EmptyState title="No tasks found." message="Try a different search, tab, or filter." />

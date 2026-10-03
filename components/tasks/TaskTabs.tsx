@@ -1,6 +1,6 @@
-import { createAdminClient } from '@/lib/supabase/admin'
 import { isOverdue } from '@/lib/utils/dates'
 import { Tabs } from '@/components/ui/Tabs'
+import { fetchTaskRows, type TaskRow, type TaskScope } from '@/lib/data/task-list'
 import type { TaskStatus } from '@/types/task'
 
 export type TaskTabKey = 'all' | 'mine' | 'ongoing' | 'todo' | 'blocked' | 'done' | 'overdue'
@@ -37,6 +37,17 @@ type ScopeInput = {
   workstreamId?: string
   priority?: string
   deadline?: string
+}
+
+function toScope(scope: ScopeInput): TaskScope {
+  return {
+    userId: scope.userId,
+    role: scope.role,
+    project: scope.projectId,
+    workstream: scope.workstreamId,
+    priority: scope.priority,
+    deadline: scope.deadline,
+  }
 }
 
 function matchesTab(
@@ -77,30 +88,7 @@ export async function TaskTabs({
   userId: string
   baseParams: Record<string, string>
 }) {
-  const admin = createAdminClient()
-
-  let query = admin
-    .from('tasks')
-    .select('assignee_id, status, deadline')
-    .eq('is_deleted', false)
-    .limit(2000)
-
-  if (scope.role === 'TEAM_MEMBER') query = query.eq('assignee_id', scope.userId)
-  if (scope.projectId) query = query.eq('project_id', scope.projectId)
-  if (scope.workstreamId) query = query.eq('workstream_id', scope.workstreamId)
-  if (scope.priority) query = query.eq('priority', scope.priority)
-  if (scope.deadline === 'overdue') query = query.lt('deadline', new Date().toISOString().slice(0, 10)).neq('status', 'DONE')
-  else if (scope.deadline === 'week') {
-    const week = new Date()
-    week.setDate(week.getDate() + 7)
-    query = query
-      .gte('deadline', new Date().toISOString().slice(0, 10))
-      .lte('deadline', week.toISOString().slice(0, 10))
-      .neq('status', 'DONE')
-  }
-
-  const { data } = await query
-  const rows = (data ?? []) as { assignee_id: string; status: TaskStatus; deadline: string }[]
+  const rows: TaskRow[] = await fetchTaskRows(toScope(scope))
 
   const href = (key: TaskTabKey) => {
     const params = new URLSearchParams(baseParams)
