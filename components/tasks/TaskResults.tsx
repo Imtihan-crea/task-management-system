@@ -1,0 +1,248 @@
+import Link from 'next/link'
+import { createAdminClient } from '@/lib/supabase/admin'
+import { formatDate, isOverdue, todayISO } from '@/lib/utils/dates'
+import { PriorityBadge, TaskStatusBadge, OverdueBadge } from '@/components/ui/Badges'
+import { Pagination, paginate } from '@/components/ui/Pagination'
+import { applyTaskTab, type TaskTabKey } from '@/components/tasks/TaskTabs'
+import { EmptyState } from '@/components/ui/primitives'
+import type { TaskPriority, TaskStatus } from '@/types/task'
+
+type TaskRow = {
+  id: string
+  code: string
+  title: string
+  project_id: string
+  workstream_id: string | null
+  assignee_id: string
+  priority: TaskPriority
+  status: TaskStatus
+  deadline: string
+  created_at: string
+  updated_at: string
+}
+
+const PRIORITY_RANK: Record<TaskPriority, number> = { HIGH: 0, MEDIUM: 1, LOW: 2 }
+
+export type TaskFilters = {
+  q: string
+  tab: TaskTabKey
+  userId: string
+  role: string
+  project: string
+  workstream: string
+  status: string
+  priority: string
+  deadline: string
+  sort: string
+  page: number
+}
+
+/**
+ * Hasil task: fetch + filter + sort + paginate.
+ * Dijalankan dalam Suspense boundary — hanya area ini yang loading (§12).
+ */
+export async function TaskResults({ filters }: { filters: TaskFilters }) {
+  const admin = createAdminClient()
+  const { q, tab, userId, role, sort, page } = filters
+
+  let query = admin
+    .from('tasks')
+    .select('id, code, title, project_id, workstream_id, assignee_id, priority, status, deadline, created_at, updated_at')
+    .eq('is_deleted', false)
+    .order('deadline', { ascending: !sort.startsWith('deadline.desc') })
+    .limit(500)
+
+  if (role === 'TEAM_MEMBER') query = query.eq('assignee_id', userId)
+  if (filters.project) query = query.eq('project_id', filters.project)
+  if (filters.workstream) query = query.eq('workstream_id', filters.workstream)
+  if (filters.priority) query = query.eq('priority', filters.priority)
+
+  const { data, error } = await query
+  let tasks = (data ?? []) as TaskRow[]
+
+  const [projectsRes, workstreamsRes] = await Promise.all([
+    admin.from('projects').select('id, code, name').limit(500),
+    admin.from('workstreams').select('id, project_id, code, name').limit(1000),
+  ])
+  const projectNames = Object.fromEntries(
+    ((projectsRes.data ?? []) as { id: string; code: string; name: string }[]).map((p) => [
+      p.id,
+      `${p.code} · ${p.name}`,
+    ])
+  )
+  const workstreamNames = Object.fromEntries(
+    ((workstreamsRes.data ?? []) as { id: string; project_id: string; code: string; name: string }[]).map(
+      (w) => [w.id, `${w.code} · ${w.name}`]
+    )
+  )
+
+  const assigneeIds = [...new Set(tasks.map((t) => t.assignee_id))]
+  let assigneeNames: Record<string, string> = {}
+  if (assigneeIds.length > 0) {
+    const { data: users } = await admin
+      .from('profiles')
+      .select('id, full_name, email')
+      .in('id', assigneeIds)
+    assigneeNames = Object.fromEntries(
+      ((users ?? []) as { id: string; full_name: string | null; email: string }[]).map((u) => [
+        u.id,
+        u.full_name || u.email,
+      ])
+    )
+  }
+
+  const needle = q.toLowerCase()
+  if (needle) {
+    tasks = tasks.filter(
+      (t) =>
+        t.code.toLowerCase().startsWith(needle) ||
+        t.title.toLowerCase().includes(needle) ||
+        (projectNames[t.project_id] ?? '').toLowerCase().includes(needle) ||
+        (assigneeNames[t.assignee_id] ?? '').toLowerCase().includes(needle)
+    )
+  }
+
+  // Tab + dropdown status digabung (AND).
+  tasks = applyTaskTab(tasks, tab, userId)
+  if (filters.status) tasks = tasks.filter((t) => t.status === filters.status)
+
+  if (filters.deadline === 'overdue') {
+    tasks = tasks.filter((t) => isOverdue(t.deadline, t.status))
+  } else if (filters.deadline === 'week') {
+    const week = new Date()
+    week.setDate(week.getDate() + 7)
+    const weekISO = week.toISOString().slice(0, 10)
+    tasks = tasks.filter(
+      (t) => t.deadline >= todayISO() && t.deadline <= weekISO && t.status !== 'DONE'
+    )
+  }
+
+  if (sort === 'priority') {
+    tasks = [...tasks].sort((a, b) => PRIORITY_RANK[a.priority] - PRIORITY_RANK[b.priority])
+  }
+  if (sort === 'deadline.asc' || sort === 'deadline.desc') {
+    const desc = sort === 'deadline.desc'
+    tasks = [...tasks].sort((a, b) => {
+      const aDone = a.status === 'DONE' ? 1 : 0
+      const bDone = b.status === 'DONE' ? 1 : 0
+      if (aDone !== bDone) return aDone - bDone
+      if (a.deadline === b.deadline) return 0
+      return desc ? (a.deadline < b.deadline ? 1 : -1) : a.deadline < b.deadline ? -1 : 1
+    })
+  }
+
+  const overdueCount = tasks.filter((t) => isOverdue(t.deadline, t.status)).length
+  const { pageItems, totalPages } = paginate(tasks, page, 50)
+  const safePage = Math.min(page, totalPages)
+
+  const baseParams: Record<string, string> = {}
+  if (tab !== 'all') baseParams.view = tab === 'mine' ? 'mine' : tab
+  if (q) baseParams.q = q
+  if (filters.project) baseParams.project = filters.project
+  if (filters.workstream) baseParams.workstream = filters.workstream
+  if (filters.status) baseParams.status = filters.status
+  if (filters.priority) baseParams.priority = filters.priority
+  if (filters.deadline) baseParams.deadline = filters.deadline
+  if (sort !== 'deadline.asc') baseParams.sort = sort
+
+  if (error) {
+    return (
+      <p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm font-medium text-red-700 dark:bg-red-950 dark:text-red-300">
+        Something went wrong. Please try again.
+      </p>
+    )
+  }
+
+  if (tasks.length === 0) {
+    return (
+      <div className="mt-4">
+        <EmptyState title="No tasks found." message="Try a different search, tab, or filter." />
+      </div>
+    )
+  }
+
+  return (
+    <>
+      <p className="mt-3 text-sm text-zinc-500" role="status">
+        {tasks.length} task{tasks.length === 1 ? '' : 's'}
+        {overdueCount > 0 ? ` · ${overdueCount} overdue` : ''}
+      </p>
+      <div className="mt-3 hidden overflow-x-auto rounded-2xl bg-white shadow md:block dark:bg-zinc-900">
+        <table className="w-full text-left text-sm">
+          <thead className="border-b text-xs uppercase text-zinc-500">
+            <tr>
+              <th scope="col" className="px-4 py-3">ID</th>
+              <th scope="col" className="px-4 py-3">Task</th>
+              <th scope="col" className="px-4 py-3">Project</th>
+              <th scope="col" className="px-4 py-3">Workstream</th>
+              <th scope="col" className="px-4 py-3">Assignee</th>
+              <th scope="col" className="px-4 py-3">Priority</th>
+              <th scope="col" className="px-4 py-3">Status</th>
+              <th scope="col" className="px-4 py-3">Deadline</th>
+            </tr>
+          </thead>
+          <tbody>
+            {pageItems.map((task) => (
+              <tr key={task.id} className="border-b last:border-0">
+                <td className="px-4 py-3 font-mono text-xs">{task.code}</td>
+                <td className="px-4 py-3">
+                  <Link href={`/tasks/${task.id}`} className="font-medium hover:underline">
+                    {task.title}
+                  </Link>
+                  {isOverdue(task.deadline, task.status) && (
+                    <span className="ml-2"><OverdueBadge /></span>
+                  )}
+                </td>
+                <td className="px-4 py-3">{projectNames[task.project_id] ?? '-'}</td>
+                <td className="px-4 py-3">{task.workstream_id ? (workstreamNames[task.workstream_id] ?? '-') : '-'}</td>
+                <td className="px-4 py-3">{assigneeNames[task.assignee_id] ?? '-'}</td>
+                <td className="px-4 py-3"><PriorityBadge priority={task.priority} /></td>
+                <td className="px-4 py-3"><TaskStatusBadge status={task.status} /></td>
+                <td className="px-4 py-3">{formatDate(task.deadline)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+
+      <ul className="mt-4 flex flex-col gap-3 md:hidden">
+        {pageItems.map((task) => (
+          <li key={task.id}>
+            <Link
+              href={`/tasks/${task.id}`}
+              className="block rounded-2xl bg-white p-4 shadow dark:bg-zinc-900"
+            >
+              <p className="font-semibold">
+                <span className="mr-2 rounded-md bg-zinc-100 px-1.5 py-0.5 font-mono text-xs dark:bg-zinc-800">
+                  {task.code}
+                </span>
+                {task.title}
+              </p>
+              <p className="mt-0.5 truncate text-sm text-zinc-500">
+                {projectNames[task.project_id] ?? '-'} &middot;{' '}
+                {task.workstream_id ? (workstreamNames[task.workstream_id] ?? '-') : 'No workstream'} &middot;{' '}
+                {assigneeNames[task.assignee_id] ?? '-'}
+              </p>
+              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+                <PriorityBadge priority={task.priority} />
+                <TaskStatusBadge status={task.status} />
+                {isOverdue(task.deadline, task.status) && <OverdueBadge />}
+              </div>
+              <p className="mt-2 text-xs text-zinc-500">
+                Deadline {formatDate(task.deadline)}
+              </p>
+            </Link>
+          </li>
+        ))}
+      </ul>
+      <Pagination
+        basePath="/tasks"
+        params={baseParams}
+        page={safePage}
+        totalPages={totalPages}
+        total={tasks.length}
+        label="tasks"
+      />
+    </>
+  )
+}
