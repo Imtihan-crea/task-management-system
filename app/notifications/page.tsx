@@ -70,7 +70,7 @@ export default async function NotificationsPage({
         />
       </div>
 
-      <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+      <section id="preferences" className="mt-6 rounded-2xl bg-white p-5 shadow scroll-mt-20 dark:bg-zinc-900">
         <h2 className="mb-2 text-lg font-bold">Email Preferences</h2>
         <p className="mb-4 text-sm text-zinc-500">
           In-app notifications always appear. Email can be turned off here.

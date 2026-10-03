@@ -53,7 +53,7 @@ export default async function ProfilePage() {
           </dl>
         </section>
 
-        <section className="flex-1 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+        <section id="edit-name" className="flex-1 rounded-2xl bg-white p-5 shadow scroll-mt-20 dark:bg-zinc-900">
           <h2 className="mb-4 text-lg font-bold">Edit Name</h2>
           <EditOwnNameForm fullName={profile.full_name ?? ''} />
         </section>
