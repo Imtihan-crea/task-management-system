@@ -3,7 +3,7 @@ import { requireAdmin } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isUserRole, isUserStatus, ROLE_LABELS, STATUS_LABELS, USER_ROLES, USER_STATUSES } from '@/lib/auth/roles'
 import { AppShell } from '@/components/layout/AppShell'
-import { InviteUserForm } from '@/components/users/InviteUserForm'
+import { ButtonLink, PageHeader } from '@/components/ui/primitives'
 import { StatusToggleForm } from '@/components/users/UserForms'
 import type { ProfileListItem } from '@/types/profile'
 
@@ -74,10 +74,13 @@ export default async function UsersPage({
 
   return (
     <AppShell>
-      <h1 className="text-2xl font-bold">User Management</h1>
-      <p className="mt-1 text-sm text-zinc-500">
-        Kelola user, role, dan status. Hanya ADMIN yang bisa akses halaman ini.
-      </p>
+      <PageHeader
+        title="User Management"
+        subtitle="Kelola user, role, dan status. Hanya ADMIN yang bisa akses halaman ini."
+        actions={
+          <ButtonLink href="/users/new">+ Invite User</ButtonLink>
+        }
+      />
 
       {/* Search + Filter (PRD section 10 & 11) */}
       <form
@@ -269,9 +272,6 @@ export default async function UsersPage({
         </>
       )}
 
-      <div className="mt-6">
-        <InviteUserForm />
-      </div>
     </AppShell>
   )
 }

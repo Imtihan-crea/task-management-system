@@ -6,9 +6,7 @@ import { PROJECT_STATUSES } from '@/lib/auth/roles'
 import { AppShell } from '@/components/layout/AppShell'
 import { ProjectStatusBadge } from '@/components/ui/Badges'
 import { formatDate } from '@/lib/utils/dates'
-import { ProjectForm } from '@/components/projects/ProjectForm'
 import { ButtonLink, PageHeader } from '@/components/ui/primitives'
-import { getActiveUsers } from '@/lib/data/users'
 import type { Project, ProjectProgress, ProjectStatus } from '@/types/project'
 
 function sanitize(value: string | undefined): string {
@@ -139,17 +137,19 @@ export default async function ProjectsPage({
   }
 
   const progressMap = await getProgressMap(visibleProjects.map((p) => p.id))
-  const managers = canCreate ? await getActiveUsers(['ADMIN', 'PROJECT_MANAGER']) : []
 
   return (
     <AppShell>
       <PageHeader
         title="Projects"
-        subtitle={`${visibleProjects.length} project${canCreate ? ' — buat project baru di bawah.' : '.'}`}
+        subtitle={`${visibleProjects.length} project.`}
         actions={
-          <ButtonLink href="/tasks?view=mine" variant="secondary">
-            My Tasks
-          </ButtonLink>
+          <>
+            {canCreate && <ButtonLink href="/projects/new">+ Add Project</ButtonLink>}
+            <ButtonLink href="/tasks?view=mine" variant="secondary">
+              My Tasks
+            </ButtonLink>
+          </>
         }
       />
 
@@ -274,11 +274,6 @@ export default async function ProjectsPage({
         </ul>
       )}
 
-      {canCreate && (
-        <div className="mt-6">
-          <ProjectForm mode="create" managers={managers} />
-        </div>
-      )}
     </AppShell>
   )
 }

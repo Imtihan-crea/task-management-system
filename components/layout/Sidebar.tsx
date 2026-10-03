@@ -131,20 +131,23 @@ export function Sidebar({
 }
 
 export function SidebarBrand({ collapsed }: { collapsed?: boolean }) {
-  return (
-    <div className={`flex items-center px-3 py-3 ${collapsed ? 'justify-center' : ''}`}>
-      {collapsed ? (
-        // Crop area mark dari aset resmi (bukan redraw).
-        <span className="block w-10 overflow-hidden" aria-hidden="true">
-          <img
-            src="/brand/kasuat-logo-white.png"
-            alt=""
-            style={{ height: 28, width: 'auto', maxWidth: 'none', marginLeft: -4 }}
-          />
-        </span>
-      ) : (
+  if (!collapsed) {
+    return (
+      <div className="flex items-center px-3 py-3">
         <KasuatLogo />
-      )}
+      </div>
+    )
+  }
+  // Mode icon: hanya area mark dari aset resmi (bukan redraw).
+  return (
+    <div className="flex items-center justify-center px-2 py-3">
+      <span className="block w-7 overflow-hidden" aria-hidden="true">
+        <img
+          src="/brand/kasuat-logo-white.png"
+          alt=""
+          style={{ height: 26, width: 'auto', maxWidth: 'none' }}
+        />
+      </span>
     </div>
   )
 }

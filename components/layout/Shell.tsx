@@ -50,7 +50,7 @@ export function Shell({
       {/* Sidebar desktop persisten */}
       <aside
         className={`sticky top-0 hidden h-screen shrink-0 flex-col bg-kasuat-black transition-[width] duration-200 lg:flex ${
-          collapsed ? 'w-[76px]' : 'w-60'
+          collapsed ? 'w-16' : 'w-60'
         }`}
       >
         <SidebarBrand collapsed={collapsed} />

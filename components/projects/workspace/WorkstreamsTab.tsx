@@ -1,6 +1,6 @@
+import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import {
-  CreateWorkstreamForm,
   DeleteWorkstreamForm,
   EditWorkstreamForm,
 } from '@/components/projects/WorkstreamForms'
@@ -86,7 +86,12 @@ export async function WorkstreamsTab({
 
       {canManage && (
         <div className="mt-4">
-          <CreateWorkstreamForm projectId={projectId} />
+          <Link
+            href={`/workstreams/new?project=${projectId}`}
+            className="inline-flex min-h-[44px] items-center rounded-lg bg-kasuat-gold px-4 py-2 text-sm font-semibold text-kasuat-black"
+          >
+            + Add Workstream
+          </Link>
         </div>
       )}
     </section>
