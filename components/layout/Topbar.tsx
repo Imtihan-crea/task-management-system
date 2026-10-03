@@ -49,7 +49,19 @@ export function BellPopover() {
       label="Notifications"
       button={
         <span className="relative inline-flex items-center">
-          <span aria-hidden="true">🔔</span>
+          <svg
+            aria-hidden="true"
+            viewBox="0 0 24 24"
+            fill="none"
+            stroke="#BE9B5C"
+            strokeWidth={1.8}
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            className="h-5 w-5"
+          >
+            <path d="M18 8a6 6 0 00-12 0c0 7-3 9-3 9h18s-3-2-3-9" />
+            <path d="M13.7 21a2 2 0 01-3.4 0" />
+          </svg>
           {(summary?.unread ?? 0) > 0 && (
             <span className="absolute -right-2 -top-2 inline-flex min-h-[20px] min-w-[20px] items-center justify-center rounded-full bg-red-600 px-1 text-[11px] font-bold text-white">
               {summary!.unread > 99 ? '99+' : summary!.unread}

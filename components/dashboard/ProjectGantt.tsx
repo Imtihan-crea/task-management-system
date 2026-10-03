@@ -103,6 +103,7 @@ export async function ProjectGantt({
 
   // Validasi project pilihan (harus dalam scope).
   const selected = projectId ? allProjects.find((p) => p.id === projectId) ?? null : null
+  const selectedId = selected?.id ?? null
 
   if (selected) {
     return (
@@ -166,44 +167,21 @@ export async function ProjectGantt({
     return e >= cols[0].start && s < winEnd
   })
 
-  const baseParams = (o: number, v: 'month' | 'week', proj?: string) => {
+  // Navigasi Gantt mempertahankan filter project dashboard (param `project`),
+  // jadi KPI + Gantt tidak pernah beda scope.
+  const baseParams = (o: number, v: 'month' | 'week') => {
     const p = new URLSearchParams()
     p.set('gantt', v)
     p.set('goffset', String(o))
-    if (proj) p.set('gproject', proj)
+    if (selectedId) p.set('project', selectedId)
     return `/dashboard?${p.toString()}`
   }
 
+  // Filter project tunggal dari dashboard (param `project`) otomatis dipakai
+  // Gantt — tidak ada filter ganda di dalam Gantt.
+
   return (
     <div>
-      <form method="get" className="mb-3 flex flex-col gap-2 sm:flex-row sm:items-end">
-        <input type="hidden" name="gantt" value={view} />
-        <input type="hidden" name="goffset" value={String(offset)} />
-        <div className="flex-1">
-          <label htmlFor="gantt-project" className="mb-1 block text-sm font-medium">
-            Project (kosongkan untuk timeline global)
-          </label>
-          <select
-            id="gantt-project"
-            name="gproject"
-            defaultValue=""
-            className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
-          >
-            <option value="">Semua project (global)</option>
-            {allProjects.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.code} · {p.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <button
-          type="submit"
-          className="min-h-[44px] rounded-lg bg-kasuat-gold px-4 py-2 text-sm font-semibold text-kasuat-black"
-        >
-          Tampilkan
-        </button>
-      </form>
       <div className="mb-3 flex flex-wrap items-center gap-2">
         <div className="flex gap-1" role="tablist" aria-label="Gantt view">
           {(['month', 'week'] as const).map((v) => (

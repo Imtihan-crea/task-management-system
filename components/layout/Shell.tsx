@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useState } from 'react'
 import type { UserRole } from '@/types/profile'
 import { Sidebar, SidebarBrand } from '@/components/layout/Sidebar'
@@ -48,7 +49,29 @@ export function Shell({
 
   return (
     <div className="flex min-h-screen bg-kasuat-off-white dark:bg-black">
-      {/* Sidebar desktop: drawer overlay yang sama seperti HP */}
+      {/* Rail ramping: logo selalu terlihat walau drawer tertutup.
+          Tanpa icon nav (menghindari tampilan aneh). Klik logo = buka. */}
+      {!open && (
+        <button
+          type="button"
+          onClick={toggle}
+          aria-label="Open navigation"
+          title="Open navigation"
+          className="sticky top-0 hidden h-screen w-16 shrink-0 flex-col items-center bg-kasuat-black py-4 lg:flex"
+        >
+          <span className="block w-10 overflow-hidden" aria-hidden="true">
+            <Image
+              src="/brand/kasuat-logo-white.png"
+              alt=""
+              width={93}
+              height={28}
+              style={{ height: 28, width: 'auto', maxWidth: 'none', marginLeft: -4 }}
+            />
+          </span>
+        </button>
+      )}
+
+      {/* Drawer overlay, sama di semua ukuran layar */}
       {open && (
         <div className="fixed inset-0 z-50" role="dialog" aria-label="Navigation">
           <button

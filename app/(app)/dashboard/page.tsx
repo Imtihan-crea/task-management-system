@@ -66,7 +66,6 @@ export default async function DashboardPage({
 
   const ganttView = str(params.gantt) === 'week' ? 'week' : 'month'
   const gOffset = parseInt(str(params.goffset) || '0', 10) || 0
-  const gProject = str(params.gproject)
 
   const denied = params.denied === '1'
   const sectionKey = JSON.stringify({ ...filters, user: profile.id })
@@ -104,10 +103,10 @@ export default async function DashboardPage({
       <section className="mt-6 rounded-2xl bg-white p-4 shadow dark:bg-zinc-900">
         <h2 className="mb-3 text-lg font-bold">Timeline Project (Gantt Chart)</h2>
         <Suspense
-          key={`gantt-${ganttView}-${gOffset}-${gProject}`}
+          key={`gantt-${ganttView}-${gOffset}-${filters.project}`}
           fallback={<SkeletonGantt rows={5} />}
         >
-          <ProjectGantt view={ganttView} offset={gOffset} projectId={gProject || undefined} />
+          <ProjectGantt view={ganttView} offset={gOffset} projectId={filters.project || undefined} />
         </Suspense>
       </section>
 
