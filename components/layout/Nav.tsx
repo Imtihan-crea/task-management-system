@@ -36,12 +36,12 @@ export function Nav({
   })
 
   return (
-    <header className="border-b border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+    <header className="bg-kasuat-black">
       <div className="mx-auto flex max-w-5xl flex-col gap-3 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex min-w-0 items-center gap-3 py-1">
           <KasuatLogo />
           <div className="min-w-0">
-            <p className="truncate text-xs text-zinc-500">
+            <p className="truncate text-xs text-zinc-400">
               {email} &middot; {ROLE_LABELS[role]}
             </p>
           </div>
@@ -63,7 +63,7 @@ export function Nav({
                   className={`inline-flex min-h-[44px] items-center rounded-lg border px-3 py-2 text-sm font-medium ${
                     active
                       ? 'border-kasuat-gold bg-kasuat-gold text-kasuat-black'
-                      : 'border-zinc-300 hover:bg-kasuat-off-white dark:border-zinc-700 dark:hover:bg-zinc-800'
+                      : 'border-zinc-700 text-zinc-200 hover:bg-zinc-800'
                   }`}
                 >
                   {item.label}

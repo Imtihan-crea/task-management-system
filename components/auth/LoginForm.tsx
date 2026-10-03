@@ -68,7 +68,7 @@ export function LoginForm({ inactiveMessage }: { inactiveMessage?: string }) {
     <main className="flex min-h-screen items-center justify-center bg-kasuat-black px-4">
       <div className="w-full max-w-md rounded-2xl bg-white p-8 dark:bg-zinc-900">
         <div className="flex justify-center py-2">
-          <KasuatLogo variant="color" height={36} />
+          <KasuatLogo height={36} />
         </div>
         <p className="mt-2 text-center font-heading text-2xl font-bold text-kasuat-black dark:text-zinc-100">
           Task Management

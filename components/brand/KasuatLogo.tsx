@@ -1,57 +1,22 @@
 import Image from 'next/image'
 
 /**
- * Logo Kasuat (§41–45). Variant mengikuti background:
- * - terang → Gold + Black
- * - gelap → White
+ * Logo Kasuat (§41–45).
  *
- * Aturan: jangan ubah warna, stretch, rotate, shadow, glow.
- * Clearspace minimum = tinggi simbol (dijaga via padding parent).
+ * Aset yang tersedia: PNG varian putih (teks putih + mark gold).
+ * Dipakai di permukaan gelap (header dark, login) sesuai varian White
+ * pada guideline. Varian Gold+Black untuk background terang BELUM ada —
+ * jangan paksa logo putih di background terang.
  */
-export function KasuatLogo({
-  variant = 'color',
-  height = 28,
-}: {
-  variant?: 'color' | 'white'
-  height?: number
-}) {
-  const src =
-    variant === 'white'
-      ? '/brand/kasuat-logo-white.svg'
-      : '/brand/kasuat-logo.svg'
-
+export function KasuatLogo({ height = 28 }: { height?: number }) {
   return (
     <Image
-      src={src}
+      src="/brand/kasuat-logo-white.png"
       alt="Kasuat"
       height={height}
       width={height * 4}
       priority
       style={{ height, width: 'auto' }}
-    />
-  )
-}
-
-export function KasuatMark({
-  variant = 'color',
-  size = 32,
-  decorative = false,
-}: {
-  variant?: 'color' | 'white'
-  size?: number
-  decorative?: boolean
-}) {
-  const src =
-    variant === 'white' ? '/brand/kasuat-mark-white.svg' : '/brand/kasuat-mark.svg'
-
-  return (
-    <Image
-      src={src}
-      alt={decorative ? '' : 'Kasuat'}
-      aria-hidden={decorative || undefined}
-      height={size}
-      width={size}
-      style={{ height: size, width: size }}
     />
   )
 }

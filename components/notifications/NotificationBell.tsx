@@ -19,7 +19,7 @@ export async function NotificationBell({ userId }: { userId: string }) {
     <Link
       href="/notifications"
       aria-label={unread > 0 ? `${unread} unread notifications` : 'Notifications'}
-      className="relative inline-flex min-h-[44px] items-center rounded-lg border px-3 py-2 text-sm font-medium hover:bg-zinc-100 dark:hover:bg-zinc-800"
+      className="relative inline-flex min-h-[44px] items-center rounded-lg border border-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
     >
       <span aria-hidden="true">🔔</span>
       {unread > 0 && (
