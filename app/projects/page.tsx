@@ -7,6 +7,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { ProjectStatusBadge } from '@/components/ui/Badges'
 import { formatDate } from '@/lib/utils/dates'
 import { ProjectForm } from '@/components/projects/ProjectForm'
+import { ButtonLink, PageHeader } from '@/components/ui/primitives'
 import { getActiveUsers } from '@/lib/data/users'
 import type { Project, ProjectProgress, ProjectStatus } from '@/types/project'
 
@@ -142,21 +143,15 @@ export default async function ProjectsPage({
 
   return (
     <AppShell>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Projects</h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            {visibleProjects.length} project
-            {canCreate ? ' — buat project baru di bawah.' : '.'}
-          </p>
-        </div>
-        <Link
-          href="/tasks?view=mine"
-          className="inline-flex min-h-[44px] items-center rounded-lg border px-4 py-2 text-sm font-semibold"
-        >
-          My Tasks
-        </Link>
-      </div>
+      <PageHeader
+        title="Projects"
+        subtitle={`${visibleProjects.length} project${canCreate ? ' — buat project baru di bawah.' : '.'}`}
+        actions={
+          <ButtonLink href="/tasks?view=mine" variant="secondary">
+            My Tasks
+          </ButtonLink>
+        }
+      />
 
       <form
         method="get"
@@ -207,7 +202,7 @@ export default async function ProjectsPage({
         </div>
         <button
           type="submit"
-          className="min-h-[44px] rounded-lg bg-black px-5 py-2 font-semibold text-white dark:bg-white dark:text-black"
+          className="min-h-[44px] rounded-lg bg-kasuat-gold px-5 py-2 font-semibold text-kasuat-black"
         >
           Apply
         </button>
@@ -259,7 +254,7 @@ export default async function ProjectsPage({
                       aria-label={`Progress ${progress.percent} percent`}
                     >
                       <div
-                        className="h-full rounded-full bg-green-500"
+                        className="h-full rounded-full bg-kasuat-gold"
                         style={{ width: `${progress.percent}%` }}
                       />
                     </div>

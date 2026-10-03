@@ -413,7 +413,7 @@ export default async function DashboardPage({
               ))}
             </select>
           </div>
-          <button type="submit" className="min-h-[44px] rounded-lg bg-black px-5 py-2 font-semibold text-white dark:bg-white dark:text-black">
+          <button type="submit" className="min-h-[44px] rounded-lg bg-kasuat-gold px-5 py-2 font-semibold text-kasuat-black">
             Apply
           </button>
         </form>

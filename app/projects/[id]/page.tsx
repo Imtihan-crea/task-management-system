@@ -238,7 +238,7 @@ export default async function ProjectDetailPage({
             aria-valuemin={0}
             aria-valuemax={100}
           >
-            <div className="h-full rounded-full bg-green-500" style={{ width: `${progress.percent}%` }} />
+            <div className="h-full rounded-full bg-kasuat-gold" style={{ width: `${progress.percent}%` }} />
           </div>
           <dl className="mt-3">
             <Row label="Total Task" value={String(progress.total)} />
@@ -318,7 +318,7 @@ export default async function ProjectDetailPage({
             {can(profile.role, 'tasks.create') && canEditThis && (
               <Link
                 href={`/tasks/new?project=${project.id}`}
-                className="inline-flex min-h-[44px] items-center rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white dark:bg-white dark:text-black"
+                className="inline-flex min-h-[44px] items-center rounded-lg bg-kasuat-gold px-4 py-2 text-sm font-semibold text-kasuat-black"
               >
                 + Add Task
               </Link>

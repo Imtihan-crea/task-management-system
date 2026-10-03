@@ -6,6 +6,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { PriorityBadge, TaskStatusBadge, OverdueBadge } from '@/components/ui/Badges'
 import { formatDate, isOverdue, todayISO } from '@/lib/utils/dates'
 import { Pagination, paginate, parsePage } from '@/components/ui/Pagination'
+import { ButtonLink, PageHeader } from '@/components/ui/primitives'
 import type { TaskPriority, TaskStatus } from '@/types/task'
 
 type TaskRow = {
@@ -153,49 +154,29 @@ export default async function TasksPage({
 
   return (
     <AppShell>
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">{view === 'mine' ? 'My Tasks' : 'Tasks'}</h1>
-          <p className="mt-1 text-sm text-zinc-500">
-            {tasks.length} task{tasks.length === 1 ? '' : 's'}
-            {overdueCount > 0 && ` · ${overdueCount} overdue`}
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {view === 'mine' ? (
-            <Link
-              href="/tasks"
-              className="inline-flex min-h-[44px] items-center rounded-lg border px-4 py-2 text-sm font-semibold"
-            >
-              All Tasks
-            </Link>
-          ) : (
-            <Link
-              href="/tasks?view=mine"
-              className="inline-flex min-h-[44px] items-center rounded-lg border px-4 py-2 text-sm font-semibold"
-            >
-              My Tasks
-            </Link>
-          )}
-          {canCreate && (
-            <Link
-              href="/tasks/new"
-              className="inline-flex min-h-[44px] items-center rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white dark:bg-white dark:text-black"
-            >
-              + Add Task
-            </Link>
-          )}
-          {can(profile.role, 'suggestions.create') && (
-            <Link
-              href="/task-suggestions/new"
-              className="inline-flex min-h-[44px] items-center rounded-lg border px-4 py-2 text-sm font-semibold"
-            >
-              + Suggest Task
-            </Link>
-          )}
-        </div>
-      </div>
-
+      <PageHeader
+        title={view === 'mine' ? 'My Tasks' : 'Tasks'}
+        subtitle={`${tasks.length} task${tasks.length === 1 ? '' : 's'}${overdueCount > 0 ? ` · ${overdueCount} overdue` : ''}`}
+        actions={
+          <>
+            {view === 'mine' ? (
+              <ButtonLink href="/tasks" variant="secondary">
+                All Tasks
+              </ButtonLink>
+            ) : (
+              <ButtonLink href="/tasks?view=mine" variant="secondary">
+                My Tasks
+              </ButtonLink>
+            )}
+            {canCreate && <ButtonLink href="/tasks/new">+ Add Task</ButtonLink>}
+            {can(profile.role, 'suggestions.create') && (
+              <ButtonLink href="/task-suggestions/new" variant="secondary">
+                + Suggest Task
+              </ButtonLink>
+            )}
+          </>
+        }
+      />
       <form
         method="get"
         className="mt-4 flex flex-col gap-3 rounded-2xl bg-white p-4 shadow dark:bg-zinc-900"
@@ -304,7 +285,7 @@ export default async function TasksPage({
         </div>
         <button
           type="submit"
-          className="min-h-[44px] rounded-lg bg-black px-5 py-2 font-semibold text-white sm:w-auto dark:bg-white dark:text-black"
+          className="min-h-[44px] rounded-lg bg-kasuat-gold px-5 py-2 font-semibold text-kasuat-black sm:w-auto"
         >
           Apply
         </button>

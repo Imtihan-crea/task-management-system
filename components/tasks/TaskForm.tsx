@@ -218,7 +218,7 @@ export function TaskForm({
       <button
         type="submit"
         disabled={pending}
-        className="min-h-[44px] w-full rounded-lg bg-black px-4 py-2 font-semibold text-white disabled:opacity-50 sm:w-auto dark:bg-white dark:text-black"
+        className="min-h-[44px] w-full rounded-lg bg-kasuat-gold px-4 py-2 font-semibold text-kasuat-black disabled:opacity-50 sm:w-auto"
       >
         {pending ? 'Saving...' : mode === 'create' ? 'Create Task' : 'Save Changes'}
       </button>

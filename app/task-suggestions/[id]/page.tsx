@@ -149,7 +149,7 @@ export default async function SuggestionDetailPage({
           {convertedTaskCode && suggestion.converted_task_id && (
             <Link
               href={`/tasks/${suggestion.converted_task_id}`}
-              className="mt-4 inline-flex min-h-[44px] items-center rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white dark:bg-white dark:text-black"
+              className="mt-4 inline-flex min-h-[44px] items-center rounded-lg bg-kasuat-gold px-4 py-2 text-sm font-semibold text-kasuat-black"
             >
               View Task {convertedTaskCode}
             </Link>

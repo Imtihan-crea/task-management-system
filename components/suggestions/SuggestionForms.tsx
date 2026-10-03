@@ -169,7 +169,7 @@ export function SuggestionForm({
       <button
         type="submit"
         disabled={pending}
-        className="min-h-[44px] w-full rounded-lg bg-black px-4 py-2 font-semibold text-white disabled:opacity-50 sm:w-auto dark:bg-white dark:text-black"
+        className="min-h-[44px] w-full rounded-lg bg-kasuat-gold px-4 py-2 font-semibold text-kasuat-black disabled:opacity-50 sm:w-auto"
       >
         {pending ? 'Submitting...' : 'Submit Suggestion'}
       </button>
@@ -321,7 +321,7 @@ export function ResubmitForm({
       <button
         type="submit"
         disabled={pending}
-        className="min-h-[44px] w-full rounded-lg bg-black px-4 py-2 font-semibold text-white disabled:opacity-50 sm:w-auto dark:bg-white dark:text-black"
+        className="min-h-[44px] w-full rounded-lg bg-kasuat-gold px-4 py-2 font-semibold text-kasuat-black disabled:opacity-50 sm:w-auto"
       >
         {pending ? 'Resubmitting...' : 'Fix & Resubmit'}
       </button>
@@ -394,7 +394,7 @@ export function ReviewForm({
           name="decision"
           value="approve"
           disabled={pending}
-          className="min-h-[44px] flex-1 rounded-lg bg-black px-4 py-2 font-semibold text-white disabled:opacity-50 dark:bg-white dark:text-black"
+          className="min-h-[44px] flex-1 rounded-lg bg-kasuat-gold px-4 py-2 font-semibold text-kasuat-black disabled:opacity-50"
         >
           {pending ? 'Saving...' : 'Approve'}
         </button>

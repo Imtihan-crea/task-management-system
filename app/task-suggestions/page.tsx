@@ -143,7 +143,7 @@ export default async function SuggestionsPage({
           {canCreate && (
             <Link
               href="/task-suggestions/new"
-              className="inline-flex min-h-[44px] items-center rounded-lg bg-black px-4 py-2 text-sm font-semibold text-white dark:bg-white dark:text-black"
+              className="inline-flex min-h-[44px] items-center rounded-lg bg-kasuat-gold px-4 py-2 text-sm font-semibold text-kasuat-black"
             >
               + Suggest Task
             </Link>
@@ -180,7 +180,7 @@ export default async function SuggestionsPage({
             ))}
           </select>
         </div>
-        <button type="submit" className="min-h-[44px] rounded-lg bg-black px-5 py-2 font-semibold text-white dark:bg-white dark:text-black">
+        <button type="submit" className="min-h-[44px] rounded-lg bg-kasuat-gold px-5 py-2 font-semibold text-kasuat-black">
           Apply
         </button>
       </form>

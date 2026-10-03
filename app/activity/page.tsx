@@ -156,7 +156,7 @@ export default async function ActivityPage({
           <label htmlFor="f-to" className="mb-1 block text-sm font-medium">To</label>
           <input id="f-to" name="to" type="date" defaultValue={fTo} className="min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800" />
         </div>
-        <button type="submit" className="min-h-[44px] rounded-lg bg-black px-5 py-2 font-semibold text-white dark:bg-white dark:text-black">
+        <button type="submit" className="min-h-[44px] rounded-lg bg-kasuat-gold px-5 py-2 font-semibold text-kasuat-black">
           Apply
         </button>
       </form>
