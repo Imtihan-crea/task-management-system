@@ -75,11 +75,9 @@ const ICONS: Record<string, string> = {
 
 export function Sidebar({
   role,
-  collapsed,
   onNavigate,
 }: {
   role: UserRole
-  collapsed: boolean
   onNavigate?: () => void
 }) {
   const pathname = usePathname()
@@ -93,12 +91,11 @@ export function Sidebar({
         if (visible.length === 0) return null
         return (
           <div key={group.title ?? 'main'}>
-            {group.title && !collapsed && (
+            {group.title && (
               <p className="px-3 pb-1 pt-3 text-[11px] font-semibold tracking-wider text-zinc-500">
                 {group.title}
               </p>
             )}
-            {group.title && collapsed && <div className="pt-3" />}
             {visible.map((item) => {
               const active =
                 pathname === item.href ||
@@ -108,18 +105,15 @@ export function Sidebar({
                   key={item.href}
                   href={item.href}
                   aria-current={active ? 'page' : undefined}
-                  title={collapsed ? item.label : undefined}
                   onClick={onNavigate}
-                  className={`flex min-h-[44px] items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
-                    collapsed ? 'justify-center' : ''
-                  } ${
+                  className={`flex min-h-[40px] items-center gap-3 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
                     active
                       ? 'bg-kasuat-gold text-kasuat-black'
                       : 'text-zinc-200 hover:bg-zinc-800'
                   }`}
                 >
                   <Icon d={ICONS[item.href] ?? ''} />
-                  {!collapsed && <span className="truncate">{item.label}</span>}
+                  <span className="truncate">{item.label}</span>
                 </Link>
               )
             })}
@@ -130,33 +124,10 @@ export function Sidebar({
   )
 }
 
-import Image from 'next/image'
-
-export function SidebarBrand({ collapsed }: { collapsed: boolean }) {
-  if (!collapsed) {
-    return (
-      <div className="flex items-center px-3 py-4">
-        <KasuatLogo />
-      </div>
-    )
-  }
-  // Mark area dari aset resmi (crop kiri), bukan redraw.
+export function SidebarBrand() {
   return (
-    <div className="flex items-center justify-center px-3 py-4">
-      <span
-        className="block h-9 w-9 overflow-hidden rounded-lg"
-        role="img"
-        aria-label="Kasuat"
-      >
-        <Image
-          src="/brand/kasuat-logo-white.png"
-          alt=""
-          height={36}
-          width={144}
-          style={{ height: 36, width: 'auto', maxWidth: 'none', marginLeft: -6 }}
-          priority
-        />
-      </span>
+    <div className="flex items-center px-3 py-3">
+      <KasuatLogo />
     </div>
   )
 }

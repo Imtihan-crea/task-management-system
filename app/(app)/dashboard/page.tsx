@@ -52,6 +52,26 @@ function Kpi({ label, value }: { label: string; value: number | string }) {
   return <KpiCard label={label} value={value} />
 }
 
+/** KPI yang bisa diklik → loncat ke navigasi yang sesuai. */
+function KpiLink({
+  label,
+  value,
+  href,
+}: {
+  label: string
+  value: number | string
+  href: string
+}) {
+  return (
+    <Link
+      href={href}
+      className="rounded-xl transition-transform hover:scale-[1.02] focus-visible:outline-2 focus-visible:outline-kasuat-gold"
+    >
+      <KpiCard label={label} value={value} />
+    </Link>
+  )
+}
+
 function Section({
   title,
   children,
@@ -386,13 +406,10 @@ export default async function DashboardPage({
 
       {/* KPI utama */}
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <KpiCard
-          label="Total Project"
-          value={projects.length}
-        />
-        <KpiCard label="Total Task" value={tasks.length} />
-        <KpiCard label="Task On Going" value={ongoing.length} />
-        <KpiCard label="Task Overdue" value={overdue.length} />
+        <KpiLink label="Total Project" value={projects.length} href="/projects" />
+        <KpiLink label="Total Task" value={tasks.length} href="/tasks" />
+        <KpiLink label="Task On Going" value={ongoing.length} href="/tasks?view=ongoing" />
+        <KpiLink label="Task Overdue" value={overdue.length} href="/tasks?view=overdue" />
       </div>
       <div className="mt-3 grid grid-cols-2 gap-3 text-xs text-zinc-500 sm:grid-cols-4">
         <p>+{newProjects} dari bulan lalu</p>
@@ -402,10 +419,10 @@ export default async function DashboardPage({
       </div>
       {isAdmin && (
         <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Kpi label="TOTAL USERS" value={userStats!.INVITED + userStats!.ACTIVE + userStats!.INACTIVE} />
+          <KpiLink label="TOTAL USERS" value={userStats!.INVITED + userStats!.ACTIVE + userStats!.INACTIVE} href="/users" />
           <Kpi label="INVITED" value={userStats!.INVITED} />
           <Kpi label="INACTIVE" value={userStats!.INACTIVE} />
-          <Kpi label="PENDING SUGGESTIONS" value={pendingSuggestions.length} />
+          <KpiLink label="PENDING SUGGESTIONS" value={pendingSuggestions.length} href="/task-suggestions?status=PENDING" />
         </div>
       )}
 
