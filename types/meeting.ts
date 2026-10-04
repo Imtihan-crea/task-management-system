@@ -7,6 +7,19 @@ import type {
 } from '@/lib/db'
 
 /**
+ * Union enum di-RE-EXPORT di sini, supaya file ini jadi satu-satunya tempat
+ * consumer mengimpor tipe domain meeting. Sumber aslinya tetap skema
+ * Drizzle (single source of truth).
+ */
+export type {
+  MeetingActionItemStatus,
+  MeetingAttendance,
+  MeetingStatus,
+  MeetingType,
+  TaskPriority,
+}
+
+/**
  * Tipe domain Meeting (Phase 11).
  *
  * UNION ENUM sengaja di-import dari skema Drizzle (`lib/db/schema.ts`),

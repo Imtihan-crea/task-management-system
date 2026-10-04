@@ -8,7 +8,11 @@
     "start": "next start",
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
-    "db:check": "drizzle-kit check"
+    "db:check": "drizzle-kit check",
+    "test:time": "tsx tests/meeting-time.check.ts",
+    "test:rules": "tsx tests/meetings-rules.check.ts",
+    "test:db": "tsx tests/postgrest-or.check.ts",
+    "test:logic": "npm run test:time && npm run test:rules"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
@@ -28,6 +32,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.8",
     "tailwindcss": "^4",
+    "tsx": "^4.23.15",
     "typescript": "^5"
   }
 }
