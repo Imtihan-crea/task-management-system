@@ -25,11 +25,13 @@ import {
   check,
   date,
   index,
+  integer,
   jsonb,
   pgSchema,
   pgTable,
   primaryKey,
   text,
+  time,
   timestamp,
   unique,
   uuid,
@@ -205,6 +207,14 @@ export const tasks = pgTable(
     is_deleted: boolean('is_deleted').notNull().default(false),
     /** Link bukti (opsional, tetap bisa diubah setelah DONE). */
     evidence_url: text('evidence_url'),
+    /**
+     * Phase 11 traceability (§21): task tahu dari mana dia berasal.
+     * Polymorphic pointer — TIDAK punya FK, karena `source_id` bisa
+     * menunjuk tabel berbeda (meetings / task_suggestions / import).
+     * Validasi dilakukan di Server Action.
+     */
+    source_type: text('source_type'),
+    source_id: uuid('source_id'),
     created_at: timestamp('created_at', { withTimezone: true, mode: 'string' })
       .notNull()
       .defaultNow(),
@@ -223,6 +233,8 @@ export const tasks = pgTable(
     index('tasks_project_idx').on(t.project_id).where(sql`${t.is_deleted} = false`),
     index('tasks_assignee_idx').on(t.assignee_id).where(sql`${t.is_deleted} = false`),
     index('tasks_deadline_idx').on(t.deadline).where(sql`${t.is_deleted} = false`),
+    // Phase 11: lookup task yang berasal dari meeting/suggestion.
+    index('tasks_source_idx').on(t.source_type, t.source_id).where(sql`${t.source_type} is not null`),
   ]
 )
 
@@ -335,6 +347,8 @@ export const notificationPreferences = pgTable('notification_preferences', {
   email_task_updates: boolean('email_task_updates').notNull().default(true),
   email_suggestion_updates: boolean('email_suggestion_updates').notNull().default(true),
   email_deadline_alerts: boolean('email_deadline_alerts').notNull().default(true),
+  /** Phase 11: email meeting mengikuti preferensi sendiri (§24). */
+  email_meeting_updates: boolean('email_meeting_updates').notNull().default(true),
   updated_at: timestamp('updated_at', { withTimezone: true, mode: 'string' })
     .notNull()
     .defaultNow(),
@@ -373,6 +387,246 @@ export const activityLogs = pgTable(
   ]
 )
 
+/* ==================================================================== */
+/* PHASE 11 — MEETING                                                    */
+/* ==================================================================== */
+/* Migrasi: database/migrations/008_meetings.sql                        */
+/*                                                                    */
+/* Prinsip:                                                            */
+/* - Kasuat yang punya Meeting. Google Calendar hanya sync layer        */
+/*   (PRD §25, Rule 1 & 2). Token OAuth TIDAK disimpan di tabel ini    */
+/*   (§28) — tempatnya `google_calendar_connections` terpisah.          */
+/* - "Meeting butuh notes" DITURUNKAN dari isi kolom `notes`. Tidak ada */
+/*   kolom notes_status yang bisa berbeda dari isi notes — itu          */
+/*   pelajaran Phase 2 (is_active vs status).                           */
+/* - Akses baca(scoped) di levelsatu fungsi: can_read_meeting().        */
+/*   Dipakai policy RLS meetings + semua tabel anaknya.                */
+/* ==================================================================== */
+
+/* ------------------------------------------------------------------ */
+/* meetings                                                            */
+/* ------------------------------------------------------------------ */
+export const meetings = pgTable(
+  'meetings',
+  {
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    /** Kode readable "M-001" (dari sequence). */
+    code: text('code')
+      .notNull()
+      .unique()
+      .default(sql`'M-' || lpad(nextval('public.meeting_code_seq')::text, 3, '0')`),
+    title: text('title').notNull(),
+    /** NULLABLE by design: meeting global tidak wajib punya project. */
+    project_id: uuid('project_id').references(() => projects.id, { onDelete: 'set null' }),
+    meeting_type: text('meeting_type').notNull().default('INTERNAL_MEETING'),
+    /** DRAFT | SCHEDULED | COMPLETED | CANCELLED */
+    status: text('status').notNull().default('DRAFT'),
+    meeting_date: date('meeting_date', { mode: 'string' }).notNull(),
+    /** Waktu lokal (Asia/Jakarta) — tanpa timezone, lihat lib/utils/meeting-time.ts */
+    start_time: time('start_time', { withTimezone: false }).notNull(),
+    end_time: time('end_time', { withTimezone: false }).notNull(),
+    location: text('location'),
+    meeting_link: text('meeting_link'),
+    description: text('description'),
+    /** SATU-SATUNYA sumber kebenaran "notes sudah belum". */
+    notes: text('notes'),
+    /** Pemangku meeting. Boleh berbeda dari yang membuat (§38). */
+    organizer_id: uuid('organizer_id').references(() => profiles.id, { onDelete: 'set null' }),
+    created_by: uuid('created_by').references(() => profiles.id, { onDelete: 'set null' }),
+    /* --- Google Calendar metadata (BUKAN token) --- */
+    google_calendar_id: text('google_calendar_id'),
+    google_calendar_event_id: text('google_calendar_event_id'),
+    /** NOT_CONNECTED | PENDING | SYNCED | FAILED | DISCONNECTED */
+    google_sync_status: text('google_sync_status').notNull().default('NOT_CONNECTED'),
+    google_sync_error: text('google_sync_error'),
+    google_last_synced_at: timestamp('google_last_synced_at', {
+      withTimezone: true,
+      mode: 'string',
+    }),
+    /** Checkbox "Add to Google Calendar" di form create (§27). */
+    add_to_calendar: boolean('add_to_calendar').notNull().default(false),
+    created_at: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .notNull()
+      .defaultNow(),
+    updated_at: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    check(
+      'meetings_meeting_type_check',
+      sql`${t.meeting_type} in ('WEEKLY_PROJECT_REVIEW','PROJECT_KICKOFF','CLIENT_MEETING','INTERNAL_MEETING','OPERATIONAL_REVIEW','MANAGEMENT_REVIEW','AD_HOC','OTHER')`
+    ),
+    check(
+      'meetings_status_check',
+      sql`${t.status} in ('DRAFT','SCHEDULED','COMPLETED','CANCELLED')`
+    ),
+    check(
+      'meetings_google_sync_status_check',
+      sql`${t.google_sync_status} in ('NOT_CONNECTED','PENDING','SYNCED','FAILED','DISCONNECTED')`
+    ),
+    check('meetings_title_check', sql`char_length(trim(${t.title})) > 0`),
+    check('meetings_time_check', sql`${t.end_time} > ${t.start_time}`),
+    // Meeting wajib ada pemiliknya (organizer atau pembuat).
+    check(
+      'meetings_owner_check',
+      sql`${t.organizer_id} is not null or ${t.created_by} is not null`
+    ),
+    index('meetings_project_idx').on(t.project_id),
+    index('meetings_date_idx').on(t.meeting_date),
+    index('meetings_status_idx').on(t.status),
+    index('meetings_organizer_idx').on(t.organizer_id),
+    // Needs Notes queue (§36): hanya baris yang butuh tindakan.
+    // Ekspresi ini HARUS sama dengan definisi "needs notes" di query.
+    index('meetings_needs_notes_idx')
+      .on(t.meeting_date)
+      .where(sql`${t.status} = 'COMPLETED' and coalesce(btrim(${t.notes}), '') = ''`),
+  ]
+)
+
+/* ------------------------------------------------------------------ */
+/* meeting_participants                                                */
+/* ------------------------------------------------------------------ */
+export const meetingParticipants = pgTable(
+  'meeting_participants',
+  {
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    meeting_id: uuid('meeting_id')
+      .notNull()
+      .references(() => meetings.id, { onDelete: 'cascade' }),
+    /** Peserta internal (Kasuat user). */
+    user_id: uuid('user_id').references(() => profiles.id, { onDelete: 'cascade' }),
+    /** Peserta eksternal — siap untuk client meeting (§39). */
+    external_name: text('external_name'),
+    external_email: text('external_email'),
+    /** PENDING | ACCEPTED | DECLINED | ATTENDED */
+    attendance: text('attendance').notNull().default('PENDING'),
+    is_organizer: boolean('is_organizer').notNull().default(false),
+    created_at: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    unique('meeting_participants_user_unique').on(t.meeting_id, t.user_id),
+    // Internal ATAU eksternal — minimal salah satu harus ada.
+    check(
+      'meeting_participants_target_check',
+      sql`${t.user_id} is not null or (${t.external_name} is not null and ${t.external_email} is not null)`
+    ),
+    check(
+      'meeting_participants_attendance_check',
+      sql`${t.attendance} in ('PENDING','ACCEPTED','DECLINED','ATTENDED')`
+    ),
+    // (meeting_id, user_id) unique sudah melayani lookup per meeting.
+    index('meeting_participants_user_idx').on(t.user_id, t.meeting_id),
+  ]
+)
+
+/* ------------------------------------------------------------------ */
+/* meeting_agendas (§16) — daftar terstruktur, reorder = update position */
+/* ------------------------------------------------------------------ */
+export const meetingAgendas = pgTable(
+  'meeting_agendas',
+  {
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    meeting_id: uuid('meeting_id')
+      .notNull()
+      .references(() => meetings.id, { onDelete: 'cascade' }),
+    position: integer('position').notNull().default(0),
+    title: text('title').notNull(),
+    notes: text('notes'),
+    created_at: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .notNull()
+      .defaultNow(),
+    updated_at: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    check('meeting_agendas_title_check', sql`char_length(trim(${t.title})) > 0`),
+    index('meeting_agendas_order_idx').on(t.meeting_id, t.position),
+  ]
+)
+
+/* ------------------------------------------------------------------ */
+/* meeting_decisions (§18) — tiap item bisa diedit individual           */
+/* ------------------------------------------------------------------ */
+export const meetingDecisions = pgTable(
+  'meeting_decisions',
+  {
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    meeting_id: uuid('meeting_id')
+      .notNull()
+      .references(() => meetings.id, { onDelete: 'cascade' }),
+    position: integer('position').notNull().default(0),
+    decision: text('decision').notNull(),
+    rationale: text('rationale'),
+    decided_by: uuid('decided_by').references(() => profiles.id, { onDelete: 'set null' }),
+    created_at: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .notNull()
+      .defaultNow(),
+    updated_at: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    check('meeting_decisions_text_check', sql`char_length(trim(${t.decision})) > 0`),
+    index('meeting_decisions_order_idx').on(t.meeting_id, t.position),
+  ]
+)
+
+/* ------------------------------------------------------------------ */
+/* meeting_action_items (§19, §22)                                      */
+/* ------------------------------------------------------------------ */
+export const meetingActionItems = pgTable(
+  'meeting_action_items',
+  {
+    id: uuid('id').primaryKey().default(sql`gen_random_uuid()`),
+    meeting_id: uuid('meeting_id')
+      .notNull()
+      .references(() => meetings.id, { onDelete: 'cascade' }),
+    title: text('title').notNull(),
+    description: text('description'),
+    assignee_id: uuid('assignee_id').references(() => profiles.id, { onDelete: 'set null' }),
+    deadline: date('deadline', { mode: 'string' }),
+    /** LOW | MEDIUM | HIGH (opsional — default-nya MEDIUM saat jadi task) */
+    priority: text('priority'),
+    /** OPEN | IN_PROGRESS | DONE | DROPPED (bukan status task) */
+    status: text('status').notNull().default('OPEN'),
+    /**
+     * Link ke task (§21) DAN idempotency guard (§22):
+     * kalau sudah terisi, Create Task kedua tidak boleh membuat task baru.
+     */
+    task_id: uuid('task_id').references(() => tasks.id, { onDelete: 'set null' }),
+    created_by: uuid('created_by').references(() => profiles.id, { onDelete: 'set null' }),
+    created_at: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .notNull()
+      .defaultNow(),
+    updated_at: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .notNull()
+      .defaultNow(),
+  },
+  (t) => [
+    check('meeting_action_items_title_check', sql`char_length(trim(${t.title})) > 0`),
+    check(
+      'meeting_action_items_priority_check',
+      sql`${t.priority} is null or ${t.priority} in ('LOW','MEDIUM','HIGH')`
+    ),
+    check(
+      'meeting_action_items_status_check',
+      sql`${t.status} in ('OPEN','IN_PROGRESS','DONE','DROPPED')`
+    ),
+    index('meeting_action_items_meeting_idx').on(t.meeting_id, t.status),
+    index('meeting_action_items_assignee_idx')
+      .on(t.assignee_id)
+      .where(sql`${t.status} in ('OPEN','IN_PROGRESS')`),
+    // Link balik Meeting -> T-081 cepat.
+    index('meeting_action_items_task_idx')
+      .on(t.task_id)
+      .where(sql`${t.task_id} is not null`),
+  ]
+)
+
 /* ------------------------------------------------------------------ */
 /* Tipe turunan — inilah gunanya ORM: SELECT kolom jadi type-safe,    */
 /* tanpa menulis shape + `as` manual di 164 call site.                 */
@@ -392,6 +646,13 @@ export type NotificationEvent = typeof notificationEvents.$inferSelect
 export type NotificationPreference = typeof notificationPreferences.$inferSelect
 export type ActivityLog = typeof activityLogs.$inferSelect
 export type ProjectManager = typeof projectManagers.$inferSelect
+export type Meeting = typeof meetings.$inferSelect
+export type NewMeeting = typeof meetings.$inferInsert
+export type MeetingParticipant = typeof meetingParticipants.$inferSelect
+export type MeetingAgenda = typeof meetingAgendas.$inferSelect
+export type MeetingDecision = typeof meetingDecisions.$inferSelect
+export type MeetingActionItem = typeof meetingActionItems.$inferSelect
+export type NewMeetingActionItem = typeof meetingActionItems.$inferInsert
 
 /** Union dari nilai enum yang di-check di DB (drizzle tidak bisa baca CHECK). */
 export type ProfileRole = 'ADMIN' | 'PROJECT_MANAGER' | 'TEAM_MEMBER' | 'VIEWER'
@@ -406,3 +667,53 @@ export type SuggestionStatus =
   | 'REJECTED'
   | 'CONVERTED'
 export type ActorType = 'USER' | 'SYSTEM'
+
+/* --- Phase 11 --- */
+export type MeetingType =
+  | 'WEEKLY_PROJECT_REVIEW'
+  | 'PROJECT_KICKOFF'
+  | 'CLIENT_MEETING'
+  | 'INTERNAL_MEETING'
+  | 'OPERATIONAL_REVIEW'
+  | 'MANAGEMENT_REVIEW'
+  | 'AD_HOC'
+  | 'OTHER'
+/** Lifecycle §13: DRAFT → SCHEDULED → COMPLETED, SCHEDULED → CANCELLED */
+export type MeetingStatus = 'DRAFT' | 'SCHEDULED' | 'COMPLETED' | 'CANCELLED'
+export type MeetingAttendance = 'PENDING' | 'ACCEPTED' | 'DECLINED' | 'ATTENDED'
+export type MeetingActionItemStatus = 'OPEN' | 'IN_PROGRESS' | 'DONE' | 'DROPPED'
+export type GoogleSyncStatus =
+  | 'NOT_CONNECTED'
+  | 'PENDING'
+  | 'SYNCED'
+  | 'FAILED'
+  | 'DISCONNECTED'
+/** Sumber traceability task (§21) */
+export type TaskSourceType = 'MEETING' | 'SUGGESTION' | 'IMPORT'
+
+/**
+ * Status enum per tabel. Dipakai untuk filter query (bukan hanya badge di UI),
+ * supaya tidak ada string yang diketik ulang di banyak tempat.
+ */
+export const MEETING_TYPES: MeetingType[] = [
+  'WEEKLY_PROJECT_REVIEW',
+  'PROJECT_KICKOFF',
+  'CLIENT_MEETING',
+  'INTERNAL_MEETING',
+  'OPERATIONAL_REVIEW',
+  'MANAGEMENT_REVIEW',
+  'AD_HOC',
+  'OTHER',
+]
+export const MEETING_STATUSES: MeetingStatus[] = [
+  'DRAFT',
+  'SCHEDULED',
+  'COMPLETED',
+  'CANCELLED',
+]
+export const ACTION_ITEM_STATUSES: MeetingActionItemStatus[] = [
+  'OPEN',
+  'IN_PROGRESS',
+  'DONE',
+  'DROPPED',
+]
