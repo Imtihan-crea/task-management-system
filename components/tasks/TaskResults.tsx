@@ -1,10 +1,9 @@
 import Link from 'next/link'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { formatDate, isOverdue, todayISO } from '@/lib/utils/dates'
 import { PriorityBadge, TaskStatusBadge, OverdueBadge } from '@/components/ui/Badges'
 import { Pagination, paginate } from '@/components/ui/Pagination'
 import { applyTaskTab, type TaskTabKey } from '@/components/tasks/TaskTabs'
-import { fetchTaskLookups, fetchTaskRows } from '@/lib/data/task-list'
+import { assigneeName, fetchTaskLookups, fetchTaskRows } from '@/lib/data/task-list'
 import { EmptyState } from '@/components/ui/primitives'
 import type { TaskPriority } from '@/types/task'
 
@@ -52,21 +51,12 @@ export async function TaskResults({ filters }: { filters: TaskFilters }) {
     lookups.workstreams.map((w) => [w.id, `${w.code} · ${w.name}`])
   )
 
-  const assigneeIds = [...new Set(tasks.map((t) => t.assignee_id))]
-  const admin = createAdminClient()
-  let assigneeNames: Record<string, string> = {}
-  if (assigneeIds.length > 0) {
-    const { data: users } = await admin
-      .from('profiles')
-      .select('id, full_name, email')
-      .in('id', assigneeIds)
-    assigneeNames = Object.fromEntries(
-      ((users ?? []) as { id: string; full_name: string | null; email: string }[]).map((u) => [
-        u.id,
-        u.full_name || u.email,
-      ])
-    )
-  }
+  // Nama assignee sudah ikut embed di fetchTaskRows -> 0 query tambahan.
+  const assigneeNames: Record<string, string> = Object.fromEntries(
+    tasks
+      .filter((t) => assigneeName(t.assignee))
+      .map((t) => [t.assignee_id, assigneeName(t.assignee)])
+  )
 
   const needle = q.toLowerCase()
   if (needle) {

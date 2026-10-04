@@ -4,6 +4,12 @@ import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { TaskRow } from '@/lib/data/task-list'
 
+/** Sama seperti fetchTaskRows: assignee di-embed, tanpa query profiles terpisah. */
+const DASHBOARD_TASK_SELECT =
+  'id, code, title, project_id, workstream_id, assignee_id, ' +
+  'assignee:profiles!tasks_assignee_id_fkey(id, full_name, email), ' +
+  'priority, status, deadline, created_at, updated_at'
+
 export type DashboardScope = {
   projectIds: string[] | null // null = semua
   taskAssignee: string | null // null = semua assignee
@@ -95,7 +101,7 @@ export const getDashboardTasks = cache(
 
     let q = admin
       .from('tasks')
-      .select('id, code, title, project_id, workstream_id, assignee_id, priority, status, deadline, created_at, updated_at')
+      .select(DASHBOARD_TASK_SELECT)
       .eq('is_deleted', false)
       .order('deadline', { ascending: true })
       .limit(2000)
@@ -113,6 +119,8 @@ export const getDashboardTasks = cache(
     if (f.priority) q = q.eq('priority', f.priority)
 
     const { data } = await q
-    return (data ?? []) as TaskRow[]
+    // Sama seperti fetchTaskRows: cast lewat unknown karena select string
+    // berisi embed PostgREST yang tidak bisa di-infer.
+    return (data ?? []) as unknown as TaskRow[]
   }
 )

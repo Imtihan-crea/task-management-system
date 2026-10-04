@@ -10,7 +10,7 @@ import {
   getDashboardTasks,
   type DashboardFilters,
 } from '@/lib/data/dashboard'
-import { fetchTaskLookups } from '@/lib/data/task-list'
+import { assigneeName, fetchTaskLookups, type TaskAssignee } from '@/lib/data/task-list'
 import type { TaskPriority, TaskStatus } from '@/types/task'
 
 type Ctx = {
@@ -30,26 +30,22 @@ function KpiLink({ label, value, href }: { label: string; value: number | string
   )
 }
 
+/**
+ * Peta nama project + assignee untuk list mini.
+ * Nama assignee diambil dari data yang SUDAH di-embed di query task,
+ * jadi tidak ada query profiles tambahan di sini.
+ */
 async function namesFor(
-  tasks: { project_id: string; assignee_id: string }[]
+  tasks: { project_id: string; assignee_id: string; assignee?: TaskAssignee | null }[]
 ): Promise<{ projectNames: Record<string, string>; assigneeNames: Record<string, string> }> {
   const lookups = await fetchTaskLookups()
   const projectNames = Object.fromEntries(
     lookups.projects.map((p) => [p.id, `${p.code} · ${p.name}`])
   )
-  const ids = [...new Set(tasks.map((t) => t.assignee_id))]
-  let assigneeNames: Record<string, string> = {}
-  if (ids.length > 0) {
-    const { data } = await createAdminClient()
-      .from('profiles')
-      .select('id, full_name, email')
-      .in('id', ids)
-    assigneeNames = Object.fromEntries(
-      ((data ?? []) as { id: string; full_name: string | null; email: string }[]).map((u) => [
-        u.id,
-        u.full_name || u.email,
-      ])
-    )
+  const assigneeNames: Record<string, string> = {}
+  for (const t of tasks) {
+    const name = assigneeName(t.assignee)
+    if (name) assigneeNames[t.assignee_id] = name
   }
   return { projectNames, assigneeNames }
 }
@@ -265,10 +261,10 @@ export async function WorkloadSection({ userId, role, filters }: Ctx & { filters
   )
 }
 
-/** Form filter manajemen (admin + PM). Fetch list sendiri. */
+/** Form filter manajemen (admin + PM). Pakai lookup bersama untuk project. */
 export async function FilterSection({ filters }: { filters: DashboardFilters }) {
-  const [projectsRes, usersRes] = await Promise.all([
-    createAdminClient().from('projects').select('id, code, name').order('name').limit(200),
+  const [lookups, usersRes] = await Promise.all([
+    fetchTaskLookups(),
     createAdminClient()
       .from('profiles')
       .select('id, full_name, email')
@@ -276,7 +272,7 @@ export async function FilterSection({ filters }: { filters: DashboardFilters }) 
       .order('full_name')
       .limit(200),
   ])
-  const projects = (projectsRes.data ?? []) as { id: string; code: string; name: string }[]
+  const projects = [...lookups.projects].sort((a, b) => a.name.localeCompare(b.name))
   const users = (usersRes.data ?? []) as { id: string; full_name: string | null; email: string }[]
 
   return (

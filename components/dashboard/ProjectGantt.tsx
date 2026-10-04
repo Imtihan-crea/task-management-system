@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { getDashboardScope } from '@/lib/data/dashboard'
 
 type GanttProject = {
   id: string
@@ -42,24 +43,11 @@ export async function ProjectGantt({
   const admin = createAdminClient()
   const role = profile.role
 
-  let projectIds: string[] | null = null
-  if (role === 'PROJECT_MANAGER') {
-    const { data: links } = await admin
-      .from('project_managers')
-      .select('project_id')
-      .eq('user_id', profile.id)
-    projectIds = ((links ?? []) as { project_id: string }[]).map((l) => l.project_id)
-  } else if (role === 'TEAM_MEMBER') {
-    const { data: myTasks } = await admin
-      .from('tasks')
-      .select('project_id')
-      .eq('assignee_id', profile.id)
-      .eq('is_deleted', false)
-      .limit(1000)
-    projectIds = [
-      ...new Set(((myTasks ?? []) as { project_id: string }[]).map((t) => t.project_id)),
-    ]
-  }
+  // Scope TIDAK diderivate ulang di sini: pakai getDashboardScope() yang
+  // di-cache per request. Semua section dashboard jadi satu sumber
+  // kebenaran scope (sebelumnya Gantt mengulang query sendiri).
+  const scope = await getDashboardScope(profile.id, role)
+  const projectIds = scope.projectIds
 
   let projectsQuery = admin
     .from('projects')
