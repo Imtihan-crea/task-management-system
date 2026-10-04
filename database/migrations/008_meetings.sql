@@ -14,59 +14,30 @@
 --      cepat (tanpa join) saat menampilkan SOURCE di Task Detail.
 
 -- ================================================================
--- 0. FUNCTION PEMBANTU: apakah user boleh membaca sebuah meeting?
+-- CATATAN URUTAN PENTING
 -- ================================================================
--- Dipakai oleh policy RLS meetings + semua tabel anaknya.
--- WAJIB security definer: kalau policy meetings membaca
--- meeting_participants, DAN policy meeting_participants membaca meetings,
--- Postgres akan mendeteksi "infinite recursion in policy".
--- security definer + search_path terkunci memutus siklus itu
--- (pola yang sama seperti public.is_admin() di migrasi 001/002).
+-- Fungsi public.can_read_meeting() dibuat DI BAWAH (bagian 3), SESUDAH tabel
+-- meetings + meeting_participants ada. Alasannya: Postgres memvalidasi body
+-- fungsi saat pembuatan (check_function_bodies = on secara default), jadi
+-- fungsi yang merujuk tabel yang belum ada akan gagal dengan
+-- "relation public.meetings does not exist".
 --
--- Scope (§37): admin, maker, organizer, peserta, dan PM project terkait.
-create or replace function public.can_read_meeting(p_meeting_id uuid, p_user_id uuid)
-returns boolean
-language sql
-stable
-security definer
-set search_path = public as $$
-  select exists (
-    select 1
-    from public.meetings m
-    where m.id = p_meeting_id
-      and (
-        m.created_by = p_user_id
-        or m.organizer_id = p_user_id
-        or exists (
-          select 1
-          from public.meeting_participants mp
-          where mp.meeting_id = m.id
-            and mp.user_id = p_user_id
-        )
-        or exists (
-          select 1
-          from public.profiles p
-          where p.id = p_user_id
-            and p.role = 'ADMIN'
-            and p.status = 'ACTIVE'
-        )
-        or (
-          m.project_id is not null
-          and exists (
-            select 1
-            from public.project_managers pm
-            where pm.project_id = m.project_id
-              and pm.user_id = p_user_id
-          )
-        )
-      )
-  );
-$$;
-
--- Postgres memberi EXECUTE ke PUBLIC secara default untuk function.
--- Kita perketat: hanya role login yang boleh memanggil.
-revoke all on function public.can_read_meeting(uuid, uuid) from public;
-grant execute on function public.can_read_meeting(uuid, uuid) to authenticated;
+-- Urutan eksekusi file ini:
+--   1. meetings
+--   2. meeting_participants
+--   3. can_read_meeting()          <- butuh tabel 1 & 2 sudah ada
+--   4. meeting_agendas
+--   5. meeting_decisions
+--   6. meeting_action_items
+--   7. traceability di tasks
+--   8. preferensi email
+--   9. RLS + policy                <- butuh fungsi sudah ada
+--  10. policy activity_logs
+--
+-- AMAN DI-RUN ULANG: setiap statement dijaga (create table if not exists /
+-- drop trigger if exists / drop policy if exists / grant / revoke / setval
+-- dihitung ulang dari data). Kalau run gagal di tengah, tinggal paste ulang
+-- file ini dari awal.
 
 -- ================================================================
 -- 1. MEETINGS
@@ -216,7 +187,65 @@ create index if not exists meeting_participants_user_idx
   on public.meeting_participants (user_id, meeting_id);
 
 -- ================================================================
--- 3. MEETING_AGENDAS
+-- 3. FUNCTION PEMBANTU: apakah user boleh membaca sebuah meeting?
+-- ================================================================
+-- Diletakkan SESUDAH tabel meetings + meeting_participants karena Postgres
+-- memvalidasi body fungsi saat pembuatan (check_function_bodies default on).
+--
+-- Dipakai oleh policy RLS meetings + semua tabel anaknya.
+-- WAJIB security definer: kalau policy meetings membaca
+-- meeting_participants, DAN policy meeting_participants membaca meetings,
+-- Postgres akan mendeteksi "infinite recursion in policy".
+-- security definer + search_path terkunci memutus siklus itu
+-- (pola yang sama seperti public.is_admin() di migrasi 001/002).
+--
+-- Scope (§37): admin, maker, organizer, peserta, dan PM project terkait.
+create or replace function public.can_read_meeting(p_meeting_id uuid, p_user_id uuid)
+returns boolean
+language sql
+stable
+security definer
+set search_path = public as $$
+  select exists (
+    select 1
+    from public.meetings m
+    where m.id = p_meeting_id
+      and (
+        m.created_by = p_user_id
+        or m.organizer_id = p_user_id
+        or exists (
+          select 1
+          from public.meeting_participants mp
+          where mp.meeting_id = m.id
+            and mp.user_id = p_user_id
+        )
+        or exists (
+          select 1
+          from public.profiles p
+          where p.id = p_user_id
+            and p.role = 'ADMIN'
+            and p.status = 'ACTIVE'
+        )
+        or (
+          m.project_id is not null
+          and exists (
+            select 1
+            from public.project_managers pm
+            where pm.project_id = m.project_id
+              and pm.user_id = p_user_id
+          )
+        )
+      )
+  );
+$$;
+
+-- Postgres memberi EXECUTE ke PUBLIC secara default untuk function.
+-- Kita perketat: hanya role login yang boleh memanggil.
+revoke all on function public.can_read_meeting(uuid, uuid) from public;
+grant execute on function public.can_read_meeting(uuid, uuid) to authenticated;
+
+-- ================================================================
+-- 4. MEETING_AGENDAS
 -- ================================================================
 -- §16: daftar terstruktur dengan urutan. Reorder = update `position`.
 create table if not exists public.meeting_agendas (
@@ -240,7 +269,7 @@ create index if not exists meeting_agendas_order_idx
   on public.meeting_agendas (meeting_id, position);
 
 -- ================================================================
--- 4. MEETING_DECISIONS
+-- 5. MEETING_DECISIONS
 -- ================================================================
 -- §18: setiap decision bisa diedit individual.
 create table if not exists public.meeting_decisions (
@@ -265,7 +294,7 @@ create index if not exists meeting_decisions_order_idx
   on public.meeting_decisions (meeting_id, position);
 
 -- ================================================================
--- 5. MEETING_ACTION_ITEMS
+-- 6. MEETING_ACTION_ITEMS
 -- ================================================================
 -- §19 + §40. `task_id` punya dua fungsi sekaligus:
 --   1. Link balik ke task (§21 "Meeting juga menampilkan Action Items -> T-081")
@@ -307,7 +336,7 @@ create index if not exists meeting_action_items_task_idx
   where task_id is not null;
 
 -- ================================================================
--- 6. TASK TRACEABILITY (§21)
+-- 7. TASK TRACEABILITY (§21)
 -- ================================================================
 -- Polymorphic pointer: source_id bisa menunjuk meeting / suggestion / import,
 -- jadi TIDAK BISA punya foreign key. Validasi dilakukan di server
@@ -328,7 +357,7 @@ create index if not exists tasks_source_idx
   where source_type is not null;
 
 -- ================================================================
--- 7. PREFERENSI EMAIL MEETING
+-- 8. PREFERENSI EMAIL MEETING
 -- ================================================================
 -- §24: email tetap mengikuti notification preferences yang existing.
 -- Default true supaya tidak diam-diam mematikan email untuk user lama.
@@ -336,7 +365,7 @@ alter table public.notification_preferences
   add column if not exists email_meeting_updates boolean not null default true;
 
 -- ================================================================
--- 8. RLS
+-- 9. RLS
 -- ================================================================
 -- Pola Phase 3: SELECT untuk user login, TIDAK ADA policy tulis untuk
 -- anon/authenticated. Semua tulis lewat service role + authorization
@@ -396,7 +425,7 @@ grant select on public.meeting_decisions to authenticated;
 grant select on public.meeting_action_items to authenticated;
 
 -- ================================================================
--- 9. ACTIVITY LOG: tambahkan branch meeting
+-- 10. ACTIVITY LOG: tambahkan branch meeting
 -- ================================================================
 -- §23: jangan buat arsitektur audit baru. Cukup perluas policy existing
 -- supaya log meeting bisa dibaca oleh yang berhak.
@@ -459,7 +488,7 @@ create policy "Activity readable by scope"
   );
 
 -- ================================================================
--- 10. RINGKASAN
+-- 11. RINGKASAN
 -- ================================================================
 -- Tabel baru : meetings, meeting_participants, meeting_agendas,
 --               meeting_decisions, meeting_action_items   (5)
