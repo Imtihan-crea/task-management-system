@@ -12,6 +12,7 @@ const DEFAULT_PREFS = {
   email_task_updates: true,
   email_suggestion_updates: true,
   email_deadline_alerts: true,
+  email_meeting_updates: true,
 }
 
 export default async function SettingsPage() {

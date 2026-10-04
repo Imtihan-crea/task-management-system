@@ -54,6 +54,7 @@ export async function saveNotificationPreferences(
     email_task_updates: on(formData.get('email_task_updates')),
     email_suggestion_updates: on(formData.get('email_suggestion_updates')),
     email_deadline_alerts: on(formData.get('email_deadline_alerts')),
+    email_meeting_updates: on(formData.get('email_meeting_updates')),
   }
 
   const { error } = await createAdminClient()

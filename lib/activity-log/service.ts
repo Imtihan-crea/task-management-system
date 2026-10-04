@@ -31,8 +31,32 @@ export type ActivityAction =
   | 'SUGGESTION_REVISION_REQUESTED'
   | 'SUGGESTION_REJECTED'
   | 'SUGGESTION_CONVERTED'
+  // --- Phase 11: Meeting (§23) ---
+  | 'MEETING_CREATED'
+  | 'MEETING_UPDATED'
+  | 'MEETING_SCHEDULED'
+  | 'MEETING_COMPLETED'
+  | 'MEETING_CANCELLED'
+  | 'MEETING_PARTICIPANT_ADDED'
+  | 'MEETING_PARTICIPANT_REMOVED'
+  | 'MEETING_AGENDA_UPDATED'
+  | 'MEETING_DECISION_CREATED'
+  | 'MEETING_ACTION_ITEM_CREATED'
+  | 'MEETING_ACTION_ITEM_UPDATED'
+  | 'MEETING_TASK_CREATED'
+  | 'MEETING_SYNCED'
+  | 'MEETING_SYNC_FAILED'
 
-export type ActivityEntityType = 'project' | 'workstream' | 'task' | 'suggestion' | 'user' | ''
+export type ActivityEntityType =
+  | 'project'
+  | 'workstream'
+  | 'task'
+  | 'suggestion'
+  | 'user'
+  // --- Phase 11 ---
+  | 'meeting'
+  | 'meeting_action_item'
+  | ''
 
 export type LogActivityInput = {
   actorUserId: string | null
