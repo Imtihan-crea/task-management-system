@@ -12,6 +12,12 @@ import { logActivity } from '@/lib/activity-log/service'
 // bukan ditulis ulang di sini. File ini server-only ('use server'),
 // jadi runtime drizzle tidak akan ikut ke browser.
 import { ACTION_ITEM_STATUSES, MEETING_TYPES } from '@/lib/db/schema'
+import {
+  fetchMeetingActionItems,
+  fetchMeetingById,
+  fetchMeetingDecisions,
+} from '@/lib/data/meetings'
+import { buildCompletionEmailBody } from '@/lib/meetings/completion-email'
 import type {
   MeetingActionItemStatus,
   MeetingStatus,
@@ -218,6 +224,11 @@ async function notifyMeetingParticipants(input: {
   headline: string
   emailSubject: string
   emailBody: string
+  /**
+   * Kalau diisi, dipakai sebagai HTML email seutuhnya (menggantikan
+   * template default). Dipakai email Completed yang memuat hasil meeting.
+   */
+  emailHtml?: string
 }): Promise<void> {
   const userIds = await participantUserIds(input.meetingId)
   if (userIds.length === 0) return
@@ -240,7 +251,9 @@ async function notifyMeetingParticipants(input: {
     email: baseUrl
       ? {
           subject: input.emailSubject,
-          html: `<p>Halo,</p><p>${input.emailBody}</p><ul><li><strong>${input.code} ${input.title}</strong></li><li><strong>Project:</strong> ${input.projectLabel}</li></ul><p>Lihat detail:<br><a href="${baseUrl}/meetings/${input.meetingId}">${baseUrl}/meetings/${input.meetingId}</a></p>`,
+          html:
+            input.emailHtml ??
+            `<p>Halo,</p><p>${input.emailBody}</p><ul><li><strong>${input.code} ${input.title}</strong></li><li><strong>Project:</strong> ${input.projectLabel}</li></ul><p>Lihat detail:<br><a href="${baseUrl}/meetings/${input.meetingId}">${baseUrl}/meetings/${input.meetingId}</a></p>`,
           category: 'meeting',
         }
       : null,
@@ -639,6 +652,65 @@ export async function completeMeeting(
   }
 
   const label = await projectLabel(access.meeting.project_id)
+
+  // Hasil meeting untuk body email: notes + decisions + action items.
+  // Diambil SETELAH status COMPLETED supaya isinya final saat email dikirim.
+  const admin = createAdminClient()
+  const [fullMeeting, decisions, actions] = await Promise.all([
+    fetchMeetingById(id),
+    fetchMeetingDecisions(id),
+    fetchMeetingActionItems(id),
+  ])
+
+  const assigneeIds = [
+    ...new Set(actions.map((a) => a.assignee_id).filter((v): v is string => Boolean(v))),
+  ]
+  const taskIds = [
+    ...new Set(actions.map((a) => a.task_id).filter((v): v is string => Boolean(v))),
+  ]
+  const [{ data: assignees }, { data: linkedTasks }] = await Promise.all([
+    assigneeIds.length > 0
+      ? admin.from('profiles').select('id, full_name, email').in('id', assigneeIds)
+      : Promise.resolve({ data: [] as { id: string; full_name: string | null; email: string }[] }),
+    taskIds.length > 0
+      ? admin.from('tasks').select('id, code').in('id', taskIds)
+      : Promise.resolve({ data: [] as { id: string; code: string }[] }),
+  ])
+  const assigneeNames = Object.fromEntries(
+    ((assignees ?? []) as { id: string; full_name: string | null; email: string }[]).map((u) => [
+      u.id,
+      u.full_name || u.email,
+    ])
+  )
+  const taskCodes = Object.fromEntries(
+    ((linkedTasks ?? []) as { id: string; code: string }[]).map((t) => [t.id, t.code])
+  )
+
+  let baseUrl = ''
+  try {
+    baseUrl = getAppBaseUrl()
+  } catch {
+    console.error('[notify] APP_URL missing, skipping meeting email.')
+  }
+
+  const completionHtml = buildCompletionEmailBody({
+    code: updated.code,
+    title: access.meeting.title,
+    projectLabel: label,
+    meetingUrl: baseUrl ? `${baseUrl}/meetings/${id}` : `/meetings/${id}`,
+    notes: fullMeeting?.notes ?? null,
+    decisions: decisions.map((d) => ({ decision: d.decision, rationale: d.rationale })),
+    actionItems: actions.map((a) => ({
+      title: a.title,
+      assigneeName: a.assignee_id ? (assigneeNames[a.assignee_id] ?? null) : null,
+      deadline: a.deadline,
+      status: a.status,
+      taskCode: a.task_id ? (taskCodes[a.task_id] ?? null) : null,
+    })),
+    openActionItems: actions.filter((a) => a.status === 'OPEN' || a.status === 'IN_PROGRESS')
+      .length,
+  })
+
   await notifyMeetingParticipants({
     key: `meeting-completed:${id}:${updated.updated_at}`,
     type: 'MEETING_COMPLETED',
@@ -648,7 +720,8 @@ export async function completeMeeting(
     projectLabel: label,
     headline: `Meeting ${updated.code} completed: ${access.meeting.title}`,
     emailSubject: `[Meeting Completed] ${updated.code} ${access.meeting.title}`,
-    emailBody: 'Meeting berikut telah selesai. Mohon lengkapi notes & action items:',
+    emailBody: 'Meeting berikut telah selesai.',
+    emailHtml: completionHtml,
   })
 
   await logActivity({

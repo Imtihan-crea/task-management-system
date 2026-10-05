@@ -11,8 +11,9 @@
     "db:check": "drizzle-kit check",
     "test:time": "tsx tests/meeting-time.check.ts",
     "test:rules": "tsx tests/meetings-rules.check.ts",
+    "test:email": "tsx tests/completion-email.check.ts",
     "test:db": "tsx tests/postgrest-or.check.ts",
-    "test:logic": "npm run test:time && npm run test:rules"
+    "test:logic": "npm run test:time && npm run test:rules && npm run test:email"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",
