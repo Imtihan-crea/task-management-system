@@ -65,6 +65,37 @@ export type TabCandidate = {
 }
 
 /**
+ * Akses meeting untuk otorisasi (§37).
+ *
+ * Dipakai BERSAMA oleh Server Action (app/actions/meetings.ts) dan halaman
+ * detail. Ditaruh di sini (modul murni) karena file 'use server' HANYA boleh
+ * mengekspor fungsi async — helper sync seperti canViewMeeting akan
+ * menggagalkan build kalau tinggal di sana.
+ */
+export type MeetingAccess = {
+  meeting: {
+    id: string
+    code: string
+    title: string
+    project_id: string | null
+    status: string
+    organizer_id: string | null
+    created_by: string | null
+    meeting_date: string
+  } | null
+  isOwner: boolean
+  isParticipant: boolean
+  isProjectPM: boolean
+}
+
+/** Boleh baca: admin, owner, peserta, atau PM project terkait. */
+export function canViewMeeting(access: MeetingAccess, role: string): boolean {
+  if (!access.meeting) return false
+  if (role === 'ADMIN') return true
+  return access.isOwner || access.isParticipant || access.isProjectPM
+}
+
+/**
  * Definisi tab PRD §7 — SATU-SATUNYA tempat filter tab diterapkan.
  *
  * Sengaja dihitung di JS, bukan di SQL:

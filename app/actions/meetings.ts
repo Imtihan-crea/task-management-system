@@ -17,6 +17,7 @@ import type {
   MeetingStatus,
   MeetingType,
 } from '@/types/meeting'
+import type { MeetingAccess } from '@/lib/meetings/rules'
 import type { TaskPriority } from '@/types/task'
 import type { UserRole } from '@/types/profile'
 
@@ -124,14 +125,12 @@ type MeetingRow = {
   meeting_date: string
 }
 
-export type MeetingAccess = {
-  meeting: MeetingRow | null
-  isOwner: boolean
-  isParticipant: boolean
-  isProjectPM: boolean
-}
+// MeetingAccess + canViewMeeting tinggal di lib/meetings/rules.ts (modul
+// murni) karena file 'use server' HANYA boleh mengekspor fungsi async.
+// Di sini diimpor ulang tipenya supaya signature tetap jelas.
 
-async function getMeetingAccess(
+/** Akses meeting untuk halaman detail (diekspos sebagai server action helper). */
+export async function getMeetingAccess(
   meetingId: string,
   userId: string,
   role: UserRole
@@ -172,13 +171,6 @@ async function getMeetingAccess(
     isParticipant: Boolean(part),
     isProjectPM,
   }
-}
-
-/** Boleh baca: admin, owner, peserta, atau PM project terkait. */
-export function canViewMeeting(access: MeetingAccess, role: UserRole): boolean {
-  if (!access.meeting) return false
-  if (role === 'ADMIN') return true
-  return access.isOwner || access.isParticipant || access.isProjectPM
 }
 
 /** Kelola penuh (field inti, lifecycle, participants): owner, admin, PM scope. */
