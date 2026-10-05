@@ -221,3 +221,26 @@ Keputusan owner:
    eksplisit + escape HTML (lolos uji XSS). In-app tetap singkat (judul saja).
 
 Verifikasi saat itu: `test:logic` 121/121, `tsc` bersih, `lint` 0 error, `build` sukses.
+
+## 10. Update 6 Okt 2026 — Gratisan Penuh: Cabut Google UI, Digest Pagi, Brand Email
+
+Keputusan owner: OAuth ditunda, maksimalkan email gratis (internal).
+
+1. **UI Google yang mati dicabut** (commit `7663b0c`): checkbox Add to Calendar,
+   kolom/badge Calendar, blok Calendar Sync + Retry, section Settings
+   Integrations, action `markMeetingSyncAttempt`, komponen `SyncBadge`/`SyncRetryForm`.
+   Kolom DB `google_*` + skema Drizzle dibiarkan (gratis, future-proof).
+2. **Layout email brand Kasuat** (commit `3bae4a2`): `lib/email/layout.ts`,
+   dibungkus sekali di `sendEmail` (satu choke point → semua email ikut).
+   Logo berupa TEKS emas (bukan gambar — Gmail memblokir gambar eksternal),
+   inline style, 600px, footer no-reply. Hapus dead code `notifyTaskDone`.
+   12 boundary test.
+3. **Morning Digest anti-nyampah** (commit `eda815a`): `runMorningDigest()` —
+   HANYA meeting hari ini + task due/overdue per user; yang tidak punya apa-apa
+   tidak dapat apa-apa. Kategori email sendiri (`digest`) + checkbox opt-out
+   (migrasi `009_digest_prefs.sql`, 1 kolom). Digabung ke cron deadline yang
+   sudah ada (00:00 UTC = 07:00 WIB) — tanpa jatah cron baru (Hobby aman).
+   Dry-run live: 6 user aktif → hanya 1 penerima (1 task overdue). 14 test.
+
+Verifikasi saat itu: `test:logic` 147/147, `tsc` bersih, `lint` 0 error,
+`build` sukses, `drizzle-kit generate` → `No schema changes`.
