@@ -28,6 +28,7 @@ import {
   canCreateTaskFromMeeting,
   canManageMeetingContent,
   canManageMeetingFull,
+  isHistoricalMeetingStatus,
 } from '@/lib/meetings/rules'
 import type { TaskPriority } from '@/types/task'
 import type { UserRole } from '@/types/profile'
@@ -229,6 +230,11 @@ async function notifyMeetingParticipants(input: {
    * template default). Dipakai email Completed yang memuat hasil meeting.
    */
   emailHtml?: string
+  /**
+   * Kalau true, email dilewati (in-app saja). Dipakai untuk edit setelah
+   * meeting COMPLETED/CANCELLED — lihat isHistoricalMeetingStatus.
+   */
+  suppressEmail?: boolean
 }): Promise<void> {
   const userIds = await participantUserIds(input.meetingId)
   if (userIds.length === 0) return
@@ -248,15 +254,47 @@ async function notifyMeetingParticipants(input: {
     message: `"${input.title}" (${input.code}) di ${input.projectLabel}.`,
     entityType: 'meeting',
     entityId: input.meetingId,
-    email: baseUrl
-      ? {
-          subject: input.emailSubject,
-          html:
-            input.emailHtml ??
-            `<p>Halo,</p><p>${input.emailBody}</p><ul><li><strong>${input.code} ${input.title}</strong></li><li><strong>Project:</strong> ${input.projectLabel}</li></ul><p>Lihat detail:<br><a href="${baseUrl}/meetings/${input.meetingId}">${baseUrl}/meetings/${input.meetingId}</a></p>`,
-          category: 'meeting',
-        }
-      : null,
+    email: input.suppressEmail
+      ? null
+      : baseUrl
+        ? {
+            subject: input.emailSubject,
+            html:
+              input.emailHtml ??
+              `<p>Halo,</p><p>${input.emailBody}</p><ul><li><strong>${input.code} ${input.title}</strong></li><li><strong>Project:</strong> ${input.projectLabel}</li></ul><p>Lihat detail:<br><a href="${baseUrl}/meetings/${input.meetingId}">${baseUrl}/meetings/${input.meetingId}</a></p>`,
+            category: 'meeting',
+          }
+        : null,
+  })
+}
+
+/**
+ * Notifikasi edit konten (agenda/notes/decisions/action items/participants).
+ * Selalu in-app saja, tidak pernah email — edit konten itu granular dan
+ * sering, dan setelah COMPLETED/CANCELLED email memang dilarang.
+ * Dipakai untuk semua mutasi konten supaya peserta tetap tahu via lonceng.
+ */
+async function notifyContentChange(input: {
+  meetingId: string
+  code: string
+  title: string
+  projectId: string | null
+  headline: string
+  /** Pembeda key supaya edit berbeda tidak saling men-suppress. */
+  keySuffix: string
+}): Promise<void> {
+  const label = await projectLabel(input.projectId)
+  await notifyMeetingParticipants({
+    key: `meeting-content:${input.meetingId}:${input.keySuffix}:${Date.now()}`,
+    type: 'MEETING_UPDATED',
+    meetingId: input.meetingId,
+    code: input.code,
+    title: input.title,
+    projectLabel: label,
+    headline: input.headline,
+    emailSubject: '',
+    emailBody: '',
+    suppressEmail: true,
   })
 }
 
@@ -846,6 +884,16 @@ export async function updateMeetingNotes(
     },
   })
 
+  // Notes: selalu in-app saja (tidak pernah email).
+  await notifyContentChange({
+    meetingId: id,
+    code: access.meeting.code,
+    title: access.meeting.title,
+    projectId: access.meeting.project_id,
+    headline: `Notes updated in ${access.meeting.code}`,
+    keySuffix: 'notes',
+  })
+
   revalidateMeeting(id, access.meeting.project_id)
   return { success: 'Notes saved successfully.' }
 }
@@ -902,6 +950,15 @@ export async function createAgenda(
     metadata: { meeting_code: access.meeting.code, change: 'agenda_added', agenda_title: title },
   })
 
+  await notifyContentChange({
+    meetingId,
+    code: access.meeting.code,
+    title: access.meeting.title,
+    projectId: access.meeting.project_id,
+    headline: `Agenda added in ${access.meeting.code}`,
+    keySuffix: 'agenda-added',
+  })
+
   revalidateMeeting(meetingId, access.meeting.project_id)
   return { success: 'Agenda added successfully.' }
 }
@@ -935,6 +992,15 @@ export async function updateAgenda(
     return { error: 'Unable to update agenda.' }
   }
 
+  await notifyContentChange({
+    meetingId,
+    code: access.meeting.code,
+    title: access.meeting.title,
+    projectId: access.meeting.project_id,
+    headline: `Agenda updated in ${access.meeting.code}`,
+    keySuffix: `agenda-${id}`,
+  })
+
   revalidateMeeting(meetingId, access.meeting.project_id)
   return { success: 'Agenda updated successfully.' }
 }
@@ -964,6 +1030,15 @@ export async function deleteAgenda(
     console.error('deleteAgenda failed:', error.message)
     return { error: 'Unable to delete agenda.' }
   }
+
+  await notifyContentChange({
+    meetingId,
+    code: access.meeting.code,
+    title: access.meeting.title,
+    projectId: access.meeting.project_id,
+    headline: `Agenda removed in ${access.meeting.code}`,
+    keySuffix: `agenda-del-${id}`,
+  })
 
   revalidateMeeting(meetingId, access.meeting.project_id)
   return { success: 'Agenda deleted successfully.' }
@@ -1006,6 +1081,15 @@ export async function reorderAgendas(
       return { error: 'Unable to reorder agenda.' }
     }
   }
+
+  await notifyContentChange({
+    meetingId,
+    code: access.meeting.code,
+    title: access.meeting.title,
+    projectId: access.meeting.project_id,
+    headline: `Agenda reordered in ${access.meeting.code}`,
+    keySuffix: 'agenda-reorder',
+  })
 
   revalidateMeeting(meetingId, access.meeting.project_id)
   return { success: 'Agenda order saved successfully.' }
@@ -1064,6 +1148,15 @@ export async function createDecision(
     metadata: { meeting_code: access.meeting.code, decision },
   })
 
+  await notifyContentChange({
+    meetingId,
+    code: access.meeting.code,
+    title: access.meeting.title,
+    projectId: access.meeting.project_id,
+    headline: `Decision added in ${access.meeting.code}`,
+    keySuffix: 'decision-added',
+  })
+
   revalidateMeeting(meetingId, access.meeting.project_id)
   return { success: 'Decision added successfully.' }
 }
@@ -1097,6 +1190,15 @@ export async function updateDecision(
     return { error: 'Unable to update decision.' }
   }
 
+  await notifyContentChange({
+    meetingId,
+    code: access.meeting.code,
+    title: access.meeting.title,
+    projectId: access.meeting.project_id,
+    headline: `Decision updated in ${access.meeting.code}`,
+    keySuffix: `decision-${id}`,
+  })
+
   revalidateMeeting(meetingId, access.meeting.project_id)
   return { success: 'Decision updated successfully.' }
 }
@@ -1126,6 +1228,15 @@ export async function deleteDecision(
     console.error('deleteDecision failed:', error.message)
     return { error: 'Unable to delete decision.' }
   }
+
+  await notifyContentChange({
+    meetingId,
+    code: access.meeting.code,
+    title: access.meeting.title,
+    projectId: access.meeting.project_id,
+    headline: `Decision removed in ${access.meeting.code}`,
+    keySuffix: `decision-del-${id}`,
+  })
 
   revalidateMeeting(meetingId, access.meeting.project_id)
   return { success: 'Decision deleted successfully.' }
@@ -1187,6 +1298,15 @@ export async function createActionItem(
     entityCode: access.meeting.code,
     projectId: access.meeting.project_id,
     metadata: { meeting_code: access.meeting.code, action_item_title: title },
+  })
+
+  await notifyContentChange({
+    meetingId,
+    code: access.meeting.code,
+    title: access.meeting.title,
+    projectId: access.meeting.project_id,
+    headline: `Action item added in ${access.meeting.code}`,
+    keySuffix: 'action-added',
   })
 
   revalidateMeeting(meetingId, access.meeting.project_id)
@@ -1256,6 +1376,15 @@ export async function updateActionItem(
     },
   })
 
+  await notifyContentChange({
+    meetingId,
+    code: access.meeting.code,
+    title: access.meeting.title,
+    projectId: access.meeting.project_id,
+    headline: `Action item updated in ${access.meeting.code}`,
+    keySuffix: `action-${id}`,
+  })
+
   revalidateMeeting(meetingId, access.meeting.project_id)
   return { success: 'Action item updated successfully.' }
 }
@@ -1299,6 +1428,15 @@ export async function deleteActionItem(
     console.error('deleteActionItem failed:', error.message)
     return { error: 'Unable to delete action item.' }
   }
+
+  await notifyContentChange({
+    meetingId,
+    code: access.meeting.code,
+    title: access.meeting.title,
+    projectId: access.meeting.project_id,
+    headline: `Action item removed in ${access.meeting.code}`,
+    keySuffix: `action-del-${id}`,
+  })
 
   revalidateMeeting(meetingId, access.meeting.project_id)
   return { success: 'Action item deleted successfully.' }
@@ -1356,8 +1494,10 @@ export async function addParticipant(
       .maybeSingle<{ id: string }>()
 
     // Undang yang baru ditambahkan (key mencakup user supaya tidak bentrok
-    // dengan undangan massal saat create).
+    // dengan undangan massal saat create). Setelah COMPLETED/CANCELLED,
+    // undangan hanya in-app (tanpa email).
     if (added) {
+      const historical = isHistoricalMeetingStatus(access.meeting.status)
       const label = await projectLabel(access.meeting.project_id)
       let baseUrl = ''
       try {
@@ -1373,13 +1513,14 @@ export async function addParticipant(
         message: `"${access.meeting.title}" (${access.meeting.code}) di ${label}.`,
         entityType: 'meeting',
         entityId: meetingId,
-        email: baseUrl
-          ? {
-              subject: `[Meeting Invitation] ${access.meeting.code} ${access.meeting.title}`,
-              html: `<p>Halo,</p><p>Anda diundang ke meeting berikut:</p><ul><li><strong>${access.meeting.code} ${access.meeting.title}</strong></li><li><strong>Project:</strong> ${label}</li></ul><p>Lihat detail:<br><a href="${baseUrl}/meetings/${meetingId}">${baseUrl}/meetings/${meetingId}</a></p>`,
-              category: 'meeting',
-            }
-          : null,
+        email:
+          !historical && baseUrl
+            ? {
+                subject: `[Meeting Invitation] ${access.meeting.code} ${access.meeting.title}`,
+                html: `<p>Halo,</p><p>Anda diundang ke meeting berikut:</p><ul><li><strong>${access.meeting.code} ${access.meeting.title}</strong></li><li><strong>Project:</strong> ${label}</li></ul><p>Lihat detail:<br><a href="${baseUrl}/meetings/${meetingId}">${baseUrl}/meetings/${meetingId}</a></p>`,
+                category: 'meeting',
+              }
+            : null,
       })
     }
   } else {
@@ -1467,6 +1608,15 @@ export async function removeParticipant(
     metadata: { meeting_code: access.meeting.code, removed_user_id: row.user_id },
   })
 
+  await notifyContentChange({
+    meetingId,
+    code: access.meeting.code,
+    title: access.meeting.title,
+    projectId: access.meeting.project_id,
+    headline: `Participant removed in ${access.meeting.code}`,
+    keySuffix: `participant-del-${participantId}`,
+  })
+
   revalidateMeeting(meetingId, access.meeting.project_id)
   return { success: 'Participant removed successfully.' }
 }
@@ -1512,6 +1662,15 @@ export async function updateAttendance(
     console.error('updateAttendance failed:', error.message)
     return { error: 'Unable to update attendance.' }
   }
+
+  await notifyContentChange({
+    meetingId,
+    code: access.meeting.code,
+    title: access.meeting.title,
+    projectId: access.meeting.project_id,
+    headline: `Attendance updated in ${access.meeting.code}`,
+    keySuffix: `attendance-${participantId}`,
+  })
 
   revalidateMeeting(meetingId, access.meeting.project_id)
   return { success: 'Attendance updated successfully.' }
@@ -1665,6 +1824,8 @@ export async function createTaskFromActionItem(
 
   // Notifikasi assignee — format key SAMA dengan tasks.ts supaya konsisten
   // (satu task tidak pernah dapat dua email "assigned" untuk stamp yang sama).
+  // Setelah COMPLETED/CANCELLED, email dilewati (in-app saja).
+  const historical = isHistoricalMeetingStatus(access.meeting.status)
   const label = await projectLabel(projectId)
   let baseUrl = ''
   try {
@@ -1680,13 +1841,24 @@ export async function createTaskFromActionItem(
     message: `"${title}" di ${label} di-assign kepadamu (dari meeting ${access.meeting.code}).`,
     entityType: 'task',
     entityId: task.id,
-    email: baseUrl
-      ? {
-          subject: `[Assigned] ${task.code} ${title}`,
-          html: `<p>Halo,</p><p>Task berikut di-assign kepadamu (dari meeting ${access.meeting.code}):</p><ul><li><strong>${task.code} ${title}</strong></li><li><strong>Project:</strong> ${label}</li></ul><p>Lihat detail:<br><a href="${baseUrl}/tasks/${task.id}">${baseUrl}/tasks/${task.id}</a></p>`,
-          category: 'task',
-        }
-      : null,
+    email:
+      !historical && baseUrl
+        ? {
+            subject: `[Assigned] ${task.code} ${title}`,
+            html: `<p>Halo,</p><p>Task berikut di-assign kepadamu (dari meeting ${access.meeting.code}):</p><ul><li><strong>${task.code} ${title}</strong></li><li><strong>Project:</strong> ${label}</li></ul><p>Lihat detail:<br><a href="${baseUrl}/tasks/${task.id}">${baseUrl}/tasks/${task.id}</a></p>`,
+            category: 'task',
+          }
+        : null,
+  })
+
+  // Peserta meeting diberi tahu in-app (tanpa email).
+  await notifyContentChange({
+    meetingId,
+    code: access.meeting.code,
+    title: access.meeting.title,
+    projectId,
+    headline: `Task ${task.code} created from action item in ${access.meeting.code}`,
+    keySuffix: `task-${task.id}`,
   })
 
   await logActivity({

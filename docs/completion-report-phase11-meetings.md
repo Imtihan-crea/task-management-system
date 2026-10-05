@@ -202,3 +202,22 @@ Tidak ada tabel/kolom Phase 1–10 yang diubah secara destruktif (hanya +3 kolom
 nullable). Tidak ada logic task/suggestion/notification/activity/email/deadline-
 cron yang diubah. `tsc` bersih, `build` sukses, 8 route protected tetap 307,
 `/login` 200, cron lama tidak tersentuh (`vercel.json` tidak diubah — Hobby aman).
+
+## 9. Update 6 Okt 2026 — Aturan Notifikasi Post-Completion + Email Hasil Meeting
+
+Keputusan owner:
+
+1. **Edit setelah COMPLETED/CANCELLED → in-app saja, tanpa email.**
+   Implementasi: `isHistoricalMeetingStatus()` di `lib/meetings/rules.ts` +
+   `notifyContentChange()` (selalu in-app, tidak pernah email) dipanggil dari
+   14 titik mutasi konten (notes, agenda ×4, decisions ×3, action items ×3,
+   remove participant, attendance, task-from-action). Undangan peserta baru dan
+   email "task assigned" ditekan email-nya (`suppressEmail`) kalau meeting sudah
+   historical — in-app tetap jalan. Email transisi (create/update/schedule/
+   complete/cancel/invite, semua pre-completion) tidak berubah.
+2. **Email Completed memuat hasil meeting.** `lib/meetings/completion-email.ts`
+   (murni, 25 boundary test): notes (dipotong 3000 karakter) + decisions
+   bernomor + action items (assignee/deadline/status/task code) + status kosong
+   eksplisit + escape HTML (lolos uji XSS). In-app tetap singkat (judul saja).
+
+Verifikasi saat itu: `test:logic` 121/121, `tsc` bersih, `lint` 0 error, `build` sukses.

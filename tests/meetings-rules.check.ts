@@ -2,7 +2,7 @@
  * Uji boundary untuk lib/meetings/rules.ts — bagian ATURAN, tanpa database.
  * Jalankan: npm run test:rules
  */
-import { scopeFilter, matchesMeetingTab, matchesMeetingSearch } from '../lib/meetings/rules'
+import { scopeFilter, matchesMeetingTab, matchesMeetingSearch, isHistoricalMeetingStatus } from '../lib/meetings/rules'
 import type { MeetingTabKey } from '../types/meeting'
 
 let ok = 0
@@ -161,6 +161,13 @@ cek(
   matchesMeetingSearch({ code: 'M-1', title: 'X', location: null }, 'zzz'),
   false
 )
+
+/* ---------- isHistoricalMeetingStatus (§13: edit setelah ini tanpa email) ---------- */
+cek('COMPLETED = historical', isHistoricalMeetingStatus('COMPLETED'), true)
+cek('CANCELLED = historical', isHistoricalMeetingStatus('CANCELLED'), true)
+cek('DRAFT bukan historical', isHistoricalMeetingStatus('DRAFT'), false)
+cek('SCHEDULED bukan historical', isHistoricalMeetingStatus('SCHEDULED'), false)
+cek('status asing bukan historical', isHistoricalMeetingStatus('BAHASA'), false)
 
 console.log(`LULUS: ${ok}`)
 console.log(`GAGAL: ${gagal}`)

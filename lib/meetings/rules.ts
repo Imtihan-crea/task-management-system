@@ -128,6 +128,15 @@ export function canCreateTaskFromMeeting(access: MeetingAccess, role: UserRole):
 }
 
 /**
+ * Meeting yang sudah jadi historical record (COMPLETED/CANCELLED, §13).
+ * Aturan notifikasi: edit apa pun setelah titik ini TIDAK boleh kirim email
+ * lagi — cukup in-app notification ke semua peserta.
+ */
+export function isHistoricalMeetingStatus(status: string): boolean {
+  return status === 'COMPLETED' || status === 'CANCELLED'
+}
+
+/**
  * Definisi tab PRD §7 — SATU-SATUNYA tempat filter tab diterapkan.
  *
  * Sengaja dihitung di JS, bukan di SQL:
