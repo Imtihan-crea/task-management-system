@@ -4,6 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { ROLE_LABELS, STATUS_LABELS } from '@/lib/auth/roles'
 import { AppShell } from '@/components/layout/AppShell'
 import { PreferencesForm } from '@/components/notifications/NotificationComponents'
+import { SyncBadge } from '@/components/meetings/MeetingBadges'
 import { PageHeader } from '@/components/ui/primitives'
 import type { NotificationPreferences } from '@/types/notification'
 
@@ -66,6 +67,25 @@ export default async function SettingsPage() {
         <PreferencesForm
           initial={{ user_id: profile.id, ...(prefs ?? DEFAULT_PREFS) }}
         />
+      </section>
+
+      <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+        <h2 className="mb-2 text-lg font-bold">Integrations</h2>
+        <div className="flex flex-wrap items-center justify-between gap-2">
+          <h3 className="text-base font-semibold">Google Calendar</h3>
+          <SyncBadge status="NOT_CONNECTED" />
+        </div>
+        <p className="mt-2 text-sm text-zinc-500">
+          Kasuat adalah source of truth untuk meeting; Google Calendar hanya
+          synchronization layer. Fondasi sync (status, retry, mapping event)
+          sudah siap di setiap meeting — koneksi OAuth menyusul di tahap
+          berikutnya.
+        </p>
+        <ul className="mt-2 list-disc pl-5 text-sm text-zinc-500">
+          <li>Mencentang &ldquo;Add to Google Calendar&rdquo; saat membuat meeting akan dicatat sebagai permintaan sync.</li>
+          <li>Status sync tiap meeting terlihat di halaman detail meeting.</li>
+          <li>Kegagalan sync tidak pernah menghapus meeting (data Kasuat aman).</li>
+        </ul>
       </section>
     </AppShell>
   )
