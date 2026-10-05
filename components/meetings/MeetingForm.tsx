@@ -193,16 +193,6 @@ export function MeetingForm({
         </div>
       </fieldset>
 
-      <label className="flex min-h-[44px] cursor-pointer items-center gap-3">
-        <input type="checkbox" name="add_to_calendar" className="h-5 w-5" />
-        <span className="text-sm font-medium">
-          Add to Google Calendar
-          <span className="block text-xs font-normal text-zinc-500">
-            Dicatat sebagai permintaan sync. Koneksi Google menyusul (Phase 12).
-          </span>
-        </span>
-      </label>
-
       {state?.error && (
         <p role="alert" className="text-sm font-medium text-red-600">
           {state.error}

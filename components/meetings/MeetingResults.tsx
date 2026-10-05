@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { MeetingStatusBadge, MeetingTypeBadge, SyncBadge } from '@/components/meetings/MeetingBadges'
+import { MeetingStatusBadge, MeetingTypeBadge } from '@/components/meetings/MeetingBadges'
 import { EmptyState } from '@/components/ui/primitives'
 import {
   fetchMeetingProjects,
@@ -75,7 +75,6 @@ export async function MeetingResults({
               <th scope="col" className="px-4 py-3">Schedule</th>
               <th scope="col" className="px-4 py-3">Status</th>
               <th scope="col" className="px-4 py-3">Items / Tasks</th>
-              <th scope="col" className="px-4 py-3">Calendar</th>
             </tr>
           </thead>
           <tbody>
@@ -128,9 +127,6 @@ function MeetingTableRow({
       <td className="px-4 py-3 whitespace-nowrap">
         {m.action_item_count} items · {m.task_count} tasks
       </td>
-      <td className="px-4 py-3">
-        <SyncBadge status={m.google_sync_status} />
-      </td>
     </tr>
   )
 }
@@ -165,7 +161,6 @@ function MeetingCard({
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           <MeetingStatusBadge status={m.status} />
           <MeetingTypeBadge type={m.meeting_type} />
-          <SyncBadge status={m.google_sync_status} />
         </div>
       </Link>
     </li>

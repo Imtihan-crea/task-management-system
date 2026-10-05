@@ -7,7 +7,6 @@ import {
   fetchMeetingParticipants,
   type MeetingDetail,
 } from '@/lib/data/meetings'
-import { SyncBadge } from '@/components/meetings/MeetingBadges'
 import { LifecycleButtons, MeetingEditForm, NotesForm } from '@/components/meetings/detail/MeetingForms'
 import {
   ActionItemCard,
@@ -18,7 +17,6 @@ import {
   DecisionItem,
   ParticipantAddForm,
   ParticipantRow,
-  SyncRetryForm,
 } from '@/components/meetings/detail/WorkspaceForms'
 import {
   ActivityTimeline,
@@ -91,26 +89,6 @@ export async function OverviewSection({
           <Row label="Organizer" value={organizerName} />
           <Row label="Created By" value={creatorName} />
         </dl>
-
-        <div className="mt-4 border-t pt-4 dark:border-zinc-700">
-          <h3 className="mb-2 text-base font-bold">Calendar Sync</h3>
-          <div className="flex flex-wrap items-center gap-2">
-            <SyncBadge status={meeting.google_sync_status} />
-            {meeting.google_calendar_event_id && (
-              <span className="font-mono text-xs text-zinc-500">{meeting.google_calendar_event_id}</span>
-            )}
-          </div>
-          {meeting.google_sync_status === 'FAILED' && (
-            <p className="mt-1 text-sm text-red-600">
-              Google Calendar sync failed.
-            </p>
-          )}
-          {canFull && (
-            <div className="mt-2">
-              <SyncRetryForm meetingId={meeting.id} />
-            </div>
-          )}
-        </div>
 
         {canFull && (
           <div className="mt-4 border-t pt-4 dark:border-zinc-700">

@@ -11,7 +11,6 @@ import {
   deleteActionItem,
   deleteAgenda,
   deleteDecision,
-  markMeetingSyncAttempt,
   removeParticipant,
   reorderAgendas,
   updateActionItem,
@@ -567,27 +566,5 @@ export function ParticipantRow({
       {(delState?.error || delState?.success) && <StateMessage state={delState} />}
       {(attState?.error || attState?.success) && <StateMessage state={attState} />}
     </li>
-  )
-}
-
-/* ============================================================================
- * SYNC RETRY (§27)
- * ========================================================================== */
-
-export function SyncRetryForm({ meetingId }: { meetingId: string }) {
-  const [state, formAction, pending] = useActionState(markMeetingSyncAttempt, INITIAL)
-  return (
-    <form action={formAction}>
-      <input type="hidden" name="id" value={meetingId} />
-      <input type="hidden" name="ok" value="0" />
-      <button type="submit" disabled={pending} className={btnSecondary}>
-        {pending ? 'Retrying...' : 'Retry Sync'}
-      </button>
-      {(state?.error || state?.success) && (
-        <p className={`mt-1 text-sm ${state?.error ? 'text-red-600' : 'text-zinc-500'}`}>
-          {state.error ?? state.success} Google Calendar belum terhubung (Phase 12).
-        </p>
-      )}
-    </form>
   )
 }

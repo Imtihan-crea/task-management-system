@@ -15,7 +15,7 @@ import {
 import { AppShell } from '@/components/layout/AppShell'
 import { Tabs } from '@/components/ui/Tabs'
 import { SkeletonRows } from '@/components/ui/Skeleton'
-import { MeetingStatusBadge, MeetingTypeBadge, SyncBadge } from '@/components/meetings/MeetingBadges'
+import { MeetingStatusBadge, MeetingTypeBadge } from '@/components/meetings/MeetingBadges'
 import {
   ActionsSection,
   AgendaSection,
@@ -107,7 +107,6 @@ export default async function MeetingDetailPage({
         <div className="flex flex-wrap items-center gap-1.5">
           <MeetingStatusBadge status={meeting.status} />
           <MeetingTypeBadge type={meeting.meeting_type} />
-          <SyncBadge status={meeting.google_sync_status} />
         </div>
       </div>
       <h1 className="mt-2 text-2xl font-bold">{meeting.title}</h1>
