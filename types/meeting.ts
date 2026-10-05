@@ -1,4 +1,5 @@
 import type {
+  GoogleSyncStatus,
   MeetingActionItemStatus,
   MeetingAttendance,
   MeetingStatus,
@@ -12,6 +13,7 @@ import type {
  * Drizzle (single source of truth).
  */
 export type {
+  GoogleSyncStatus,
   MeetingActionItemStatus,
   MeetingAttendance,
   MeetingStatus,

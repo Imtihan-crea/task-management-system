@@ -46,6 +46,7 @@ const GROUPS: { title: string | null; items: Omit<NavItem, 'icon'>[] }[] = [
   {
     title: 'COLLABORATION',
     items: [
+      { href: '/meetings', label: 'Meetings', permission: 'meetings.view' },
       { href: '/task-suggestions', label: 'Task Suggestions', permission: 'suggestions.create' },
     ],
   },
@@ -67,6 +68,7 @@ const ICONS: Record<string, string> = {
   '/projects': 'M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z',
   '/workstreams': 'M4 6h16M4 12h16M4 18h16',
   '/tasks': 'M9 11l3 3 8-8M5 21h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v14a2 2 0 002 2z',
+  '/meetings': 'M8 2v4M16 2v4M3 8h18M5 4h14a2 2 0 012 2v14a2 2 0 01-2 2H5a2 2 0 01-2-2V6a2 2 0 012-2z',
   '/task-suggestions': 'M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2v10z',
   '/activity': 'M22 12h-4l-3 9L9 3l-3 9H2',
   '/users': 'M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75',

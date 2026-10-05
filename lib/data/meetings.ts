@@ -2,7 +2,7 @@ import 'server-only'
 
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { matchesMeetingTab, scopeFilter } from '@/lib/meetings/rules'
+import { scopeFilter } from '@/lib/meetings/rules'
 import type { MeetingScope } from '@/lib/data/meetings-types'
 import { isMeetingToday, isMeetingUpcoming, nowInAppTime } from '@/lib/utils/meeting-time'
 import {
@@ -13,7 +13,7 @@ import {
 } from '@/types/meeting'
 
 export type { MeetingScope } from '@/lib/data/meetings-types'
-export { matchesMeetingTab, scopeFilter } from '@/lib/meetings/rules'
+export { matchesMeetingSearch, matchesMeetingTab, scopeFilter } from '@/lib/meetings/rules'
 
 /**
  * ============================================================================
@@ -91,6 +91,7 @@ export type MeetingFilters = {
   project: string
   type: string
   status: string
+  organizer: string
   dateFrom: string
   dateTo: string
 }
@@ -123,9 +124,15 @@ export type MeetingRow = {
 /**
  * Daftar meeting dalam scope, sudah equipped dengan hitungan.
  *
- * PENTING (Pelajaran Phase 10): hitungan tidak diambil per-row.
- * Setelah 1 query utama, participant + action item diambil untuk SEMUA id
- * sekaligus lalu dihitung di memori. Kalau tidak, 20 baris = 40 query (N+1).
+ * PENTING (Pelajaran Phase 10):
+ * 1. Hitungan tidak diambil per-row. Setelah 1 query utama, participant +
+ *    action item diambil untuk SEMUA id sekaligus lalu dihitung di memori.
+ *    Kalau tidak, 20 baris = 40 query (N+1).
+ * 2. Filter tab & search SENGAJA tidak diterapkan di sini — pemanggil yang
+ *    menerapkannya di memori via matchesMeetingTab()/matchesMeetingSearch().
+ *    Alasannya: Tabs, Results, dan KPI memanggil dengan nilai filter yang
+ *    SAMA, sehingga cache() berbagi TEPAT 1 query untuk ketiganya.
+ *    (Kalau tab ikut jadi bagian query, tiap tab = query berbeda.)
  */
 export const fetchMeetings = cache(
   async (scope: MeetingScope, filters: MeetingFilters): Promise<MeetingRow[]> => {
@@ -148,6 +155,7 @@ export const fetchMeetings = cache(
     if (filters.type) query = query.eq('meeting_type', filters.type)
     if (filters.project) query = query.eq('project_id', filters.project)
     if (filters.status) query = query.eq('status', filters.status)
+    if (filters.organizer) query = query.eq('organizer_id', filters.organizer)
     if (filters.dateFrom) query = query.gte('meeting_date', filters.dateFrom)
     if (filters.dateTo) query = query.lte('meeting_date', filters.dateTo)
 
@@ -157,28 +165,12 @@ export const fetchMeetings = cache(
       return []
     }
 
-    let rows = (data ?? []) as Omit<
+    const rows = (data ?? []) as Omit<
       MeetingRow,
       'task_count' | 'action_item_count' | 'participant_count'
     >[]
 
-    // Tab (menggunakan waktu lokal).
-    const now = new Date()
-    if (filters.tab !== 'all') {
-      rows = rows.filter((r) => matchesMeetingTab(r, filters.tab, now))
-    }
-
-    // Search juga di server supaya "0 hasil" itu jujur dan tidak wasting
-    // render hundreds of cards.
-    const needle = filters.q.trim().toLowerCase()
-    if (needle) {
-      rows = rows.filter(
-        (r) =>
-          r.code.toLowerCase().includes(needle) ||
-          r.title.toLowerCase().includes(needle) ||
-          (r.location ?? '').toLowerCase().includes(needle)
-      )
-    }
+    // Tab & search diterapkan pemanggil di memori (lihat komentar fungsi).
 
     if (rows.length === 0) return []
 
@@ -232,13 +224,13 @@ export type MeetingKpis = {
 }
 
 export const fetchMeetingKpis = cache(
-  async (scope: MeetingScope, filters: Omit<MeetingFilters, 'tab'>): Promise<MeetingKpis> => {
+  async (scope: MeetingScope, filters: MeetingFilters): Promise<MeetingKpis> => {
     const admin = createAdminClient()
 
-    // Ambil seluruh data meeting dalam scope TANPA filter tab/search.
-    // Sengaja memakai filters.tab = 'all' supaya KPI tidak ikut berubah
-    // kalau user sedang membuka satu tab saja (angka KPI harus stabil).
-    const rows = await fetchMeetings(scope, { ...filters, tab: 'all', q: '' })
+    // Nilai tab & q diabaikan fetchMeetings (lihat komentarnya), jadi
+    // pemanggilan ini berbagi TEPAT 1 query dengan Tabs + Results via cache().
+    // Angka KPI harus stabil dan tidak ikut berubah saat user membuka tab.
+    const rows = await fetchMeetings(scope, filters)
 
     const now = new Date()
     const parts = nowInAppTime(now)
@@ -297,6 +289,21 @@ function shiftDate(dateISO: string, delta: number): string {
     shifted.getUTCDate()
   ).padStart(2, '0')}`
 }
+
+/**
+ * Daftar project untuk dropdown filter + peta nama di kartu meeting.
+ * Di-cache per request supaya dipakai bersama form filter dan hasil.
+ */
+export const fetchMeetingProjects = cache(async (): Promise<
+  { id: string; code: string; name: string }[]
+> => {
+  const { data } = await createAdminClient()
+    .from('projects')
+    .select('id, code, name')
+    .order('name', { ascending: true })
+    .limit(500)
+  return (data ?? []) as { id: string; code: string; name: string }[]
+})
 
 /* ============================================================================
  * DETAIL (PRD §14, §15)

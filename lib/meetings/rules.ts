@@ -68,6 +68,7 @@ export type TabCandidate = {
  * Definisi tab PRD §7 — SATU-SATUNYA tempat filter tab diterapkan.
  *
  * Sengaja dihitung di JS, bukan di SQL:
+ * Sengaja dihitung di JS, bukan di SQL:
  * - Definisi "Upcoming" butuh perbandingan tanggal + jam LOKAL (bukan UTC),
  *   dan PostgREST tidak bisa menulis (A AND B) OR (C AND D) dalam satu `or=`.
  * - `.or()` di supabase-js hanya boleh dipakai SEKALI per query (panggilan
@@ -92,4 +93,24 @@ export function matchesMeetingTab(
   if (tab === 'completed') return row.status === 'COMPLETED'
   if (tab === 'needs_notes') return needsNotes(row)
   return true
+}
+
+/**
+ * Search meeting (code, title, location).
+ *
+ * Diterapkan pemanggil di memori bersama matchesMeetingTab — supaya Tabs,
+ * Results, dan KPI berbagi 1 query yang sama via cache(). Lihat komentar
+ * di fetchMeetings.
+ */
+export function matchesMeetingSearch(
+  row: { code: string; title: string; location: string | null },
+  q: string
+): boolean {
+  const needle = q.trim().toLowerCase()
+  if (!needle) return true
+  return (
+    row.code.toLowerCase().includes(needle) ||
+    row.title.toLowerCase().includes(needle) ||
+    (row.location ?? '').toLowerCase().includes(needle)
+  )
 }

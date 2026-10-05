@@ -2,7 +2,7 @@
  * Uji boundary untuk lib/meetings/rules.ts — bagian ATURAN, tanpa database.
  * Jalankan: npm run test:rules
  */
-import { scopeFilter, matchesMeetingTab } from '../lib/meetings/rules'
+import { scopeFilter, matchesMeetingTab, matchesMeetingSearch } from '../lib/meetings/rules'
 import type { MeetingTabKey } from '../types/meeting'
 
 let ok = 0
@@ -141,6 +141,25 @@ cek(
   'needs_notes: COMPLETED + notes newline',
   tab('needs_notes', { ...base, status: 'COMPLETED', notes: '\n\n' }),
   true
+)
+
+/* ---------- matchesMeetingSearch ---------- */
+const srow = { code: 'M-003', title: 'Weekly Project Review', location: 'Ruang Rapat A' }
+cek('search kosong selalu true', matchesMeetingSearch(srow, ''), true)
+cek('search spasi selalu true', matchesMeetingSearch(srow, '   '), true)
+cek('search code case-insensitive', matchesMeetingSearch(srow, 'm-003'), true)
+cek('search judul parsial', matchesMeetingSearch(srow, 'project review'), true)
+cek('search lokasi', matchesMeetingSearch(srow, 'ruang rapat'), true)
+cek('search tidak cocok', matchesMeetingSearch(srow, 'alcavella'), false)
+cek(
+  'search lokasi null tidak crash',
+  matchesMeetingSearch({ code: 'M-1', title: 'X', location: null }, 'x'),
+  true
+)
+cek(
+  'search lokasi null + tidak cocok',
+  matchesMeetingSearch({ code: 'M-1', title: 'X', location: null }, 'zzz'),
+  false
 )
 
 console.log(`LULUS: ${ok}`)
