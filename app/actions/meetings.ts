@@ -287,7 +287,7 @@ async function projectLabel(projectId: string | null): Promise<string> {
 }
 
 /** Scope project saat create: PM hanya project miliknya, member hanya yang ia ikuti. */
-async function assertCanCreateInProject(
+export async function assertCanCreateInProject(
   projectId: string,
   userId: string,
   role: UserRole
