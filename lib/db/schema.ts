@@ -347,6 +347,8 @@ export const notificationPreferences = pgTable('notification_preferences', {
   email_task_updates: boolean('email_task_updates').notNull().default(true),
   email_suggestion_updates: boolean('email_suggestion_updates').notNull().default(true),
   email_deadline_alerts: boolean('email_deadline_alerts').notNull().default(true),
+  /** Phase 11 update: Morning Digest harian (migrasi 009). */
+  email_digest_daily: boolean('email_digest_daily').notNull().default(true),
   /** Phase 11: email meeting mengikuti preferensi sendiri (§24). */
   email_meeting_updates: boolean('email_meeting_updates').notNull().default(true),
   updated_at: timestamp('updated_at', { withTimezone: true, mode: 'string' })

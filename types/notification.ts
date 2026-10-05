@@ -18,6 +18,7 @@ export type NotificationType =
   | 'MEETING_COMPLETED'
   | 'MEETING_REMINDER'
   | 'MEETING_NOTES_PENDING'
+  | 'DAILY_DIGEST'
 
 export type NotificationEntityType = 'task' | 'project' | 'suggestion' | 'meeting' | ''
 
@@ -42,6 +43,8 @@ export interface NotificationPreferences {
   email_deadline_alerts: boolean
   /** Phase 11: kategori email meeting (§24). */
   email_meeting_updates: boolean
+  /** Morning Digest harian (migrasi 009). Default true (opt-out). */
+  email_digest_daily: boolean
 }
 
 /** Link tujuan saat notifikasi diklik (§30). */

@@ -8,7 +8,7 @@ import type {
   NotificationType,
 } from '@/types/notification'
 
-export type EmailCategory = 'task' | 'suggestion' | 'deadline' | 'meeting'
+export type EmailCategory = 'task' | 'suggestion' | 'deadline' | 'meeting' | 'digest'
 
 export type EmitInput = {
   /** Kunci unik event. Event yang sama tidak pernah dikirim dua kali (§27). */
@@ -36,6 +36,7 @@ function categoryAllowed(
   if (category === 'task') return prefs.email_task_updates
   if (category === 'suggestion') return prefs.email_suggestion_updates
   if (category === 'meeting') return prefs.email_meeting_updates
+  if (category === 'digest') return prefs.email_digest_daily
   return prefs.email_deadline_alerts
 }
 

@@ -15,6 +15,7 @@ const DEFAULT_PREFS = {
   email_suggestion_updates: true,
   email_deadline_alerts: true,
   email_meeting_updates: true,
+  email_digest_daily: true,
 }
 
 export default async function NotificationsPage({

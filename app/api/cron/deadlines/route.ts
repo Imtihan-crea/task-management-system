@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
+import { runMorningDigest } from '@/lib/meetings/digest'
 import { todayISO } from '@/lib/utils/dates'
 
 export const dynamic = 'force-dynamic'
@@ -124,5 +125,24 @@ export async function GET(request: Request) {
     date: today,
     dueToday: dueTodaySent,
     overdue: overdueSent,
+    ...(await morningDigestSummary()),
   })
+}
+
+/**
+ * Morning Digest (6 Okt 2026): digabung ke cron yang sudah ada supaya tidak
+ * perlu jatah cron Vercel baru (Hobby 1×/hari). Jalan 00:00 UTC = 07:00 WIB.
+ * Gagal digest tidak menggagalkan deadline reminder — di-catch terpisah.
+ */
+async function morningDigestSummary(): Promise<{
+  digestUsers: number
+  digestEmails: number
+}> {
+  try {
+    const { usersNotified, emailsSent } = await runMorningDigest(new Date())
+    return { digestUsers: usersNotified, digestEmails: emailsSent }
+  } catch (error) {
+    console.error('[cron] Morning digest failed:', (error as Error).message)
+    return { digestUsers: 0, digestEmails: 0 }
+  }
 }

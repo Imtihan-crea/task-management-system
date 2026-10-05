@@ -15,6 +15,13 @@
       "when": 1791125120719,
       "tag": "0001_phase11_meetings",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1791223715216,
+      "tag": "0002_phase11_digest",
+      "breakpoints": true
     }
   ]
 }

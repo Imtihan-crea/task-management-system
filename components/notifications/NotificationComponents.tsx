@@ -76,6 +76,7 @@ const PREF_FIELDS = [
   { name: 'email_suggestion_updates', label: 'Suggestion Updates' },
   { name: 'email_deadline_alerts', label: 'Deadline Alerts' },
   { name: 'email_meeting_updates', label: 'Meeting Invitation, Update & Reminder' },
+  { name: 'email_digest_daily', label: 'Daily Morning Digest' },
 ] as const
 
 export function PreferencesForm({ initial }: { initial: NotificationPreferences }) {
