@@ -11,6 +11,7 @@ import { SkeletonCards, SkeletonRows } from '@/components/ui/Skeleton'
 import { OverviewTab } from '@/components/projects/workspace/OverviewTab'
 import { WorkstreamsTab } from '@/components/projects/workspace/WorkstreamsTab'
 import { TasksTab } from '@/components/projects/workspace/TasksTab'
+import { MeetingsTab } from '@/components/projects/workspace/MeetingsTab'
 import { ActivityTab, MembersTab } from '@/components/projects/workspace/ActivityMembersTabs'
 import { SettingsTab } from '@/components/projects/workspace/SettingsTab'
 import { isProjectManager } from '@/lib/data/projects'
@@ -20,6 +21,7 @@ const TABS = [
   { key: 'overview', label: 'Overview' },
   { key: 'workstreams', label: 'Workstreams' },
   { key: 'tasks', label: 'Tasks' },
+  { key: 'meetings', label: 'Meetings' },
   { key: 'activity', label: 'Activity' },
   { key: 'members', label: 'Members' },
   { key: 'settings', label: 'Settings' },
@@ -77,19 +79,21 @@ export default async function ProjectDetailPage({
   }
 
   // Ringan: counts untuk badge tabs.
-  const [{ count: wsCount }, { count: taskCount }] = await Promise.all([
+  const [{ count: wsCount }, { count: taskCount }, { count: meetingCount }] = await Promise.all([
     admin.from('workstreams').select('id', { count: 'exact', head: true }).eq('project_id', id),
     admin
       .from('tasks')
       .select('id', { count: 'exact', head: true })
       .eq('project_id', id)
       .eq('is_deleted', false),
+    admin.from('meetings').select('id', { count: 'exact', head: true }).eq('project_id', id),
   ])
 
   const counts: Record<TabKey, number | undefined> = {
     overview: undefined,
     workstreams: wsCount ?? 0,
     tasks: taskCount ?? 0,
+    meetings: meetingCount ?? 0,
     activity: undefined,
     members: undefined,
     settings: undefined,
@@ -179,6 +183,16 @@ export default async function ProjectDetailPage({
               projectId={id}
               canCreate={can(profile.role, 'tasks.create') && canEditThis}
               filters={{ ws: fWs, status: fStatus, priority: fPriority }}
+            />
+          </Suspense>
+        )}
+        {tab === 'meetings' && (
+          <Suspense fallback={<SkeletonRows rows={3} />}>
+            <MeetingsTab
+              projectId={id}
+              userId={profile.id}
+              role={profile.role}
+              canCreate={can(profile.role, 'meetings.create') && canEditThis}
             />
           </Suspense>
         )}
