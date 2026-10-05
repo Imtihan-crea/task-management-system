@@ -18,6 +18,11 @@ import type {
   MeetingType,
 } from '@/types/meeting'
 import type { MeetingAccess } from '@/lib/meetings/rules'
+import {
+  canCreateTaskFromMeeting,
+  canManageMeetingContent,
+  canManageMeetingFull,
+} from '@/lib/meetings/rules'
 import type { TaskPriority } from '@/types/task'
 import type { UserRole } from '@/types/profile'
 
@@ -171,32 +176,6 @@ export async function getMeetingAccess(
     isParticipant: Boolean(part),
     isProjectPM,
   }
-}
-
-/** Kelola penuh (field inti, lifecycle, participants): owner, admin, PM scope. */
-function canManageFull(access: MeetingAccess, role: UserRole): boolean {
-  if (!access.meeting) return false
-  if (role === 'ADMIN') return true
-  if (role === 'VIEWER') return false
-  if (access.isOwner) return true
-  if (role === 'PROJECT_MANAGER') return access.isProjectPM || access.isParticipant
-  return false
-}
-
-/** Kelola konten (agenda/notes/decisions/action items): full + peserta team. */
-function canManageContent(access: MeetingAccess, role: UserRole): boolean {
-  if (canManageFull(access, role)) return true
-  if (role === 'TEAM_MEMBER' && access.isParticipant) return true
-  return false
-}
-
-/** Buat task dari action item: butuh tasks.create + akses baca meeting. */
-function canCreateTaskFrom(access: MeetingAccess, role: UserRole): boolean {
-  if (!access.meeting) return false
-  if (!can(role, 'tasks.create')) return false
-  // Aturan baca sama dengan canViewMeeting (diekspos untuk halaman detail).
-  if (role === 'ADMIN') return true
-  return access.isOwner || access.isParticipant || access.isProjectPM
 }
 
 function revalidateMeeting(meetingId: string, projectId: string | null): void {
@@ -485,7 +464,7 @@ export async function updateMeeting(
   if (!id) return { error: 'Meeting not found.' }
 
   const access = await getMeetingAccess(id, profile.id, profile.role)
-  if (!access.meeting || !canManageFull(access, profile.role)) {
+  if (!access.meeting || !canManageMeetingFull(access, profile.role)) {
     return { error: 'You do not have permission to perform this action.' }
   }
 
@@ -594,7 +573,7 @@ export async function scheduleMeeting(
   if (!id) return { error: 'Meeting not found.' }
 
   const access = await getMeetingAccess(id, profile.id, profile.role)
-  if (!access.meeting || !canManageFull(access, profile.role)) {
+  if (!access.meeting || !canManageMeetingFull(access, profile.role)) {
     return { error: 'You do not have permission to perform this action.' }
   }
   if (access.meeting.status !== 'DRAFT') {
@@ -639,7 +618,7 @@ export async function completeMeeting(
   if (!id) return { error: 'Meeting not found.' }
 
   const access = await getMeetingAccess(id, profile.id, profile.role)
-  if (!access.meeting || !canManageFull(access, profile.role)) {
+  if (!access.meeting || !canManageMeetingFull(access, profile.role)) {
     return { error: 'You do not have permission to perform this action.' }
   }
   if (access.meeting.status !== 'SCHEDULED') {
@@ -697,7 +676,7 @@ export async function cancelMeeting(
   if (!id) return { error: 'Meeting not found.' }
 
   const access = await getMeetingAccess(id, profile.id, profile.role)
-  if (!access.meeting || !canManageFull(access, profile.role)) {
+  if (!access.meeting || !canManageMeetingFull(access, profile.role)) {
     return { error: 'You do not have permission to perform this action.' }
   }
   if (access.meeting.status !== 'DRAFT' && access.meeting.status !== 'SCHEDULED') {
@@ -763,7 +742,7 @@ export async function updateMeetingNotes(
   if (!id) return { error: 'Meeting not found.' }
 
   const access = await getMeetingAccess(id, profile.id, profile.role)
-  if (!access.meeting || !canManageContent(access, profile.role)) {
+  if (!access.meeting || !canManageMeetingContent(access, profile.role)) {
     return { error: 'You do not have permission to perform this action.' }
   }
   if (access.meeting.status === 'CANCELLED') {
@@ -815,7 +794,7 @@ export async function createAgenda(
   if (!title) return { error: 'Agenda title is required.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
-  if (!access.meeting || !canManageContent(access, profile.role)) {
+  if (!access.meeting || !canManageMeetingContent(access, profile.role)) {
     return { error: 'You do not have permission to perform this action.' }
   }
 
@@ -868,7 +847,7 @@ export async function updateAgenda(
   if (!title) return { error: 'Agenda title is required.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
-  if (!access.meeting || !canManageContent(access, profile.role)) {
+  if (!access.meeting || !canManageMeetingContent(access, profile.role)) {
     return { error: 'You do not have permission to perform this action.' }
   }
 
@@ -898,7 +877,7 @@ export async function deleteAgenda(
   if (!id || !meetingId) return { error: 'Agenda not found.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
-  if (!access.meeting || !canManageContent(access, profile.role)) {
+  if (!access.meeting || !canManageMeetingContent(access, profile.role)) {
     return { error: 'You do not have permission to perform this action.' }
   }
 
@@ -929,7 +908,7 @@ export async function reorderAgendas(
   if (!meetingId || orderedIds.length === 0) return { error: 'Nothing to reorder.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
-  if (!access.meeting || !canManageContent(access, profile.role)) {
+  if (!access.meeting || !canManageMeetingContent(access, profile.role)) {
     return { error: 'You do not have permission to perform this action.' }
   }
 
@@ -976,7 +955,7 @@ export async function createDecision(
   if (!decision) return { error: 'Decision is required.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
-  if (!access.meeting || !canManageContent(access, profile.role)) {
+  if (!access.meeting || !canManageMeetingContent(access, profile.role)) {
     return { error: 'You do not have permission to perform this action.' }
   }
 
@@ -1030,7 +1009,7 @@ export async function updateDecision(
   if (!decision) return { error: 'Decision is required.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
-  if (!access.meeting || !canManageContent(access, profile.role)) {
+  if (!access.meeting || !canManageMeetingContent(access, profile.role)) {
     return { error: 'You do not have permission to perform this action.' }
   }
 
@@ -1060,7 +1039,7 @@ export async function deleteDecision(
   if (!id || !meetingId) return { error: 'Decision not found.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
-  if (!access.meeting || !canManageContent(access, profile.role)) {
+  if (!access.meeting || !canManageMeetingContent(access, profile.role)) {
     return { error: 'You do not have permission to perform this action.' }
   }
 
@@ -1103,7 +1082,7 @@ export async function createActionItem(
   if (deadline && !validDate(deadline)) return { error: 'Please enter a valid deadline.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
-  if (!access.meeting || !canManageContent(access, profile.role)) {
+  if (!access.meeting || !canManageMeetingContent(access, profile.role)) {
     return { error: 'You do not have permission to perform this action.' }
   }
 
@@ -1164,7 +1143,7 @@ export async function updateActionItem(
   if (deadline && !validDate(deadline)) return { error: 'Please enter a valid deadline.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
-  if (!access.meeting || !canManageContent(access, profile.role)) {
+  if (!access.meeting || !canManageMeetingContent(access, profile.role)) {
     return { error: 'You do not have permission to perform this action.' }
   }
 
@@ -1219,7 +1198,7 @@ export async function deleteActionItem(
   if (!id || !meetingId) return { error: 'Action item not found.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
-  if (!access.meeting || !canManageContent(access, profile.role)) {
+  if (!access.meeting || !canManageMeetingContent(access, profile.role)) {
     return { error: 'You do not have permission to perform this action.' }
   }
 
@@ -1269,7 +1248,7 @@ export async function addParticipant(
   if (!meetingId) return { error: 'Meeting not found.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
-  if (!access.meeting || !canManageFull(access, profile.role)) {
+  if (!access.meeting || !canManageMeetingFull(access, profile.role)) {
     return { error: 'You do not have permission to perform this action.' }
   }
 
@@ -1374,7 +1353,7 @@ export async function removeParticipant(
   if (!meetingId || !participantId) return { error: 'Participant not found.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
-  if (!access.meeting || !canManageFull(access, profile.role)) {
+  if (!access.meeting || !canManageMeetingFull(access, profile.role)) {
     return { error: 'You do not have permission to perform this action.' }
   }
 
@@ -1446,7 +1425,7 @@ export async function updateAttendance(
   if (!row) return { error: 'Participant not found.' }
 
   const isOwn = row.user_id === profile.id
-  if (!isOwn && !canManageFull(access, profile.role)) {
+  if (!isOwn && !canManageMeetingFull(access, profile.role)) {
     return { error: 'You do not have permission to perform this action.' }
   }
 
@@ -1497,7 +1476,7 @@ export async function createTaskFromActionItem(
   if (!actionItemId || !meetingId) return { error: 'Action item not found.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
-  if (!access.meeting || !canCreateTaskFrom(access, profile.role)) {
+  if (!access.meeting || !canCreateTaskFromMeeting(access, profile.role)) {
     return { error: 'You do not have permission to perform this action.' }
   }
 
@@ -1694,7 +1673,7 @@ export async function markMeetingSyncAttempt(
   if (!id) return { error: 'Meeting not found.' }
 
   const access = await getMeetingAccess(id, profile.id, profile.role)
-  if (!access.meeting || !canManageFull(access, profile.role)) {
+  if (!access.meeting || !canManageMeetingFull(access, profile.role)) {
     return { error: 'You do not have permission to perform this action.' }
   }
 

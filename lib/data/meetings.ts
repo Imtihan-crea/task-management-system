@@ -7,9 +7,13 @@ import type { MeetingScope } from '@/lib/data/meetings-types'
 import { isMeetingToday, isMeetingUpcoming, nowInAppTime } from '@/lib/utils/meeting-time'
 import {
   needsNotes,
+  type ActionItemRow,
+  type AgendaRow,
+  type DecisionRow,
   type MeetingStatus,
   type MeetingTabKey,
   type MeetingType,
+  type ParticipantRow,
 } from '@/types/meeting'
 
 export type { MeetingScope } from '@/lib/data/meetings-types'
@@ -409,55 +413,39 @@ export const fetchMeetingHeaderContext = cache(
  * ISI WORKSPACE (PRD §16, §17, §18, §19)
  * ========================================================================== */
 
-export const fetchMeetingAgenda = cache(async (meetingId: string) => {
+export const fetchMeetingAgenda = cache(async (meetingId: string): Promise<AgendaRow[]> => {
   const { data } = await createAdminClient()
     .from('meeting_agendas')
-    .select('id, position, title, notes')
+    .select('id, meeting_id, position, title, notes')
     .eq('meeting_id', meetingId)
     .order('position', { ascending: true })
     .order('created_at', { ascending: true })
 
-  return (data ?? []) as { id: string; position: number; title: string; notes: string | null }[]
+  // status/type dijamin CHECK constraint di DB — cast langsung.
+  return (data ?? []) as AgendaRow[]
 })
 
-export const fetchMeetingDecisions = cache(async (meetingId: string) => {
+export const fetchMeetingDecisions = cache(async (meetingId: string): Promise<DecisionRow[]> => {
   const { data } = await createAdminClient()
     .from('meeting_decisions')
-    .select('id, position, decision, rationale, decided_by')
+    .select('id, meeting_id, position, decision, rationale, decided_by')
     .eq('meeting_id', meetingId)
     .order('position', { ascending: true })
     .order('created_at', { ascending: true })
 
-  return (data ?? []) as {
-    id: string
-    position: number
-    decision: string
-    rationale: string | null
-    decided_by: string | null
-  }[]
+  return (data ?? []) as DecisionRow[]
 })
 
-export const fetchMeetingActionItems = cache(async (meetingId: string) => {
+export const fetchMeetingActionItems = cache(async (meetingId: string): Promise<ActionItemRow[]> => {
   const { data } = await createAdminClient()
     .from('meeting_action_items')
     .select(
-      'id, title, description, assignee_id, deadline, priority, status, task_id, created_at, updated_at'
+      'id, meeting_id, title, description, assignee_id, deadline, priority, status, task_id, created_at, updated_at'
     )
     .eq('meeting_id', meetingId)
     .order('created_at', { ascending: true })
 
-  return (data ?? []) as {
-    id: string
-    title: string
-    description: string | null
-    assignee_id: string | null
-    deadline: string | null
-    priority: string | null
-    status: string
-    task_id: string | null
-    created_at: string
-    updated_at: string
-  }[]
+  return (data ?? []) as ActionItemRow[]
 })
 
 /**
@@ -469,19 +457,12 @@ export const fetchMeetingParticipants = cache(async (meetingId: string) => {
 
   const { data } = await admin
     .from('meeting_participants')
-    .select('id, user_id, external_name, external_email, attendance, is_organizer')
+    .select('id, meeting_id, user_id, external_name, external_email, attendance, is_organizer')
     .eq('meeting_id', meetingId)
     .order('is_organizer', { ascending: false })
     .order('created_at', { ascending: true })
 
-  const rows = (data ?? []) as {
-    id: string
-    user_id: string | null
-    external_name: string | null
-    external_email: string | null
-    attendance: string
-    is_organizer: boolean
-  }[]
+  const rows = (data ?? []) as ParticipantRow[]
 
   const userIds = [...new Set(rows.map((r) => r.user_id).filter((v): v is string => Boolean(v)))]
 

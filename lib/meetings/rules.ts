@@ -15,6 +15,8 @@
  */
 
 import type { MeetingScope } from '@/lib/data/meetings-types'
+import type { UserRole } from '@/types/profile'
+import { can } from '@/lib/auth/permissions'
 import { isMeetingToday, isMeetingUpcoming } from '@/lib/utils/meeting-time'
 import { needsNotes, type MeetingTabKey } from '@/types/meeting'
 
@@ -93,6 +95,36 @@ export function canViewMeeting(access: MeetingAccess, role: string): boolean {
   if (!access.meeting) return false
   if (role === 'ADMIN') return true
   return access.isOwner || access.isParticipant || access.isProjectPM
+}
+
+/**
+ * Kelola penuh (field inti, lifecycle, participants): owner, admin, PM scope.
+ * VIEWER tidak pernah kelola, walau jadi organizer.
+ */
+export function canManageMeetingFull(access: MeetingAccess, role: string): boolean {
+  if (!access.meeting) return false
+  if (role === 'ADMIN') return true
+  if (role === 'VIEWER') return false
+  if (access.isOwner) return true
+  if (role === 'PROJECT_MANAGER') return access.isProjectPM || access.isParticipant
+  return false
+}
+
+/**
+ * Kelola konten (agenda/notes/decisions/action items): full + peserta team.
+ * "Edit accessible meeting scoped" (§37) untuk TEAM_MEMBER = konten saja.
+ */
+export function canManageMeetingContent(access: MeetingAccess, role: string): boolean {
+  if (canManageMeetingFull(access, role)) return true
+  if (role === 'TEAM_MEMBER' && access.isParticipant) return true
+  return false
+}
+
+/** Buat task dari action item: butuh tasks.create + akses baca meeting. */
+export function canCreateTaskFromMeeting(access: MeetingAccess, role: UserRole): boolean {
+  if (!access.meeting) return false
+  if (!can(role, 'tasks.create')) return false
+  return canViewMeeting(access, role)
 }
 
 /**
