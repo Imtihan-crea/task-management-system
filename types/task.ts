@@ -24,6 +24,12 @@ export interface Task {
   is_deleted: boolean
   /** Link evidence opsional, tetap bisa diubah setelah DONE. */
   evidence_url: string | null
+  /**
+   * Phase 11 traceability (§21): task tahu dari mana dia berasal.
+   * Polymorphic — TIDAK punya FK. NULL = dibuat manual.
+   */
+  source_type: 'MEETING' | 'SUGGESTION' | 'IMPORT' | null
+  source_id: string | null
   created_at: string
   updated_at: string
 }

@@ -89,6 +89,30 @@ export default async function TaskDetailPage({
       ])
     : [{ data: [] }, { data: [] }, []]
 
+  // Phase 11 traceability (§21): dari mana task ini berasal.
+  let sourceBlock: { label: string; href: string | null } | null = null
+  if (task.source_type === 'MEETING' && task.source_id) {
+    const { data: meeting } = await admin
+      .from('meetings')
+      .select('id, code, title')
+      .eq('id', task.source_id)
+      .maybeSingle<{ id: string; code: string; title: string }>()
+    sourceBlock = meeting
+      ? { label: `Meeting ${meeting.code} · ${meeting.title}`, href: `/meetings/${meeting.id}` }
+      : { label: 'Meeting (deleted)', href: null }
+  } else if (task.source_type === 'SUGGESTION' && task.source_id) {
+    const { data: suggestion } = await admin
+      .from('task_suggestions')
+      .select('id, code, title')
+      .eq('id', task.source_id)
+      .maybeSingle<{ id: string; code: string; title: string }>()
+    sourceBlock = suggestion
+      ? { label: `Suggestion ${suggestion.code} · ${suggestion.title}`, href: `/task-suggestions/${suggestion.id}` }
+      : { label: 'Suggestion (deleted)', href: null }
+  } else if (task.source_type === 'IMPORT') {
+    sourceBlock = { label: 'Import', href: null }
+  }
+
   // Activity timeline task ini.
   const { data: activityData } = await admin
     .from('activity_logs')
@@ -136,6 +160,22 @@ export default async function TaskDetailPage({
             <Row label="Start Date" value={formatDate(task.start_date)} />
             <Row label="Deadline" value={formatDate(task.deadline)} />
           </dl>
+
+          {sourceBlock && (
+            <div className="mt-4 border-t pt-4 dark:border-zinc-700">
+              <h3 className="mb-2 text-base font-bold">Source</h3>
+              {sourceBlock.href ? (
+                <Link
+                  href={sourceBlock.href}
+                  className="text-sm font-medium text-kasuat-deep-gold hover:underline"
+                >
+                  {sourceBlock.label} — View
+                </Link>
+              ) : (
+                <p className="text-sm text-zinc-500">{sourceBlock.label}</p>
+              )}
+            </div>
+          )}
 
           {canChangeStatus && (
             <div className="mt-4 border-t pt-4 dark:border-zinc-700">
