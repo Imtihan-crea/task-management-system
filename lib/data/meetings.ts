@@ -65,7 +65,10 @@ export const getMeetingScope = cache(
       ]),
     ]
 
-    let managedProjectIds: string[] | null = null
+    // PENTING: null HANYA untuk ADMIN (artinya "tanpa filter").
+    // Untuk role lain mulai dari [] supaya scopeFilter tidak salah
+    // mengira "tidak perlu pembatasan" dan membocorkan semua meeting.
+    let managedProjectIds: string[] | null = []
     if (role === 'PROJECT_MANAGER') {
       const { data: links } = await admin
         .from('project_managers')
