@@ -148,22 +148,29 @@ export function isMeetingUpcoming(
 }
 
 /**
- * §31 Meeting Reminder: jatuh pada [now, now + windowMinutes).
+ * §31 Meeting Reminder: jatuh pada [now + offset, now + offset + window).
  *
  * Hanya berlaku untuk meeting SCHEDULED yang belum CANCELLED.
- * Jendela tertutup di batas akhir supaya tidak ada meeting yang
- * kena reminder 15 menit lalu, 14 menit lagi, lalu seterusnya.
+ * Batas atas tertutup supaya satu meeting tidak kena dua run berurutan;
+ * digabung event_key per hari, hasilnya tepat 1 reminder per meeting.
+ *
+ * Contoh pemakaian scheduler (cron tiap 15 menit):
+ * - offset 0, window 15  → reminder 0–15 menit sebelum (bisa terasa "tiba-tiba")
+ * - offset 15, window 15 → reminder 15–30 menit sebelum, tepat 1 kali.
+ *   Dipakai scheduler karena run tiap 15 menit men-tile waktu tanpa overlap:
+ *   run jam T melayani meeting [T+15, T+30), run T+15 melayani [T+30, T+45).
  */
 export function isWithinReminderWindow(
   meeting: { meeting_date: string; start_time: string; status: string },
   windowMinutes: number,
-  now: Date = new Date()
+  now: Date = new Date(),
+  offsetMinutes = 0
 ): boolean {
   if (meeting.status !== 'SCHEDULED') return false
   const mv = wallValue(meeting.meeting_date, meeting.start_time)
   if (mv === null) return false
   const current = nowWallValue(now)
-  return mv >= current && mv < current + windowMinutes
+  return mv >= current + offsetMinutes && mv < current + offsetMinutes + windowMinutes
 }
 
 /** Geser tanggal (format YYYY-MM-DD) sebanyak N hari. Aman di batas bulan/tahun. */

@@ -132,6 +132,30 @@ cek('DRAFT tidak dapat reminder', isWithinReminderWindow(mk('05:35', 'DRAFT'), 1
 cek('COMPLETED tidak dapat reminder', isWithinReminderWindow(mk('05:35', 'COMPLETED'), 15, u), false)
 cek('CANCELLED tidak dapat reminder', isWithinReminderWindow(mk('05:35', 'CANCELLED'), 15, u), false)
 
+/* ---------- Jendela offset (scheduler: tepat 1 kali, 15–30 mnt sebelum) ---------- */
+// "sekarang" = 05:30. Jendela offset 15 + window 15 = [05:45, 06:00).
+const off = (time: string, status = 'SCHEDULED') => isWithinReminderWindow(mk(time, status), 15, u, 15)
+cek('offset: 05:35 terlalu dekat -> tidak', off('05:35'), false)
+cek('offset: 05:44 terlalu dekat -> tidak', off('05:44'), false)
+cek('offset: 05:45 tepat batas bawah -> ya', off('05:45'), true)
+cek('offset: 05:50 di dalam -> ya', off('05:50'), true)
+cek('offset: 05:59 di dalam -> ya', off('05:59'), true)
+cek('offset: 06:00 batas atas -> TERTUTUP', off('06:00'), false)
+cek('offset: 06:15 di luar -> tidak', off('06:15'), false)
+cek('offset: DRAFT tidak dapat reminder', isWithinReminderWindow(mk('05:50', 'DRAFT'), 15, u, 15), false)
+// Tiling tanpa overlap: run 05:30 layani [05:45,06:00), run 05:45 layani [06:00,06:15).
+const u2 = new Date('2026-10-04T22:45:00Z') // 05:45 WIB
+cek(
+  'tiling: 06:00 dilayani run 05:45 (bukan run 05:30)',
+  isWithinReminderWindow(mk('06:00'), 15, u2, 15),
+  true
+)
+cek(
+  'tiling: 05:59 tidak dilayani run 05:45',
+  isWithinReminderWindow(mk('05:59'), 15, u2, 15),
+  false
+)
+
 /* ---------- Sanity nowWallValue ---------- */
 cek('nowWallValue positif', nowWallValue(u) > 0, true)
 cek(

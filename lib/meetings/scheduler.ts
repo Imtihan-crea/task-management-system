@@ -18,11 +18,12 @@ import { needsNotes } from '@/types/meeting'
  * §10.4), BUKAN via vercel.json (Hobby hanya boleh 1×/hari).
  *
  * Job:
- * 1. Meeting Reminder — SCHEDULED yang mulai dalam 30 menit ke depan.
- *    Jendela 30 menit (bukan 15) supaya satu jadwal yang terlewat satu
- *    run cron masih kena di run berikutnya. Duplikat dicegah event_key
- *    per tanggal (§32): 1 notifikasi + 1 email per meeting per hari,
- *    walau cron jalan berulang.
+ * 1. Meeting Reminder — SCHEDULED yang mulai 15–30 menit lagi.
+ *    Cron jalan tiap 15 menit dan jendela tiap run adalah [T+15, T+30),
+ *    sehingga setiap meeting jatuh TEPAT di 1 run: reminder terkirim
+ *    tepat 1 kali, 15–30 menit sebelum mulai. Duplikat tetap dicegah
+ *    event_key per tanggal (§32): 1 notifikasi + 1 email per meeting
+ *    per hari, walau cron jalan berulang.
  * 2. Notes Reminder — COMPLETED kemarin yang notes-nya masih kosong.
  *    Tepat SATU follow-up (§31: "one follow-up reminder", anti-spam).
  *
@@ -30,7 +31,8 @@ import { needsNotes } from '@/types/meeting'
  * lihat lib/utils/meeting-time.ts.
  */
 
-const REMINDER_LOOKAHEAD_MINUTES = 30
+const REMINDER_LEAD_MINUTES = 15
+const REMINDER_WINDOW_MINUTES = 15
 
 type SchedulerMeeting = {
   id: string
@@ -90,7 +92,7 @@ export async function runMeetingScheduler(now: Date = new Date()): Promise<{
   let reminders = 0
   let notesReminders = 0
 
-  // --- 1. Meeting Reminder (15→30 menit sebelum mulai) ---
+  // --- 1. Meeting Reminder (15–30 menit sebelum mulai, tepat 1 kali) ---
   const { data: upcoming, error: upcomingError } = await admin
     .from('meetings')
     .select('id, code, title, project_id, status, meeting_date, start_time, notes')
@@ -103,7 +105,7 @@ export async function runMeetingScheduler(now: Date = new Date()): Promise<{
     console.error('[cron:meetings] Failed to fetch scheduled meetings:', upcomingError.message)
   } else {
     const due = ((upcoming ?? []) as SchedulerMeeting[]).filter((m) =>
-      isWithinReminderWindow(m, REMINDER_LOOKAHEAD_MINUTES, now)
+      isWithinReminderWindow(m, REMINDER_WINDOW_MINUTES, now, REMINDER_LEAD_MINUTES)
     )
 
     for (const m of due) {
