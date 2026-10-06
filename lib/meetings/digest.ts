@@ -99,6 +99,7 @@ export async function runMorningDigest(now: Date = new Date()): Promise<{
     .select('id, code, title, project_id, assignee_id, deadline')
     .eq('is_deleted', false)
     .neq('status', 'DONE')
+    .neq('status', 'CANCELLED')
     .in('assignee_id', userIds)
     .lte('deadline', today)
     .limit(2000)

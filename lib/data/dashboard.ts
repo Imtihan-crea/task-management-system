@@ -8,7 +8,7 @@ import type { TaskRow } from '@/lib/data/task-list'
 const DASHBOARD_TASK_SELECT =
   'id, code, title, project_id, workstream_id, assignee_id, ' +
   'assignee:profiles!tasks_assignee_id_fkey(id, full_name, email), ' +
-  'priority, status, deadline, created_at, updated_at'
+  'priority, status, deadline, completed_at, cancelled_at, created_at, updated_at'
 
 export type DashboardScope = {
   projectIds: string[] | null // null = semua

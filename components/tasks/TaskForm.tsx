@@ -2,7 +2,7 @@
 
 import { useActionState, useState } from 'react'
 import { createTask, updateTask, type TaskFormState } from '@/app/actions/tasks'
-import { TASK_PRIORITIES, TASK_STATUSES } from '@/lib/auth/roles'
+import { TASK_PRIORITIES, OPEN_TASK_STATUSES } from '@/lib/auth/roles'
 import { displayName, type UserOption } from '@/lib/data/user-options'
 import type { TaskPriority, TaskStatus } from '@/types/task'
 
@@ -167,7 +167,8 @@ export function TaskForm({
             defaultValue={values.status ?? 'TODO'}
             className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
           >
-            {TASK_STATUSES.map((s) => (
+            {/* DONE/CANCELLED hanya lewat tombol submit (ada tanggalnya). */}
+            {OPEN_TASK_STATUSES.map((s) => (
               <option key={s} value={s}>
                 {s.replace('_', ' ')}
               </option>

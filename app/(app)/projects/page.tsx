@@ -36,6 +36,8 @@ async function getProgressMap(projectIds: string[]): Promise<Record<string, Proj
   for (const row of rows) {
     const entry = map[row.project_id]
     if (!entry) continue
+    // CANCELLED keluar dari progress (di luar scope).
+    if (row.status === 'CANCELLED') continue
     entry.total += 1
     if (row.status === 'DONE') entry.completed += 1
     else if (row.status === 'IN_PROGRESS') entry.inProgress += 1

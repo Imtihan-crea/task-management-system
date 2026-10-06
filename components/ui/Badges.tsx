@@ -9,6 +9,7 @@ const TASK_STATUS_STYLE: Record<TaskStatus, string> = {
   REVIEW: 'border-amber-400 text-amber-600 dark:text-amber-300',
   BLOCKED: 'border-red-400 text-red-600 dark:text-red-300',
   DONE: 'border-green-500 text-green-600 dark:text-green-300',
+  CANCELLED: 'border-zinc-500 text-zinc-500 dark:border-zinc-500 dark:text-zinc-400',
 }
 
 const PRIORITY_STYLE: Record<TaskPriority, string> = {

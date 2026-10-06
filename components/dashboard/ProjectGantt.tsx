@@ -112,7 +112,8 @@ export async function ProjectGantt({
 
   const tasks = (tasksData ?? []) as { project_id: string; status: string }[]
   const withProgress: GanttProject[] = projects.map((p) => {
-    const pt = tasks.filter((t) => t.project_id === p.id)
+    // CANCELLED keluar dari progress (di luar scope).
+    const pt = tasks.filter((t) => t.project_id === p.id && t.status !== 'CANCELLED')
     const done = pt.filter((t) => t.status === 'DONE').length
     return {
       ...p,

@@ -91,7 +91,7 @@ export async function TaskFilterForm({ state }: { state: TaskFilterState }) {
             className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
           >
             <option value="">All</option>
-            {(['TODO', 'IN_PROGRESS', 'REVIEW', 'BLOCKED', 'DONE'] as const).map((s) => (
+            {(['TODO', 'IN_PROGRESS', 'REVIEW', 'BLOCKED', 'DONE', 'CANCELLED'] as const).map((s) => (
               <option key={s} value={s}>
                 {s.replace('_', ' ')}
               </option>

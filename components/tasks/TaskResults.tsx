@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { formatDate, isOverdue, todayISO } from '@/lib/utils/dates'
+import { formatDate, isOverdue, showsOverdueBadge, todayISO } from '@/lib/utils/dates'
 import { PriorityBadge, TaskStatusBadge, OverdueBadge } from '@/components/ui/Badges'
 import { Pagination, paginate } from '@/components/ui/Pagination'
 import { applyTaskTab, type TaskTabKey } from '@/components/tasks/TaskTabs'
@@ -80,7 +80,11 @@ export async function TaskResults({ filters }: { filters: TaskFilters }) {
     week.setDate(week.getDate() + 7)
     const weekISO = week.toISOString().slice(0, 10)
     tasks = tasks.filter(
-      (t) => t.deadline >= todayISO() && t.deadline <= weekISO && t.status !== 'DONE'
+      (t) =>
+        t.deadline >= todayISO() &&
+        t.deadline <= weekISO &&
+        t.status !== 'DONE' &&
+        t.status !== 'CANCELLED'
     )
   }
 
@@ -90,9 +94,10 @@ export async function TaskResults({ filters }: { filters: TaskFilters }) {
   if (sort === 'deadline.asc' || sort === 'deadline.desc') {
     const desc = sort === 'deadline.desc'
     tasks = [...tasks].sort((a, b) => {
-      const aDone = a.status === 'DONE' ? 1 : 0
-      const bDone = b.status === 'DONE' ? 1 : 0
-      if (aDone !== bDone) return aDone - bDone
+      // Terminal (DONE/CANCELLED) selalu di bawah, seperti sebelumnya.
+      const aClosed = a.status === 'DONE' || a.status === 'CANCELLED' ? 1 : 0
+      const bClosed = b.status === 'DONE' || b.status === 'CANCELLED' ? 1 : 0
+      if (aClosed !== bClosed) return aClosed - bClosed
       if (a.deadline === b.deadline) return 0
       return desc ? (a.deadline < b.deadline ? 1 : -1) : a.deadline < b.deadline ? -1 : 1
     })
@@ -142,13 +147,16 @@ export async function TaskResults({ filters }: { filters: TaskFilters }) {
           </thead>
           <tbody>
             {pageItems.map((task) => (
-              <tr key={task.id} className="border-b last:border-0">
+              <tr key={task.id} className="relative border-b last:border-0">
                 <td className="px-4 py-3 font-mono text-xs">{task.code}</td>
                 <td className="px-4 py-3">
-                  <Link href={`/tasks/${task.id}`} className="font-medium hover:underline">
+                  <Link
+                    href={`/tasks/${task.id}`}
+                    className="font-medium hover:underline after:absolute after:inset-0"
+                  >
                     {task.title}
                   </Link>
-                  {isOverdue(task.deadline, task.status) && (
+                  {showsOverdueBadge(task.deadline, task.status, task.completed_at, task.cancelled_at) && (
                     <span className="ml-2"><OverdueBadge /></span>
                   )}
                 </td>
@@ -185,7 +193,7 @@ export async function TaskResults({ filters }: { filters: TaskFilters }) {
               <div className="mt-2 flex flex-wrap items-center gap-1.5">
                 <PriorityBadge priority={task.priority} />
                 <TaskStatusBadge status={task.status} />
-                {isOverdue(task.deadline, task.status) && <OverdueBadge />}
+                {showsOverdueBadge(task.deadline, task.status, task.completed_at, task.cancelled_at) && <OverdueBadge />}
               </div>
               <p className="mt-2 text-xs text-zinc-500">
                 Deadline {formatDate(task.deadline)}

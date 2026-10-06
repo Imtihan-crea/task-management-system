@@ -2,11 +2,13 @@
 
 import { useActionState } from 'react'
 import {
+  cancelTask,
   changeTaskStatus,
   deleteTask,
+  submitTask,
   type TaskFormState,
 } from '@/app/actions/tasks'
-import { TASK_STATUSES } from '@/lib/auth/roles'
+import { OPEN_TASK_STATUSES } from '@/lib/auth/roles'
 import type { TaskStatus } from '@/types/task'
 
 const INITIAL: TaskFormState = undefined
@@ -33,7 +35,8 @@ export function ChangeStatusForm({
           defaultValue={current}
           className="min-h-[44px] flex-1 rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
         >
-          {TASK_STATUSES.map((s) => (
+          {/* DONE/CANCELLED hanya lewat tombol submit di bawah. */}
+          {OPEN_TASK_STATUSES.map((s) => (
             <option key={s} value={s}>
               {s.replace('_', ' ')}
             </option>
@@ -57,6 +60,71 @@ export function ChangeStatusForm({
           {state.success}
         </p>
       )}
+    </form>
+  )
+}
+
+/**
+ * Tombol submit Done / Cancel (7 Okt 2026): sifatnya submit, bukan pilihan
+ * dropdown — supaya completed_at/cancelled_at selalu tercatat.
+ */
+function SubmitStateMessage({ state }: { state: TaskFormState }) {
+  return (
+    <>
+      {state?.error && (
+        <p role="alert" className="text-sm font-medium text-red-600">
+          {state.error}
+        </p>
+      )}
+      {state?.success && (
+        <p role="status" className="text-sm font-medium text-green-600">
+          {state.success}
+        </p>
+      )}
+    </>
+  )
+}
+
+export function SubmitTaskForm({ id }: { id: string }) {
+  const [state, formAction, pending] = useActionState(submitTask, INITIAL)
+
+  return (
+    <form action={formAction} className="flex flex-col gap-2">
+      <input type="hidden" name="id" value={id} />
+      <button
+        type="submit"
+        disabled={pending}
+        className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+      >
+        {pending ? 'Submitting...' : 'Submit as Done'}
+      </button>
+      <SubmitStateMessage state={state} />
+    </form>
+  )
+}
+
+export function CancelTaskForm({ id }: { id: string }) {
+  const [state, formAction, pending] = useActionState(cancelTask, INITIAL)
+
+  return (
+    <form
+      action={formAction}
+      onSubmit={(e) => {
+        if (!window.confirm('Cancel this task? It will be locked like done tasks.')) {
+          e.preventDefault()
+        }
+      }}
+      className="flex flex-col gap-2"
+    >
+      <input type="hidden" name="id" value={id} />
+      <button
+        type="submit"
+        disabled={pending}
+        className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-zinc-400 px-4 py-2 text-sm font-semibold text-zinc-600 disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-300"
+      >
+        {pending ? 'Cancelling...' : 'Cancel Task'}
+      </button>
+      <SubmitStateMessage state={state} />
     </form>
   )
 }

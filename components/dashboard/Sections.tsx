@@ -114,7 +114,7 @@ async function AdminUserKpis() {
 /** Donut status + bar priority. */
 export async function ChartsSection({ userId, role, filters }: Ctx & { filters: DashboardFilters }) {
   const tasks = await getDashboardTasks(userId, role, filters)
-  const open = tasks.filter((t) => t.status !== 'DONE')
+  const open = tasks.filter((t) => t.status !== 'DONE' && t.status !== 'CANCELLED')
 
   const donutSegments = (
     [
@@ -123,6 +123,7 @@ export async function ChartsSection({ userId, role, filters }: Ctx & { filters: 
       { status: 'BLOCKED', label: 'Blocked' },
       { status: 'TODO', label: 'To Do' },
       { status: 'REVIEW', label: 'Review' },
+      { status: 'CANCELLED', label: 'Cancelled' },
     ] as const
   ).map((s) => ({ ...s, value: tasks.filter((t) => t.status === s.status).length }))
 
@@ -200,7 +201,9 @@ export async function UpcomingSection({ userId, role, filters }: Ctx & { filters
   weekEnd.setDate(weekEnd.getDate() + 7)
   const weekEndISO = weekEnd.toISOString().slice(0, 10)
   const upcoming = tasks
-    .filter((t) => t.status !== 'DONE' && t.deadline >= today && t.deadline <= weekEndISO)
+    .filter(
+      (t) => t.status !== 'DONE' && t.status !== 'CANCELLED' && t.deadline >= today && t.deadline <= weekEndISO
+    )
     .sort((a, b) => (a.deadline < b.deadline ? -1 : 1))
     .slice(0, 7)
   const overdue = tasks.filter((t) => isOverdue(t.deadline, t.status)).slice(0, 7)
@@ -229,7 +232,7 @@ export async function WorkloadSection({ userId, role, filters }: Ctx & { filters
   if (role !== 'ADMIN' && role !== 'PROJECT_MANAGER') return null
 
   const tasks = await getDashboardTasks(userId, role, filters)
-  const open = tasks.filter((t) => t.status !== 'DONE')
+  const open = tasks.filter((t) => t.status !== 'DONE' && t.status !== 'CANCELLED')
   const { assigneeNames } = await namesFor(tasks)
 
   const workload = Object.entries(
@@ -299,7 +302,7 @@ export async function FilterSection({ filters }: { filters: DashboardFilters }) 
         <label htmlFor="f-status" className="mb-1 block text-sm font-medium">Status</label>
         <select id="f-status" name="status" defaultValue={filters.status} className="min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800">
           <option value="">All</option>
-          {(['TODO', 'IN_PROGRESS', 'REVIEW', 'BLOCKED', 'DONE'] as const).map((s) => (
+          {(['TODO', 'IN_PROGRESS', 'REVIEW', 'BLOCKED', 'DONE', 'CANCELLED'] as const).map((s) => (
             <option key={s} value={s}>{s.replace('_', ' ')}</option>
           ))}
         </select>

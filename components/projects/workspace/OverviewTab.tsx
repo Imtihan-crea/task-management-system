@@ -29,12 +29,14 @@ export async function OverviewTab({ projectId }: { projectId: string }) {
   if (!project) return <p className="text-sm text-zinc-500">Project not found.</p>
 
   const taskList = (tasks ?? []) as { status: string; deadline: string; assignee_id: string }[]
+  // CANCELLED keluar dari progress (di luar scope) — hanya DONE yang selesai.
+  const activeTasks = taskList.filter((t) => t.status !== 'CANCELLED')
   const progress: ProjectProgress = {
-    total: taskList.length,
-    completed: taskList.filter((t) => t.status === 'DONE').length,
-    inProgress: taskList.filter((t) => t.status === 'IN_PROGRESS').length,
-    blocked: taskList.filter((t) => t.status === 'BLOCKED').length,
-    todo: taskList.filter((t) => t.status === 'TODO' || t.status === 'REVIEW').length,
+    total: activeTasks.length,
+    completed: activeTasks.filter((t) => t.status === 'DONE').length,
+    inProgress: activeTasks.filter((t) => t.status === 'IN_PROGRESS').length,
+    blocked: activeTasks.filter((t) => t.status === 'BLOCKED').length,
+    todo: activeTasks.filter((t) => t.status === 'TODO' || t.status === 'REVIEW').length,
     percent: 0,
   }
   progress.percent =
@@ -54,7 +56,9 @@ export async function OverviewTab({ projectId }: { projectId: string }) {
   }
 
   const today = new Date().toISOString().slice(0, 10)
-  const upcoming = taskList.filter((t) => t.status !== 'DONE' && t.deadline >= today).length
+  const upcoming = taskList.filter(
+    (t) => t.status !== 'DONE' && t.status !== 'CANCELLED' && t.deadline >= today
+  ).length
 
   return (
     <div className="grid gap-6 lg:grid-cols-2 lg:items-start">

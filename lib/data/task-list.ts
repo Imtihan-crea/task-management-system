@@ -23,6 +23,8 @@ type TaskColumns = Pick<
   | 'priority'
   | 'status'
   | 'deadline'
+  | 'completed_at'
+  | 'cancelled_at'
   | 'created_at'
   | 'updated_at'
 >
@@ -48,7 +50,7 @@ export type TaskScope = {
 const TASK_SELECT =
   'id, code, title, project_id, workstream_id, assignee_id, ' +
   'assignee:profiles!tasks_assignee_id_fkey(id, full_name, email), ' +
-  'priority, status, deadline, created_at, updated_at'
+  'priority, status, deadline, completed_at, cancelled_at, created_at, updated_at'
 
 /** Nama tampilan assignee: nama lengkap, fallback ke email. */
 export function assigneeName(a: TaskAssignee | null | undefined): string {
@@ -77,7 +79,10 @@ export const fetchTaskRows = cache(async (scope: TaskScope): Promise<TaskRow[]> 
   if (scope.workstream) query = query.eq('workstream_id', scope.workstream)
   if (scope.priority) query = query.eq('priority', scope.priority)
   if (scope.deadline === 'overdue') {
-    query = query.lt('deadline', new Date().toISOString().slice(0, 10)).neq('status', 'DONE')
+    query = query
+      .lt('deadline', new Date().toISOString().slice(0, 10))
+      .neq('status', 'DONE')
+      .neq('status', 'CANCELLED')
   } else if (scope.deadline === 'week') {
     const week = new Date()
     week.setDate(week.getDate() + 7)
@@ -85,6 +90,7 @@ export const fetchTaskRows = cache(async (scope: TaskScope): Promise<TaskRow[]> 
       .gte('deadline', new Date().toISOString().slice(0, 10))
       .lte('deadline', week.toISOString().slice(0, 10))
       .neq('status', 'DONE')
+      .neq('status', 'CANCELLED')
   }
 
   const { data } = await query

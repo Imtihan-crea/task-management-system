@@ -3,7 +3,7 @@ import { Tabs } from '@/components/ui/Tabs'
 import { fetchTaskRows, type TaskRow, type TaskScope } from '@/lib/data/task-list'
 import type { TaskStatus } from '@/types/task'
 
-export type TaskTabKey = 'all' | 'mine' | 'ongoing' | 'todo' | 'blocked' | 'done' | 'overdue'
+export type TaskTabKey = 'all' | 'mine' | 'ongoing' | 'todo' | 'blocked' | 'done' | 'cancelled' | 'overdue'
 
 const TAB_DEFS: { key: TaskTabKey; label: string }[] = [
   { key: 'all', label: 'All' },
@@ -12,6 +12,7 @@ const TAB_DEFS: { key: TaskTabKey; label: string }[] = [
   { key: 'todo', label: 'To Do' },
   { key: 'blocked', label: 'Blocked' },
   { key: 'done', label: 'Done' },
+  { key: 'cancelled', label: 'Cancelled' },
   { key: 'overdue', label: 'Overdue' },
 ]
 
@@ -25,6 +26,7 @@ export function parseTaskTab(view: string): TaskTabKey {
     todo: 'todo',
     blocked: 'blocked',
     done: 'done',
+    cancelled: 'cancelled',
     overdue: 'overdue',
   }
   return map[view] ?? 'all'
@@ -66,6 +68,8 @@ function matchesTab(
       return t.status === 'BLOCKED'
     case 'done':
       return t.status === 'DONE'
+    case 'cancelled':
+      return t.status === 'CANCELLED'
     case 'overdue':
       return isOverdue(t.deadline, t.status)
     default:

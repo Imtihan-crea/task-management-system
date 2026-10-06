@@ -47,6 +47,19 @@ export const TASK_STATUSES: TaskStatus[] = [
   'REVIEW',
   'BLOCKED',
   'DONE',
+  'CANCELLED',
+]
+
+/**
+ * Status yang boleh dipilih lewat dropdown (7 Okt 2026).
+ * DONE/CANCELLED hanya lewat tombol submit (submitTask/cancelTask) supaya
+ * selalu tercatat tanggalnya (completed_at/cancelled_at).
+ */
+export const OPEN_TASK_STATUSES: TaskStatus[] = [
+  'TODO',
+  'IN_PROGRESS',
+  'REVIEW',
+  'BLOCKED',
 ]
 
 export const TASK_PRIORITIES: TaskPriority[] = ['LOW', 'MEDIUM', 'HIGH']

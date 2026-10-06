@@ -4,9 +4,9 @@ import { requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { AppShell } from '@/components/layout/AppShell'
 import { PriorityBadge, TaskStatusBadge, OverdueBadge } from '@/components/ui/Badges'
-import { formatDate, isOverdue } from '@/lib/utils/dates'
+import { formatDate, formatDateTime, showsOverdueBadge } from '@/lib/utils/dates'
 import { TaskForm } from '@/components/tasks/TaskForm'
-import { ChangeStatusForm, DeleteTaskForm } from '@/components/tasks/TaskStatusForms'
+import { CancelTaskForm, ChangeStatusForm, DeleteTaskForm, SubmitTaskForm } from '@/components/tasks/TaskStatusForms'
 import { EvidenceForm } from '@/components/tasks/EvidenceForm'
 import {
   ActivityTimeline,
@@ -137,7 +137,7 @@ export default async function TaskDetailPage({
         <h1 className="text-2xl font-bold">{task.title}</h1>
         <TaskStatusBadge status={task.status as TaskStatus} />
         <PriorityBadge priority={task.priority} />
-        {isOverdue(task.deadline, task.status) && <OverdueBadge />}
+        {showsOverdueBadge(task.deadline, task.status, task.completed_at, task.cancelled_at) && <OverdueBadge />}
       </div>
 
       <div className="mt-4 grid gap-6 lg:grid-cols-2 lg:items-start">
@@ -159,6 +159,12 @@ export default async function TaskDetailPage({
             <Row label="Status" value={task.status.replace('_', ' ')} />
             <Row label="Start Date" value={formatDate(task.start_date)} />
             <Row label="Deadline" value={formatDate(task.deadline)} />
+            {task.status === 'DONE' && (
+              <Row label="Submitted Date" value={formatDateTime(task.completed_at)} />
+            )}
+            {task.status === 'CANCELLED' && (
+              <Row label="Canceled Date" value={formatDateTime(task.cancelled_at)} />
+            )}
           </dl>
 
           {sourceBlock && (
@@ -177,11 +183,20 @@ export default async function TaskDetailPage({
             </div>
           )}
 
-          {canChangeStatus && (
-            <div className="mt-4 border-t pt-4 dark:border-zinc-700">
-              <ChangeStatusForm id={task.id} current={task.status as TaskStatus} />
-            </div>
-          )}
+          {canChangeStatus &&
+            (task.status === 'DONE' || task.status === 'CANCELLED' ? (
+              !canFullEdit && (
+                <div className="mt-4 border-t pt-4 dark:border-zinc-700">
+                  <p className="text-sm text-zinc-500">
+                    This task is locked. Ask a PM or Admin to make changes.
+                  </p>
+                </div>
+              )
+            ) : (
+              <div className="mt-4 border-t pt-4 dark:border-zinc-700">
+                <ChangeStatusForm id={task.id} current={task.status as TaskStatus} />
+              </div>
+            ))}
 
           <div className="mt-4 border-t pt-4 dark:border-zinc-700">
             <h3 className="mb-2 text-base font-bold">Evidence</h3>
@@ -191,6 +206,19 @@ export default async function TaskDetailPage({
               canSubmit={canSubmitEvidence}
             />
           </div>
+
+          {canChangeStatus &&
+            task.status !== 'DONE' &&
+            task.status !== 'CANCELLED' && (
+              <div className="mt-4 flex flex-col gap-2 border-t pt-4 sm:flex-row dark:border-zinc-700">
+                <div className="flex-1">
+                  <SubmitTaskForm id={task.id} />
+                </div>
+                <div className="flex-1">
+                  <CancelTaskForm id={task.id} />
+                </div>
+              </div>
+            )}
 
           {canDelete && (
             <div className="mt-4 max-w-[220px]">

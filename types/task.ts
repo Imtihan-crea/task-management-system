@@ -4,6 +4,7 @@ export type TaskStatus =
   | 'REVIEW'
   | 'BLOCKED'
   | 'DONE'
+  | 'CANCELLED'
 
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH'
 
@@ -24,6 +25,12 @@ export interface Task {
   is_deleted: boolean
   /** Link evidence opsional, tetap bisa diubah setelah DONE. */
   evidence_url: string | null
+  /**
+   * Kapan task DONE / CANCELED (diisi tombol submit, bukan dropdown).
+   * NULL untuk task yang masih terbuka.
+   */
+  completed_at: string | null
+  cancelled_at: string | null
   /**
    * Phase 11 traceability (§21): task tahu dari mana dia berasal.
    * Polymorphic — TIDAK punya FK. NULL = dibuat manual.

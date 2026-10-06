@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { PriorityBadge, TaskStatusBadge, OverdueBadge } from '@/components/ui/Badges'
-import { isOverdue } from '@/lib/utils/dates'
+import { showsOverdueBadge } from '@/lib/utils/dates'
 import type { TaskStatus } from '@/types/task'
 
 type TaskRow = {
@@ -13,6 +13,8 @@ type TaskRow = {
   priority: 'LOW' | 'MEDIUM' | 'HIGH'
   status: TaskStatus
   deadline: string
+  completed_at: string | null
+  cancelled_at: string | null
 }
 
 export async function TasksTab({
@@ -34,7 +36,7 @@ export async function TasksTab({
       .order('created_at', { ascending: true }),
     admin
       .from('tasks')
-      .select('id, code, title, workstream_id, assignee_id, priority, status, deadline')
+      .select('id, code, title, workstream_id, assignee_id, priority, status, deadline, completed_at, cancelled_at')
       .eq('project_id', projectId)
       .eq('is_deleted', false)
       .order('deadline', { ascending: true })
@@ -67,9 +69,9 @@ export async function TasksTab({
         (!filters.priority || t.priority === filters.priority)
     )
     .sort((a, b) => {
-      const aDone = a.status === 'DONE' ? 1 : 0
-      const bDone = b.status === 'DONE' ? 1 : 0
-      if (aDone !== bDone) return aDone - bDone
+      const aClosed = a.status === 'DONE' || a.status === 'CANCELLED' ? 1 : 0
+      const bClosed = b.status === 'DONE' || b.status === 'CANCELLED' ? 1 : 0
+      if (aClosed !== bClosed) return aClosed - bClosed
       return a.deadline < b.deadline ? -1 : a.deadline > b.deadline ? 1 : 0
     })
 
@@ -118,7 +120,7 @@ export async function TasksTab({
             className="min-h-[44px] rounded-lg border px-2 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
           >
             <option value="">All</option>
-            {(['TODO', 'IN_PROGRESS', 'REVIEW', 'BLOCKED', 'DONE'] as const).map((s) => (
+            {(['TODO', 'IN_PROGRESS', 'REVIEW', 'BLOCKED', 'DONE', 'CANCELLED'] as const).map((s) => (
               <option key={s} value={s}>
                 {s.replace('_', ' ')}
               </option>
@@ -176,7 +178,7 @@ export async function TasksTab({
                 <div className="flex flex-wrap items-center gap-1.5">
                   <PriorityBadge priority={task.priority} />
                   <TaskStatusBadge status={task.status} />
-                  {isOverdue(task.deadline, task.status) && <OverdueBadge />}
+                  {showsOverdueBadge(task.deadline, task.status, task.completed_at, task.cancelled_at) && <OverdueBadge />}
                 </div>
               </Link>
             </li>

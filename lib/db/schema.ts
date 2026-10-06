@@ -199,10 +199,14 @@ export const tasks = pgTable(
     created_by: uuid('created_by').references(() => profiles.id, { onDelete: 'set null' }),
     /** LOW | MEDIUM | HIGH */
     priority: text('priority').notNull().default('MEDIUM'),
-    /** TODO | IN_PROGRESS | REVIEW | BLOCKED | DONE */
+    /** TODO | IN_PROGRESS | REVIEW | BLOCKED | DONE | CANCELLED */
     status: text('status').notNull().default('TODO'),
     start_date: date('start_date', { mode: 'string' }),
     deadline: date('deadline', { mode: 'string' }).notNull(),
+    /** Kapan task DONE (tombol submit). Backfill dari updated_at untuk data lama. */
+    completed_at: timestamp('completed_at', { withTimezone: true, mode: 'string' }),
+    /** Kapan task CANCELED (tombol cancel). */
+    cancelled_at: timestamp('cancelled_at', { withTimezone: true, mode: 'string' }),
     /** Soft delete. Semua list wajib filter `is_deleted = false`. */
     is_deleted: boolean('is_deleted').notNull().default(false),
     /** Link bukti (opsional, tetap bisa diubah setelah DONE). */
@@ -226,7 +230,7 @@ export const tasks = pgTable(
     check('tasks_priority_check', sql`${t.priority} in ('LOW', 'MEDIUM', 'HIGH')`),
     check(
       'tasks_status_check',
-      sql`${t.status} in ('TODO', 'IN_PROGRESS', 'REVIEW', 'BLOCKED', 'DONE')`
+      sql`${t.status} in ('TODO', 'IN_PROGRESS', 'REVIEW', 'BLOCKED', 'DONE', 'CANCELLED')`
     ),
     check('tasks_title_check', sql`char_length(trim(${t.title})) > 0`),
     check('tasks_dates_check', sql`${t.start_date} is null or ${t.deadline} >= ${t.start_date}`),
@@ -661,7 +665,7 @@ export type ProfileRole = 'ADMIN' | 'PROJECT_MANAGER' | 'TEAM_MEMBER' | 'VIEWER'
 export type ProfileStatus = 'INVITED' | 'ACTIVE' | 'INACTIVE'
 export type ProjectStatus = 'PLANNING' | 'ACTIVE' | 'ON_HOLD' | 'COMPLETED' | 'CANCELLED'
 export type TaskPriority = 'LOW' | 'MEDIUM' | 'HIGH'
-export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'BLOCKED' | 'DONE'
+export type TaskStatus = 'TODO' | 'IN_PROGRESS' | 'REVIEW' | 'BLOCKED' | 'DONE' | 'CANCELLED'
 export type SuggestionStatus =
   | 'PENDING'
   | 'APPROVED'

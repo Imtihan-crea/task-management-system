@@ -121,6 +121,11 @@ export async function createTask(
   })
   if (fieldError) return { error: fieldError }
 
+  // Task baru selalu terbuka — DONE/CANCELLED hanya lewat tombol submit.
+  if (status === 'DONE' || status === 'CANCELLED') {
+    return { error: 'New tasks cannot be created as done or cancelled.' }
+  }
+
   // PM hanya boleh buat task di project miliknya.
   if (profile.role !== 'ADMIN') {
     if (!(await isProjectManager(projectId, profile.id))) {
@@ -221,6 +226,12 @@ export async function updateTask(
   })
   if (fieldError) return { error: fieldError }
 
+  // DONE/CANCELLED hanya lewat tombol submit (submitTask/cancelTask) supaya
+  // tanggalnya selalu tercatat. Dropdown edit terbatas ke status terbuka.
+  if (status === 'DONE' || status === 'CANCELLED') {
+    return { error: 'Use the Submit / Cancel buttons below to close a task.' }
+  }
+
   const scope = await assertCanManageTask(id, profile.id, isAdmin)
   if (!scope.allowed) {
     return { error: 'You do not have permission to perform this action.' }
@@ -260,6 +271,10 @@ export async function updateTask(
       status: status as TaskStatus,
       start_date: startDate || null,
       deadline,
+      // Status baru dijamin terbuka (guard di atas): tanggal submit
+      // dibersihkan kalau task dibuka ulang (reopen oleh PM/Admin).
+      completed_at: null,
+      cancelled_at: null,
     })
     .eq('id', id)
     .select('id, code, updated_at')
@@ -270,9 +285,8 @@ export async function updateTask(
     return { error: 'Unable to update task.' }
   }
 
-  if (before && before.status !== 'DONE' && status === 'DONE') {
-    await sendDoneEmail(id)
-  }
+  // Catatan: transisi ke DONE tidak mungkin lewat sini (guard di atas
+  // menolak status terminal) — email DONE hanya dari submitTask.
 
   // Event: assignee berubah → TASK_ASSIGNED ke assignee baru.
   if (before && before.assignee_id !== assigneeId) {
@@ -393,6 +407,11 @@ export async function changeTaskStatus(
   if (!id) return { error: 'Task not found.' }
   if (!isTaskStatus(status)) return { error: 'Please choose a valid status.' }
 
+  // DONE/CANCELLED hanya lewat tombol submit (ada tanggalnya).
+  if (status === 'DONE' || status === 'CANCELLED') {
+    return { error: 'Use the Submit / Cancel buttons below to close a task.' }
+  }
+
   const admin = createAdminClient()
   const { data: task } = await admin
     .from('tasks')
@@ -422,7 +441,11 @@ export async function changeTaskStatus(
     .single<{ status: TaskStatus; title: string; code: string }>()
 
   if (!before) return { error: 'Task not found.' }
-  const wasDone = before.status === 'DONE'
+
+  // Task terminal dikunci: buka ulang hanya lewat form edit penuh (PM/Admin).
+  if (before.status === 'DONE' || before.status === 'CANCELLED') {
+    return { error: 'This task is locked. Ask a PM or Admin to reopen it.' }
+  }
 
   const { error } = await admin
     .from('tasks')
@@ -434,9 +457,9 @@ export async function changeTaskStatus(
     return { error: 'Unable to update task status.' }
   }
 
-  if (!wasDone && status === 'DONE') {
-    await sendDoneEmail(id)
-  } else if (before.status !== status) {
+  // DONE hanya lewat submitTask (ada email + tanggalnya); jalur ini
+  // maksimal sampai status terbuka, jadi selalu emit perubahan biasa.
+  if (before.status !== status) {
     await emitTaskStatusChanged({
       taskId: id,
       taskCode: before.code,
@@ -469,6 +492,179 @@ export async function changeTaskStatus(
   revalidatePath('/projects')
   revalidatePath(`/projects/${task.project_id}`)
   return { success: 'Task status updated successfully.' }
+}
+
+/**
+ * Tombol submit: tandai DONE + catat completed_at (7 Okt 2026).
+ * Idempoten: submit dua kali tidak mengirim email dua kali.
+ */
+export async function submitTask(
+  _prev: TaskFormState,
+  formData: FormData
+): Promise<TaskFormState> {
+  const profile = await requireProfile()
+
+  if (profile.role === 'VIEWER') {
+    return { error: 'You do not have permission to perform this action.' }
+  }
+
+  const id = readField(formData, 'id')
+  if (!id) return { error: 'Task not found.' }
+
+  const admin = createAdminClient()
+  const { data: task } = await admin
+    .from('tasks')
+    .select('id, code, title, assignee_id, project_id, status')
+    .eq('id', id)
+    .eq('is_deleted', false)
+    .single<{
+      id: string
+      code: string
+      title: string
+      assignee_id: string
+      project_id: string
+      status: TaskStatus
+    }>()
+
+  if (!task) return { error: 'Task not found.' }
+
+  if (profile.role === 'TEAM_MEMBER' && task.assignee_id !== profile.id) {
+    return { error: 'You do not have permission to perform this action.' }
+  }
+  if (profile.role === 'PROJECT_MANAGER') {
+    if (!(await isProjectManager(task.project_id, profile.id))) {
+      return { error: 'You do not have permission to perform this action.' }
+    }
+  }
+
+  if (task.status === 'DONE') return { success: 'Task is already submitted.' }
+  if (task.status === 'CANCELLED') {
+    return { error: 'Cancelled tasks cannot be submitted.' }
+  }
+
+  const now = new Date().toISOString()
+  const { error } = await admin
+    .from('tasks')
+    .update({ status: 'DONE', completed_at: now })
+    .eq('id', id)
+
+  if (error) {
+    console.error('submitTask failed:', error.message)
+    return { error: 'Unable to submit task.' }
+  }
+
+  await sendDoneEmail(id)
+
+  await logActivity({
+    actorUserId: profile.id,
+    action: 'TASK_STATUS_CHANGED',
+    entityType: 'task',
+    entityId: id,
+    entityCode: task.code,
+    projectId: task.project_id,
+    metadata: {
+      task_code: task.code,
+      task_title: task.title,
+      old_status: task.status,
+      new_status: 'DONE',
+    },
+  })
+
+  revalidatePath('/tasks')
+  revalidatePath(`/tasks/${id}`)
+  revalidatePath('/projects')
+  revalidatePath(`/projects/${task.project_id}`)
+  return { success: `Task ${task.code} submitted as done.` }
+}
+
+/**
+ * Tombol cancel: tandai CANCELLED + catat cancelled_at (7 Okt 2026).
+ * Notifikasi in-app saja (tidak ada email cancel).
+ */
+export async function cancelTask(
+  _prev: TaskFormState,
+  formData: FormData
+): Promise<TaskFormState> {
+  const profile = await requireProfile()
+
+  if (profile.role === 'VIEWER') {
+    return { error: 'You do not have permission to perform this action.' }
+  }
+
+  const id = readField(formData, 'id')
+  if (!id) return { error: 'Task not found.' }
+
+  const admin = createAdminClient()
+  const { data: task } = await admin
+    .from('tasks')
+    .select('id, code, title, assignee_id, project_id, status')
+    .eq('id', id)
+    .eq('is_deleted', false)
+    .single<{
+      id: string
+      code: string
+      title: string
+      assignee_id: string
+      project_id: string
+      status: TaskStatus
+    }>()
+
+  if (!task) return { error: 'Task not found.' }
+
+  if (profile.role === 'TEAM_MEMBER' && task.assignee_id !== profile.id) {
+    return { error: 'You do not have permission to perform this action.' }
+  }
+  if (profile.role === 'PROJECT_MANAGER') {
+    if (!(await isProjectManager(task.project_id, profile.id))) {
+      return { error: 'You do not have permission to perform this action.' }
+    }
+  }
+
+  if (task.status === 'CANCELLED') return { success: 'Task is already cancelled.' }
+  if (task.status === 'DONE') {
+    return { error: 'Done tasks cannot be cancelled. Ask a PM or Admin to reopen it first.' }
+  }
+
+  const now = new Date().toISOString()
+  const { error } = await admin
+    .from('tasks')
+    .update({ status: 'CANCELLED', cancelled_at: now })
+    .eq('id', id)
+
+  if (error) {
+    console.error('cancelTask failed:', error.message)
+    return { error: 'Unable to cancel task.' }
+  }
+
+  await emitTaskStatusChanged({
+    taskId: id,
+    taskCode: task.code,
+    taskTitle: task.title,
+    projectId: task.project_id,
+    fromStatus: task.status,
+    toStatus: 'CANCELLED',
+  })
+
+  await logActivity({
+    actorUserId: profile.id,
+    action: 'TASK_STATUS_CHANGED',
+    entityType: 'task',
+    entityId: id,
+    entityCode: task.code,
+    projectId: task.project_id,
+    metadata: {
+      task_code: task.code,
+      task_title: task.title,
+      old_status: task.status,
+      new_status: 'CANCELLED',
+    },
+  })
+
+  revalidatePath('/tasks')
+  revalidatePath(`/tasks/${id}`)
+  revalidatePath('/projects')
+  revalidatePath(`/projects/${task.project_id}`)
+  return { success: `Task ${task.code} cancelled.` }
 }
 
 /**

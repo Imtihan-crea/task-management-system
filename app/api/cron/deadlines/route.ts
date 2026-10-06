@@ -48,6 +48,7 @@ export async function GET(request: Request) {
     .select('id, code, title, project_id, assignee_id, deadline')
     .eq('is_deleted', false)
     .neq('status', 'DONE')
+    .neq('status', 'CANCELLED')
     .lte('deadline', today)
     .limit(1000)
 
