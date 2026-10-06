@@ -244,3 +244,37 @@ Keputusan owner: OAuth ditunda, maksimalkan email gratis (internal).
 
 Verifikasi saat itu: `test:logic` 147/147, `tsc` bersih, `lint` 0 error,
 `build` sukses, `drizzle-kit generate` → `No schema changes`.
+
+## 11. Update 7 Okt 2026 — Task Workflow: CANCELLED + Tombol Submit + Kunci Done
+
+Permintaan owner (6 poin, semua dikerjakan + 2 penyesuaian):
+
+1. **Status CANCELED** (`CANCELLED`, ikut ejaan `PROJECT_STATUSES`):
+   migrasi `010_task_canceled.sql`, CHECK + Drizzle + tipe + badge abu-abu +
+   tab Cancelled + semua filter + donut. Progress project/Gantt mengeluarkan
+   CANCELED dari total (di luar scope, bukan "belum selesai").
+2. **Submit sifatnya tombol + tanggal:** `submitTask` → DONE + `completed_at`,
+   `cancelTask` → CANCELLED + `cancelled_at` (idempoten: submit 2× tidak kirim
+   email 2×). Dropdown status hanya TODO/IN_PROGRESS/REVIEW/BLOCKED di semua
+   form; server menolak terminal lewat jalur lain. Buka ulang (PM/Admin via
+   form edit) membersihkan tanggalnya.
+3. **Overdue historis:** tab Overdue/KPI/scheduler/digest/workload tidak lagi
+   memuat DONE/CANCELLED — tapi badge Overdue tetap tampil bila deadline <
+   tanggal submit (bukan hari ini, supaya yang selesai tepat waktu tidak ikut
+   dicap). Backfill `completed_at = updated_at` untuk DONE lama.
+4. **Row bisa diklik seluruhnya:** pola stretched-link di tabel desktop
+   (tetap link semantik + aksesibel; kartu mobile memang sudah full-klik).
+5. **Tombol di bawah evidence:** "Submit as Done" (hijau) + "Cancel Task"
+   (dengan konfirmasi, karena mengunci). Dropdown Change Status tanpa terminal.
+6. **DONE/CANCELLED dikunci:** form status disembunyikan, member lihat pesan
+   "minta PM/Admin"; evidence tetap bisa; PM/Admin tetap bisa edit + reopen
+   lewat form penuh.
+
+Penyesuaian dari saya (sudah termasuk di atas): ejaan `CANCELLED` (konsisten
+dengan `PROJECT_STATUSES`), dan CANCELED keluar dari progress (bukan dihitung
+belum selesai).
+
+Verifikasi saat itu: `test:logic` 166/166 (19 test workflow baru), `tsc` bersih,
+`lint` 0 error, `build` sukses, `drizzle-kit generate` → `No schema changes`,
+`test:db` 7/7. Tombol submit/cancel belum diuji live (kolom DB baru —
+jalankan migrasi 010 dulu, lalu test).
