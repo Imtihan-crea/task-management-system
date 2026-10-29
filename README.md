@@ -284,6 +284,21 @@ Setiap link invitation hanya bisa dibuka **satu kali**. Kalau sudah
 terbuka, minta user membuka email terbaru, atau hapus user di
 Supabase Auth lalu invite ulang.
 
+Durasi expired link invitation: **30 menit** (owner, 29 Okt 2026 —
+perubahan dari 60 menit default). Nilai 30 menit = **1800 detik**.
+
+Setting ini ada di **Supabase Dashboard → Authentication → Settings**
+(token expiry untuk invite/magic link/verifikasi) atau via CLI:
+
+```bash
+supabase secrets set GOTRUE_MAIL_VERIFY_EXPIRY=1800
+# lalu restart/redeploy Supabase Auth
+```
+
+Link fallback (`generateLink`) memakai token yang sama, jadi ikut ter‑update
+dengan setting ini. Link yang sudah terbit sebelumnya **tidak terpengaruh** —
+hanya link yang baru yang akan menggunakan 30 menit.
+
 ### Email tidak sampai ke user
 
 Project Supabase gratis hanya bisa mengirim email ke anggota tim project,
