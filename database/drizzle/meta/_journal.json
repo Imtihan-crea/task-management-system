@@ -29,6 +29,13 @@
       "when": 1791307789525,
       "tag": "0003_phase11_task_canceled",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1793679337632,
+      "tag": "0004_phase11_must_change_password",
+      "breakpoints": true
     }
   ]
 }

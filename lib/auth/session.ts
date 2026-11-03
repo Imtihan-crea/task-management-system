@@ -7,7 +7,7 @@ import type { Profile } from '@/types/profile'
 
 type CurrentProfile = Pick<
   Profile,
-  'id' | 'full_name' | 'email' | 'role' | 'status'
+  'id' | 'full_name' | 'email' | 'role' | 'status' | 'must_change_password'
 >
 
 /**
@@ -25,7 +25,7 @@ export const getCurrentProfile = cache(async (): Promise<CurrentProfile | null> 
 
   const { data } = await supabase
     .from('profiles')
-    .select('id, full_name, email, role, status')
+    .select('id, full_name, email, role, status, must_change_password')
     .eq('id', user.id)
     .single<CurrentProfile>()
 
@@ -42,6 +42,27 @@ export async function requireProfile(): Promise<CurrentProfile> {
 
   // INVITED belum boleh masuk halaman internal: dia harus menyelesaikan
   // pengaturan password dulu di /accept-invite.
+  if (!profile || profile.status !== 'ACTIVE') {
+    redirect('/login')
+  }
+
+  // Admin membuat user dengan password awal + opsi wajib ganti password
+  // (3 Nov 2026). Selama flag aktif, semua halaman internal dialihkan ke
+  // /change-password supaya password sementara tidak dipakai permanen.
+  if (profile.must_change_password) {
+    redirect('/change-password')
+  }
+
+  return profile
+}
+
+/**
+ * Khusus halaman /change-password: user harus login & ACTIVE, tapi TIDAK
+ * boleh dialihkan ke /change-password lagi (menghindari redirect loop).
+ */
+export async function requireProfileForPasswordChange(): Promise<CurrentProfile> {
+  const profile = await getCurrentProfile()
+
   if (!profile || profile.status !== 'ACTIVE') {
     redirect('/login')
   }

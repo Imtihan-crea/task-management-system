@@ -4,6 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isUserRole, isUserStatus } from '@/lib/auth/roles'
+import { validateAdminPassword } from '@/lib/auth/password'
 import { getAppBaseUrl } from '@/lib/app-url'
 import { logActivity } from '@/lib/activity-log/service'
 import type { UserRole, UserStatus } from '@/types/profile'
@@ -22,6 +23,15 @@ export type UserFormState = {
 function readField(formData: FormData, name: string): string {
   const value = formData.get(name)
   return typeof value === 'string' ? value.trim() : ''
+}
+
+/**
+ * Password TIDAK boleh di-trim: spasi di awal/akhir adalah bagian dari
+ * password yang diketik admin (3 Nov 2026).
+ */
+function readRawField(formData: FormData, name: string): string {
+  const value = formData.get(name)
+  return typeof value === 'string' ? value : ''
 }
 
 function validEmail(email: string): boolean {
@@ -312,6 +322,123 @@ export async function inviteUser(
   }
 
   return { success: 'Invitation sent successfully.' }
+}
+
+/* ------------------------------------------------------------------ */
+/* 13b - Create User langsung dengan password (3 Nov 2026)             */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Admin membuat user langsung dengan email + password yang diketik
+ * admin — TANPA email / link invite. User langsung ACTIVE dan bisa
+ * login memakai password tersebut.
+ *
+ * Opsional: centang "Require password change on first login" supaya
+ * user wajib mengganti password sementara saat login pertama.
+ */
+export async function createUserWithPassword(
+  _prev: UserFormState,
+  formData: FormData
+): Promise<UserFormState> {
+  const actor = await requireAdmin()
+
+  const fullName = readField(formData, 'full_name')
+  const email = readField(formData, 'email').toLowerCase()
+  const password = readRawField(formData, 'password')
+  const role = readField(formData, 'role')
+  const requireChange = formData.get('require_change') === 'on'
+
+  if (!fullName) return { error: 'Full name is required.' }
+  if (!validEmail(email)) return { error: 'Please enter a valid email address.' }
+  if (!isUserRole(role)) return { error: 'Please choose a valid role.' }
+
+  const passwordError = validateAdminPassword(password)
+  if (passwordError) return { error: passwordError }
+
+  const admin = createAdminClient()
+
+  if (await findProfileByEmail(email)) {
+    return { error: 'A user with this email already exists.' }
+  }
+  if (await findAuthUserByEmail(email)) {
+    return {
+      error:
+        'This email is still registered in Supabase Auth. Delete the user in Supabase Dashboard > Authentication > Users first, then create again.',
+    }
+  }
+
+  // email_confirm: true -> tidak ada email konfirmasi yang dikirim.
+  // Password langsung aktif, jadi bisa login tanpa menunggu email apa pun.
+  const { data: created, error: createError } = await admin.auth.admin.createUser({
+    email,
+    password,
+    email_confirm: true,
+    user_metadata: { full_name: fullName, role },
+  })
+
+  if (createError || !created?.user) {
+    console.error('[create-user] Supabase error:', createError?.message)
+
+    if (/already|registered|exists/i.test(createError?.message ?? '')) {
+      return { error: 'A user with this email already exists.' }
+    }
+    // Supabase punya minimum password sendiri (default 6). Pesannya jelas,
+    // jadi teruskan ke admin daripada pesan generik.
+    const message = createError?.message ?? ''
+    if (/password/i.test(message)) {
+      return { error: message }
+    }
+    return { error: 'Unable to create user. Please try again.' }
+  }
+
+  const userId = created.user.id
+
+  const { data: updated } = await admin
+    .from('profiles')
+    .update({
+      full_name: fullName,
+      role,
+      status: 'ACTIVE',
+      must_change_password: requireChange,
+    })
+    .eq('id', userId)
+    .select('id')
+
+  if (!updated || updated.length === 0) {
+    await admin.from('profiles').insert({
+      id: userId,
+      email,
+      full_name: fullName,
+      role,
+      status: 'ACTIVE',
+      must_change_password: requireChange,
+    })
+  }
+
+  await logActivity({
+    actorUserId: actor.id,
+    action: 'USER_CREATED',
+    entityType: 'user',
+    entityId: userId,
+    entityCode: email,
+    projectId: null,
+    metadata: {
+      email,
+      full_name: fullName,
+      role,
+      via: 'admin-password',
+      must_change_password: requireChange,
+    },
+  })
+
+  revalidatePath('/users')
+  revalidatePath('/dashboard')
+
+  return {
+    success: requireChange
+      ? `User created. They must change the password on first login — share the temporary password securely.`
+      : `User created. They can log in immediately with the password you set.`,
+  }
 }
 
 /* ------------------------------------------------------------------ */

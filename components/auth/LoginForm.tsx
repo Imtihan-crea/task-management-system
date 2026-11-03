@@ -32,9 +32,9 @@ export function LoginForm({ inactiveMessage }: { inactiveMessage?: string }) {
 
       const { data: profile, error: profileError } = await supabase
         .from('profiles')
-        .select('status')
+        .select('status, must_change_password')
         .eq('id', data.user.id)
-        .single<{ status: string }>()
+        .single<{ status: string; must_change_password: boolean }>()
 
       if (profileError || !profile) {
         await supabase.auth.signOut()
@@ -52,6 +52,14 @@ export function LoginForm({ inactiveMessage }: { inactiveMessage?: string }) {
       if (profile.status !== 'ACTIVE') {
         await supabase.auth.signOut()
         setError('Your account is inactive. Please contact an administrator.')
+        return
+      }
+
+      // Admin membuat user dengan password awal + opsi wajib ganti password
+      // (3 Nov 2026): arahkan ke halaman ganti password dulu.
+      if (profile.must_change_password) {
+        router.push('/change-password')
+        router.refresh()
         return
       }
 

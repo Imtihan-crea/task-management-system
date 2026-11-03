@@ -15,8 +15,9 @@
     "test:layout": "tsx tests/email-layout.check.ts",
     "test:digest": "tsx tests/digest.check.ts",
     "test:task": "tsx tests/task-workflow.check.ts",
+    "test:auth": "tsx tests/auth-password.check.ts",
     "test:db": "tsx tests/postgrest-or.check.ts",
-    "test:logic": "npm run test:time && npm run test:rules && npm run test:email && npm run test:layout && npm run test:digest && npm run test:task"
+    "test:logic": "npm run test:time && npm run test:rules && npm run test:email && npm run test:layout && npm run test:digest && npm run test:task && npm run test:auth"
   },
   "dependencies": {
     "@supabase/ssr": "^0.12.7",

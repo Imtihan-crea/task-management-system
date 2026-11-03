@@ -68,6 +68,11 @@ export const profiles = pgTable(
     /** INVITED | ACTIVE | INACTIVE — SATU-SATUNYA sumber kebenaran. */
     status: text('status').notNull().default('INVITED'),
     /**
+     * Opsional (3 Nov 2026): user wajib ganti password saat login pertama.
+     * Di-set saat admin membuat user langsung dengan password.
+     */
+    must_change_password: boolean('must_change_password').notNull().default(false),
+    /**
      * Kolom GENERATED dari `status`._read-only di DB (tidak bisa ditulis,
      * hanya dibaca). Jangan pernah dipakai sebagai sumber kebenaran —
      * itu pelajaran dari Phase 2 (is_active vs status).

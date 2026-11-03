@@ -78,7 +78,7 @@ export default async function UsersPage({
         title="User Management"
         subtitle="Kelola user, role, dan status. Hanya ADMIN yang bisa akses halaman ini."
         actions={
-          <ButtonLink href="/users/new">+ Invite User</ButtonLink>
+          <ButtonLink href="/users/new">+ Add User</ButtonLink>
         }
       />
 
@@ -173,7 +173,7 @@ export default async function UsersPage({
         <p className="mt-4 rounded-2xl bg-white p-8 text-center text-sm text-zinc-500 shadow dark:bg-zinc-900">
           {q || roleFilter || statusFilter
             ? 'No users match your search or filter.'
-            : 'No users yet. Invite your first user below.'}
+            : 'No users yet. Add your first user below.'}
         </p>
       ) : (
         <>

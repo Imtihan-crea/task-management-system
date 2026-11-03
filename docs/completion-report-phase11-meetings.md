@@ -278,3 +278,85 @@ Verifikasi saat itu: `test:logic` 166/166 (19 test workflow baru), `tsc` bersih,
 `lint` 0 error, `build` sukses, `drizzle-kit generate` → `No schema changes`,
 `test:db` 7/7. Tombol submit/cancel belum diuji live (kolom DB baru —
 jalankan migrasi 010 dulu, lalu test).
+
+## 12. Update 3 Nov 2026 — Add User dengan Password (tanpa link invite)
+
+Latar belakang: email undangan Supabase tidak sampai ke penerima, padahal
+user sudah berhasil dibuat (muncul di `profiles` + `auth.users`). Owner
+meminta opsi pendaftaran langsung oleh admin dengan email + password.
+
+Keputusan owner (disetujui):
+1. **Dua opsi tetap ada** — "Create User with Password" (baru) dan
+   "Send Invitation" (lama).
+2. Password awal **diketik admin**, minimal **4 karakter**, dengan tombol
+   show/hide.
+3. **Opsional**: checkbox "Require password change on first login".
+4. Update PRD disetujui (usulan teks di bawah).
+
+### Yang dibangun
+
+- **DB**: migrasi `011_must_change_password.sql` +
+  `database/drizzle/0004_phase11_must_change_password.sql` —
+  `profiles.must_change_password boolean not null default false`.
+- **Aturan murni** `lib/auth/password.ts`: password admin min 4, password
+  baru pilihan user min 8 (+ konfirmasi). 15 boundary test
+  (`tests/auth-password.check.ts`, `npm run test:auth`).
+- **Server action** `createUserWithPassword` (`app/actions/users.ts`):
+  `admin.auth.admin.createUser({ email, password, email_confirm: true })`
+  — **tidak ada email yang dikirim** — lalu profil `ACTIVE` +
+  `must_change_password` sesuai checkbox + activity log
+  (`via: 'admin-password'`). Error Supabase (mis. minimum password
+  project) diteruskan apa adanya ke admin.
+- **UI** `components/users/CreateUserForm.tsx`; halaman `/users/new`
+  menampilkan dua opsi (Create with Password / atau / Send Invitation);
+  tombol di `/users` menjadi "+ Add User".
+- **Guard wajib ganti password**: `requireProfile()` mengalihkan ke
+  `/change-password` selama flag aktif (tanpa redirect loop —
+  `requireProfileForPasswordChange()` khusus halaman itu); `LoginForm`
+  juga mengarahkan ke `/change-password` setelah login.
+- **Halaman** `/change-password` + `ChangePasswordForm` +
+  `completePasswordChange()`: password diubah lewat sesi user
+  (`supabase.auth.updateUser`), lalu server action (service role)
+  membersihkan flag + activity log. Halaman ini juga bisa dibuka sukarela
+  kapan saja.
+- **Tidak ada perubahan** pada invite flow lama, task, meeting,
+  suggestion, notifikasi, RLS, atau scheduler.
+
+### Catatan penting untuk owner
+
+- Password awal **diketahui admin** — konsekuensi yang disadari. Centang
+  "Require password change on first login" untuk mitigasi.
+- **Supabase punya minimum password sendiri (default 6).** Kalau ingin
+  benar-benar menerima 4 karakter, turunkan di
+  **Supabase Dashboard → Authentication → Settings → Password minimum
+  length** menjadi 4. Tanpa itu, password 4–5 karakter akan ditolak
+  Supabase dengan pesan yang diteruskan ke admin.
+
+### Usulan teks PRD (disetujui owner)
+
+> **User Management — Pembuatan User.** Admin dapat membuat user dengan
+> dua cara: (a) membuat langsung dengan email + password awal yang
+> diketik admin (minimal 4 karakter; user langsung ACTIVE; tanpa email),
+> atau (b) mengirim undangan email (user membuat password sendiri;
+> status INVITED → ACTIVE). Keduanya menyediakan opsi opsional "wajib
+> ganti password saat login pertama"; bila aktif, semua halaman internal
+> dialihkan ke /change-password sampai password diganti. Admin yang
+> membuat password awal bertanggung jawab membagikannya lewat kanal
+> aman. Password baru pilihan user minimal 8 karakter. Operasi tulis
+> tetap hanya lewat service role + otorisasi server.
+
+### Verifikasi
+
+`test:logic` **181/181** (60+36+25+12+14+19+15), `tsc` bersih, `lint`
+0 error, `build` sukses, `drizzle-kit generate` → `No schema changes`.
+
+### Langkah owner
+
+1. Jalankan `database/migrations/011_must_change_password.sql` di Supabase
+   SQL Editor (wajib — kolom baru).
+2. Opsional: turunkan Supabase password minimum length ke 4.
+3. Deploy Ready + hard-refresh, lalu test:
+   - Create User with Password (tanpa centang) → login langsung berhasil.
+   - Create User dengan centang → login → diarahkan ke /change-password →
+     ganti password → dashboard.
+   - Send Invitation tetap berfungsi seperti sebelumnya.

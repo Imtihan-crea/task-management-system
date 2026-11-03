@@ -10,6 +10,11 @@ export interface Profile {
   /** Sumber kebenaran tunggal untuk status user. */
   status: UserStatus
   /**
+   * Opsional: user wajib ganti password saat login pertama
+   * (di-set admin saat membuat user langsung dengan password).
+   */
+  must_change_password: boolean
+  /**
    * Generated column di database (status = 'ACTIVE').
    * Jangan dipakai untuk logika bisnis, baca `status`.
    */

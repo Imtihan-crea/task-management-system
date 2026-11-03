@@ -100,9 +100,12 @@ Buka http://localhost:3000
 
 | Nilai | Arti |
 |---|---|
-| `INVITED` | User sudah dibuat, belum selesai mengatur password |
+| `INVITED` | User sudah dibuat, belum selesai mengatur password (khusus opsi invite) |
 | `ACTIVE` | Bisa login |
 | `INACTIVE` | Tidak bisa login |
+
+User yang dibuat lewat **Create User with Password** langsung `ACTIVE`
+(tidak melewati `INVITED`), karena admin sudah menetapkan password awal.
 
 Kolom `is_active` sekarang jadi **generated column** (`status = 'ACTIVE'`).
 Tidak bisa diisi manual, jadi tidak mungkin jadi sumber kebenaran kedua.
@@ -148,10 +151,28 @@ CRON_SECRET=string_acak_panjang (untuk /api/cron/deadlines)
 > `localhost`, link undangan akan mengarah ke `localhost:3000` dan user tidak
 > akan pernah sampai ke halaman `/accept-invite`.
 
-## 4b. Alur onboarding user
+## 4b. Alur onboarding user (dua opsi, 3 Nov 2026)
+
+**Opsi 1 — Create with Password (tanpa email):**
 
 ```text
-Admin: /users -> Invite User
+Admin: /users -> + Add User -> Create User with Password
+        ↓
+Admin isi nama, email, password awal (min. 4 karakter), role
+        ↓
+Opsional: centang "Require password change on first login"
+        ↓
+User langsung ACTIVE — tidak ada email yang dikirim
+        ↓
+Admin bagikan email + password lewat kanal aman (WhatsApp/chat)
+        ↓
+(jika dicentang) login pertama -> /change-password -> dashboard
+```
+
+**Opsi 2 — Send Invite (email):**
+
+```text
+Admin: /users -> + Add User -> Send Invitation
         ↓
 Supabase kirim email "You've been invited"
         ↓
@@ -164,7 +185,17 @@ Status otomatis: INVITED -> ACTIVE
 User login dengan email + password tadi
 ```
 
-Admin **tidak pernah** melihat atau membuat password user.
+Pada Opsi 1 admin **membuat** password awal (konsekuensi yang disadari
+owner). Karena itu:
+- password awal minimal **4 karakter** (aturan owner), tapi **Supabase
+  punya minimum sendiri** — default 6. Kalau ingin benar-benar 4, turunkan
+  di **Supabase Dashboard → Authentication → Settings → Password minimum
+  length**.
+- centang **"Require password change on first login"** supaya password
+  sementara wajib diganti user sebelum memakai aplikasi (user diarahkan ke
+  `/change-password`, minimal 8 karakter).
+
+Pada Opsi 2 admin **tidak pernah** melihat atau membuat password user.
 Link undangan selalu dibangun dari env var `APP_URL`, bukan dari domain
 request, jadi tidak akan pernah mengarah ke `localhost` atau ke domain
 preview yang tidak terdaftar di Supabase.
