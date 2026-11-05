@@ -427,3 +427,33 @@ Verifikasi: `tsc` bersih, `lint` 0 error, `build` sukses, route
 Catatan: link recovery hanya bisa dipakai **sekali** dan kedaluwarsa
 (default 1 jam). Setelah deploy, minta link baru dari Supabase Dashboard
 (Authentication → Users → user → Send recovery).
+## 15. Update 5 Nov 2026 — Perbaikan "Your session has expired" di /reset-password
+
+Gejala: user membuka link recovery, halaman menampilkan email-nya, lalu saat
+klik **Save New Password** muncul "Your session has expired. Please log in
+again." — padahal password sudah berhasil diubah.
+
+Penyebab: setelah `updateUser({ password })`, kode lama memanggil
+`supabase.auth.refreshSession()`. Pada sesi hasil recovery, rotasi refresh
+token bisa membuat sesi langsung dibuang; server action
+`completePasswordChange()` lalu tidak menemukan user dan mengembalikan pesan
+"session expired".
+
+Perbaikan:
+1. `refreshSession()` dihapus dari `/reset-password` dan `/change-password`.
+2. `completePasswordChange(accessToken?)` sekarang menerima access token
+   sebagai jalur cadangan: server memverifikasinya lewat
+   `auth.getUser()` + service role, jadi profil tetap ditemukan walau cookie
+   sesi belum terbaca.
+3. Kalau pembersihan flag tetap gagal, user **tidak** diminta mengulang
+   reset — password sudah tersimpan; guard `/change-password` menangani
+   flag yang tersisa.
+
+Verifikasi: `tsc` bersih, `lint` 0 error, `test:logic` 181/181, `build`
+sukses.
+
+Catatan soal masa berlaku: link recovery memakai setting email OTP Supabase
+(`Authentication → Providers → Email → Email OTP Expiration`, default
+3600 detik). Kalau owner ingin link lebih panjang, ubah di sana — tapi
+setting yang sama juga memperpanjang link undangan (owner sebelumnya
+memilih 30 menit untuk undangan).

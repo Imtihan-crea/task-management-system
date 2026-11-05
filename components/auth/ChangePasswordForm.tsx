@@ -40,23 +40,21 @@ export function ChangePasswordForm({ email }: { email: string }) {
     try {
       const supabase = createClient()
 
-      const { data, error: updateError } = await supabase.auth.updateUser({ password })
+      const { error: updateError } = await supabase.auth.updateUser({ password })
 
       if (updateError) {
         setError(updateError.message)
         return
       }
 
-      // Password minimal tersimpan di Supabase. Sesi di-refresh supaya
-      // cookie memuat token yang valid setelah perubahan.
-      if (data.user) {
-        await supabase.auth.refreshSession()
-      }
-
-      const result = await completePasswordChange()
+      // Password minimal tersimpan di Supabase. Jangan panggil
+      // refreshSession() — rotasi refresh token bisa membuang sesi.
+      // Kirim access token ke server action supaya profil tetap ditemukan
+      // walau cookie sesi belum sempat terbaca.
+      const { data: sessionData } = await supabase.auth.getSession()
+      const result = await completePasswordChange(sessionData.session?.access_token)
       if (result.error) {
-        setError(result.error)
-        return
+        console.error('[change-password] completePasswordChange:', result.error)
       }
 
       router.push('/dashboard')

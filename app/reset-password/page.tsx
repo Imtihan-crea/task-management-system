@@ -169,14 +169,17 @@ export default function ResetPasswordPage() {
       return
     }
 
-    await supabase.auth.refreshSession()
+    // JANGAN panggil refreshSession() di sini. Pada sesi hasil link recovery,
+    // rotasi refresh token bisa membuat sesi terbuang, lalu server action
+    // mengira sesi sudah habis padahal password sudah tersimpan.
+    const { data: sessionData } = await supabase.auth.getSession()
+    const result = await completePasswordChange(sessionData.session?.access_token)
 
-    // Bersihkan flag wajib-ganti-password (kalau ada) + catat activity log.
-    const result = await completePasswordChange()
     if (result.error) {
-      setPhase('ready')
-      setError(result.error)
-      return
+      // Password SUDAH tersimpan. Jangan suruh user mengulang reset —
+      // cukup catat; guard /change-password akan menangani kalau flag
+      // must_change_password belum sempat dibersihkan.
+      console.error('[reset-password] completePasswordChange:', result.error)
     }
 
     try {
