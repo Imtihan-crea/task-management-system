@@ -393,26 +393,43 @@ export async function createUserWithPassword(
 
   const userId = created.user.id
 
-  const { data: updated } = await admin
+  const profileFields = {
+    full_name: fullName,
+    role,
+    status: 'ACTIVE' as const,
+  }
+
+  let { data: updated, error: updateError } = await admin
     .from('profiles')
-    .update({
-      full_name: fullName,
-      role,
-      status: 'ACTIVE',
-      must_change_password: requireChange,
-    })
+    .update({ ...profileFields, must_change_password: requireChange })
     .eq('id', userId)
     .select('id')
 
+  // Migrasi 011 belum dijalankan? Tetap buat user-nya, tanpa flag.
+  if (updateError?.code === '42703') {
+    console.warn(
+      '[schema] profiles.must_change_password belum ada. Jalankan database/migrations/011_must_change_password.sql.'
+    )
+
+    const retry = await admin
+      .from('profiles')
+      .update(profileFields)
+      .eq('id', userId)
+      .select('id')
+
+    updated = retry.data
+    updateError = retry.error
+  }
+
   if (!updated || updated.length === 0) {
-    await admin.from('profiles').insert({
-      id: userId,
-      email,
-      full_name: fullName,
-      role,
-      status: 'ACTIVE',
-      must_change_password: requireChange,
-    })
+    const insertFields = { id: userId, email, ...profileFields }
+    const { error: insertError } = await admin
+      .from('profiles')
+      .insert({ ...insertFields, must_change_password: requireChange })
+
+    if (insertError?.code === '42703') {
+      await admin.from('profiles').insert(insertFields)
+    }
   }
 
   await logActivity({

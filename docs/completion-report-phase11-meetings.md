@@ -457,3 +457,36 @@ Catatan soal masa berlaku: link recovery memakai setting email OTP Supabase
 3600 detik). Kalau owner ingin link lebih panjang, ubah di sana — tapi
 setting yang sama juga memperpanjang link undangan (owner sebelumnya
 memilih 30 menit untuk undangan).
+## 16. Update 6 Nov 2026 — Login "Something went wrong" karena migrasi 011 belum jalan
+
+Gejala: login dengan email + password yang benar selalu berakhir
+"Something went wrong. Please try again." (bukan "Invalid email or password"),
+jadi autentikasi Supabase berhasil tapi profil gagal dibaca.
+
+Diagnosis langsung ke database (service role, REST):
+- `select=must_change_password` -> HTTP 400, kode **42703**:
+  `column profiles.must_change_password does not exist`
+- `select=status` -> 200 (kolom lain normal)
+- `tasks.completed_at` / `cancelled_at` -> 200 (migrasi 010 SUDAH jalan)
+
+Artinya migrasi `011_must_change_password.sql` belum dieksekusi. LoginForm dan
+`getCurrentProfile()` memilih kolom itu, sehingga error dan login diblokir
+untuk SEMUA user.
+
+Perbaikan:
+1. **Wajib:** jalankan `database/migrations/011_must_change_password.sql`
+   di Supabase SQL Editor.
+2. **Ketahanan aplikasi** (supaya satu migrasi yang tertunda tidak
+   melumpuhkan login):
+   - `lib/auth/session.ts`: kalau error 42703, baca profil tanpa kolom baru
+     dan anggap `must_change_password = false` (dengan peringatan log).
+   - `components/auth/LoginForm.tsx`: fallback yang sama.
+   - `app/actions/password.ts`: 42703 dianggap sukses (tidak ada flag yang
+     perlu dibersihkan).
+   - `app/actions/users.ts` (`createUserWithPassword`): update/insert diulang
+     tanpa `must_change_password` bila kolom belum ada.
+
+Verifikasi: `tsc` bersih, `lint` 0 error, `test:logic` 181/181, `build` sukses.
+
+Catatan: fallback hanya jaring pengaman. Flag "wajib ganti password" TIDAK
+berfungsi sampai migrasi 011 dijalankan.

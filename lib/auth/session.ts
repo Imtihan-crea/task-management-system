@@ -10,6 +10,44 @@ type CurrentProfile = Pick<
   'id' | 'full_name' | 'email' | 'role' | 'status' | 'must_change_password'
 >
 
+type LegacyProfile = Omit<CurrentProfile, 'must_change_password'>
+
+/**
+ * Ambil profil user. Kalau migrasi `011_must_change_password.sql` belum
+ * dijalankan, kolomnya belum ada (PostgREST error 42703) — jangan sampai
+ * SEMUA halaman jadi tidak bisa dibuka. Fallback: baca kolom lama dan
+ * anggap `must_change_password = false`, sambil mencatat peringatan.
+ */
+async function fetchProfile(
+  supabase: Awaited<ReturnType<typeof createClient>>,
+  userId: string
+): Promise<CurrentProfile | null> {
+  const { data, error } = await supabase
+    .from('profiles')
+    .select('id, full_name, email, role, status, must_change_password')
+    .eq('id', userId)
+    .single<CurrentProfile>()
+
+  if (!error) return data ?? null
+
+  if (error.code === '42703') {
+    console.warn(
+      '[schema] profiles.must_change_password belum ada. Jalankan database/migrations/011_must_change_password.sql.'
+    )
+
+    const { data: legacy } = await supabase
+      .from('profiles')
+      .select('id, full_name, email, role, status')
+      .eq('id', userId)
+      .single<LegacyProfile>()
+
+    return legacy ? { ...legacy, must_change_password: false } : null
+  }
+
+  console.error('[session] Failed to load profile:', error.message)
+  return null
+}
+
 /**
  * Satu-satunya pintu masuk untuk membaca "siapa user yang sedang login".
  * Dipakai di Server Component, Server Action, dan Route Handler.
@@ -23,13 +61,7 @@ export const getCurrentProfile = cache(async (): Promise<CurrentProfile | null> 
 
   if (!user) return null
 
-  const { data } = await supabase
-    .from('profiles')
-    .select('id, full_name, email, role, status, must_change_password')
-    .eq('id', user.id)
-    .single<CurrentProfile>()
-
-  return data ?? null
+  return fetchProfile(supabase, user.id)
 })
 
 /**

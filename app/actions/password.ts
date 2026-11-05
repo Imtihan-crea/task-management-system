@@ -77,7 +77,13 @@ export async function completePasswordChange(
     .update({ must_change_password: false })
     .eq('id', profile.id)
 
-  if (error) {
+  // Kolom belum ada (migrasi 011 belum jalan) — tidak ada flag yang perlu
+  // dibersihkan, jadi password tetap dianggap berhasil diubah.
+  if (error?.code === '42703') {
+    console.warn(
+      '[schema] profiles.must_change_password belum ada. Jalankan database/migrations/011_must_change_password.sql.'
+    )
+  } else if (error) {
     console.error('[change-password] Failed to clear flag:', error.message)
     return { error: 'Password changed, but we could not update your profile. Please try again.' }
   }

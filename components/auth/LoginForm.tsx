@@ -30,11 +30,30 @@ export function LoginForm({ inactiveMessage }: { inactiveMessage?: string }) {
         return
       }
 
-      const { data: profile, error: profileError } = await supabase
+      let { data: profile, error: profileError } = await supabase
         .from('profiles')
         .select('status, must_change_password')
         .eq('id', data.user.id)
         .single<{ status: string; must_change_password: boolean }>()
+
+      // Kalau migrasi 011_must_change_password.sql belum dijalankan, kolomnya
+      // belum ada (error 42703). Jangan blokir login karena itu.
+      if (profileError?.code === '42703') {
+        console.warn(
+          '[schema] profiles.must_change_password belum ada. Jalankan database/migrations/011_must_change_password.sql.'
+        )
+
+        const retry = await supabase
+          .from('profiles')
+          .select('status')
+          .eq('id', data.user.id)
+          .single<{ status: string }>()
+
+        profile = retry.data
+          ? { ...retry.data, must_change_password: false }
+          : null
+        profileError = retry.error
+      }
 
       if (profileError || !profile) {
         await supabase.auth.signOut()
