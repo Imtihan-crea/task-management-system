@@ -4,6 +4,18 @@ Aplikasi internal untuk mengelola project, workstream, task, user, dan role.
 Status roadmap: **Phase 1 (Foundation), Phase 2 (User Management), Phase 3 (Task)
 & Phase 4 (Project & Workstream) selesai.**
 
+## Production
+
+**https://kasuat-task.vercel.app**
+
+> Sejak 5 Nov 2026 project Vercel diganti nama dari
+> `task-management-system-jatc` menjadi `kasuat-task`, karena domain lama
+> tidak bisa dibuka dari jaringan kantor/ISP owner (filter DNS per-nama-domain;
+> server terbukti sehat dari 40 node termasuk Jakarta). Domain lama masih
+> melayani build yang sama sampai ada deployment baru, tapi jangan dipakai lagi.
+> Setelah rename, `APP_URL` dan Supabase URL Configuration wajib diarahkan ke
+> domain baru, lalu lakukan **Redeploy** supaya alias baru aktif.
+
 ## Stack
 
 - Next.js 16 (App Router) + TypeScript
@@ -119,7 +131,7 @@ Tambahkan di **Settings** > **Environment Variables**:
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
-APP_URL=https://task-management-system-jatc.vercel.app
+APP_URL=https://kasuat-task.vercel.app
 BREVO_API_KEY=
 BREVO_SENDER_EMAIL=
 BREVO_SENDER_NAME=Task Management System
@@ -142,9 +154,9 @@ CRON_SECRET=string_acak_panjang (untuk /api/cron/deadlines)
 
 **Authentication** > **URL Configuration**:
 
-- **Site URL**: `https://task-management-system-jatc.vercel.app`
+- **Site URL**: `https://kasuat-task.vercel.app`
 - **Redirect URLs**:
-  - `https://task-management-system-jatc.vercel.app/**`
+  - `https://kasuat-task.vercel.app/**`
   - `http://localhost:3000/**` (untuk development)
 
 > **Penting:** `Site URL` **wajib** diganti ke domain production. Kalau masih

@@ -360,3 +360,35 @@ Keputusan owner (disetujui):
    - Create User dengan centang → login → diarahkan ke /change-password →
      ganti password → dashboard.
    - Send Invitation tetap berfungsi seperti sebelumnya.
+
+## 13. Update 5 Nov 2026 — Pindah domain ke `kasuat-task.vercel.app`
+
+Gejala: owner tidak bisa membuka `https://task-management-system-jatc.vercel.app`
+di laptop maupun HP, baik di WiFi kantor maupun provider biasa ("blank hitam,
+then cannot be reached"). URL preview deployment bisa dibuka.
+
+Hasil diagnosis:
+- Server sehat: 40 node check-host (termasuk **Jakarta**) → HTTP 200 semua;
+  TLS valid; 7 IP Vercel diuji manual → 200 semua.
+- Build preview identik dengan production (hash chunk `37E882D65EA87EB7`).
+- Google Safe Browsing: bersih (status 6) untuk kedua hostname.
+- Server tidak punya AAAA, jadi bukan masalah IPv6.
+- Kesimpulan: filter DNS/SNI **per-nama-domain** di jalur jaringan owner,
+  bukan masalah aplikasi/Vercel. Karena preview (IP sama) bisa dibuka,
+  yang diblokir adalah hostname-nya.
+
+Tindakan: project Vercel di-rename menjadi `kasuat-task`, sehingga domain
+produksi baru `https://kasuat-task.vercel.app`. Repo (README) diperbarui ke
+domain baru; push ke `main` memicu deployment yang mengikat alias baru.
+
+Langkah owner yang WAJIB:
+1. Vercel → Settings → Environment Variables → `APP_URL` =
+   `https://kasuat-task.vercel.app` (Production + Preview), lalu Redeploy.
+2. Supabase → Authentication → URL Configuration → Site URL dan Redirect
+   URLs diarahkan ke `https://kasuat-task.vercel.app`.
+3. (Opsional) ganti URL cron di Supabase (`cron.job`) ke domain baru,
+   karena domain lama bisa berhenti melayani kapan saja.
+
+Catatan: domain lama masih mengembalikan 200 sampai deployment baru masuk.
+`kasuat-task.vercel.app` sempat mengembalikan `DEPLOYMENT_NOT_FOUND`
+sebelum deploy pertama setelah rename — normal.
