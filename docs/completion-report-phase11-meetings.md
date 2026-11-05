@@ -392,3 +392,38 @@ Langkah owner yang WAJIB:
 Catatan: domain lama masih mengembalikan 200 sampai deployment baru masuk.
 `kasuat-task.vercel.app` sempat mengembalikan `DEPLOYMENT_NOT_FOUND`
 sebelum deploy pertama setelah rename — normal.
+## 14. Update 5 Nov 2026 — Halaman `/reset-password` (link recovery)
+
+Masalah yang dilaporkan owner: link recovery Supabase untuk akun admin
+utama menghasilkan "This page couldn't load".
+
+Dua penyebab:
+1. Link mengarah ke `https://kasuat-task.vercel.app` yang saat itu belum
+   terhubung ke deployment (`DEPLOYMENT_NOT_FOUND`) karena alias baru
+   belum di-assign. Sekarang sudah 200.
+2. **Bug aplikasi:** `app/page.tsx` memperlakukan SEMUA hash auth
+   (`access_token` / `token_hash` / `error_code`) sebagai undangan dan
+   mengarahkannya ke `/accept-invite`. Link recovery (`type=recovery`)
+   jadi diverifikasi dengan `verifyOtp({ type: 'invite' })` dan selalu
+   gagal. Tidak ada halaman reset password sama sekali.
+
+Perbaikan:
+- **Halaman baru** `app/reset-password/page.tsx` yang menangani tiga bentuk
+  link: `#access_token` (implicit), `#token_hash&type=recovery`, dan
+  `?code=` (PKCE). Client memakai flow PKCE, jadi token implicit di-set
+  manual lewat `setSession` (pola yang sama dengan `/accept-invite`).
+- Password baru: minimal **8 karakter** + konfirmasi
+  (`validateSelfPassword`), diubah lewat sesi user
+  (`supabase.auth.updateUser`), lalu `completePasswordChange()` membersihkan
+  flag `must_change_password` dan menulis activity log.
+- `app/page.tsx` sekarang memisahkan `type=recovery` → simpan hash di
+  `tms:recovery-hash` → arahkan ke `/reset-password`.
+- `lib/supabase/proxy.ts`: `/reset-password` masuk `PUBLIC_PATHS` dan
+  `isTokenEntry` supaya server tidak redirect sebelum browser membaca token.
+
+Verifikasi: `tsc` bersih, `lint` 0 error, `build` sukses, route
+`/reset-password` terdaftar sebagai static page.
+
+Catatan: link recovery hanya bisa dipakai **sekali** dan kedaluwarsa
+(default 1 jam). Setelah deploy, minta link baru dari Supabase Dashboard
+(Authentication → Users → user → Send recovery).

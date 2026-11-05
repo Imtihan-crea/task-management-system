@@ -26,18 +26,26 @@ export default function RootPage() {
     const hash = window.location.hash
 
     const params = new URLSearchParams(hash.replace(/^#/, ''))
-    const hasInviteToken =
+    const type = params.get('type')
+    const isRecovery = type === 'recovery'
+    const hasAuthToken =
       params.has('access_token') ||
       params.has('token_hash') ||
-      params.get('type') === 'invite' ||
-      params.get('error_code')
+      type === 'invite' ||
+      isRecovery ||
+      params.has('error_code')
 
-    if (hasInviteToken) {
+    if (hasAuthToken) {
       // Simpan dulu supaya tetap ada setelah URL berubah.
       // supabase-js membaca session dari URL, tapi hash ini kita
       //-keeping supaya halaman tujuan tidak perlu bergantung pada URL.
-      window.sessionStorage.setItem('tms:invite-hash', hash)
-      if (!cancelled) router.replace('/accept-invite')
+      window.sessionStorage.setItem(
+        isRecovery ? 'tms:recovery-hash' : 'tms:invite-hash',
+        hash
+      )
+      if (!cancelled) {
+        router.replace(isRecovery ? '/reset-password' : '/accept-invite')
+      }
       return
     }
 

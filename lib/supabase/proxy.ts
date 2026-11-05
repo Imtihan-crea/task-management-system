@@ -42,13 +42,14 @@ export async function updateSession(request: NextRequest) {
   // yang TIDAK pernah dikirim ke server. Jadi halaman ini harus boleh
   // dibuka tanpa session, dan tidak boleh di-redirect sebelum browser
   // sempat membaca tokennya.
-  const PUBLIC_PATHS = ['/', '/login', '/accept-invite']
+  const PUBLIC_PATHS = ['/', '/login', '/accept-invite', '/reset-password']
   const isPublic = PUBLIC_PATHS.includes(path)
   const isProtected = !isPublic
   const isLoginPage = path === '/login'
-  // Di "/" dan "/accept-invite" JANGAN redirect. Browser masih perlu
-  // membaca token undangan dari bagian hash URL.
-  const isTokenEntry = path === '/' || path === '/accept-invite'
+  // Di "/", "/accept-invite" dan "/reset-password" JANGAN redirect.
+  // Browser masih perlu membaca token (undangan/reset) dari bagian hash URL.
+  const isTokenEntry =
+    path === '/' || path === '/accept-invite' || path === '/reset-password'
 
   let response: NextResponse
 

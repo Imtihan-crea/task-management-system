@@ -212,6 +212,34 @@ Link undangan selalu dibangun dari env var `APP_URL`, bukan dari domain
 request, jadi tidak akan pernah mengarah ke `localhost` atau ke domain
 preview yang tidak terdaftar di Supabase.
 
+## 4c. Lupa password (reset)
+
+Ditambahkan 5 Nov 2026. Sebelumnya link recovery Supabase selalu gagal
+karena dianggap link undangan dan diarahkan ke `/accept-invite`.
+
+```text
+Admin/user minta reset (Supabase Dashboard -> Authentication -> Users
+  -> pilih user -> Send recovery, ATAU nanti lewat tombol di aplikasi)
+        ↓
+Email berisi link recovery
+        ↓
+Link membuka "/" -> router mendeteksi type=recovery -> /reset-password
+        ↓
+/reset-password menukar token menjadi session
+  (mendukung #access_token, #token_hash, dan ?code= PKCE)
+        ↓
+User mengisi password baru (minimal 8 karakter) + konfirmasi
+        ↓
+Dashboard
+```
+
+Catatan:
+- Link recovery bersifat **sekali pakai** dan kedaluwarsa (default 1 jam).
+- Kalau email recovery tidak masuk (batas free tier Supabase), link bisa
+  dibuat lewat Admin API / Supabase Dashboard.
+- Password baru diubah lewat sesi user sendiri (`supabase.auth.updateUser`),
+  bukan service role.
+
 ## 5. Deploy
 
 ```bash
@@ -228,6 +256,7 @@ Setiap push ke `main` = deploy production otomatis oleh Vercel.
 app/
   login/            Halaman login
   accept-invite/    Set password dari link undangan
+  reset-password/   Set password baru dari link recovery (lupa password)
   dashboard/        Welcome + statistik + My Tasks
   projects/         Project board (semua role bisa lihat)
     [id]/           Detail + workstream + task + edit (Admin/PM)
