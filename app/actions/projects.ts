@@ -259,7 +259,8 @@ export async function updateProject(
   if (newManagers.length > 0) {
     const baseUrl = appBaseUrlOrNull()
     await emitNotification({
-      key: `project-assigned:${id}:${newManagers.sort().join(',')}`,
+      // updated_at: PM yang dicopot lalu ditambah lagi tetap dinotifikasi.
+      key: `project-assigned:${id}:${newManagers.sort().join(',')}:${updated.updated_at}`,
       type: 'PROJECT_ASSIGNED',
       userIds: newManagers,
       title: `You are assigned to project ${before?.code ?? ''}`,
