@@ -236,6 +236,12 @@ export async function updateTask(
   if (!scope.allowed) {
     return { error: 'You do not have permission to perform this action.' }
   }
+  // Pindah project: PM juga harus PM di project tujuan (sama seperti createTask).
+  if (!isAdmin && projectId !== scope.projectId) {
+    if (!(await isProjectManager(projectId, profile.id))) {
+      return { error: 'You do not have permission to perform this action.' }
+    }
+  }
 
   if (workstreamId && !(await assertWorkstreamInProject(workstreamId, projectId))) {
     return { error: 'Workstream does not belong to this project.' }
