@@ -9,6 +9,7 @@ import {
   todayInAppTime,
 } from '@/lib/utils/meeting-time'
 import { needsNotes } from '@/types/meeting'
+import { escapeEmailHtml as h } from '@/lib/email/layout'
 
 /**
  * Scheduler Meeting (Phase 11, §31).
@@ -124,7 +125,7 @@ export async function runMeetingScheduler(now: Date = new Date()): Promise<{
         entityId: m.id,
         email: {
           subject: `[Reminder] ${m.code} ${m.title} — ${m.start_time.slice(0, 5)}`,
-          html: `<p>Halo,</p><p>Meeting berikut dimulai <strong>sebentar lagi</strong>:</p><ul><li><strong>${m.code} ${m.title}</strong></li><li><strong>Waktu:</strong> ${m.meeting_date} ${m.start_time.slice(0, 5)}</li><li><strong>Project:</strong> ${label}</li></ul>${baseUrl ? `<p>Lihat detail:<br><a href="${baseUrl}/meetings/${m.id}">${baseUrl}/meetings/${m.id}</a></p>` : ''}`,
+          html: `<p>Halo,</p><p>Meeting berikut dimulai <strong>sebentar lagi</strong>:</p><ul><li><strong>${h(m.code)} ${h(m.title)}</strong></li><li><strong>Waktu:</strong> ${h(m.meeting_date)} ${h(m.start_time.slice(0, 5))}</li><li><strong>Project:</strong> ${h(label)}</li></ul>${baseUrl ? `<p>Lihat detail:<br><a href="${baseUrl}/meetings/${m.id}">${baseUrl}/meetings/${m.id}</a></p>` : ''}`,
           category: 'meeting',
         },
       })
@@ -161,7 +162,7 @@ export async function runMeetingScheduler(now: Date = new Date()): Promise<{
         entityId: m.id,
         email: {
           subject: `[Notes Needed] ${m.code} ${m.title}`,
-          html: `<p>Halo,</p><p>Meeting berikut <strong>belum memiliki notes</strong>:</p><ul><li><strong>${m.code} ${m.title}</strong></li><li><strong>Tanggal:</strong> ${m.meeting_date}</li><li><strong>Project:</strong> ${label}</li></ul>${baseUrl ? `<p>Lengkapi di sini:<br><a href="${baseUrl}/meetings/${m.id}?tab=notes">${baseUrl}/meetings/${m.id}?tab=notes</a></p>` : ''}`,
+          html: `<p>Halo,</p><p>Meeting berikut <strong>belum memiliki notes</strong>:</p><ul><li><strong>${h(m.code)} ${h(m.title)}</strong></li><li><strong>Tanggal:</strong> ${h(m.meeting_date)}</li><li><strong>Project:</strong> ${h(label)}</li></ul>${baseUrl ? `<p>Lengkapi di sini:<br><a href="${baseUrl}/meetings/${m.id}?tab=notes">${baseUrl}/meetings/${m.id}?tab=notes</a></p>` : ''}`,
           category: 'meeting',
         },
       })

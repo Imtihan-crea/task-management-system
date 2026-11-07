@@ -9,6 +9,7 @@ import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
 import { logActivity } from '@/lib/activity-log/service'
 import type { TaskPriority, TaskStatus } from '@/types/task'
+import { escapeEmailHtml as h } from '@/lib/email/layout'
 
 export type TaskFormState = {
   error?: string
@@ -744,7 +745,7 @@ async function emitTaskAssigned(input: {
     email: baseUrl
       ? {
           subject: `[Assigned] ${input.taskCode} ${input.taskTitle}`,
-          html: `<p>Halo,</p><p>Task berikut di-assign kepadamu:</p><ul><li><strong>${input.taskCode} ${input.taskTitle}</strong></li><li><strong>Project:</strong> ${projectLabel}</li></ul><p>Lihat detail:<br><a href="${baseUrl}/tasks/${input.taskId}">${baseUrl}/tasks/${input.taskId}</a></p>`,
+          html: `<p>Halo,</p><p>Task berikut di-assign kepadamu:</p><ul><li><strong>${h(input.taskCode)} ${h(input.taskTitle)}</strong></li><li><strong>Project:</strong> ${h(projectLabel)}</li></ul><p>Lihat detail:<br><a href="${baseUrl}/tasks/${input.taskId}">${baseUrl}/tasks/${input.taskId}</a></p>`,
           category: 'task',
         }
       : null,
@@ -786,7 +787,7 @@ async function emitTaskStatusChanged(input: {
     if (baseUrl) {
       email = {
         subject: `[BLOCKED] ${input.taskCode} ${input.taskTitle}`,
-        html: `<p>Halo,</p><p>Task berikut terhambat dan membutuhkan perhatian:</p><ul><li><strong>${input.taskCode} ${input.taskTitle}</strong></li><li><strong>Project:</strong> ${ctx.projectLabel}</li><li><strong>Status sebelumnya:</strong> ${input.fromStatus.replace('_', ' ')}</li></ul><p>Lihat detail:<br><a href="${baseUrl}/tasks/${input.taskId}">${baseUrl}/tasks/${input.taskId}</a></p>`,
+        html: `<p>Halo,</p><p>Task berikut terhambat dan membutuhkan perhatian:</p><ul><li><strong>${h(input.taskCode)} ${h(input.taskTitle)}</strong></li><li><strong>Project:</strong> ${h(ctx.projectLabel)}</li><li><strong>Status sebelumnya:</strong> ${h(input.fromStatus.replace('_', ' '))}</li></ul><p>Lihat detail:<br><a href="${baseUrl}/tasks/${input.taskId}">${baseUrl}/tasks/${input.taskId}</a></p>`,
         category: 'task',
       }
     }
@@ -852,7 +853,7 @@ async function sendDoneEmail(taskId: string): Promise<void> {
   }
 
   const evidenceBlock = task.evidence_url
-    ? `<p>Link evidence:<br><a href="${task.evidence_url}">${task.evidence_url}</a></p>`
+    ? `<p>Link evidence:<br><a href="${h(task.evidence_url)}">${h(task.evidence_url)}</a></p>`
     : `<p><em>Tidak ada link evidence yang dilampirkan.</em></p>`
 
   await emitNotification({
@@ -868,9 +869,9 @@ async function sendDoneEmail(taskId: string): Promise<void> {
       html: `<p>Halo,</p>
 <p>Kabar baik — task berikut sudah selesai dan membutuhkan perhatian Anda:</p>
 <ul>
-<li><strong>Task:</strong> ${task.code} ${task.title}</li>
-<li><strong>Project:</strong> ${projectLabel}</li>
-<li><strong>Dikerjakan oleh:</strong> ${assigneeName}</li>
+<li><strong>Task:</strong> ${h(task.code)} ${h(task.title)}</li>
+<li><strong>Project:</strong> ${h(projectLabel)}</li>
+<li><strong>Dikerjakan oleh:</strong> ${h(assigneeName)}</li>
 </ul>
 ${evidenceBlock}
 <p>Lihat detail task di sini:<br><a href="${baseUrl}/tasks/${task.id}">${baseUrl}/tasks/${task.id}</a></p>

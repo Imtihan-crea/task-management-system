@@ -32,6 +32,7 @@ import {
 } from '@/lib/meetings/rules'
 import type { TaskPriority } from '@/types/task'
 import type { UserRole } from '@/types/profile'
+import { escapeEmailHtml as h } from '@/lib/email/layout'
 
 export type MeetingFormState = {
   error?: string
@@ -261,7 +262,7 @@ async function notifyMeetingParticipants(input: {
             subject: input.emailSubject,
             html:
               input.emailHtml ??
-              `<p>Halo,</p><p>${input.emailBody}</p><ul><li><strong>${input.code} ${input.title}</strong></li><li><strong>Project:</strong> ${input.projectLabel}</li></ul><p>Lihat detail:<br><a href="${baseUrl}/meetings/${input.meetingId}">${baseUrl}/meetings/${input.meetingId}</a></p>`,
+              `<p>Halo,</p><p>${h(input.emailBody)}</p><ul><li><strong>${h(input.code)} ${h(input.title)}</strong></li><li><strong>Project:</strong> ${h(input.projectLabel)}</li></ul><p>Lihat detail:<br><a href="${baseUrl}/meetings/${input.meetingId}">${baseUrl}/meetings/${input.meetingId}</a></p>`,
             category: 'meeting',
           }
         : null,
@@ -1517,7 +1518,7 @@ export async function addParticipant(
           !historical && baseUrl
             ? {
                 subject: `[Meeting Invitation] ${access.meeting.code} ${access.meeting.title}`,
-                html: `<p>Halo,</p><p>Anda diundang ke meeting berikut:</p><ul><li><strong>${access.meeting.code} ${access.meeting.title}</strong></li><li><strong>Project:</strong> ${label}</li></ul><p>Lihat detail:<br><a href="${baseUrl}/meetings/${meetingId}">${baseUrl}/meetings/${meetingId}</a></p>`,
+                html: `<p>Halo,</p><p>Anda diundang ke meeting berikut:</p><ul><li><strong>${h(access.meeting.code)} ${h(access.meeting.title)}</strong></li><li><strong>Project:</strong> ${h(label)}</li></ul><p>Lihat detail:<br><a href="${baseUrl}/meetings/${meetingId}">${baseUrl}/meetings/${meetingId}</a></p>`,
                 category: 'meeting',
               }
             : null,
@@ -1845,7 +1846,7 @@ export async function createTaskFromActionItem(
       !historical && baseUrl
         ? {
             subject: `[Assigned] ${task.code} ${title}`,
-            html: `<p>Halo,</p><p>Task berikut di-assign kepadamu (dari meeting ${access.meeting.code}):</p><ul><li><strong>${task.code} ${title}</strong></li><li><strong>Project:</strong> ${label}</li></ul><p>Lihat detail:<br><a href="${baseUrl}/tasks/${task.id}">${baseUrl}/tasks/${task.id}</a></p>`,
+            html: `<p>Halo,</p><p>Task berikut di-assign kepadamu (dari meeting ${h(access.meeting.code)}):</p><ul><li><strong>${h(task.code)} ${h(title)}</strong></li><li><strong>Project:</strong> ${h(label)}</li></ul><p>Lihat detail:<br><a href="${baseUrl}/tasks/${task.id}">${baseUrl}/tasks/${task.id}</a></p>`,
             category: 'task',
           }
         : null,

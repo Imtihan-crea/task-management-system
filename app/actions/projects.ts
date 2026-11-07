@@ -9,6 +9,7 @@ import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
 import { logActivity } from '@/lib/activity-log/service'
 import type { ProjectStatus } from '@/types/project'
+import { escapeEmailHtml as h } from '@/lib/email/layout'
 
 function projectAssignedEmail(
   baseUrl: string,
@@ -19,7 +20,7 @@ function projectAssignedEmail(
   if (!baseUrl) return null
   return {
     subject: `[PM] Kamu ditambahkan ke project ${projectCode} ${projectName}`,
-    html: `<p>Halo,</p><p>Kamu ditambahkan sebagai Project Manager di project <strong>${projectCode} ${projectName}</strong>.</p><p>Lihat project:<br><a href="${baseUrl}/projects/${projectId}">${baseUrl}/projects/${projectId}</a></p>`,
+    html: `<p>Halo,</p><p>Kamu ditambahkan sebagai Project Manager di project <strong>${h(projectCode)} ${h(projectName)}</strong>.</p><p>Lihat project:<br><a href="${baseUrl}/projects/${projectId}">${baseUrl}/projects/${projectId}</a></p>`,
     category: 'task',
   }
 }

@@ -11,6 +11,7 @@ import { logActivity } from '@/lib/activity-log/service'
 import { can } from '@/lib/auth/permissions'
 import type { SuggestionStatus, TaskSuggestion } from '@/types/suggestion'
 import type { TaskPriority } from '@/types/task'
+import { escapeEmailHtml as h } from '@/lib/email/layout'
 
 export type SuggestionFormState = {
   error?: string
@@ -216,7 +217,7 @@ export async function createSuggestion(
     email: baseUrl
       ? {
           subject: `[Suggestion ${created.code}] ${title}`,
-          html: `<p>Halo,</p><p>Ada usulan task baru yang menunggu review Anda:</p><ul><li><strong>${created.code} ${title}</strong></li><li><strong>Project:</strong> ${project ? `${project.code} · ${project.name}` : '-'}</li><li><strong>Suggested by:</strong> ${profile.full_name || profile.email}</li></ul><p>Review di sini:<br><a href="${baseUrl}/task-suggestions/${created.id}">${baseUrl}/task-suggestions/${created.id}</a></p>`,
+          html: `<p>Halo,</p><p>Ada usulan task baru yang menunggu review Anda:</p><ul><li><strong>${h(created.code)} ${h(title)}</strong></li><li><strong>Project:</strong> ${project ? `${h(project.code)} · ${h(project.name)}` : '-'}</li><li><strong>Suggested by:</strong> ${h(profile.full_name || profile.email)}</li></ul><p>Review di sini:<br><a href="${baseUrl}/task-suggestions/${created.id}">${baseUrl}/task-suggestions/${created.id}</a></p>`,
           category: 'suggestion',
         }
       : null,
@@ -582,7 +583,7 @@ async function emitReviewEvent(
     email: baseUrl
       ? {
           subject: config.subject,
-          html: `<p>Halo,</p><p>${config.message}</p><p><strong>Project:</strong> ${projectLabel}</p>${reviewNote ? `<p><strong>Review note:</strong> ${reviewNote}</p>` : ''}${convertedTaskId && baseUrl ? `<p>Lihat task:<br><a href="${baseUrl}/tasks/${convertedTaskId}">${baseUrl}/tasks/${convertedTaskId}</a></p>` : ''}<p>Detail suggestion:<br><a href="${suggestionUrl}">${suggestionUrl}</a></p>`,
+          html: `<p>Halo,</p><p>${h(config.message)}</p><p><strong>Project:</strong> ${h(projectLabel)}</p>${reviewNote ? `<p><strong>Review note:</strong> ${h(reviewNote)}</p>` : ''}${convertedTaskId && baseUrl ? `<p>Lihat task:<br><a href="${baseUrl}/tasks/${convertedTaskId}">${baseUrl}/tasks/${convertedTaskId}</a></p>` : ''}<p>Detail suggestion:<br><a href="${suggestionUrl}">${suggestionUrl}</a></p>`,
           category: 'suggestion',
         }
       : null,
