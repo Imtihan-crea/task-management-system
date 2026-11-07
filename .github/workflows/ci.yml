@@ -1,0 +1,67 @@
+# CI minimal: hanya untuk perubahan penting (login/izin, database, server
+# actions, API/cron, dependensi, konfigurasi). Perubahan biasa (UI, docs)
+# tidak memicu CI supaya antrean dan kuota Actions tidak terbuang.
+name: CI
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "app/actions/**"
+      - "app/api/**"
+      - "lib/auth/**"
+      - "lib/supabase/**"
+      - "lib/email/**"
+      - "lib/notifications/**"
+      - "database/**"
+      - "proxy.ts"
+      - "next.config.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/**"
+  pull_request:
+    paths:
+      - "app/actions/**"
+      - "app/api/**"
+      - "lib/auth/**"
+      - "lib/supabase/**"
+      - "lib/email/**"
+      - "lib/notifications/**"
+      - "database/**"
+      - "proxy.ts"
+      - "next.config.ts"
+      - "package.json"
+      - "package-lock.json"
+      - ".github/workflows/**"
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    env:
+      # Placeholder, bukan nilai asli: build tidak memanggil Supabase.
+      NEXT_PUBLIC_SUPABASE_URL: https://placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_ANON_KEY: placeholder-anon-key
+      NEXT_TELEMETRY_DISABLED: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Audit dependensi produksi (gagal bila high/critical)
+        run: npm audit --omit=dev --audit-level=high
+      - run: npx tsc --noEmit
+      - run: npm run lint
+      - name: Tes logika + pemeriksa secret
+        run: npm run test:logic
+      - run: npm run build
