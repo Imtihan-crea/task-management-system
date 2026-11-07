@@ -520,3 +520,32 @@ Implementasi:
 Catatan: redirect ini tidak menolong owner di jaringan yang memblokir domain
 lama (blokir terjadi sebelum request sampai ke Vercel), tapi membuat semua
 link lama di sisi lain otomatis menuju satu alamat.
+## 18. Update 7 Nov 2026 — Aturan data privat + pemeriksa otomatis
+
+Permintaan owner: pastikan semua yang privat di-redact, dan jadikan aturan
+untuk repo ini.
+
+Audit awal:
+- `.env.local` **tidak** ter-track git (hanya `.env.example` yang berisi
+  placeholder). `.gitignore` sudah mengecualikan `.env*`.
+- Tidak ada service role key, PAT Supabase, Brevo key, connection string
+  Postgres, atau private key di file yang ter-track.
+- Ditemukan **email pribadi** di `docs/acceptance-report-phase2.md` dan
+  `docs/setup-email.md` (2 baris) — sudah diganti `nama@contoh.com`.
+- Hit `eyJ…` di `package-lock.json` adalah false positive (bagian base64
+  integrity), bukan token.
+
+Yang dibuat:
+- **`AGENTS.md`** bagian **Aturan Data Privat (WAJIB)**: daftar yang dianggap
+  privat, larangan mencetak/meng-commit, kewajiban placeholder, rotasi saat
+  bocor, dan kewajiban menjalankan pemeriksa sebelum commit.
+- **`scripts/check-secrets.mjs`** (`npm run check:secrets`): memindai file
+  ter-track git untuk JWT/token, Supabase PAT, Brevo key, OpenAI-style key,
+  GitHub/Google key, Postgres URI berpassword, private key, assignment secret
+  non-placeholder, dan email non-placeholder. Nilai temuan **tidak dicetak**,
+  hanya `file:baris`.
+- Pemeriksa ikut dijalankan di `npm run test:logic`.
+- README bagian **4d. Aturan data privat**.
+
+Verifikasi: self-test dengan file sementara berisi token + email palsu →
+terdeteksi 2 temuan; setelah dihapus → `BERSIH`.

@@ -9,7 +9,7 @@ Tester: user (manual, desktop + mobile HP)
 | # | Test | Bukti | Status |
 |---|---|---|---|
 | 1 | Non-Admin (TEAM_MEMBER) tidak melihat menu Users | Screenshot HP: nav hanya Dashboard, Profile, Logout | Lolos |
-| 2 | Deactivate user -> tidak bisa login | Screenshot HP: `iantteaa@gmail.com` INACTIVE, login ditolak `Your account is inactive` | Lolos |
+| 2 | Deactivate user -> tidak bisa login | Screenshot HP: `nama@contoh.com` INACTIVE, login ditolak `Your account is inactive` | Lolos |
 | 3 | Self-deactivation ditolak | Screenshot desktop: `You cannot deactivate your own account.` | Lolos |
 | 4 | Mobile layout (card, no horizontal scroll) | Screenshot HP: Profile & Dashboard rapi di layar kecil | Lolos |
 | 5 | Invite -> email -> set password -> login | Test sebelumnya, user ACTIVE otomatis | Lolos |

@@ -54,7 +54,7 @@ karena kuartanya jauh lebih besar dan reputasi pengirim lebih baik.
 1. Brevo -> **Senders & Domains** -> **Add a new sender**
 2. Isi:
    - **Sender name**: `Task Management System`
-   - **Email**: pakai email kamu sendiri dulu, misal `imtihanam@gmail.com`
+   - **Email**: pakai email kamu sendiri dulu, misal `nama@contoh.com`
 3. Klik **Save**, lalu **Verify** email tersebut (klik link yang dikirim Brevo)
 
 > Untuk production, ganti dengan domain sendiri kalau sudah punya.
@@ -85,7 +85,7 @@ Di Brevo -> **SMTP & API**:
 | SMTP Port | `587` |
 | SMTP User | dari Brevo (format `LOGIN:xxxxxbrevo`) |
 | SMTP Pass | SMTP key dari Brevo |
-| **Sender email** | `imtihanam@gmail.com` (sudah diverifikasi di Brevo) |
+| **Sender email** | `nama@contoh.com` (sudah diverifikasi di Brevo) |
 | Sender name | `Task Management System` |
 
 3. Klik **Save**

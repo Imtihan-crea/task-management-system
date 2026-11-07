@@ -249,6 +249,28 @@ Catatan:
 - Password baru diubah lewat sesi user sendiri (`supabase.auth.updateUser`),
   bukan service role.
 
+## 4d. Aturan data privat
+
+Repo ini **tidak boleh** menyimpan atau mencetak data privat:
+
+- service role key, anon key, Brevo API key, `CRON_SECRET`, connection string
+- access/refresh token, `token_hash`, link recovery/undangan
+- password user, email pribadi, nomor telepon
+
+Aturan lengkap ada di `AGENTS.md` bagian **Aturan Data Privat**. Pemeriksa
+otomatis:
+
+```bash
+npm run check:secrets
+```
+
+Script memindai file yang ter-track git dan **gagal** kalau menemukan token,
+API key, connection string, private key, atau email non-placeholder. Nilai
+temuan tidak pernah dicetak. Pemeriksaan ini juga ikut `npm run test:logic`.
+
+Kalau ada secret yang terlanjur ter-commit: **rotasi dulu** (Supabase JWT /
+service role, Brevo key, `CRON_SECRET`), baru bersihkan histori.
+
 ## 5. Deploy
 
 ```bash
