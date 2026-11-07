@@ -60,7 +60,8 @@ jobs:
       - run: npm ci
       - name: Audit dependensi produksi (gagal bila high/critical)
         run: npm audit --omit=dev --audit-level=high
-      - run: npx tsc --noEmit
+      - name: Typecheck (tipe route Next dibuat dulu, .next tidak ada di checkout bersih)
+        run: npx next typegen && npx tsc --noEmit
       - run: npm run lint
       - name: Tes logika + pemeriksa secret
         run: npm run test:logic
