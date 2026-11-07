@@ -69,22 +69,12 @@ async function assertActiveUsers(userIds: string[]): Promise<boolean> {
   return (count ?? 0) === userIds.length
 }
 
+// Satu transaksi di database (migrasi 014): gagal di tengah = daftar PM lama utuh.
 async function setProjectManagers(projectId: string, userIds: string[]) {
-  const admin = createAdminClient()
-
-  const { error: deleteError } = await admin
-    .from('project_managers')
-    .delete()
-    .eq('project_id', projectId)
-
-  if (deleteError) return deleteError
-
-  if (userIds.length === 0) return null
-
-  const { error } = await admin.from('project_managers').insert(
-    userIds.map((user_id) => ({ project_id: projectId, user_id }))
-  )
-
+  const { error } = await createAdminClient().rpc('set_project_managers', {
+    p_project_id: projectId,
+    p_user_ids: userIds,
+  })
   return error
 }
 
