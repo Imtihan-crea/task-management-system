@@ -352,8 +352,9 @@ Keputusan owner (disetujui):
 
 ### Langkah owner
 
-1. Jalankan `database/migrations/011_must_change_password.sql` di Supabase
-   SQL Editor (wajib — kolom baru).
+1. ~~Jalankan `database/migrations/011_must_change_password.sql` di Supabase
+   SQL Editor (wajib — kolom baru).~~ **Sudah dijalankan 7 Nov 2026**
+   (lihat §19).
 2. Opsional: turunkan Supabase password minimum length ke 4.
 3. Deploy Ready + hard-refresh, lalu test:
    - Create User with Password (tanpa centang) → login langsung berhasil.
@@ -490,6 +491,10 @@ Verifikasi: `tsc` bersih, `lint` 0 error, `test:logic` 181/181, `build` sukses.
 
 Catatan: fallback hanya jaring pengaman. Flag "wajib ganti password" TIDAK
 berfungsi sampai migrasi 011 dijalankan.
+
+**Update 7 Nov 2026:** migrasi 011 sudah dieksekusi (lihat §19). Flag
+`must_change_password` sekarang berfungsi; fallback 42703 tetap dipertahankan
+sebagai jaring pengaman kalau kolom hilang di environment lain.
 ## 17. Update 7 Nov 2026 — Aturan satu alamat resmi
 
 Permintaan owner: "main hanya satu yaitu https://kasuat-task.vercel.app/login".
@@ -549,3 +554,48 @@ Yang dibuat:
 
 Verifikasi: self-test dengan file sementara berisi token + email palsu →
 terdeteksi 2 temuan; setelah dihapus → `BERSIH`.
+
+## 19. Update 7 Nov 2026 — Migrasi 011 dijalankan + password admin direset
+
+Permintaan owner: "jalankan keduanya" (migrasi 011 dan reset password admin).
+
+### Migrasi 011
+
+Service role key hanya bisa akses data lewat REST, **tidak bisa** DDL, dan
+tidak ada connection string Postgres/PAT di environment. Migrasi akhirnya
+dijalankan lewat **Supabase Dashboard → SQL Editor** di tab browser yang sudah
+login (owner login sendiri; kredensial tidak dibaca atau disimpan).
+
+SQL yang dieksekusi:
+
+```sql
+alter table public.profiles
+  add column if not exists must_change_password boolean not null default false;
+```
+
+Verifikasi langsung via REST (service role):
+
+| Pemeriksaan | Hasil |
+|---|---|
+| `select=id` | 11 profile terbaca |
+| `select=must_change_password` | **HTTP 200** (sebelumnya 400 / `42703`) |
+| `must_change_password=eq.true` | 0 baris |
+| query persis LoginForm (`id,email,full_name,role,status,must_change_password`) | HTTP 200 |
+
+Tidak ada data yang berubah; semua user lama otomatis `false`. Fitur "wajib
+ganti password saat login pertama" sekarang aktif. Fallback `42703` tetap
+dipertahankan sebagai jaring pengaman.
+
+### Reset password admin
+
+Dilakukan lewat Supabase Admin API (`PUT /auth/v1/admin/users/{id}`) memakai
+service role; password **tidak** dicetak di laporan ini.
+
+Verifikasi end-to-end di production: `/login` → berhasil masuk `/dashboard`
+("Selamat datang, …"), profil `ACTIVE` / role `ADMIN`.
+
+### Sisa opsional
+
+- Uji "Create User with Password" + centang *Require password change on first
+  login* di production, lalu pastikan diarahkan ke `/change-password`.
+- Ganti URL cron Supabase ke `https://kasuat-task.vercel.app` (lihat §17).
