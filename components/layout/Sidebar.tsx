@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import type { UserRole } from '@/types/profile'
@@ -144,9 +145,11 @@ export function SidebarBrand({ collapsed }: { collapsed?: boolean }) {
   return (
     <div className="flex items-center justify-center px-2 py-3">
       <span className="block w-7 overflow-hidden" aria-hidden="true">
-        <img
+        <Image
           src="/brand/kasuat-logo-white.png"
           alt=""
+          height={26}
+          width={87} // rasio aset 1229x369
           style={{ height: 26, width: 'auto', maxWidth: 'none' }}
         />
       </span>
