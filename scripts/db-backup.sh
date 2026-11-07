@@ -7,7 +7,9 @@ set -euo pipefail
 cd "$(dirname "$0")/.."
 
 ref=$(node -e "import('./scripts/supabase-ref.mjs').then(m => console.log(m.projectRef()))")
-dir="private/backups/$(date +%Y-%m-%d_%H%M)"
+final="private/backups/$(date +%Y-%m-%d_%H%M)"
+# Ditulis ke .partial dulu; folder tanpa .partial = backup lengkap dan lolos cek.
+dir="$final.partial"
 mkdir -p "$dir"
 chmod 700 private/backups "$dir"
 
@@ -20,6 +22,12 @@ dump "$dir/schema.sql"
 dump "$dir/data.sql" --data-only --use-copy
 chmod 600 "$dir"/*.sql
 
-( cd "$dir" && sha256sum roles.sql schema.sql data.sql > SHA256SUMS )
-echo "Backup selesai: $dir"
-ls -l "$dir"
+# Gagal keras bila dump kosong/terpotong (mis. login CLI kedaluwarsa), supaya
+# timer systemd tercatat failed, bukan "sukses" dengan file kosong.
+grep -q '^COPY "auth"."users"' "$dir/data.sql" || { echo "GAGAL: data.sql tanpa auth.users" >&2; exit 1; }
+grep -q 'CREATE TABLE IF NOT EXISTS "public"."tasks"' "$dir/schema.sql" || { echo "GAGAL: schema.sql tanpa tabel tasks" >&2; exit 1; }
+
+( cd "$dir" && sha256sum roles.sql schema.sql data.sql > SHA256SUMS && chmod 600 SHA256SUMS )
+mv "$dir" "$final"
+echo "Backup selesai: $final"
+ls -l "$final"

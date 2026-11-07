@@ -50,10 +50,30 @@ checksum OK; jumlah baris di `data.sql` sama dengan database saat itu
 Jangan commit, jangan kirim lewat chat. Simpan salinan kedua di penyimpanan
 terenkripsi milik pemilik project.
 
+### Jadwal otomatis (laptop pengembang)
+
+Timer systemd user di laptop pengembang menjalankan `npm run db:backup`
+setiap **Senin 08:00 WIB** (`Persistent=true`: bila laptop mati, dijalankan
+saat menyala berikutnya).
+
+```bash
+systemctl --user list-timers task-mgmt-backup.timer   # jadwal berikutnya
+systemctl --user start task-mgmt-backup.service       # backup sekarang
+journalctl --user -u task-mgmt-backup.service         # riwayat dan error
+systemctl --user --failed                              # muncul di sini bila gagal
+```
+
+Unit: `~/.config/systemd/user/task-mgmt-backup.{service,timer}` (tidak di
+repo, khusus laptop itu). Skrip gagal keras bila dump kosong atau terpotong
+(mis. login Supabase CLI kedaluwarsa), jadi kegagalan terlihat di
+`systemctl --user --failed`; folder yang gagal tertinggal dengan akhiran
+`.partial` (bukan backup sah). Backup lama tidak dihapus otomatis (sekitar
+170 KB per backup saat ini).
+
 ### Jadwal yang disarankan
 
 - Sebelum setiap migrasi database atau perubahan besar.
-- Minimal mingguan selama tetap di plan FREE.
+- Minimal mingguan selama tetap di plan FREE (sudah otomatis, lihat di atas).
 - Simpan beberapa backup terakhir; hapus yang lama secara manual.
 
 ## Memulihkan (restore)
