@@ -31,7 +31,7 @@ Hasil di `private/backups/<YYYY-MM-DD_HHMM>/` (folder `private/` di-gitignore):
 | --- | --- |
 | `roles.sql` | role database |
 | `schema.sql` | tabel, fungsi, trigger, policy RLS |
-| `data.sql` | seluruh isi tabel (format COPY) |
+| `data.sql` | isi tabel schema `public` dan `auth` (format COPY) |
 | `SHA256SUMS` | checksum ketiga file |
 
 Password database tidak dibutuhkan: CLI membuat login role sementara, dan
@@ -80,32 +80,53 @@ repo, khusus laptop itu). Skrip gagal keras bila dump kosong atau terpotong
 
 Restore ke **project Supabase baru/kosong**, bukan menimpa produksi yang
 masih hidup. Connection string ada di Dashboard project baru > Connect
-(jangan tulis ke repo).
+(jangan tulis ke repo). Dari root repo:
 
 ```bash
-cd private/backups/<YYYY-MM-DD_HHMM>
-sha256sum -c SHA256SUMS
-psql --single-transaction --variable ON_ERROR_STOP=1 \
-  --file roles.sql --file schema.sql \
+B=private/backups/<YYYY-MM-DD_HHMM>
+(cd $B && sha256sum -c SHA256SUMS)
+psql "<connection string project baru>" \
+  --single-transaction --variable ON_ERROR_STOP=1 \
+  --file database/restore/pre-restore.sql \
+  --file $B/roles.sql --file $B/schema.sql \
   --command 'SET session_replication_role = replica' \
-  --file data.sql \
-  --dbname "<connection string project baru>"
+  --file $B/data.sql \
+  --command 'SET session_replication_role = origin' \
+  --file database/restore/post-restore.sql
 ```
 
+Kenapa ada `pre-restore.sql` dan `post-restore.sql` (ditemukan saat uji):
+- Project baru memberi `anon`/`authenticated` hak penuh otomatis atas tabel
+  dan fungsi baru (default privileges). Tanpa `pre-restore.sql`, hasil restore
+  membiarkan user mengubah role sendiri dan RPC sensitif terbuka.
+- Trigger `on_auth_user_created` di `auth.users` tidak ikut dump; dipasang
+  ulang oleh `post-restore.sql`.
+
 Sesudah restore:
-1. Arahkan env Vercel (`NEXT_PUBLIC_SUPABASE_URL`, anon key, service role key)
+1. Verifikasi ke project baru (ganti URL sementara):
+   `NEXT_PUBLIC_SUPABASE_URL=https://<ref-baru>.supabase.co npm run test:rls`
+   (harus 26 lulus) dan `... npm run db:status` (harus SINKRON).
+2. Arahkan env Vercel (`NEXT_PUBLIC_SUPABASE_URL`, anon key, service role key)
    ke project baru, lalu redeploy.
-2. Atur ulang Auth: matikan signup publik, Site URL dan Redirect URL
+3. Atur ulang Auth: matikan signup publik, Site URL dan Redirect URL
    (`https://kasuat-task.vercel.app`), SMTP Brevo, dan pg_cron
    `meeting-reminders` (lihat `docs/completion-report-phase11-meetings.md`).
-3. Jalankan `npm run db:status` dan `npm run test:rls` ke project baru.
 
-User Supabase Auth (`auth.users`, `auth.identities`) ikut di `data.sql`
-(terverifikasi pada backup 7 Nov 2026), jadi login dan password lama
-seharusnya tetap berlaku setelah restore.
+User Supabase Auth (`auth.users`, `auth.identities`, termasuk hash password)
+ikut di `data.sql`, jadi login lama tetap berlaku. Data Supabase Storage
+tidak dibackup: aplikasi tidak memakainya, dan tabel internal storage menolak
+restore. Backup sebelum 7 Nov 2026 18:51 masih memuat tabel storage dan
+gagal direstore apa adanya; pakai backup yang lebih baru.
 
-**Restore belum pernah diuji** (butuh project Supabase kosong). Uji sekali di
-project percobaan sebelum benar-benar membutuhkannya.
+### Uji restore
+
+7 Nov 2026 18:53 WIB: backup `2026-11-07_1851` direstore ke project percobaan
+baru (dihapus lagi sesudahnya) dengan perintah di atas. Hasil: `psql` exit 0;
+jumlah baris semua tabel public + `auth.users`/`auth.identities` identik
+dengan produksi (sidik jari md5 sama); ACL tabel/fungsi/kolom, default
+privileges, dan trigger identik (38 item); `npm run test:rls` 26/26 lulus;
+`npm run db:status` SINKRON. Uji pertama tanpa pre/post gagal 5 cek RLS.
+Belum diuji: login lewat aplikasi ke project hasil restore.
 
 ## Alternatif: upgrade plan
 

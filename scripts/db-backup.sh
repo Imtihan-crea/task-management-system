@@ -19,7 +19,10 @@ chmod 700 private/backups "$dir"
 dump() { local out=$1; shift; supabase db dump --remote="$ref" --agent no --dry-run "$@" 2>/dev/null | bash > "$out"; }
 dump "$dir/roles.sql" --role-only
 dump "$dir/schema.sql"
-dump "$dir/data.sql" --data-only --use-copy
+# Data hanya schema yang dipakai aplikasi. Tabel internal storage (mis.
+# storage.buckets_vectors) ditolak saat restore ("permission denied"), dan
+# aplikasi tidak memakai Supabase Storage (uji restore 7 Nov 2026).
+dump "$dir/data.sql" --data-only --use-copy --schema public,auth
 chmod 600 "$dir"/*.sql
 
 # Gagal keras bila dump kosong/terpotong (mis. login CLI kedaluwarsa), supaya
