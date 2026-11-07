@@ -1,6 +1,6 @@
 /**
- * Uji boundary aturan password (3 Nov 2026):
- * - password awal yang diketik admin: minimal 4 karakter
+ * Uji boundary aturan password:
+ * - password awal yang diketik admin: minimal 6 karakter (selaras Supabase Auth)
  * - password baru pilihan user (/change-password): minimal 8 karakter
  * Jalankan: npm run test:auth
  */
@@ -24,17 +24,17 @@ function cek(label: string, aktual: unknown, harap: unknown): void {
 }
 
 /* ---------- konstanta ---------- */
-cek('admin min = 4', MIN_ADMIN_PASSWORD_LENGTH, 4)
+cek('admin min = 6', MIN_ADMIN_PASSWORD_LENGTH, 6)
 cek('self min = 8', MIN_SELF_PASSWORD_LENGTH, 8)
 
 /* ---------- password awal dari admin ---------- */
 cek('kosong ditolak', validateAdminPassword(''), 'Password is required.')
-cek('3 karakter ditolak', validateAdminPassword('abc') !== null, true)
-cek('4 karakter diterima', validateAdminPassword('abcd'), null)
+cek('5 karakter ditolak', validateAdminPassword('abcde') !== null, true)
+cek('6 karakter diterima', validateAdminPassword('abcdef'), null)
 cek('20 karakter diterima', validateAdminPassword('x'.repeat(20)), null)
-cek('spasi 4 karakter diterima', validateAdminPassword('    '), null)
-cek('3 karakter + spasi ditolak', validateAdminPassword('ab ') !== null, true)
-cek('unicode 4 karakter diterima', validateAdminPassword('päss'), null)
+cek('spasi 6 karakter diterima', validateAdminPassword('      '), null)
+cek('4 karakter + spasi ditolak (total 5)', validateAdminPassword('abcd ') !== null, true)
+cek('unicode 6 karakter diterima', validateAdminPassword('pässwo'), null)
 
 /* ---------- password baru pilihan user ---------- */
 cek('self kosong ditolak', validateSelfPassword('', ''), 'Password is required.')

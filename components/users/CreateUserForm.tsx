@@ -84,9 +84,9 @@ export function CreateUserForm() {
             </label>
           </div>
           <p className="mt-1 text-xs text-zinc-500">
-            Minimal {MIN_ADMIN_PASSWORD_LENGTH} karakter. Catatan: Supabase
-            mungkin memakai minimum sendiri (default 6) — jika muncul pesan
-            dari Supabase, minta developer menurunkan setting-nya.
+            Minimal {MIN_ADMIN_PASSWORD_LENGTH} karakter (mengikuti batas minimum
+            Supabase Auth). Bagikan lewat kanal aman dan pertimbangkan opsi
+            &quot;wajib ganti password saat login pertama&quot;.
           </p>
         </div>
 
