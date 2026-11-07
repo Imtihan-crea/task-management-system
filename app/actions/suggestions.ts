@@ -4,7 +4,8 @@ import { revalidatePath } from 'next/cache'
 import { requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isTaskPriority } from '@/lib/auth/roles'
-import { isProjectManager } from '@/lib/data/projects'
+import { canManageProjectFor, isProjectManager } from '@/lib/data/projects'
+import { canSuggestForProject } from '@/lib/auth/project-access'
 import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
 import { logActivity } from '@/lib/activity-log/service'
@@ -98,17 +99,19 @@ async function assertCanSuggestProject(
   userId: string,
   role: string
 ): Promise<boolean> {
-  if (role === 'ADMIN') return true
-  if (role === 'PROJECT_MANAGER') return isProjectManager(projectId, userId)
-
-  const { count } = await createAdminClient()
-    .from('tasks')
-    .select('id', { count: 'exact', head: true })
-    .eq('project_id', projectId)
-    .eq('assignee_id', userId)
-    .eq('is_deleted', false)
-
-  return (count ?? 0) > 0
+  // Query hanya yang dibutuhkan role-nya; keputusan di canSuggestForProject.
+  const managesProject = role === 'PROJECT_MANAGER' && (await isProjectManager(projectId, userId))
+  let hasAssignedTask = false
+  if (role !== 'ADMIN' && role !== 'PROJECT_MANAGER') {
+    const { count } = await createAdminClient()
+      .from('tasks')
+      .select('id', { count: 'exact', head: true })
+      .eq('project_id', projectId)
+      .eq('assignee_id', userId)
+      .eq('is_deleted', false)
+    hasAssignedTask = (count ?? 0) > 0
+  }
+  return canSuggestForProject(role, { managesProject, hasAssignedTask })
 }
 
 /** Cek reviewer berhak atas suggestion ini (admin semua, PM scoped). */
@@ -116,9 +119,7 @@ async function assertCanReview(
   suggestion: Pick<TaskSuggestion, 'project_id'>,
   profile: { id: string; role: string }
 ): Promise<boolean> {
-  if (profile.role === 'ADMIN') return true
-  if (profile.role !== 'PROJECT_MANAGER') return false
-  return isProjectManager(suggestion.project_id, profile.id)
+  return canManageProjectFor(profile, suggestion.project_id)
 }
 
 export async function createSuggestion(

@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { requireManager } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isProjectStatus } from '@/lib/auth/roles'
-import { isProjectManager } from '@/lib/data/projects'
+import { canManageProjectFor } from '@/lib/data/projects'
 import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
 import { logActivity } from '@/lib/activity-log/service'
@@ -170,7 +170,6 @@ export async function updateProject(
   formData: FormData
 ): Promise<ProjectFormState> {
   const profile = await requireManager()
-  const isAdmin = profile.role === 'ADMIN'
 
   const id = readField(formData, 'id')
   const name = readField(formData, 'name')
@@ -191,7 +190,7 @@ export async function updateProject(
   if (startDate && endDate && endDate < startDate) {
     return { error: 'Deadline must be after start date.' }
   }
-  if (!isAdmin && !(await isProjectManager(id, profile.id))) {
+  if (!(await canManageProjectFor(profile, id))) {
     return { error: 'You do not have permission to perform this action.' }
   }
   if (!(await assertActiveUsers(managerIds))) {

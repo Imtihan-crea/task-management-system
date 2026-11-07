@@ -8,6 +8,7 @@ import { validateAdminPassword } from '@/lib/auth/password'
 import { getAppBaseUrl } from '@/lib/app-url'
 import { logActivity } from '@/lib/activity-log/service'
 import type { UserRole, UserStatus } from '@/types/profile'
+import { removesLastActiveAdmin } from '@/lib/auth/project-access'
 
 export type UserFormState = {
   error?: string
@@ -94,12 +95,8 @@ async function wouldRemoveLastAdmin(targetId: string, nextRole: UserRole, nextSt
 
   if (!target) return false
 
-  // Hanya relevan kalau target sebelumnya Admin aktif
-  if (target.role !== 'ADMIN' || target.status !== 'ACTIVE') return false
-
-  const stillActiveAdmin = nextRole === 'ADMIN' && nextStatus === 'ACTIVE'
-  if (stillActiveAdmin) return false
-
+  // Aksi ubah role/status jarang; hitung selalu supaya keputusan tunggal di
+  // removesLastActiveAdmin (lib/auth/project-access.ts, dites).
   const { count } = await admin
     .from('profiles')
     .select('id', { count: 'exact', head: true })
@@ -107,7 +104,11 @@ async function wouldRemoveLastAdmin(targetId: string, nextRole: UserRole, nextSt
     .eq('status', 'ACTIVE')
     .neq('id', targetId)
 
-  return (count ?? 0) === 0
+  return removesLastActiveAdmin({
+    current: target,
+    next: { role: nextRole, status: nextStatus },
+    otherActiveAdmins: count ?? 0,
+  })
 }
 
 /* ------------------------------------------------------------------ */

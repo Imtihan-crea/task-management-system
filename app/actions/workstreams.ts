@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { requireManager } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { isProjectManager } from '@/lib/data/projects'
+import { canManageProjectFor } from '@/lib/data/projects'
 import { logActivity } from '@/lib/activity-log/service'
 
 export type WorkstreamFormState = {
@@ -16,17 +16,11 @@ function readField(formData: FormData, name: string): string {
   return typeof value === 'string' ? value.trim() : ''
 }
 
-async function assertCanManageProject(projectId: string, managerId: string, isAdmin: boolean) {
-  if (isAdmin) return true
-  return isProjectManager(projectId, managerId)
-}
-
 export async function createWorkstream(
   _prev: WorkstreamFormState,
   formData: FormData
 ): Promise<WorkstreamFormState> {
   const profile = await requireManager()
-  const isAdmin = profile.role === 'ADMIN'
 
   const projectId = readField(formData, 'project_id')
   const name = readField(formData, 'name')
@@ -34,7 +28,7 @@ export async function createWorkstream(
 
   if (!projectId) return { error: 'Project is required.' }
   if (!name) return { error: 'Workstream name is required.' }
-  if (!(await assertCanManageProject(projectId, profile.id, isAdmin))) {
+  if (!(await canManageProjectFor(profile, projectId))) {
     return { error: 'You do not have permission to perform this action.' }
   }
 
@@ -73,7 +67,6 @@ export async function updateWorkstream(
   formData: FormData
 ): Promise<WorkstreamFormState> {
   const profile = await requireManager()
-  const isAdmin = profile.role === 'ADMIN'
 
   const id = readField(formData, 'id')
   const name = readField(formData, 'name')
@@ -90,7 +83,7 @@ export async function updateWorkstream(
     .single<{ project_id: string; code: string }>()
 
   if (!current) return { error: 'Workstream not found.' }
-  if (!(await assertCanManageProject(current.project_id, profile.id, isAdmin))) {
+  if (!(await canManageProjectFor(profile, current.project_id))) {
     return { error: 'You do not have permission to perform this action.' }
   }
 
@@ -124,7 +117,6 @@ export async function deleteWorkstream(
   formData: FormData
 ): Promise<WorkstreamFormState> {
   const profile = await requireManager()
-  const isAdmin = profile.role === 'ADMIN'
 
   const id = readField(formData, 'id')
   if (!id) return { error: 'Workstream not found.' }
@@ -137,7 +129,7 @@ export async function deleteWorkstream(
     .single<{ project_id: string; code: string; name: string }>()
 
   if (!current) return { error: 'Workstream not found.' }
-  if (!(await assertCanManageProject(current.project_id, profile.id, isAdmin))) {
+  if (!(await canManageProjectFor(profile, current.project_id))) {
     return { error: 'You do not have permission to perform this action.' }
   }
 

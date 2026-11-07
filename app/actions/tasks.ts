@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { requireManager, requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isTaskPriority, isTaskStatus } from '@/lib/auth/roles'
-import { isProjectManager } from '@/lib/data/projects'
+import { canManageProjectFor, isProjectManager } from '@/lib/data/projects'
 import { canActOnTask } from '@/lib/auth/task-access'
 import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
@@ -54,8 +54,8 @@ async function assertWorkstreamInProject(
   return Boolean(data)
 }
 
-async function assertCanManageTask(taskId: string, managerId: string, isAdmin: boolean) {
-  if (isAdmin) return { allowed: true, projectId: '' }
+async function assertCanManageTask(taskId: string, profile: { id: string; role: string }) {
+  if (profile.role === 'ADMIN') return { allowed: true, projectId: '' }
 
   const admin = createAdminClient()
   const { data: task } = await admin
@@ -68,7 +68,7 @@ async function assertCanManageTask(taskId: string, managerId: string, isAdmin: b
   if (!task) return { allowed: false, projectId: '' }
 
   return {
-    allowed: await isProjectManager(task.project_id, managerId),
+    allowed: await canManageProjectFor(profile, task.project_id),
     projectId: task.project_id,
   }
 }
@@ -143,10 +143,8 @@ export async function createTask(
   }
 
   // PM hanya boleh buat task di project miliknya.
-  if (profile.role !== 'ADMIN') {
-    if (!(await isProjectManager(projectId, profile.id))) {
-      return { error: 'You do not have permission to perform this action.' }
-    }
+  if (!(await canManageProjectFor(profile, projectId))) {
+    return { error: 'You do not have permission to perform this action.' }
   }
 
   if (workstreamId && !(await assertWorkstreamInProject(workstreamId, projectId))) {
@@ -216,7 +214,6 @@ export async function updateTask(
   formData: FormData
 ): Promise<TaskFormState> {
   const profile = await requireManager()
-  const isAdmin = profile.role === 'ADMIN'
 
   const id = readField(formData, 'id')
   const title = readField(formData, 'title')
@@ -248,15 +245,13 @@ export async function updateTask(
     return { error: 'Use the Submit / Cancel buttons below to close a task.' }
   }
 
-  const scope = await assertCanManageTask(id, profile.id, isAdmin)
+  const scope = await assertCanManageTask(id, profile)
   if (!scope.allowed) {
     return { error: 'You do not have permission to perform this action.' }
   }
   // Pindah project: PM juga harus PM di project tujuan (sama seperti createTask).
-  if (!isAdmin && projectId !== scope.projectId) {
-    if (!(await isProjectManager(projectId, profile.id))) {
-      return { error: 'You do not have permission to perform this action.' }
-    }
+  if (projectId !== scope.projectId && !(await canManageProjectFor(profile, projectId))) {
+    return { error: 'You do not have permission to perform this action.' }
   }
 
   if (workstreamId && !(await assertWorkstreamInProject(workstreamId, projectId))) {
@@ -887,12 +882,11 @@ export async function deleteTask(
   formData: FormData
 ): Promise<TaskFormState> {
   const profile = await requireManager()
-  const isAdmin = profile.role === 'ADMIN'
 
   const id = readField(formData, 'id')
   if (!id) return { error: 'Task not found.' }
 
-  const scope = await assertCanManageTask(id, profile.id, isAdmin)
+  const scope = await assertCanManageTask(id, profile)
   if (!scope.allowed) {
     return { error: 'You do not have permission to perform this action.' }
   }
