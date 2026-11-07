@@ -1,8 +1,9 @@
 # Implementation Plan — Phase 11 (Meeting Management & Scheduler)
 
 **Status:** eksekusi selesai 5 Oktober 2026 (13 bucket + 2 fix). Laporan:
-`docs/completion-report-phase11-meetings.md`. Sisa owner: SQL pg_cron (§10.4),
-reset sequence (opsional), acceptance test §48.
+`docs/completion-report-phase11-meetings.md`. `pg_cron` sudah dijalankan dan
+URL-nya sudah dipindah ke domain resmi (7 Nov 2026). Sisa owner: reset sequence
+(opsional), acceptance test §48.
 **PRD:** `PRD-11-Meeting-Management-Scheduler.md`
 **Baseline:** Phase 1–10 di production.
 
@@ -617,7 +618,7 @@ select cron.schedule(
   '*/15 * * * *',
   $$
   select net.http_post(
-    url := 'https://task-management-system-jatc.vercel.app/api/cron/meetings',
+    url := 'https://kasuat-task.vercel.app/api/cron/meetings',
     headers := jsonb_build_object(
       'Content-Type', 'application/json',
       'Authorization', 'Bearer GANTI_DENGAN_CRON_SECRET_ANDA'
@@ -630,6 +631,21 @@ select cron.schedule(
 ```
 
 Verifikasi: `select jobname, schedule, active from cron.job;`
+
+> **Update 7 Nov 2026:** untuk job yang sudah terlanjur dibuat dengan domain
+> lama, tidak perlu dihapus. Ganti URL-nya saja tanpa menyentuh header secret:
+>
+> ```sql
+> select cron.alter_job(
+>   job_id => 1,
+>   command => (
+>     select replace(command,
+>       'https://task-management-system-jatc.vercel.app',
+>       'https://kasuat-task.vercel.app')
+>     from cron.job where jobid = 1
+>   )
+> );
+> ```
 
 > `CRON_SECRET` yang sama dengan yang sudah dipakai `/api/cron/deadlines`.
 > `/api/cron/meetings` menolak request tanpa `Bearer` yang cocok (401), sama

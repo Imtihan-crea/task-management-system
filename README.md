@@ -13,9 +13,10 @@ Login: **https://kasuat-task.vercel.app/login**
 > (`task-management-system-jatc.vercel.app` dan URL preview
 > `task-management-system-jatc-…`) dialihkan permanen **308** ke
 > `https://kasuat-task.vercel.app` oleh `proxy.ts`. Request **POST tidak**
-> dialihkan supaya cron Supabase (`pg_net`) tetap jalan; tetap disarankan
-> mengganti URL cron ke domain resmi. Aturannya ada di
-> `lib/config/canonical.ts` + `tests/canonical.check.ts`.
+> dialihkan supaya cron Supabase (`pg_net`) tetap jalan. Sejak 7 Nov 2026
+> job `pg_cron` `meeting-reminders` sudah diarahkan ke
+> `https://kasuat-task.vercel.app/api/cron/meetings` (lihat laporan §19).
+> Aturannya ada di `lib/config/canonical.ts` + `tests/canonical.check.ts`.
 >
 > Sejak 5 Nov 2026 project Vercel diganti nama dari
 > `task-management-system-jatc` menjadi `kasuat-task`, karena domain lama

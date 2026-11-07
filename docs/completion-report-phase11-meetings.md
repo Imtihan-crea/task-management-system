@@ -610,6 +610,33 @@ Pembersihan: profil + auth user percobaan dihapus (total profil kembali 11,
 tidak ada sisa user). Satu baris activity log `USER_CREATED` tetap tersimpan
 sebagai audit — sesuai desain.
 
+### Cron dipindah ke domain resmi (7 Nov 2026)
+
+Job `pg_cron` yang ada dicek lewat SQL Editor:
+
+| Field | Nilai |
+|---|---|
+| `jobid` / `jobname` | `1` / `meeting-reminders` |
+| `schedule` | `*/15 * * * *` |
+| `active` | `true` |
+| URL sebelum | `https://task-management-system-jatc.vercel.app/api/cron/meetings` |
+
+Diubah dengan `cron.alter_job` + `replace()` pada kolom `command`, sehingga
+header `Authorization` (Bearer `CRON_SECRET`) **tidak berubah** — nilainya tidak
+pernah ditulis ke laporan.
+
+Verifikasi sesudah:
+
+| Pemeriksaan | Hasil |
+|---|---|
+| URL memakai `https://kasuat-task.vercel.app/api/cron/` | ✅ true |
+| Masih mengandung `task-management-system-jatc` | ✅ false |
+| Header `Bearer` masih ada | ✅ true |
+| Job tetap `active` | ✅ true |
+
+Tidak ada job cron lain. Panduan `cron.alter_job` juga ditambahkan ke
+`docs/plan-phase11-meetings.md` §10.4.
+
 ### Sisa opsional
 
-- Ganti URL cron Supabase ke `https://kasuat-task.vercel.app` (lihat §17).
+- (tidak ada — semua item yang direncanakan sudah dijalankan)
