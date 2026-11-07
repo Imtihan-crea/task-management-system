@@ -214,7 +214,7 @@ export async function updateProject(
     ((oldManagers ?? []) as { user_id: string }[]).map((m) => m.user_id)
   )
 
-  const { error } = await admin
+  const { data: updated, error } = await admin
     .from('projects')
     .update({
       name,
@@ -225,9 +225,11 @@ export async function updateProject(
       status: status as ProjectStatus,
     })
     .eq('id', id)
+    .select('updated_at')
+    .single<{ updated_at: string }>()
 
-  if (error) {
-    console.error('updateProject failed:', error.message)
+  if (error || !updated) {
+    console.error('updateProject failed:', error?.message)
     return { error: 'Unable to update project.' }
   }
 
@@ -240,7 +242,8 @@ export async function updateProject(
   // Event: status berubah → in-app ke semua PM (email Optional → skip).
   if (before && before.status !== status) {
     await emitNotification({
-      key: `project-status:${id}:${status}`,
+      // updated_at: status yang kembali ke nilai lama tetap dinotifikasi lagi.
+      key: `project-status:${id}:${status}:${updated.updated_at}`,
       type: 'PROJECT_STATUS_CHANGED',
       userIds: managerIds,
       title: `Project ${before.code} → ${status.replace('_', ' ')}`,
