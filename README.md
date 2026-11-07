@@ -256,6 +256,12 @@ Plan FREE Supabase **tidak menyimpan backup**. Buat backup sendiri dengan
 `npm run db:backup` (hasil di `private/backups/`, gitignored). Panduan
 lengkap, jadwal, dan cara restore: [`docs/backup.md`](docs/backup.md).
 
+## 4c-ter. Error monitoring
+
+Error server dikirim ke email admin (maks. 1 per jenis per jam). Sentry
+terpasang dan aktif setelah `SENTRY_DSN`/`NEXT_PUBLIC_SENTRY_DSN` diisi di
+Vercel. Detail: [`docs/monitoring.md`](docs/monitoring.md).
+
 ## 4d. Aturan data privat
 
 Repo ini **tidak boleh** menyimpan atau mencetak data privat:

@@ -1,15 +1,23 @@
 'use client'
 
+import * as Sentry from '@sentry/nextjs'
 import Link from 'next/link'
+import { useEffect } from 'react'
 import { KasuatLogo } from '@/components/brand/KasuatLogo'
 import { Button } from '@/components/ui/primitives'
 
 export default function Error({
+  error,
   reset,
 }: {
   error: Error & { digest?: string }
   reset: () => void
 }) {
+  // Error di browser ke Sentry bila aktif (no-op tanpa DSN).
+  useEffect(() => {
+    Sentry.captureException(error)
+  }, [error])
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center gap-4 bg-kasuat-black px-4 text-center">
       <KasuatLogo height={40} />
