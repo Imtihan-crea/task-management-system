@@ -5,10 +5,12 @@ import { requireManager, requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isTaskPriority, isTaskStatus } from '@/lib/auth/roles'
 import { isProjectManager } from '@/lib/data/projects'
+import { canActOnTask } from '@/lib/auth/task-access'
 import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
 import { logActivity } from '@/lib/activity-log/service'
 import type { TaskPriority, TaskStatus } from '@/types/task'
+import type { UserRole } from '@/types/profile'
 import { escapeEmailHtml as h } from '@/lib/email/layout'
 
 export type TaskFormState = {
@@ -69,6 +71,19 @@ async function assertCanManageTask(taskId: string, managerId: string, isAdmin: b
     allowed: await isProjectManager(task.project_id, managerId),
     projectId: task.project_id,
   }
+}
+
+// Satu aturan untuk ubah status / submit / cancel / evidence (lihat lib/auth/task-access.ts).
+async function canActOnLoadedTask(
+  profile: { id: string; role: UserRole },
+  task: { assignee_id: string; project_id: string }
+): Promise<boolean> {
+  return canActOnTask(profile.role, {
+    isAssignee: task.assignee_id === profile.id,
+    // Query PM hanya untuk role PM; role lain tidak membutuhkannya.
+    managesProject:
+      profile.role === 'PROJECT_MANAGER' && (await isProjectManager(task.project_id, profile.id)),
+  })
 }
 
 function validateTaskFields(input: {
@@ -430,13 +445,8 @@ export async function changeTaskStatus(
   if (!task) return { error: 'Task not found.' }
 
   // TEAM_MEMBER: hanya task miliknya. ADMIN/PM: semua dalam scope-nya.
-  if (profile.role === 'TEAM_MEMBER' && task.assignee_id !== profile.id) {
+  if (!(await canActOnLoadedTask(profile, task))) {
     return { error: 'You do not have permission to perform this action.' }
-  }
-  if (profile.role === 'PROJECT_MANAGER') {
-    if (!(await isProjectManager(task.project_id, profile.id))) {
-      return { error: 'You do not have permission to perform this action.' }
-    }
   }
 
   // Email notifikasi HANYA saat transisi menjadi DONE.
@@ -535,13 +545,8 @@ export async function submitTask(
 
   if (!task) return { error: 'Task not found.' }
 
-  if (profile.role === 'TEAM_MEMBER' && task.assignee_id !== profile.id) {
+  if (!(await canActOnLoadedTask(profile, task))) {
     return { error: 'You do not have permission to perform this action.' }
-  }
-  if (profile.role === 'PROJECT_MANAGER') {
-    if (!(await isProjectManager(task.project_id, profile.id))) {
-      return { error: 'You do not have permission to perform this action.' }
-    }
   }
 
   if (task.status === 'DONE') return { success: 'Task is already submitted.' }
@@ -618,13 +623,8 @@ export async function cancelTask(
 
   if (!task) return { error: 'Task not found.' }
 
-  if (profile.role === 'TEAM_MEMBER' && task.assignee_id !== profile.id) {
+  if (!(await canActOnLoadedTask(profile, task))) {
     return { error: 'You do not have permission to perform this action.' }
-  }
-  if (profile.role === 'PROJECT_MANAGER') {
-    if (!(await isProjectManager(task.project_id, profile.id))) {
-      return { error: 'You do not have permission to perform this action.' }
-    }
   }
 
   if (task.status === 'CANCELLED') return { success: 'Task is already cancelled.' }
@@ -959,13 +959,7 @@ export async function submitEvidence(
 
   if (!task) return { error: 'Task not found.' }
 
-  const isAdmin = profile.role === 'ADMIN'
-  const isOwner = task.assignee_id === profile.id
-  const isPM =
-    profile.role === 'PROJECT_MANAGER' &&
-    (await isProjectManager(task.project_id, profile.id))
-
-  if (!isAdmin && !isPM && !(profile.role === 'TEAM_MEMBER' && isOwner)) {
+  if (!(await canActOnLoadedTask(profile, task))) {
     return { error: 'You do not have permission to perform this action.' }
   }
 
