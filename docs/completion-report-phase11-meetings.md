@@ -640,3 +640,42 @@ Tidak ada job cron lain. Panduan `cron.alter_job` juga ditambahkan ke
 ### Sisa opsional
 
 - (tidak ada — semua item yang direncanakan sudah dijalankan)
+
+## 20. Update 7 Nov 2026 — Rotasi `CRON_SECRET`
+
+Latar: saat memeriksa isi job `pg_cron`, header `Authorization` ikut
+terbaca di log internal sesi. Sesuai **Aturan Data Privat** di `AGENTS.md`,
+nilai tersebut dianggap bocor dan harus dirotasi.
+
+Langkah yang dilakukan:
+
+1. Generate secret baru **64 karakter hex** (tidak pernah dicetak atau
+   disimpan di repo).
+2. Vercel → Settings → Environment Variables → `CRON_SECRET`
+   (Production and Preview). Vercel mewajibkan **verifikasi email 6 digit**
+   sebelum nilai sensitif bisa diubah; verifikasi diselesaikan oleh owner.
+3. Simpan nilai baru, lalu **Redeploy** deployment production terakhir dan
+   tunggu status **Ready**.
+4. Update job `pg_cron` `meeting-reminders` dengan
+   `cron.alter_job` + `regexp_replace(command, 'Bearer [^'']+', …)` sehingga
+   hanya token yang berubah; URL tetap domain resmi dan jadwal tetap
+   `*/15 * * * *`.
+5. `.env.local` lokal diperbarui (untracked, nilainya tidak dicetak).
+
+Verifikasi:
+
+| Pemeriksaan | Hasil |
+|---|---|
+| Request dengan secret **lama** | **401** (ditolak) |
+| Request dengan secret **baru** | **200** (diterima) |
+| Job `active` | true |
+| URL domain resmi | true |
+| Domain lama tersisa | false |
+| Token baru berformat 64 hex | true |
+
+Catatan: selama jendela rotasi, paling buruk satu tick 15 menit terlewat.
+Scheduler memindai semua item yang jatuh tempo, jadi tick berikutnya
+mengejar — tidak ada pengingat yang hilang.
+
+Setelah selesai: file sementara dan clipboard dibersihkan; tidak ada nilai
+secret yang tercatat di repo, dokumen, atau laporan ini.
