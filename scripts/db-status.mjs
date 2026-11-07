@@ -5,17 +5,8 @@
  * di environment atau .env.local; tidak mencetak secret apa pun).
  */
 import { execFileSync } from 'node:child_process'
-import { existsSync, readdirSync, readFileSync } from 'node:fs'
-
-function projectRef() {
-  let url = process.env.NEXT_PUBLIC_SUPABASE_URL
-  if (!url && existsSync('.env.local')) {
-    url = readFileSync('.env.local', 'utf8').match(/^NEXT_PUBLIC_SUPABASE_URL=(.+)$/m)?.[1]
-  }
-  const ref = url?.trim().match(/^https:\/\/([a-z0-9]+)\.supabase\.co/)?.[1]
-  if (!ref) throw new Error('NEXT_PUBLIC_SUPABASE_URL tidak ditemukan.')
-  return ref
-}
+import { readdirSync } from 'node:fs'
+import { projectRef } from './supabase-ref.mjs'
 
 const files = readdirSync('database/migrations')
   .map((f) => f.match(/^(\d{3})_.+\.sql$/)?.[1])

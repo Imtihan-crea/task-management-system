@@ -21,6 +21,23 @@ dijalankan di database itu. Cek selisih file vs database:
 npm run db:status        # butuh Supabase CLI yang sudah login
 ```
 
+## Tes RLS dan hak akses
+
+```bash
+npm run test:rls         # 26 cek, butuh Supabase CLI yang sudah login
+```
+
+`database/tests/rls.check.sql` dijalankan ke database dalam transaksi yang **selalu
+di-rollback** (aman di produksi). Isinya: user ACTIVE bisa baca, INACTIVE dan
+INVITED tidak bisa baca 14 tabel, user tidak bisa ubah role sendiri atau
+insert langsung, anon tertutup, RPC/tabel sensitif hanya service role,
+pendaftar yang minta ADMIN tetap TEAM_MEMBER + INACTIVE. Tidak masuk CI karena
+butuh kredensial; jalankan setiap habis mengubah policy atau fungsi.
+Tambah/kurangi cek = ubah juga `EXPECTED_TOTAL` di `scripts/test-rls.mjs`.
+
+Matriks izin per role di aplikasi (`lib/auth/permissions.ts`) dites di
+`tests/permissions.check.ts` dan ikut `npm run test:logic` (CI).
+
 ## Alur menambah migrasi
 
 1. Tulis `migrations/NNN_nama.sql` dan `migrations/down/NNN_nama.down.sql`.
@@ -31,7 +48,7 @@ npm run db:status        # butuh Supabase CLI yang sudah login
    blok uji yang diakhiri `raise exception`), lalu pastikan tidak ada sisa.
 3. Jalankan: `supabase db query --remote=<project-ref> -f database/migrations/NNN_nama.sql`
    (atau tempel di Supabase Dashboard > SQL Editor).
-4. `npm run db:status` harus bersih. Tulis status dan hasil uji di header file.
+4. `npm run db:status` harus bersih dan `npm run test:rls` lulus. Tulis status dan hasil uji di header file.
 5. Bila tabel/kolom berubah: perbarui `lib/db/schema.ts`, `npm run db:generate`,
    commit snapshot di `drizzle/` (jangan dijalankan).
 6. Deploy kode yang bergantung pada migrasi **sesudah** migrasi jalan.
