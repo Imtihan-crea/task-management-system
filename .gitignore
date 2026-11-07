@@ -43,3 +43,6 @@ next-env.d.ts
 
 # data privat lokal (kredensial, catatan)
 /private/
+
+# cache Supabase CLI (link project lokal)
+/supabase/.temp/
