@@ -490,3 +490,33 @@ Verifikasi: `tsc` bersih, `lint` 0 error, `test:logic` 181/181, `build` sukses.
 
 Catatan: fallback hanya jaring pengaman. Flag "wajib ganti password" TIDAK
 berfungsi sampai migrasi 011 dijalankan.
+## 17. Update 7 Nov 2026 — Aturan satu alamat resmi
+
+Permintaan owner: "main hanya satu yaitu https://kasuat-task.vercel.app/login".
+
+Masalah: setelah project Vercel di-rename, domain lama
+(`task-management-system-jatc.vercel.app`) TETAP aktif dan menyajikan build
+yang sama. Ditambah URL preview per-deployment, jadi ada beberapa alamat yang
+beredar dan membingungkan.
+
+Aturan yang ditetapkan:
+- Alamat resmi satu-satunya: **https://kasuat-task.vercel.app**
+  (login: `/login`).
+- Semua akses **GET/HEAD** lewat host lama (domain produksi lama dan URL
+  preview `task-management-system-jatc-…`) dialihkan **308** ke alamat resmi,
+  path + query dipertahankan.
+- **POST tidak dialihkan** — cron Supabase memakai `pg_net` yang tidak
+  mengikuti redirect; kalau ikut dialihkan, pengingat deadline bisa berhenti.
+- Host resmi, localhost, dan URL preview project baru tidak dialihkan.
+
+Implementasi:
+- `lib/config/canonical.ts` — konstanta + `normalizeHost()`, `isLegacyHost()`,
+  `canonicalUrl()`, `shouldRedirectMethod()`.
+- `lib/supabase/proxy.ts` — redirect 308 di awal `updateSession()`.
+- `tests/canonical.check.ts` — 27 boundary test (`npm run test:canonical`,
+  masuk `test:logic`).
+- README bagian Production diperbarui.
+
+Catatan: redirect ini tidak menolong owner di jaringan yang memblokir domain
+lama (blokir terjadi sebelum request sampai ke Vercel), tapi membuat semua
+link lama di sisi lain otomatis menuju satu alamat.

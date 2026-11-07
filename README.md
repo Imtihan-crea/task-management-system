@@ -6,8 +6,17 @@ Status roadmap: **Phase 1 (Foundation), Phase 2 (User Management), Phase 3 (Task
 
 ## Production
 
-**https://kasuat-task.vercel.app**
+**https://kasuat-task.vercel.app** — satu-satunya alamat resmi.
+Login: **https://kasuat-task.vercel.app/login**
 
+> **Aturan satu alamat (7 Nov 2026).** Semua akses GET/HEAD lewat domain lama
+> (`task-management-system-jatc.vercel.app` dan URL preview
+> `task-management-system-jatc-…`) dialihkan permanen **308** ke
+> `https://kasuat-task.vercel.app` oleh `proxy.ts`. Request **POST tidak**
+> dialihkan supaya cron Supabase (`pg_net`) tetap jalan; tetap disarankan
+> mengganti URL cron ke domain resmi. Aturannya ada di
+> `lib/config/canonical.ts` + `tests/canonical.check.ts`.
+>
 > Sejak 5 Nov 2026 project Vercel diganti nama dari
 > `task-management-system-jatc` menjadi `kasuat-task`, karena domain lama
 > tidak bisa dibuka dari jaringan kantor/ISP owner (filter DNS per-nama-domain;

@@ -1,5 +1,10 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
+import {
+  canonicalUrl,
+  isLegacyHost,
+  shouldRedirectMethod,
+} from '@/lib/config/canonical'
 
 type CookieToSet = { name: string; value: string; options?: Record<string, unknown> }
 
@@ -12,6 +17,16 @@ type CookieToSet = { name: string; value: string; options?: Record<string, unkno
  * izin tetap diulang di lib/auth/session.ts dan di database (RLS).
  */
 export async function updateSession(request: NextRequest) {
+  // Aturan satu alamat resmi (7 Nov 2026): semua akses GET/HEAD lewat
+  // domain lama dialihkan permanen ke https://kasuat-task.vercel.app.
+  // POST tidak dialihkan supaya cron Supabase (pg_net) tetap jalan.
+  if (isLegacyHost(request.headers.get('host')) && shouldRedirectMethod(request.method)) {
+    return NextResponse.redirect(
+      canonicalUrl(request.nextUrl.pathname, request.nextUrl.search),
+      308
+    )
+  }
+
   const cookieWrites: CookieToSet[] = []
 
   const supabase = createServerClient(
