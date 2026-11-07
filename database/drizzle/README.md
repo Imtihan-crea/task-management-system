@@ -1,5 +1,7 @@
 # database/drizzle
 
+> Aturan dan alur migrasi lengkap: [`../README.md`](../README.md). Folder ini hanya snapshot, tidak pernah dijalankan.
+
 Snapshot skema yang dihasilkan **Drizzle ORM** (`lib/db/schema.ts`).
 
 ## Tanggung jawab tiap folder

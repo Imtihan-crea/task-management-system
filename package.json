@@ -9,6 +9,7 @@
     "lint": "eslint",
     "db:generate": "drizzle-kit generate",
     "db:check": "drizzle-kit check",
+    "db:status": "node scripts/db-status.mjs",
     "test:time": "tsx tests/meeting-time.check.ts",
     "test:rules": "tsx tests/meetings-rules.check.ts",
     "test:email": "tsx tests/completion-email.check.ts",
