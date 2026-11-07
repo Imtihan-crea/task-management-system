@@ -26,17 +26,19 @@ const base = {
 const withDigest = Object.assign(new Error('boom'), { digest: 'D123' })
 
 const a = buildErrorAlert({ ...base, error: withDigest })
-cek('key pakai digest + jam', a.key, 'server-error:D123:2026-11-07T10')
+cek('key = tanggal WIB', a.key, 'server-error:2026-11-07')
 cek('subject', a.subject, '[ERROR] POST /tasks/[id]')
 cek('digest tampil', a.html.includes('D123'), true)
 
-const sameHour = buildErrorAlert({ ...base, error: withDigest, now: new Date('2026-11-07T10:59:59Z') })
-cek('jam sama = key sama (tidak dikirim ulang)', sameHour.key, a.key)
-const nextHour = buildErrorAlert({ ...base, error: withDigest, now: new Date('2026-11-07T11:00:00Z') })
-cek('jam berikutnya = key baru', nextHour.key === a.key, false)
+const otherErrSameDay = buildErrorAlert({ ...base, error: new Error('lain'), now: new Date('2026-11-07T16:59:59Z') })
+cek('error lain, hari WIB sama = key sama (tidak dikirim)', otherErrSameDay.key, a.key)
+const nextDayWib = buildErrorAlert({ ...base, error: withDigest, now: new Date('2026-11-07T17:00:00Z') })
+cek('17:00 UTC = 00:00 WIB besok = key baru', nextDayWib.key, 'server-error:2026-11-08')
+const lateUtcPrevDay = buildErrorAlert({ ...base, error: withDigest, now: new Date('2026-11-06T18:30:00Z') })
+cek('18:30 UTC tgl 6 = 01:30 WIB tgl 7', lateUtcPrevDay.key, 'server-error:2026-11-07')
 
 const noDigest = buildErrorAlert({ ...base, error: new Error('gagal simpan') })
-cek('tanpa digest: key dari route + pesan', noDigest.key, 'server-error:/tasks/[id]:gagal simpan:2026-11-07T10')
+cek('tanpa digest: tidak ada baris digest', noDigest.html.includes('Digest'), false)
 
 const xss = buildErrorAlert({ ...base, error: new Error('<script>alert(1)</script>') })
 cek('pesan di-escape', xss.html.includes('<script>'), false)

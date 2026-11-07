@@ -10,8 +10,11 @@ ke semua **ADMIN berstatus ACTIVE** lewat Brevo yang sudah dipakai aplikasi.
 
 - Isi: waktu, method + path, route, pesan error (maks. 500 karakter), digest.
   Header request (cookie, token) **tidak** disertakan.
-- Anti-banjir: maksimal **1 email per jenis error per jam** (key
-  `server-error:<digest|route+pesan>:<jam UTC>` di tabel `notification_events`).
+- Anti-banjir: maksimal **1 email alert per hari (WIB)** untuk semua jenis
+  error (key `server-error:<YYYY-MM-DD WIB>` di tabel `notification_events`).
+  Email memuat error pertama hari itu; error berikutnya hari itu hanya ada di
+  log Vercel. Alasan: kuota Brevo plan free (±300 email/hari) dipakai bersama
+  email notifikasi aplikasi.
 - Kode: `lib/monitoring/error-alert.ts` (murni, dites `npm run test:alert`) dan
   `lib/monitoring/send-error-alert.ts`. Gagal kirim tidak menambah error baru.
 - Error di browser (client) tidak lewat jalur ini; itu tugas Sentry.

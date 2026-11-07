@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { sendEmail } from '@/lib/email/notify'
 import { buildErrorAlert, type ErrorAlertInput } from './error-alert'
 
-/** Kirim email error ke semua ADMIN aktif, maksimal 1x per jenis error per jam. */
+/** Kirim email error ke semua ADMIN aktif, maksimal 1x per hari (WIB). */
 export async function sendErrorAlert(input: ErrorAlertInput): Promise<void> {
   try {
     const alert = buildErrorAlert(input)

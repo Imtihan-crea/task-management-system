@@ -258,7 +258,7 @@ lengkap, jadwal, dan cara restore: [`docs/backup.md`](docs/backup.md).
 
 ## 4c-ter. Error monitoring
 
-Error server dikirim ke email admin (maks. 1 per jenis per jam). Sentry
+Error server dikirim ke email admin (maks. 1 email per hari). Sentry
 terpasang dan aktif setelah `SENTRY_DSN`/`NEXT_PUBLIC_SENTRY_DSN` diisi di
 Vercel. Detail: [`docs/monitoring.md`](docs/monitoring.md).
 
