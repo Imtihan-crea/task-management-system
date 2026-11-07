@@ -11,6 +11,7 @@
     "db:check": "drizzle-kit check",
     "db:status": "node scripts/db-status.mjs",
     "test:rls": "node scripts/test-rls.mjs",
+    "db:backup": "bash scripts/db-backup.sh",
     "test:time": "tsx tests/meeting-time.check.ts",
     "test:rules": "tsx tests/meetings-rules.check.ts",
     "test:email": "tsx tests/completion-email.check.ts",

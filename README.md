@@ -250,6 +250,12 @@ Catatan:
 - Password baru diubah lewat sesi user sendiri (`supabase.auth.updateUser`),
   bukan service role.
 
+## 4c-bis. Backup database
+
+Plan FREE Supabase **tidak menyimpan backup**. Buat backup sendiri dengan
+`npm run db:backup` (hasil di `private/backups/`, gitignored). Panduan
+lengkap, jadwal, dan cara restore: [`docs/backup.md`](docs/backup.md).
+
 ## 4d. Aturan data privat
 
 Repo ini **tidak boleh** menyimpan atau mencetak data privat:

@@ -40,6 +40,7 @@ Matriks izin per role di aplikasi (`lib/auth/permissions.ts`) dites di
 
 ## Alur menambah migrasi
 
+0. Buat backup dulu: `npm run db:backup` (lihat `docs/backup.md`).
 1. Tulis `migrations/NNN_nama.sql` dan `migrations/down/NNN_nama.down.sql`.
    Akhiri file naik dengan:
    `insert into public.app_migrations (version, name) values ('NNN', 'NNN_nama') on conflict do nothing;`
