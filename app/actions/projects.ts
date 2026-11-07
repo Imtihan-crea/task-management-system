@@ -57,6 +57,7 @@ function validDate(value: string): boolean {
   return !Number.isNaN(Date.parse(value))
 }
 
+// Calon PM harus aktif DAN ber-role ADMIN/PROJECT_MANAGER (sama dengan pilihan di UI).
 async function assertActiveUsers(userIds: string[]): Promise<boolean> {
   if (userIds.length === 0) return false
 
@@ -65,6 +66,7 @@ async function assertActiveUsers(userIds: string[]): Promise<boolean> {
     .select('id', { count: 'exact', head: true })
     .in('id', userIds)
     .eq('status', 'ACTIVE')
+    .in('role', ['ADMIN', 'PROJECT_MANAGER'])
 
   return (count ?? 0) === userIds.length
 }
@@ -102,7 +104,7 @@ export async function createProject(
     return { error: 'Deadline must be after start date.' }
   }
   if (!(await assertActiveUsers(managerIds))) {
-    return { error: 'Project managers must be active users.' }
+    return { error: 'Project managers must be active Admins or Project Managers.' }
   }
 
   const admin = createAdminClient()
@@ -194,7 +196,7 @@ export async function updateProject(
     return { error: 'You do not have permission to perform this action.' }
   }
   if (!(await assertActiveUsers(managerIds))) {
-    return { error: 'Project managers must be active users.' }
+    return { error: 'Project managers must be active Admins or Project Managers.' }
   }
 
   const admin = createAdminClient()
