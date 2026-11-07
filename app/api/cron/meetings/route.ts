@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server'
 import { todayInAppTime } from '@/lib/utils/meeting-time'
 import { runMeetingScheduler } from '@/lib/meetings/scheduler'
+import { isCronAuthorized } from '@/lib/auth/cron'
 
 export const dynamic = 'force-dynamic'
 
@@ -23,8 +24,7 @@ async function handle(request: Request) {
     return NextResponse.json({ error: 'Scheduler is not configured.' }, { status: 500 })
   }
 
-  const auth = request.headers.get('authorization')
-  if (auth !== `Bearer ${secret}`) {
+  if (!isCronAuthorized(request.headers.get('authorization'), secret)) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 })
   }
 

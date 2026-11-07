@@ -5,6 +5,7 @@ import { emitNotification } from '@/lib/notifications/service'
 import { runMorningDigest } from '@/lib/meetings/digest'
 import { todayISO } from '@/lib/utils/dates'
 import { escapeEmailHtml as h } from '@/lib/email/layout'
+import { isCronAuthorized } from '@/lib/auth/cron'
 
 export const dynamic = 'force-dynamic'
 
@@ -36,8 +37,7 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Scheduler is not configured.' }, { status: 500 })
   }
 
-  const auth = request.headers.get('authorization')
-  if (auth !== `Bearer ${secret}`) {
+  if (!isCronAuthorized(request.headers.get('authorization'), secret)) {
     return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 })
   }
 
