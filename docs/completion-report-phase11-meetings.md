@@ -594,8 +594,22 @@ service role; password **tidak** dicetak di laporan ini.
 Verifikasi end-to-end di production: `/login` → berhasil masuk `/dashboard`
 ("Selamat datang, …"), profil `ACTIVE` / role `ADMIN`.
 
+### Uji end-to-end "wajib ganti password" (7 Nov 2026)
+
+Dijalankan dengan user percobaan lewat UI production, lalu dihapus lagi.
+
+| # | Uji | Hasil |
+|---|---|---|
+| 1 | Admin buat user + centang *Require password change* | Profil `ACTIVE`, `TEAM_MEMBER`, flag `true` |
+| 2 | Login user tersebut | Dialihkan ke `/change-password` |
+| 3 | Buka `/dashboard` paksa | Tetap dialihkan ke `/change-password` |
+| 4 | Ganti password (min 8) | Masuk `/dashboard`, flag otomatis `false` |
+| 5 | Login ulang | Password lama **ditolak** (HTTP 400), password baru **berhasil** |
+
+Pembersihan: profil + auth user percobaan dihapus (total profil kembali 11,
+tidak ada sisa user). Satu baris activity log `USER_CREATED` tetap tersimpan
+sebagai audit — sesuai desain.
+
 ### Sisa opsional
 
-- Uji "Create User with Password" + centang *Require password change on first
-  login* di production, lalu pastikan diarahkan ke `/change-password`.
 - Ganti URL cron Supabase ke `https://kasuat-task.vercel.app` (lihat §17).
