@@ -34,3 +34,14 @@ grep -q 'CREATE TABLE IF NOT EXISTS "public"."tasks"' "$dir/schema.sql" || { ech
 mv "$dir" "$final"
 echo "Backup selesai: $final"
 ls -l "$final"
+
+# Salinan kedua terenkripsi di Google Drive (lihat docs/backup.md). Dilewati
+# bila remote belum dibuat di laptop ini; gagal upload = skrip gagal.
+remote=taskmgmt-backup-enkripsi
+if rclone listremotes 2>/dev/null | grep -qx "$remote:"; then
+  rclone copy "$final" "$remote:backups/$(basename "$final")"
+  rclone cryptcheck "$final" "$remote:backups/$(basename "$final")"
+  echo "Salinan terenkripsi di Drive: $remote:backups/$(basename "$final")"
+else
+  echo "PERINGATAN: remote $remote belum ada, salinan Drive dilewati." >&2
+fi

@@ -47,8 +47,8 @@ checksum OK; jumlah baris di `data.sql` sama dengan database saat itu
 `set_project_managers`.
 
 **Isi backup adalah data pribadi** (nama, email user, isi task/meeting).
-Jangan commit, jangan kirim lewat chat. Simpan salinan kedua di penyimpanan
-terenkripsi milik pemilik project.
+Jangan commit, jangan kirim lewat chat. Salinan kedua terenkripsi dibuat otomatis
+(lihat di bawah).
 
 ### Jadwal otomatis (laptop pengembang)
 
@@ -69,6 +69,25 @@ repo, khusus laptop itu). Skrip gagal keras bila dump kosong atau terpotong
 `systemctl --user --failed`; folder yang gagal tertinggal dengan akhiran
 `.partial` (bukan backup sah). Backup lama tidak dihapus otomatis (sekitar
 170 KB per backup saat ini).
+
+### Salinan kedua terenkripsi (Google Drive)
+
+Sesudah backup lolos cek, skrip mengunggahnya ke Google Drive lewat remote
+rclone crypt `taskmgmt-backup-enkripsi` (di atas remote `gdrive:`, folder
+`TaskManagement-Backup-Enkripsi`) lalu menjalankan `rclone cryptcheck`.
+Isi dan nama file dienkripsi di laptop; Drive hanya melihat nama acak.
+Gagal upload = skrip gagal (terlihat di `systemctl --user --failed`).
+Bila remote belum dibuat di laptop itu, upload dilewati dengan peringatan.
+
+Kunci enkripsi (password + salt) ada di `private/backup-crypt-key.txt` di
+laptop pengembang **dan harus juga disimpan di password manager pemilik**.
+Tanpa kunci itu salinan di Drive tidak bisa dibuka. File kunci berisi cara
+memulihkan dari laptop lain. Diuji 7 Nov 2026: file dari Drive yang dibuka
+hanya dengan nilai di file kunci identik (sha256) dengan backup lokal.
+
+Catatan: remote `gdrive:` masih memakai client_id bersama rclone yang menurut
+peringatan rclone akan dihentikan selama 2026; buat client_id sendiri agar
+upload tidak berhenti (https://rclone.org/drive/#making-your-own-client-id).
 
 ### Jadwal yang disarankan
 
