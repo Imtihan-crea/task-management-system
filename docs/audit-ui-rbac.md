@@ -64,23 +64,23 @@ task terbuka milik user nonaktif, tidak ada task terbuka di project tertutup.
 | --- | --- | --- | --- | --- | --- |
 | B1 | Project/RBAC | `components/projects/workspace/TasksTab.tsx:35-41,163` | TEAM/VIEWER/PM non-owner melihat semua task project (judul, assignee); link detail 404. | Filter per role seperti `/tasks`, atau tanpa link. | DIPERBAIKI: TEAM_MEMBER hanya task miliknya; PM project lain tanpa link kecuali task miliknya |
 | B2 | Project/RBAC | `app/(app)/projects/[id]/page.tsx:116-128,220` | PM non-owner melihat semua suggestion project + tombol "+ Suggest Task" yang pasti ditolak; link 404. | Tampilkan hanya untuk pemilik project / filter `suggested_by`. | DIPERBAIKI: selain Admin/PM project hanya suggestion miliknya; tombol Suggest ikut canSuggestForProject |
-| B3 | RBAC | `components/projects/workspace/ActivityMembersTabs.tsx:12`, `app/(app)/tasks/[id]/page.tsx:118` | Tab Activity project/timeline task memakai admin client tanpa scope; log yang ditutup RLS di `/activity` tetap terbaca. | Pakai user client (RLS) seperti `/activity`. | AUDIT |
-| B4 | Meeting | `components/meetings/detail/WorkspaceForms.tsx:424`, `lib/meetings/rules.ts:124` | Tombol "Create Task" di action item tampil lalu pasti gagal untuk meeting tanpa project / PM bukan pemilik. | Ikutkan syarat project + PM di `canCreateTaskFromMeeting`. | AUDIT |
-| B5 | Meeting | `app/actions/meetings.ts:860,1269,1712` | Meeting CANCELLED: notes dikunci, tetapi agenda/keputusan/action item dan konversi task tetap jalan; editor notes tampil lalu error. | Kunci konsisten untuk meeting CANCELLED. | AUDIT |
-| B6 | Meeting | `app/actions/meetings.ts:478,648`, `lib/meetings/scheduler.ts:99` | Undangan email dikirim saat DRAFT; `scheduleMeeting` tidak menotifikasi; reminder hanya untuk SCHEDULED; DRAFT tidak bisa langsung complete. | Kirim undangan saat schedule; jelaskan alur DRAFT. | AUDIT |
-| B7 | Meeting | `app/actions/meetings.ts:1418,1727` | Action item yang task-nya dihapus terkunci ("Task already exists" padahal 404). | Abaikan task `is_deleted`. | AUDIT |
-| B8 | Suggestion | `components/suggestions/SuggestionForms.tsx:367`, `app/actions/suggestions.ts:463` | Review note diabaikan saat approve; deadline kosong jadi hari ini; reviewer tidak bisa set deadline/prioritas. | Simpan note; field deadline/prioritas di ReviewForm. | AUDIT |
-| B9 | Suggestion | `app/actions/suggestions.ts:290-321` | Resubmit tidak menotifikasi PM dan tidak memvalidasi priority/tanggal seperti create. | Notifikasi + validasi sama. | AUDIT |
-| B10 | Suggestion | `app/actions/suggestions.ts:453-464` | Task hasil suggestion tidak mengisi `source_type/source_id` (blok "Source" tidak tampil). | Isi source seperti task dari meeting. | AUDIT |
-| B11 | Meeting | `components/meetings/detail/WorkspaceForms.tsx:287` | Create Task dari action item tanpa field assignee/deadline; deadline kosong = hari ini. | Tambah field assignee + deadline wajib. | AUDIT |
-| B12 | Form | semua action | Batas panjang hanya `maxLength` di UI (sebagian textarea tanpa batas); server tidak membatasi (kecuali evidence 2000, nama 120). | Helper `readField(fd, name, max)` sama di UI & server. | AUDIT |
-| B13 | User | `app/actions/users.ts:594` | Menonaktifkan user tidak memperingatkan task terbuka / jabatan PM; cron tetap menotifikasi; PM nonaktif tetap dapat notifikasi PM. | Tampilkan jumlah task & PM-ship + opsi reassign. | AUDIT |
-| B14 | Project | `app/actions/tasks.ts:146`, `app/api/cron/deadlines/route.ts:51` | Status project CANCELLED/COMPLETED hanya label: task baru tetap bisa dibuat, reminder overdue tetap dikirim. | Blok create + reminder untuk project tertutup. | AUDIT |
-| B15 | Notifikasi | `lib/notifications/service.ts:113` | Satu email ke banyak penerima lewat `to`: semua penerima saling melihat alamat email. | Kirim per penerima. | AUDIT |
-| B16 | Notifikasi | `lib/notifications/service.ts:62-88` | Event diklaim sebelum notifikasi ditulis; bila insert gagal, event hilang permanen. | Klaim + tulis dalam satu transaksi / lepas klaim bila gagal. | AUDIT |
-| B17 | Activity | `app/(app)/activity/page.tsx:88-95` | Filter actor diterapkan setelah paginasi: hasil bisa kosong di halaman 1 padahal ada di halaman 3. | Filter di query. | AUDIT |
-| B18 | Form | `components/auth/ChangePasswordForm.tsx:56-60` | Bila hapus flag gagal, error hanya ke console lalu redirect -> bisa kembali ke `/change-password` tanpa penjelasan. | Tampilkan error, jangan redirect. | AUDIT |
-| B19 | User | `app/actions/users.ts:299-323,192,263` | `USER_CREATED` tercatat dua kali (label salah `fallback-link`); pesan "User created…" padahal createUser bisa gagal. | Rapikan log + pesan. | AUDIT |
+| B3 | RBAC | `components/projects/workspace/ActivityMembersTabs.tsx:12`, `app/(app)/tasks/[id]/page.tsx:118` | Tab Activity project/timeline task memakai admin client tanpa scope; log yang ditutup RLS di `/activity` tetap terbaca. | Pakai user client (RLS) seperti `/activity`. | DIPERBAIKI (AFK) |
+| B4 | Meeting | `components/meetings/detail/WorkspaceForms.tsx:424`, `lib/meetings/rules.ts:124` | Tombol "Create Task" di action item tampil lalu pasti gagal untuk meeting tanpa project / PM bukan pemilik. | Ikutkan syarat project + PM di `canCreateTaskFromMeeting`. | DIPERBAIKI (AFK) |
+| B5 | Meeting | `app/actions/meetings.ts:860,1269,1712` | Meeting CANCELLED: notes dikunci, tetapi agenda/keputusan/action item dan konversi task tetap jalan; editor notes tampil lalu error. | Kunci konsisten untuk meeting CANCELLED. | DIPERBAIKI (AFK) |
+| B6 | Meeting | `app/actions/meetings.ts:478,648`, `lib/meetings/scheduler.ts:99` | Undangan email dikirim saat DRAFT; `scheduleMeeting` tidak menotifikasi; reminder hanya untuk SCHEDULED; DRAFT tidak bisa langsung complete. | Kirim undangan saat schedule; jelaskan alur DRAFT. | DIPERBAIKI (AFK) [keputusan default] |
+| B7 | Meeting | `app/actions/meetings.ts:1418,1727` | Action item yang task-nya dihapus terkunci ("Task already exists" padahal 404). | Abaikan task `is_deleted`. | DIPERBAIKI (AFK) |
+| B8 | Suggestion | `components/suggestions/SuggestionForms.tsx:367`, `app/actions/suggestions.ts:463` | Review note diabaikan saat approve; deadline kosong jadi hari ini; reviewer tidak bisa set deadline/prioritas. | Simpan note; field deadline/prioritas di ReviewForm. | DIPERBAIKI (AFK) [keputusan default] |
+| B9 | Suggestion | `app/actions/suggestions.ts:290-321` | Resubmit tidak menotifikasi PM dan tidak memvalidasi priority/tanggal seperti create. | Notifikasi + validasi sama. | DIPERBAIKI (AFK) |
+| B10 | Suggestion | `app/actions/suggestions.ts:453-464` | Task hasil suggestion tidak mengisi `source_type/source_id` (blok "Source" tidak tampil). | Isi source seperti task dari meeting. | DIPERBAIKI (AFK) |
+| B11 | Meeting | `components/meetings/detail/WorkspaceForms.tsx:287` | Create Task dari action item tanpa field assignee/deadline; deadline kosong = hari ini. | Tambah field assignee + deadline wajib. | DIPERBAIKI (AFK) |
+| B12 | Form | semua action | Batas panjang hanya `maxLength` di UI (sebagian textarea tanpa batas); server tidak membatasi (kecuali evidence 2000, nama 120). | Helper `readField(fd, name, max)` sama di UI & server. | DIPERBAIKI (AFK) |
+| B13 | User | `app/actions/users.ts:594` | Menonaktifkan user tidak memperingatkan task terbuka / jabatan PM; cron tetap menotifikasi; PM nonaktif tetap dapat notifikasi PM. | Tampilkan jumlah task & PM-ship + opsi reassign. | DIPERBAIKI (AFK) [keputusan default] |
+| B14 | Project | `app/actions/tasks.ts:146`, `app/api/cron/deadlines/route.ts:51` | Status project CANCELLED/COMPLETED hanya label: task baru tetap bisa dibuat, reminder overdue tetap dikirim. | Blok create + reminder untuk project tertutup. | DIPERBAIKI (AFK) [keputusan default] |
+| B15 | Notifikasi | `lib/notifications/service.ts:113` | Satu email ke banyak penerima lewat `to`: semua penerima saling melihat alamat email. | Kirim per penerima. | DIPERBAIKI (AFK), kirim nyata belum diuji |
+| B16 | Notifikasi | `lib/notifications/service.ts:62-88` | Event diklaim sebelum notifikasi ditulis; bila insert gagal, event hilang permanen. | Klaim + tulis dalam satu transaksi / lepas klaim bila gagal. | DIPERBAIKI (AFK) |
+| B17 | Activity | `app/(app)/activity/page.tsx:88-95` | Filter actor diterapkan setelah paginasi: hasil bisa kosong di halaman 1 padahal ada di halaman 3. | Filter di query. | DIPERBAIKI (AFK) |
+| B18 | Form | `components/auth/ChangePasswordForm.tsx:56-60` | Bila hapus flag gagal, error hanya ke console lalu redirect -> bisa kembali ke `/change-password` tanpa penjelasan. | Tampilkan error, jangan redirect. | DIPERBAIKI (AFK) |
+| B19 | User | `app/actions/users.ts:299-323,192,263` | `USER_CREATED` tercatat dua kali (label salah `fallback-link`); pesan "User created…" padahal createUser bisa gagal. | Rapikan log + pesan. | DIPERBAIKI (AFK) |
 
 ## C. Rendah
 
@@ -140,6 +140,61 @@ pengguna internal) dan kumpulkan teks di satu modul. Butuh keputusan pemilik.
 6. Edit User: tidak ada opsi INVITED; admin tidak bisa mengubah status sendiri (A6).
 7. Form create task dengan deadline < start -> pesan error, isian tidak hilang (A13).
 8. Settings project dengan PM nonaktif -> PM lama tampil bertanda, tidak hilang diam-diam (A12).
+
+## H. Hasil kerja AFK (8 Nov 2026 malam)
+
+Cabang `afk/audit-b-c` (belum di-merge/push, sesuai permintaan pemilik:
+commit saja). Satu commit per temuan supaya bisa di-revert satu-satu.
+
+**Status kelompok C**
+
+| # | Status |
+| --- | --- |
+| C1–C13, C15, C16, C18 | DIPERBAIKI |
+| C14 | SEBAGIAN: filter tanggal Activity kini WIB. Overdue task **tidak** diubah: `lib/utils/dates.ts` sengaja UTC atas dasar PRD §47 (lihat `lib/utils/meeting-time.ts`); perlu keputusan pemilik. |
+| C17 | DILEWATI (opsional; overdue ke PM menambah pemakaian jatah email) |
+| C19 | DILEWATI (opsional) |
+| C20 | TIDAK DIUBAH (default: TEAM_MEMBER tetap boleh membatalkan task miliknya) |
+| Lanjutan B1 | `/tasks` untuk PM: hanya task project miliknya + task yang di-assign kepadanya [keputusan default] |
+
+**Keputusan default yang perlu dikonfirmasi pemilik** (commit bertanda
+`[keputusan default]`):
+
+- B6: undangan meeting dikirim saat **Schedule**, bukan saat DRAFT dibuat;
+  edit/peserta baru/batal pada DRAFT tidak dinotifikasi.
+- B8: approve suggestion wajib deadline; reviewer bisa ubah prioritas/deadline.
+- B13: menonaktifkan user tidak diblokir; admin diberi peringatan jumlah task
+  terbuka + project tempat ia PM. Notifikasi hanya ke user ACTIVE.
+- B14: project COMPLETED/CANCELLED menolak task/suggestion baru dan tidak lagi
+  mengirim reminder deadline.
+- Lanjutan B1: PM tidak lagi melihat task project PM lain di `/tasks`.
+
+**Verifikasi**
+
+- Gerbang lokal di commit akhir: `tsc` 0, `eslint` 0, `test:logic` lulus
+  (tes baru: `test:limits`, aturan meeting B4/B5, pesan password C13),
+  `next build` 0, `check:secrets` bersih.
+- 2 subagen pereview (B dan C); temuannya sudah diperbaiki di commit
+  "tindak lanjut review".
+- Smoke test browser (headless, build cabang ini via `next start` lokal,
+  database produksi, sesi admin dari link recovery sekali pakai; password
+  tidak diubah): 24 halaman (dashboard, tasks, projects + 7 tab, meetings,
+  suggestions, activity, users, notifications, profile, form create) status
+  200 tanpa halaman error. **A13 terbukti**: Create Task dengan deadline <
+  start date menampilkan "Deadline must be after start date." dan judul,
+  deskripsi, deadline tetap terisi. Dicek: tidak ada task uji tersimpan.
+
+**Temuan baru**
+
+- React error #418 (hydration mismatch) di `/tasks` dan `/tasks?view=overdue`.
+  Juga terjadi di produksi (`main`), jadi bukan dari cabang ini. Penyebab
+  belum dicari (butuh dev server; RAM laptop tidak cukup saat itu).
+
+**Belum dikerjakan**
+
+- Keseragaman bahasa UI (menunggu keputusan bahasa).
+- Uji klik alur yang menulis data (approve, schedule, kirim email nyata B15).
+- 1 project tanpa PM aktif (data produksi, perlu Admin).
 
 ## G. Cara audit dan batasan
 
