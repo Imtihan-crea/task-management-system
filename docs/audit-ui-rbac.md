@@ -186,7 +186,7 @@ commit saja). Satu commit per temuan supaya bisa di-revert satu-satu.
 
 **Temuan baru**
 
-- React error #418 (hydration mismatch) di `/tasks` dan `/tasks?view=overdue`.
+- React error #418 (hydration mismatch) di `/tasks` dan `/tasks?view=overdue`. **DIPERBAIKI** (cabang `fix/hydration-418`): penyebabnya form pencarian bersarang di dalam form filter.
   Juga terjadi di produksi (`main`), jadi bukan dari cabang ini. Penyebab
   belum dicari (butuh dev server; RAM laptop tidak cukup saat itu).
 

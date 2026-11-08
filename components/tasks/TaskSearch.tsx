@@ -29,15 +29,11 @@ export function DebouncedTaskSearch({ initial }: { initial: string }) {
     timer.current = setTimeout(() => commit(v), 400)
   }
 
+  // Bukan <form>: komponen ini dipasang di dalam <form method="get"> milik
+  // TaskFilterForm. Form bersarang tidak sah di HTML; browser membuang form
+  // dalam sehingga hydration gagal (React error #418 di /tasks).
   return (
-    <form
-      role="search"
-      onSubmit={(e) => {
-        e.preventDefault()
-        if (timer.current) clearTimeout(timer.current)
-        commit(value)
-      }}
-    >
+    <div role="search">
       <label htmlFor="task-search" className="mb-1 block text-sm font-medium">
         Search
       </label>
@@ -47,10 +43,17 @@ export function DebouncedTaskSearch({ initial }: { initial: string }) {
         type="search"
         value={value}
         onChange={(e) => onChange(e.target.value)}
+        onKeyDown={(e) => {
+          // Enter: cari sekarang tanpa reload (jangan kirim form filter induk).
+          if (e.key !== 'Enter') return
+          e.preventDefault()
+          if (timer.current) clearTimeout(timer.current)
+          commit(value)
+        }}
         placeholder="Kode (T-01), nama, project, assignee"
         autoComplete="off"
         className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
       />
-    </form>
+    </div>
   )
 }
