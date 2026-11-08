@@ -18,7 +18,7 @@ export default async function NewSuggestionPage({
     return (
       <AppShell>
         <p role="alert" className="rounded-lg bg-red-50 p-3 text-sm font-medium text-red-700 dark:bg-red-950 dark:text-red-300">
-          You do not have permission to perform this action.
+          Anda tidak punya izin untuk melakukan aksi ini.
         </p>
       </AppShell>
     )
@@ -38,16 +38,16 @@ export default async function NewSuggestionPage({
   return (
     <AppShell>
       <Link href="/task-suggestions" className="text-sm font-medium text-zinc-500 hover:underline">
-        &larr; Back to Suggestions
+        &larr; Kembali ke Suggestions
       </Link>
-      <h1 className="mt-2 text-2xl font-bold">Suggest Task</h1>
+      <h1 className="mt-2 text-2xl font-bold">Usulkan Task</h1>
       <p className="mt-1 text-sm text-zinc-500">
-        Usulan dibaca oleh PM/Admin sebelum menjadi official task.
+        Usulan dibaca oleh PM/Admin sebelum menjadi task resmi.
       </p>
 
       {projects.length === 0 ? (
         <p className="mt-4 rounded-2xl bg-white p-8 text-center text-sm text-zinc-500 shadow dark:bg-zinc-900">
-          No projects available. You can only suggest tasks for projects you are involved in.
+          Tidak ada Project yang tersedia. Anda hanya dapat mengusulkan Task untuk Project yang Anda ikuti.
         </p>
       ) : (
         <div className="mt-4 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">

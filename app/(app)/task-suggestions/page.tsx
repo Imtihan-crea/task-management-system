@@ -124,20 +124,20 @@ export default async function SuggestionsPage({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">
-            {view === 'mine' ? 'My Suggestions' : 'Task Suggestions'}
+            {view === 'mine' ? 'Suggestion Saya' : 'Task Suggestions'}
           </h1>
           <p className="mt-1 text-sm text-zinc-500">
-            {suggestions.length} suggestion{suggestions.length === 1 ? '' : 's'}
+            {suggestions.length} suggestion
           </p>
         </div>
         <div className="flex gap-2">
           {view === 'mine' ? (
             <Link href="/task-suggestions" className="inline-flex min-h-[44px] items-center rounded-lg border px-4 py-2 text-sm font-semibold">
-              All in Scope
+              Semua dalam Cakupan
             </Link>
           ) : (
             <Link href="/task-suggestions?view=mine" className="inline-flex min-h-[44px] items-center rounded-lg border px-4 py-2 text-sm font-semibold">
-              My Suggestions
+              Suggestion Saya
             </Link>
           )}
           {canCreate && (
@@ -145,7 +145,7 @@ export default async function SuggestionsPage({
               href="/task-suggestions/new"
               className="inline-flex min-h-[44px] items-center rounded-lg bg-kasuat-gold px-4 py-2 text-sm font-semibold text-kasuat-black"
             >
-              + Suggest Task
+              + Usulkan Task
             </Link>
           )}
         </div>
@@ -154,7 +154,7 @@ export default async function SuggestionsPage({
       <form method="get" className="mt-4 flex flex-col gap-3 rounded-2xl bg-white p-4 shadow sm:flex-row sm:items-end dark:bg-zinc-900">
         {view === 'mine' && <input type="hidden" name="view" value="mine" />}
         <div className="flex-1">
-          <label htmlFor="q" className="mb-1 block text-sm font-medium">Search</label>
+          <label htmlFor="q" className="mb-1 block text-sm font-medium">Cari</label>
           <input
             id="q"
             name="q"
@@ -172,7 +172,7 @@ export default async function SuggestionsPage({
             defaultValue={fStatus}
             className="min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
           >
-            <option value="">All</option>
+            <option value="">Semua</option>
             {SUGGESTION_STATUSES.map((s) => (
               <option key={s} value={s}>
                 {SUGGESTION_STATUS_LABELS[s]}
@@ -181,17 +181,17 @@ export default async function SuggestionsPage({
           </select>
         </div>
         <button type="submit" className="min-h-[44px] rounded-lg bg-kasuat-gold px-5 py-2 font-semibold text-kasuat-black">
-          Apply
+          Terapkan
         </button>
       </form>
 
       {error ? (
         <p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm font-medium text-red-700 dark:bg-red-950 dark:text-red-300">
-          Something went wrong. Please try again.
+          Terjadi kesalahan. Silakan coba lagi.
         </p>
       ) : suggestions.length === 0 ? (
         <p className="mt-4 rounded-2xl bg-white p-8 text-center text-sm text-zinc-500 shadow dark:bg-zinc-900">
-          No suggestions found.
+          Suggestion tidak ditemukan.
         </p>
       ) : (
         <>
@@ -228,7 +228,7 @@ export default async function SuggestionsPage({
           page={safePage}
           totalPages={totalPages}
           total={suggestions.length}
-          label="suggestions"
+          label="suggestion"
         />
         </>
       )}

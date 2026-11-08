@@ -104,7 +104,7 @@ export default async function SuggestionDetailPage({
   return (
     <AppShell>
       <Link href="/task-suggestions" className="text-sm font-medium text-zinc-500 hover:underline">
-        &larr; Back to Suggestions
+        &larr; Kembali ke Suggestions
       </Link>
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -116,22 +116,22 @@ export default async function SuggestionDetailPage({
 
       <div className="mt-4 grid gap-6 lg:grid-cols-2 lg:items-start">
         <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
-          <h2 className="mb-2 text-lg font-bold">Suggestion Detail</h2>
+          <h2 className="mb-2 text-lg font-bold">Detail Suggestion</h2>
           <dl>
             <Row label="Project" value={project ? `${project.code} · ${project.name}` : '-'} />
             <Row label="Workstream" value={workstream ? `${workstream.code} · ${workstream.name}` : '-'} />
-            <Row label="Description" value={suggestion.description} />
+            <Row label="Deskripsi" value={suggestion.description} />
             <Row
-              label="Suggested Assignee"
+              label="Assignee yang Disarankan"
               value={reviewerAssignee ? reviewerAssignee.full_name || reviewerAssignee.email : '-'}
             />
-            <Row label="Suggested Priority" value={suggestion.suggested_priority ?? '-'} />
+            <Row label="Prioritas yang Disarankan" value={suggestion.suggested_priority ?? '-'} />
             <Row
-              label="Suggested Deadline"
+              label="Deadline yang Disarankan"
               value={suggestion.suggested_deadline ? formatDate(suggestion.suggested_deadline) : '-'}
             />
             <Row
-              label="Suggested By"
+              label="Diusulkan Oleh"
               value={creator ? creator.full_name || creator.email : '-'}
             />
             <Row label="Status" value={SUGGESTION_STATUS_LABELS[suggestion.status]} />
@@ -139,9 +139,9 @@ export default async function SuggestionDetailPage({
               label="Reviewer"
               value={reviewer ? reviewer.full_name || reviewer.email : '-'}
             />
-            <Row label="Review Note" value={suggestion.review_note || '-'} />
+            <Row label="Catatan Review" value={suggestion.review_note || '-'} />
             <Row
-              label="Reviewed At"
+              label="Direview Pada"
               value={suggestion.reviewed_at ? formatDate(suggestion.reviewed_at) : '-'}
             />
           </dl>
@@ -151,12 +151,12 @@ export default async function SuggestionDetailPage({
               href={`/tasks/${suggestion.converted_task_id}`}
               className="mt-4 inline-flex min-h-[44px] items-center rounded-lg bg-kasuat-gold px-4 py-2 text-sm font-semibold text-kasuat-black"
             >
-              View Task {convertedTaskCode}
+              Lihat Task {convertedTaskCode}
             </Link>
           )}
 
           <div className="mt-4 border-t pt-4 dark:border-zinc-700">
-            <h3 className="mb-2 text-base font-bold">Review History</h3>
+            <h3 className="mb-2 text-base font-bold">Riwayat Review</h3>
             <ActivityTimeline entries={historyEntries} actorNames={historyActors} />
           </div>
         </section>
@@ -177,7 +177,7 @@ export default async function SuggestionDetailPage({
 
           {canResubmit && (
             <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
-              <h2 className="mb-4 text-lg font-bold">Fix & Resubmit</h2>
+              <h2 className="mb-4 text-lg font-bold">Perbaiki & Submit Ulang</h2>
               <ResubmitForm
                 id={suggestion.id}
                 title={suggestion.title}

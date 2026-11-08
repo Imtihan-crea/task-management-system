@@ -40,7 +40,7 @@ export function SuggestionForm({
     <form {...formAction} className="flex flex-col gap-4">
       <div>
         <label htmlFor="sug_title" className="mb-1 block text-sm font-medium">
-          Task Title <span aria-hidden="true">*</span>
+          Judul Task <span aria-hidden="true">*</span>
         </label>
         <input
           id="sug_title"
@@ -54,7 +54,7 @@ export function SuggestionForm({
 
       <div>
         <label htmlFor="sug_desc" className="mb-1 block text-sm font-medium">
-          Description <span aria-hidden="true">*</span>
+          Deskripsi <span aria-hidden="true">*</span>
         </label>
         <textarea
           id="sug_desc"
@@ -97,7 +97,7 @@ export function SuggestionForm({
             name="workstream_id"
             className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
           >
-            <option value="">— None —</option>
+            <option value="">— Tidak ada —</option>
             {filteredWorkstreams.map((w) => (
               <option key={w.id} value={w.id}>
                 {w.code} · {w.name}
@@ -109,14 +109,14 @@ export function SuggestionForm({
 
       <div>
         <label htmlFor="sug_assignee" className="mb-1 block text-sm font-medium">
-          Suggested Assignee
+          Assignee yang Disarankan
         </label>
         <select
           id="sug_assignee"
           name="suggested_assignee_id"
           className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
         >
-          <option value="">— None —</option>
+          <option value="">— Tidak ada —</option>
           {users.map((u) => (
             <option key={u.id} value={u.id}>
               {u.full_name || u.email} ({u.email})
@@ -128,7 +128,7 @@ export function SuggestionForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="sug_priority" className="mb-1 block text-sm font-medium">
-            Suggested Priority
+            Prioritas yang Disarankan
           </label>
           <select
             id="sug_priority"
@@ -136,7 +136,7 @@ export function SuggestionForm({
             defaultValue=""
             className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
           >
-            <option value="">— None —</option>
+            <option value="">— Tidak ada —</option>
             {TASK_PRIORITIES.map((p) => (
               <option key={p} value={p}>
                 {p}
@@ -146,7 +146,7 @@ export function SuggestionForm({
         </div>
         <div>
           <label htmlFor="sug_deadline" className="mb-1 block text-sm font-medium">
-            Suggested Deadline
+            Deadline yang Disarankan
           </label>
           <input
             id="sug_deadline"
@@ -173,7 +173,7 @@ export function SuggestionForm({
         disabled={pending}
         className="min-h-[44px] w-full rounded-lg bg-kasuat-gold px-4 py-2 font-semibold text-kasuat-black disabled:opacity-50 sm:w-auto"
       >
-        {pending ? 'Submitting...' : 'Submit Suggestion'}
+        {pending ? 'Mengirim...' : 'Submit Suggestion'}
       </button>
     </form>
   )
@@ -211,7 +211,7 @@ export function ResubmitForm({
 
       <div>
         <label htmlFor="re_title" className="mb-1 block text-sm font-medium">
-          Task Title <span aria-hidden="true">*</span>
+          Judul Task <span aria-hidden="true">*</span>
         </label>
         <input
           id="re_title"
@@ -225,7 +225,7 @@ export function ResubmitForm({
 
       <div>
         <label htmlFor="re_desc" className="mb-1 block text-sm font-medium">
-          Description <span aria-hidden="true">*</span>
+          Deskripsi <span aria-hidden="true">*</span>
         </label>
         <textarea
           id="re_desc"
@@ -249,7 +249,7 @@ export function ResubmitForm({
             defaultValue={workstreamId ?? ''}
             className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
           >
-            <option value="">— None —</option>
+            <option value="">— Tidak ada —</option>
             {scopedWorkstreams.map((w) => (
               <option key={w.id} value={w.id}>
                 {w.code} · {w.name}
@@ -259,7 +259,7 @@ export function ResubmitForm({
         </div>
         <div>
           <label htmlFor="re_assignee" className="mb-1 block text-sm font-medium">
-            Suggested Assignee
+            Assignee yang Disarankan
           </label>
           <select
             id="re_assignee"
@@ -267,7 +267,7 @@ export function ResubmitForm({
             defaultValue={assigneeId ?? ''}
             className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
           >
-            <option value="">— None —</option>
+            <option value="">— Tidak ada —</option>
             {users.map((u) => (
               <option key={u.id} value={u.id}>
                 {u.full_name || u.email} ({u.email})
@@ -280,7 +280,7 @@ export function ResubmitForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="re_priority" className="mb-1 block text-sm font-medium">
-            Suggested Priority
+            Prioritas yang Disarankan
           </label>
           <select
             id="re_priority"
@@ -288,7 +288,7 @@ export function ResubmitForm({
             defaultValue={priority ?? ''}
             className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
           >
-            <option value="">— None —</option>
+            <option value="">— Tidak ada —</option>
             {TASK_PRIORITIES.map((p) => (
               <option key={p} value={p}>
                 {p}
@@ -298,7 +298,7 @@ export function ResubmitForm({
         </div>
         <div>
           <label htmlFor="re_deadline" className="mb-1 block text-sm font-medium">
-            Suggested Deadline
+            Deadline yang Disarankan
           </label>
           <input
             id="re_deadline"
@@ -326,7 +326,7 @@ export function ResubmitForm({
         disabled={pending}
         className="min-h-[44px] w-full rounded-lg bg-kasuat-gold px-4 py-2 font-semibold text-kasuat-black disabled:opacity-50 sm:w-auto"
       >
-        {pending ? 'Resubmitting...' : 'Fix & Resubmit'}
+        {pending ? 'Mengirim ulang...' : 'Perbaiki & Submit Ulang'}
       </button>
     </form>
   )
@@ -346,7 +346,7 @@ export function ReviewForm({
   suggestedDeadline: string | null
 }) {
   const [state, formAction, pending] = useFormAction(reviewSuggestion, INITIAL, (fd) =>
-    fd.get('decision') === 'reject' ? 'Reject this suggestion? This cannot be undone.' : null
+    fd.get('decision') === 'reject' ? 'Tolak suggestion ini? Tindakan ini tidak dapat dibatalkan.' : null
   )
 
   return (
@@ -355,7 +355,7 @@ export function ReviewForm({
 
       <div>
         <label htmlFor="review_assignee" className="mb-1 block text-sm font-medium">
-          Assignee (dipakai saat approve)
+          Assignee (dipakai saat disetujui)
         </label>
         <select
           id="review_assignee"
@@ -376,7 +376,7 @@ export function ReviewForm({
       <div className="grid gap-3 sm:grid-cols-2">
         <div>
           <label htmlFor="review_priority" className="mb-1 block text-sm font-medium">
-            Priority (dipakai saat approve)
+            Prioritas (dipakai saat disetujui)
           </label>
           <select
             id="review_priority"
@@ -393,7 +393,7 @@ export function ReviewForm({
         </div>
         <div>
           <label htmlFor="review_deadline" className="mb-1 block text-sm font-medium">
-            Deadline (wajib untuk approve)
+            Deadline (wajib untuk disetujui)
           </label>
           <input
             id="review_deadline"
@@ -407,7 +407,7 @@ export function ReviewForm({
 
       <div>
         <label htmlFor="review_note" className="mb-1 block text-sm font-medium">
-          Review Note (wajib untuk revise/reject, opsional untuk approve)
+          Catatan Review (wajib untuk Minta Revisi/Tolak, opsional untuk Setujui)
         </label>
         <textarea
           id="review_note"
@@ -438,7 +438,7 @@ export function ReviewForm({
           disabled={pending}
           className="min-h-[44px] flex-1 rounded-lg bg-kasuat-gold px-4 py-2 font-semibold text-kasuat-black disabled:opacity-50"
         >
-          {pending ? 'Saving...' : 'Approve'}
+          {pending ? 'Menyimpan...' : 'Setujui'}
         </button>
         <button
           type="submit"
@@ -447,7 +447,7 @@ export function ReviewForm({
           disabled={pending}
           className="min-h-[44px] flex-1 rounded-lg border px-4 py-2 font-semibold disabled:opacity-50"
         >
-          {pending ? 'Saving...' : 'Request Revision'}
+          {pending ? 'Menyimpan...' : 'Minta Revisi'}
         </button>
         <button
           type="submit"
@@ -456,7 +456,7 @@ export function ReviewForm({
           disabled={pending}
           className="min-h-[44px] flex-1 rounded-lg border border-red-300 px-4 py-2 font-semibold text-red-600 disabled:opacity-50 dark:border-red-700 dark:text-red-300"
         >
-          {pending ? 'Saving...' : 'Reject'}
+          {pending ? 'Menyimpan...' : 'Tolak'}
         </button>
       </div>
     </form>
