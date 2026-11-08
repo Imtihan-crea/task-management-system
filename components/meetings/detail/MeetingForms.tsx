@@ -280,6 +280,9 @@ export function LifecycleButtons({
           >
             {schedPending ? 'Scheduling...' : 'Schedule Meeting'}
           </button>
+          <p className="mt-1 text-xs text-zinc-500">
+            Draft: participants are not notified yet. Scheduling sends the invitations.
+          </p>
         </form>
       )}
 

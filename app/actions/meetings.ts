@@ -493,7 +493,9 @@ export async function createMeeting(
   })
 
   revalidateMeeting(created.id, projectId || null)
-  return { success: `Meeting ${created.code} created successfully.` }
+  return {
+    success: `Meeting ${created.code} created as draft. Schedule it to send invitations.`,
+  }
 }
 
 export async function updateMeeting(
