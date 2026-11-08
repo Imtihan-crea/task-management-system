@@ -78,7 +78,7 @@ export function BellPopover() {
       </div>
       <ul className="max-h-80 overflow-y-auto">
         {!summary ? (
-          <li className="px-4 py-6 text-center text-sm text-zinc-500">Loading...</li>
+          <li className="px-4 py-6 text-center text-sm text-zinc-500">Memuat...</li>
         ) : summary.recent.length === 0 ? (
           <li className="px-4 py-6 text-center text-sm text-zinc-500">No notifications yet.</li>
         ) : (
@@ -183,7 +183,7 @@ export function ProfileMenu({
             disabled={loggingOut}
             className="block w-full px-4 py-2.5 text-left text-sm font-semibold text-red-600 disabled:opacity-50"
           >
-            {loggingOut ? 'Loading...' : 'Logout'}
+            {loggingOut ? 'Memuat...' : 'Logout'}
           </button>
         </li>
       </ul>

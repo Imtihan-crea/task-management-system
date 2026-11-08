@@ -95,7 +95,7 @@ export async function TasksTab({
             href={`/tasks/new?project=${projectId}`}
             className="inline-flex min-h-[44px] items-center rounded-lg bg-kasuat-gold px-4 py-2 text-sm font-semibold text-kasuat-black"
           >
-            + Add Task
+            + Tambah Task
           </Link>
         )}
       </div>
@@ -112,7 +112,7 @@ export async function TasksTab({
             defaultValue={filters.ws}
             className="min-h-[44px] rounded-lg border px-2 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
           >
-            <option value="">All</option>
+            <option value="">Semua</option>
             {wsList.map((w) => (
               <option key={w.id} value={w.id}>
                 {w.code} · {w.name}
@@ -130,7 +130,7 @@ export async function TasksTab({
             defaultValue={filters.status}
             className="min-h-[44px] rounded-lg border px-2 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
           >
-            <option value="">All</option>
+            <option value="">Semua</option>
             {(['TODO', 'IN_PROGRESS', 'REVIEW', 'BLOCKED', 'DONE', 'CANCELLED'] as const).map((s) => (
               <option key={s} value={s}>
                 {s.replace('_', ' ')}
@@ -140,7 +140,7 @@ export async function TasksTab({
         </div>
         <div>
           <label htmlFor="fpriority" className="mb-1 block text-xs font-medium">
-            Priority
+            Prioritas
           </label>
           <select
             id="fpriority"
@@ -148,7 +148,7 @@ export async function TasksTab({
             defaultValue={filters.priority}
             className="min-h-[44px] rounded-lg border px-2 py-2 text-sm dark:border-zinc-700 dark:bg-zinc-800"
           >
-            <option value="">All</option>
+            <option value="">Semua</option>
             {(['LOW', 'MEDIUM', 'HIGH'] as const).map((p) => (
               <option key={p} value={p}>
                 {p}
@@ -165,7 +165,7 @@ export async function TasksTab({
       </form>
 
       {visibleTasks.length === 0 ? (
-        <p className="mt-3 text-sm text-zinc-500">No tasks yet.</p>
+        <p className="mt-3 text-sm text-zinc-500">Belum ada Task.</p>
       ) : (
         <ul className="mt-3 flex flex-col gap-2">
           {visibleTasks.map((task) => {
@@ -179,7 +179,7 @@ export async function TasksTab({
                     {task.title}
                   </p>
                   <p className="truncate text-xs text-zinc-500">
-                    {task.workstream_id ? (wsNames[task.workstream_id] ?? '-') : 'No workstream'}
+                    {task.workstream_id ? (wsNames[task.workstream_id] ?? '-') : 'Tanpa Workstream'}
                     {' '} &middot; {assigneeNames[task.assignee_id] ?? '-'}
                   </p>
                 </div>

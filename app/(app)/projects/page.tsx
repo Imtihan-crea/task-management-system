@@ -144,12 +144,12 @@ export default async function ProjectsPage({
     <AppShell>
       <PageHeader
         title="Projects"
-        subtitle={`${visibleProjects.length} project.`}
+        subtitle={`${visibleProjects.length} project`}
         actions={
           <>
-            {canCreate && <ButtonLink href="/projects/new">+ Add Project</ButtonLink>}
+            {canCreate && <ButtonLink href="/projects/new">+ Tambah Project</ButtonLink>}
             <ButtonLink href="/tasks?view=mine" variant="secondary">
-              My Tasks
+              Task Saya
             </ButtonLink>
           </>
         }
@@ -161,7 +161,7 @@ export default async function ProjectsPage({
       >
         <div className="flex-1">
           <label htmlFor="q" className="mb-1 block text-sm font-medium">
-            Search
+            Cari
           </label>
           <input
             id="q"
@@ -182,7 +182,7 @@ export default async function ProjectsPage({
             defaultValue={statusFilter}
             className="min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
           >
-            <option value="">All</option>
+            <option value="">Semua</option>
             {PROJECT_STATUSES.map((s) => (
               <option key={s} value={s}>
                 {s.replace('_', ' ')}
@@ -206,17 +206,17 @@ export default async function ProjectsPage({
           type="submit"
           className="min-h-[44px] rounded-lg bg-kasuat-gold px-5 py-2 font-semibold text-kasuat-black"
         >
-          Apply
+          Terapkan
         </button>
       </form>
 
       {error ? (
         <p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm font-medium text-red-700 dark:bg-red-950 dark:text-red-300">
-          Something went wrong. Please try again.
+          Terjadi kesalahan. Silakan coba lagi.
         </p>
       ) : visibleProjects.length === 0 ? (
         <p className="mt-4 rounded-2xl bg-white p-8 text-center text-sm text-zinc-500 shadow dark:bg-zinc-900">
-          No projects yet. {canCreate ? 'Create your first project below.' : ''}
+          Belum ada Project. {canCreate ? 'Buat Project pertama Anda di bawah.' : ''}
         </p>
       ) : (
         <ul className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -239,7 +239,7 @@ export default async function ProjectsPage({
                         {project.name}
                       </p>
                       <p className="truncate text-sm text-zinc-500">
-                        {project.client || 'No client'} &middot;{' '}
+                        {project.client || 'Tanpa client'} &middot;{' '}
                         {(pmNames[project.id] ?? []).join(', ') || '-'}
                       </p>
                     </div>
@@ -253,7 +253,7 @@ export default async function ProjectsPage({
                       aria-valuenow={progress.percent}
                       aria-valuemin={0}
                       aria-valuemax={100}
-                      aria-label={`Progress ${progress.percent} percent`}
+                      aria-label={`Progress ${progress.percent} persen`}
                     >
                       <div
                         className="h-full rounded-full bg-kasuat-gold"

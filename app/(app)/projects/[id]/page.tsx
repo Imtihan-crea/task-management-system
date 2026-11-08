@@ -19,13 +19,13 @@ import { canSuggestForProject } from '@/lib/auth/project-access'
 import type { Project } from '@/types/project'
 
 const TABS = [
-  { key: 'overview', label: 'Overview' },
+  { key: 'overview', label: 'Ringkasan' },
   { key: 'workstreams', label: 'Workstreams' },
   { key: 'tasks', label: 'Tasks' },
   { key: 'meetings', label: 'Meetings' },
   { key: 'activity', label: 'Activity' },
-  { key: 'members', label: 'Members' },
-  { key: 'settings', label: 'Settings' },
+  { key: 'members', label: 'Anggota' },
+  { key: 'settings', label: 'Pengaturan' },
 ] as const
 
 type TabKey = (typeof TABS)[number]['key']
@@ -130,7 +130,7 @@ export default async function ProjectDetailPage({
     projectSuggestions = (sug ?? []) as typeof projectSuggestions
   }
 
-  // Tombol "+ Suggest Task" hanya bila server akan menerimanya (audit B2).
+  // Tombol "+ Usulkan Task" hanya bila server akan menerimanya (audit B2).
   // TEAM_MEMBER yang sampai di halaman ini pasti punya task di project ini.
   const canSuggestHere =
     can(profile.role, 'suggestions.create') &&
@@ -146,7 +146,7 @@ export default async function ProjectDetailPage({
   return (
     <AppShell>
       <Link href="/projects" className="text-sm font-medium text-zinc-500 hover:underline">
-        &larr; Back to Projects
+        &larr; Kembali ke Projects
       </Link>
 
       <div className="mt-2 flex flex-wrap items-center gap-3">
@@ -157,12 +157,12 @@ export default async function ProjectDetailPage({
         <ProjectStatusBadge status={project.status} />
       </div>
       <p className="mt-1 text-sm text-zinc-500">
-        {project.client || 'No client'}
+        {project.client || 'Tanpa client'}
       </p>
 
       <div className="mt-4">
         <Tabs
-          label="Project workspace"
+          label="Workspace Project"
           items={TABS.filter(
             (t) => t.key !== 'settings' || (canEditThis && canEditProject)
           ).map((t) => ({
@@ -240,12 +240,12 @@ export default async function ProjectDetailPage({
                 href={`/task-suggestions/new?project=${id}`}
                 className="inline-flex min-h-[44px] items-center rounded-lg border px-4 py-2 text-sm font-semibold"
               >
-                + Suggest Task
+                + Usulkan Task
               </Link>
             )}
           </div>
           {projectSuggestions.length === 0 ? (
-            <p className="mt-3 text-sm text-zinc-500">No suggestions yet.</p>
+            <p className="mt-3 text-sm text-zinc-500">Belum ada Suggestion.</p>
           ) : (
             <ul className="mt-3 flex flex-col gap-2">
               {projectSuggestions.map((s) => (

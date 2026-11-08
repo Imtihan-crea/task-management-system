@@ -11,7 +11,7 @@ export async function SettingsTab({ projectId }: { projectId: string }) {
     getActiveUsers(['ADMIN', 'PROJECT_MANAGER']),
   ])
 
-  if (!project) return <p className="text-sm text-zinc-500">Project not found.</p>
+  if (!project) return <p className="text-sm text-zinc-500">Project tidak ditemukan.</p>
 
   const p = project as {
     id: string

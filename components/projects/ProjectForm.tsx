@@ -33,7 +33,7 @@ function FormFields({
     <>
       <div>
         <label htmlFor="proj_name" className="mb-1 block text-sm font-medium">
-          Project Name <span aria-hidden="true">*</span>
+          Nama Project <span aria-hidden="true">*</span>
         </label>
         <input
           id="proj_name"
@@ -62,7 +62,7 @@ function FormFields({
 
       <div>
         <label htmlFor="proj_desc" className="mb-1 block text-sm font-medium">
-          Description
+          Deskripsi
         </label>
         <textarea
           id="proj_desc"
@@ -77,7 +77,7 @@ function FormFields({
 
       <div>
         <label htmlFor="proj_pm" className="mb-1 block text-sm font-medium">
-          Project Managers <span aria-hidden="true">*</span>
+          Project Manager <span aria-hidden="true">*</span>
         </label>
         <p className="mb-1 text-xs text-zinc-500">
           Bisa pilih lebih dari satu (tahan Ctrl/Cmd saat klik).
@@ -109,7 +109,7 @@ function FormFields({
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="proj_start" className="mb-1 block text-sm font-medium">
-            Start Date
+            Tanggal Mulai
           </label>
           <input
             id="proj_start"
@@ -156,7 +156,7 @@ function FormFields({
         disabled={pending}
         className="min-h-[44px] w-full rounded-lg bg-kasuat-gold px-4 py-2 font-semibold text-kasuat-black disabled:opacity-50 sm:w-auto"
       >
-        {pending ? 'Saving...' : initial.id ? 'Save Changes' : 'Create Project'}
+        {pending ? 'Menyimpan...' : initial.id ? 'Simpan Perubahan' : 'Buat Project'}
       </button>
     </>
   )
@@ -180,7 +180,7 @@ export function ProjectForm({
   return (
     <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
       <h2 className="text-lg font-bold">
-        {mode === 'create' ? 'Create Project' : 'Edit Project'}
+        {mode === 'create' ? 'Buat Project' : 'Ubah Project'}
       </h2>
 
       <form {...formAction} className="mt-4 flex flex-col gap-4">

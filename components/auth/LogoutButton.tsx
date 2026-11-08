@@ -22,7 +22,7 @@ export function LogoutButton() {
       disabled={loading}
       className="min-h-[44px] rounded-lg border border-zinc-700 px-6 py-2 text-sm font-semibold text-zinc-200 hover:bg-zinc-800 disabled:opacity-50"
     >
-      {loading ? 'Loading...' : 'Logout'}
+      {loading ? 'Memuat...' : 'Logout'}
     </button>
   )
 }

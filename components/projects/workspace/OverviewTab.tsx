@@ -26,7 +26,7 @@ export async function OverviewTab({ projectId }: { projectId: string }) {
     admin.from('project_managers').select('user_id').eq('project_id', projectId),
   ])
 
-  if (!project) return <p className="text-sm text-zinc-500">Project not found.</p>
+  if (!project) return <p className="text-sm text-zinc-500">Project tidak ditemukan.</p>
 
   const taskList = (tasks ?? []) as { status: string; deadline: string; assignee_id: string }[]
   // CANCELLED keluar dari progress (di luar scope) — hanya DONE yang selesai.
@@ -63,20 +63,20 @@ export async function OverviewTab({ projectId }: { projectId: string }) {
   return (
     <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
       <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
-        <h2 className="mb-2 text-lg font-bold">Project Detail</h2>
+        <h2 className="mb-2 text-lg font-bold">Detail Project</h2>
         <dl>
           <Row label="Project ID" value={project.code} />
           <Row label="Client" value={project.client || '-'} />
-          <Row label="Description" value={project.description || '-'} />
-          <Row label="Start Date" value={formatDate(project.start_date)} />
+          <Row label="Deskripsi" value={project.description || '-'} />
+          <Row label="Tanggal Mulai" value={formatDate(project.start_date)} />
           <Row label="Deadline" value={formatDate(project.end_date)} />
           <Row label="Status" value={project.status.replace('_', ' ')} />
-          <Row label="Project Managers" value={pmDisplay} />
+          <Row label="Project Manager" value={pmDisplay} />
         </dl>
       </section>
 
       <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
-        <h2 className="mb-2 text-lg font-bold">Project Progress</h2>
+        <h2 className="mb-2 text-lg font-bold">Progress Project</h2>
         <div className="flex items-center gap-3">
           <span className="rounded-md bg-zinc-100 px-2 py-1 font-mono text-sm dark:bg-zinc-800">
             {project.code}
@@ -94,12 +94,12 @@ export async function OverviewTab({ projectId }: { projectId: string }) {
         </div>
         <dl className="mt-3">
           <Row label="Total Task" value={String(progress.total)} />
-          <Row label="Completed" value={String(progress.completed)} />
-          <Row label="In Progress" value={String(progress.inProgress)} />
-          <Row label="Blocked" value={String(progress.blocked)} />
-          <Row label="Todo" value={String(progress.todo)} />
+          <Row label="Selesai" value={String(progress.completed)} />
+          <Row label="IN PROGRESS" value={String(progress.inProgress)} />
+          <Row label="BLOCKED" value={String(progress.blocked)} />
+          <Row label="TODO" value={String(progress.todo)} />
           <Row label="Progress" value={`${progress.percent}%`} />
-          <Row label="Upcoming Deadlines" value={String(upcoming)} />
+          <Row label="Deadline Mendatang" value={String(upcoming)} />
         </dl>
       </section>
     </div>

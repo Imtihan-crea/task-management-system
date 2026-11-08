@@ -36,7 +36,7 @@ export async function WorkstreamsTab({
     <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
       <h2 className="text-lg font-bold">Workstreams ({wsList.length})</h2>
       {wsList.length === 0 ? (
-        <p className="mt-2 text-sm text-zinc-500">No workstreams yet.</p>
+        <p className="mt-2 text-sm text-zinc-500">Belum ada Workstream.</p>
       ) : (
         <ul className="mt-3 flex flex-col gap-3">
           {wsList.map((ws) => {
@@ -67,7 +67,7 @@ export async function WorkstreamsTab({
                 {canManage && (
                   <details className="mt-2">
                     <summary className="cursor-pointer text-sm font-medium text-zinc-500">
-                      Edit
+                      Ubah
                     </summary>
                     <div className="mt-2">
                       <EditWorkstreamForm
@@ -90,7 +90,7 @@ export async function WorkstreamsTab({
             href={`/workstreams/new?project=${projectId}`}
             className="inline-flex min-h-[44px] items-center rounded-lg bg-kasuat-gold px-4 py-2 text-sm font-semibold text-kasuat-black"
           >
-            + Add Workstream
+            + Tambah Workstream
           </Link>
         </div>
       )}

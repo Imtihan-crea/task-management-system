@@ -4,7 +4,7 @@ import { MeetingResults } from '@/components/meetings/MeetingResults'
 
 /**
  * Tab Meetings di Project Detail (§2B, §11).
- * Menampilkan meeting project ini + tombol + New Meeting (project terkunci).
+ * Menampilkan meeting project ini + tombol + Buat Meeting (project terkunci).
  */
 export async function MeetingsTab({
   projectId,
@@ -42,13 +42,13 @@ export async function MeetingsTab({
             href={`/meetings/new?project=${projectId}`}
             className="inline-flex min-h-[44px] items-center rounded-lg bg-kasuat-gold px-4 py-2 text-sm font-semibold text-kasuat-black"
           >
-            + New Meeting
+            + Buat Meeting
           </Link>
         )}
       </div>
       {rows.length === 0 ? (
         <div className="rounded-2xl border border-zinc-200 bg-white p-8 text-center dark:border-zinc-800 dark:bg-zinc-900">
-          <p className="font-heading text-lg font-semibold">No meetings yet.</p>
+          <p className="font-heading text-lg font-semibold">Belum ada Meeting.</p>
           <p className="mt-1 text-sm text-zinc-500">
             Buat meeting pertama untuk project ini.
           </p>
@@ -58,7 +58,7 @@ export async function MeetingsTab({
                 href={`/meetings/new?project=${projectId}`}
                 className="inline-flex min-h-[44px] items-center rounded-lg bg-kasuat-gold px-4 py-2 text-sm font-semibold text-kasuat-black"
               >
-                + New Meeting
+                + Buat Meeting
               </Link>
             </div>
           )}

@@ -15,14 +15,14 @@ export function CreateWorkstreamForm({ projectId }: { projectId: string }) {
 
   return (
     <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
-      <h2 className="text-lg font-bold">Create Workstream</h2>
+      <h2 className="text-lg font-bold">Buat Workstream</h2>
 
       <form {...formAction} className="mt-4 flex flex-col gap-4">
         <input type="hidden" name="project_id" value={projectId} />
 
         <div>
           <label htmlFor="ws_name" className="mb-1 block text-sm font-medium">
-            Name <span aria-hidden="true">*</span>
+            Nama <span aria-hidden="true">*</span>
           </label>
           <input
             id="ws_name"
@@ -36,7 +36,7 @@ export function CreateWorkstreamForm({ projectId }: { projectId: string }) {
 
         <div>
           <label htmlFor="ws_desc" className="mb-1 block text-sm font-medium">
-            Description
+            Deskripsi
           </label>
           <textarea
             id="ws_desc"
@@ -64,7 +64,7 @@ export function CreateWorkstreamForm({ projectId }: { projectId: string }) {
           disabled={pending}
           className="min-h-[44px] w-full rounded-lg bg-kasuat-gold px-4 py-2 font-semibold text-kasuat-black disabled:opacity-50 sm:w-auto"
         >
-          {pending ? 'Saving...' : 'Create Workstream'}
+          {pending ? 'Menyimpan...' : 'Buat Workstream'}
         </button>
       </form>
     </section>
@@ -90,7 +90,7 @@ export function EditWorkstreamForm({
         required
         maxLength={150}
         defaultValue={name}
-        aria-label="Workstream name"
+        aria-label="Nama Workstream"
         className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
       />
       <input
@@ -98,7 +98,7 @@ export function EditWorkstreamForm({
         maxLength={500}
         defaultValue={description ?? ''}
         placeholder="Deskripsi"
-        aria-label="Workstream description"
+        aria-label="Deskripsi Workstream"
         className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
       />
       {state?.error && (
@@ -116,7 +116,7 @@ export function EditWorkstreamForm({
         disabled={pending}
         className="min-h-[44px] rounded-lg border px-4 py-2 text-sm font-semibold disabled:opacity-50"
       >
-        {pending ? 'Saving...' : 'Save'}
+        {pending ? 'Menyimpan...' : 'Simpan'}
       </button>
     </form>
   )
@@ -129,7 +129,7 @@ export function DeleteWorkstreamForm({ id }: { id: string }) {
     <form
       {...formAction}
       onSubmit={(e) => {
-        if (!window.confirm('Delete this workstream? This cannot be undone.')) {
+        if (!window.confirm('Hapus workstream ini? Tindakan ini tidak dapat dibatalkan.')) {
           e.preventDefault()
         }
       }}
@@ -141,7 +141,7 @@ export function DeleteWorkstreamForm({ id }: { id: string }) {
         disabled={pending}
         className="min-h-[44px] rounded-lg border border-red-300 px-3 py-2 text-sm font-semibold text-red-600 disabled:opacity-50 dark:border-red-700 dark:text-red-300"
       >
-        {pending ? 'Deleting...' : 'Delete'}
+        {pending ? 'Menghapus...' : 'Hapus'}
       </button>
       {state?.error && (
         <p role="alert" className="text-xs font-medium text-red-600">

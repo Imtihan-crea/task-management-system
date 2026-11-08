@@ -22,7 +22,7 @@ export async function ActivityTab({ projectId }: { projectId: string }) {
 
   return (
     <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
-      <h2 className="mb-3 text-lg font-bold">Project Activity</h2>
+      <h2 className="mb-3 text-lg font-bold">Activity Project</h2>
       <ActivityTimeline entries={projectActivity} actorNames={activityActors} />
     </section>
   )
@@ -61,9 +61,9 @@ export async function MembersTab({ projectId }: { projectId: string }) {
 
   return (
     <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
-      <h2 className="mb-3 text-lg font-bold">Members ({members.length})</h2>
+      <h2 className="mb-3 text-lg font-bold">Anggota ({members.length})</h2>
       {members.length === 0 ? (
-        <p className="text-sm text-zinc-500">No members yet.</p>
+        <p className="text-sm text-zinc-500">Belum ada anggota.</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {members.map((m) => (

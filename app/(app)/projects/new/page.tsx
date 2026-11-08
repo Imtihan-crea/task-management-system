@@ -11,9 +11,9 @@ export default async function NewProjectPage() {
   return (
     <AppShell>
       <Link href="/projects" className="text-sm font-medium text-zinc-500 hover:underline">
-        &larr; Back to Projects
+        &larr; Kembali ke Projects
       </Link>
-      <h1 className="mt-2 text-xl font-bold">Create Project</h1>
+      <h1 className="mt-2 text-xl font-bold">Buat Project</h1>
 
       <div className="mt-4 rounded-2xl bg-white p-4 shadow dark:bg-zinc-900">
         <ProjectForm mode="create" managers={managers} />

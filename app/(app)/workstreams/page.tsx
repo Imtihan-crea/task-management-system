@@ -93,12 +93,12 @@ export default async function WorkstreamsPage({
     <AppShell>
       <PageHeader
         title="Workstreams"
-        subtitle={`${workstreams.length} workstream${workstreams.length === 1 ? '' : 's'}`}
+        subtitle={`${workstreams.length} workstream`}
       />
 
       <form method="get" className="mt-4 flex flex-col gap-3 rounded-2xl bg-white p-4 shadow sm:flex-row sm:items-end dark:bg-zinc-900">
         <div className="flex-1">
-          <label htmlFor="q" className="mb-1 block text-sm font-medium">Search</label>
+          <label htmlFor="q" className="mb-1 block text-sm font-medium">Cari</label>
           <input
             id="q"
             name="q"
@@ -109,13 +109,13 @@ export default async function WorkstreamsPage({
           />
         </div>
         <button type="submit" className="min-h-[44px] rounded-lg bg-kasuat-gold px-5 py-2 font-semibold text-kasuat-black">
-          Apply
+          Terapkan
         </button>
       </form>
 
       {workstreams.length === 0 ? (
         <div className="mt-4">
-          <EmptyState title="No workstreams found." message="Workstreams are managed inside each project." />
+          <EmptyState title="Workstream tidak ditemukan." message="Workstream dikelola di dalam setiap Project." />
         </div>
       ) : (
         <>
@@ -123,8 +123,8 @@ export default async function WorkstreamsPage({
             <table className="w-full text-left text-sm">
               <thead className="border-b text-xs uppercase text-zinc-500">
                 <tr>
-                  <th scope="col" className="px-4 py-3">Code</th>
-                  <th scope="col" className="px-4 py-3">Name</th>
+                  <th scope="col" className="px-4 py-3">Kode</th>
+                  <th scope="col" className="px-4 py-3">Nama</th>
                   <th scope="col" className="px-4 py-3">Project</th>
                   <th scope="col" className="px-4 py-3">Tasks</th>
                 </tr>

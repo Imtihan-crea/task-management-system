@@ -146,7 +146,7 @@ export function LoginForm({ inactiveMessage }: { inactiveMessage?: string }) {
           )}
 
           <Button type="submit" disabled={loading} variant="primary" className="w-full">
-            {loading ? 'Loading...' : 'LOGIN'}
+            {loading ? 'Memuat...' : 'LOGIN'}
           </Button>
         </form>
       </div>

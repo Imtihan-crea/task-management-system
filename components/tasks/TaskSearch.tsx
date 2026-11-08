@@ -35,7 +35,7 @@ export function DebouncedTaskSearch({ initial }: { initial: string }) {
   return (
     <div role="search">
       <label htmlFor="task-search" className="mb-1 block text-sm font-medium">
-        Search
+        Cari
       </label>
       <input
         id="task-search"
