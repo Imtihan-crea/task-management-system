@@ -133,12 +133,16 @@ export async function runMeetingScheduler(now: Date = new Date()): Promise<{
     }
   }
 
-  // --- 2. Notes Reminder (COMPLETED kemarin + notes kosong) ---
+  // --- 2. Notes Reminder (COMPLETED sampai kemarin + notes kosong) ---
+  // Audit C16: bukan hanya meeting kemarin; meeting yang baru di-complete
+  // belakangan juga ikut. Dibatasi 30 hari terakhir; satu kali per meeting.
+  const since = shiftDays(today, -30) ?? yesterday
   const { data: completed, error: completedError } = await admin
     .from('meetings')
     .select('id, code, title, project_id, status, meeting_date, start_time, notes')
     .eq('status', 'COMPLETED')
-    .eq('meeting_date', yesterday)
+    .lte('meeting_date', yesterday)
+    .gte('meeting_date', since)
     .limit(500)
 
   if (completedError) {
@@ -152,12 +156,13 @@ export async function runMeetingScheduler(now: Date = new Date()): Promise<{
 
       const label = await projectLabel(m.project_id)
       const result = await emitNotification({
-        // Satu follow-up per meeting (§31). Key per hari = tidak spam.
-        key: `meeting-notes:${m.id}:${today}`,
+        // Satu follow-up per meeting (§31): key tanpa tanggal, jadi tidak
+        // dikirim ulang setiap hari selama notes masih kosong.
+        key: `meeting-notes:${m.id}`,
         type: 'MEETING_NOTES_PENDING',
         userIds,
         title: `Meeting ${m.code} needs notes`,
-        message: `"${m.title}" selesai kemarin dan belum ada notes.`,
+        message: `"${m.title}" (${m.meeting_date}) sudah selesai dan belum ada notes.`,
         entityType: 'meeting',
         entityId: m.id,
         email: {
