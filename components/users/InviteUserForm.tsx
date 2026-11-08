@@ -12,7 +12,7 @@ export function InviteUserForm() {
 
   return (
     <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
-      <h2 className="text-lg font-bold">Invite User</h2>
+      <h2 className="text-lg font-bold">Undang User</h2>
       <p className="mt-1 text-sm text-zinc-500">
         User menerima email untuk mengatur password sendiri. Admin tidak
         pernah melihat password.
@@ -21,7 +21,7 @@ export function InviteUserForm() {
       <form {...formAction} className="mt-4 flex flex-col gap-4">
         <div>
           <label htmlFor="full_name" className="mb-1 block text-sm font-medium">
-            Full Name <span aria-hidden="true">*</span>
+            Nama Lengkap <span aria-hidden="true">*</span>
           </label>
           <input
             id="full_name"
@@ -85,7 +85,7 @@ export function InviteUserForm() {
           disabled={pending}
           className="min-h-[44px] w-full rounded-lg bg-kasuat-gold px-4 py-2 font-semibold text-kasuat-black disabled:opacity-50 sm:w-auto"
         >
-          {pending ? 'Sending...' : 'Send Invitation'}
+          {pending ? 'Mengirim...' : 'Kirim Undangan'}
         </button>
       </form>
     </section>
@@ -106,7 +106,7 @@ export function CopyLinkBox({ link }: { link: string }) {
         <input
           readOnly
           value={link}
-          aria-label="One-time link"
+          aria-label="Link sekali pakai"
           className="min-h-[44px] flex-1 rounded-lg border bg-white px-3 py-2 text-xs dark:bg-zinc-800"
           onFocus={(e) => e.currentTarget.select()}
         />
@@ -117,7 +117,7 @@ export function CopyLinkBox({ link }: { link: string }) {
           }}
           className="min-h-[44px] rounded-lg bg-kasuat-gold px-4 py-2 text-sm font-semibold text-kasuat-black"
         >
-          Copy
+          Salin
         </button>
       </div>
     </div>

@@ -28,17 +28,17 @@ export default async function SettingsPage() {
 
   return (
     <AppShell>
-      <PageHeader title="Settings" subtitle="Pengaturan akun dan notifikasi." />
+      <PageHeader title="Pengaturan" subtitle="Pengaturan akun dan notifikasi." />
 
       <section className="mt-4 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
-        <h2 className="mb-2 text-lg font-bold">Account</h2>
+        <h2 className="mb-2 text-lg font-bold">Akun</h2>
         <dl>
           <div className="flex flex-col gap-0.5 border-b py-2.5 last:border-0 sm:flex-row sm:justify-between sm:gap-4">
             <dt className="text-sm text-zinc-500">Email</dt>
             <dd className="text-sm font-medium break-all">{profile.email}</dd>
           </div>
           <div className="flex flex-col gap-0.5 border-b py-2.5 last:border-0 sm:flex-row sm:justify-between sm:gap-4">
-            <dt className="text-sm text-zinc-500">Name</dt>
+            <dt className="text-sm text-zinc-500">Nama</dt>
             <dd className="text-sm font-medium">{profile.full_name || '-'}</dd>
           </div>
           <div className="flex flex-col gap-0.5 border-b py-2.5 last:border-0 sm:flex-row sm:justify-between sm:gap-4">
@@ -53,16 +53,16 @@ export default async function SettingsPage() {
         <p className="mt-3 text-sm text-zinc-500">
           Role dan status diatur oleh administrator. Ubah nama di{' '}
           <Link href="/profile" className="font-semibold text-kasuat-deep-gold hover:underline">
-            My Profile
+            Profil Saya
           </Link>
           .
         </p>
       </section>
 
       <section id="preferences" className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
-        <h2 className="mb-2 text-lg font-bold">Email Preferences</h2>
+        <h2 className="mb-2 text-lg font-bold">Preferensi Email</h2>
         <p className="mb-4 text-sm text-zinc-500">
-          In-app notifications always appear. Email can be turned off here.
+          Notifications di dalam aplikasi selalu muncul. Email dapat dimatikan di sini.
         </p>
         <PreferencesForm
           initial={{ user_id: profile.id, ...(prefs ?? DEFAULT_PREFS) }}

@@ -12,7 +12,7 @@ export function EditOwnNameForm({ fullName }: { fullName: string }) {
     <form {...formAction} className="flex flex-col gap-4">
       <div>
         <label htmlFor="full_name" className="mb-1 block text-sm font-medium">
-          Full Name
+          Nama Lengkap
         </label>
         <input
           id="full_name"
@@ -40,7 +40,7 @@ export function EditOwnNameForm({ fullName }: { fullName: string }) {
         disabled={pending}
         className="min-h-[44px] w-full rounded-lg bg-kasuat-gold px-4 py-2 font-semibold text-kasuat-black disabled:opacity-50 sm:w-auto"
       >
-        {pending ? 'Saving...' : 'Save'}
+        {pending ? 'Menyimpan...' : 'Simpan'}
       </button>
     </form>
   )

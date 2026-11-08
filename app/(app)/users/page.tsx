@@ -10,10 +10,10 @@ import type { ProfileListItem } from '@/types/profile'
 type SortKey = 'created_at' | 'full_name' | 'status' | 'role'
 
 const SORT_OPTIONS: { value: string; label: string }[] = [
-  { value: 'created_at.desc', label: 'Created Date (newest)' },
-  { value: 'created_at.asc', label: 'Created Date (oldest)' },
-  { value: 'full_name.asc', label: 'Name (A-Z)' },
-  { value: 'full_name.desc', label: 'Name (Z-A)' },
+  { value: 'created_at.desc', label: 'Tanggal Dibuat (terbaru)' },
+  { value: 'created_at.asc', label: 'Tanggal Dibuat (terlama)' },
+  { value: 'full_name.asc', label: 'Nama (A-Z)' },
+  { value: 'full_name.desc', label: 'Nama (Z-A)' },
   { value: 'status.asc', label: 'Status (A-Z)' },
   { value: 'role.asc', label: 'Role (A-Z)' },
 ]
@@ -75,10 +75,10 @@ export default async function UsersPage({
   return (
     <AppShell>
       <PageHeader
-        title="User Management"
+        title="Manajemen User"
         subtitle="Kelola user, role, dan status. Hanya ADMIN yang bisa akses halaman ini."
         actions={
-          <ButtonLink href="/users/new">+ Add User</ButtonLink>
+          <ButtonLink href="/users/new">+ Tambah User</ButtonLink>
         }
       />
 
@@ -89,7 +89,7 @@ export default async function UsersPage({
       >
         <div className="flex-1">
           <label htmlFor="q" className="mb-1 block text-sm font-medium">
-            Search
+            Cari
           </label>
           <input
             id="q"
@@ -111,7 +111,7 @@ export default async function UsersPage({
             defaultValue={roleFilter}
             className="min-h-[44px] rounded-lg border px-3 py-2 text-base outline-none focus:border-black dark:border-zinc-700 dark:bg-zinc-800"
           >
-            <option value="">All</option>
+            <option value="">Semua</option>
             {USER_ROLES.map((role) => (
               <option key={role} value={role}>
                 {ROLE_LABELS[role]}
@@ -130,7 +130,7 @@ export default async function UsersPage({
             defaultValue={statusFilter}
             className="min-h-[44px] rounded-lg border px-3 py-2 text-base outline-none focus:border-black dark:border-zinc-700 dark:bg-zinc-800"
           >
-            <option value="">All</option>
+            <option value="">Semua</option>
             {USER_STATUSES.map((status) => (
               <option key={status} value={status}>
                 {STATUS_LABELS[status]}
@@ -141,7 +141,7 @@ export default async function UsersPage({
 
         <div>
           <label htmlFor="sort" className="mb-1 block text-sm font-medium">
-            Sort
+            Urutkan
           </label>
           <select
             id="sort"
@@ -161,19 +161,19 @@ export default async function UsersPage({
           type="submit"
           className="min-h-[44px] rounded-lg bg-kasuat-gold px-5 py-2 font-semibold text-kasuat-black"
         >
-          Apply
+          Terapkan
         </button>
       </form>
 
       {error ? (
         <p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm font-medium text-red-700 dark:bg-red-950 dark:text-red-300">
-          Something went wrong. Please try again.
+          Terjadi kesalahan. Silakan coba lagi.
         </p>
       ) : users.length === 0 ? (
         <p className="mt-4 rounded-2xl bg-white p-8 text-center text-sm text-zinc-500 shadow dark:bg-zinc-900">
           {q || roleFilter || statusFilter
-            ? 'No users match your search or filter.'
-            : 'No users yet. Add your first user below.'}
+            ? 'Tidak ada User yang cocok dengan pencarian atau filter Anda.'
+            : 'Belum ada User. Tambahkan User pertama Anda di bawah.'}
         </p>
       ) : (
         <>
@@ -182,12 +182,12 @@ export default async function UsersPage({
             <table className="w-full text-left text-sm">
               <thead className="border-b text-xs uppercase text-zinc-500">
                 <tr>
-                  <th scope="col" className="px-4 py-3">Name</th>
+                  <th scope="col" className="px-4 py-3">Nama</th>
                   <th scope="col" className="px-4 py-3">Email</th>
                   <th scope="col" className="px-4 py-3">Role</th>
                   <th scope="col" className="px-4 py-3">Status</th>
-                  <th scope="col" className="px-4 py-3">Created</th>
-                  <th scope="col" className="px-4 py-3">Action</th>
+                  <th scope="col" className="px-4 py-3">Dibuat</th>
+                  <th scope="col" className="px-4 py-3">Aksi</th>
                 </tr>
               </thead>
               <tbody>
@@ -206,7 +206,7 @@ export default async function UsersPage({
                           href={`/users/${user.id}`}
                           className="inline-flex min-h-[44px] items-center rounded-lg border px-3 py-1 font-medium"
                         >
-                          View
+                          Lihat
                         </Link>
                         <div className="w-[140px]">
                           <StatusToggleForm
@@ -253,7 +253,7 @@ export default async function UsersPage({
                     href={`/users/${user.id}`}
                     className="inline-flex min-h-[44px] items-center rounded-lg border px-4 py-2 font-medium"
                   >
-                    View
+                    Lihat
                   </Link>
                   <div className="w-full max-w-[160px]">
                     <StatusToggleForm

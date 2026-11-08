@@ -52,7 +52,7 @@ export function ChangePasswordForm({ email }: { email: string }) {
           setError(
             friendlyPasswordError(
               updateError.message,
-              'Your session has expired. Please log in again.'
+              'Sesi Anda telah berakhir. Silakan Login kembali.'
             )
           )
           return
@@ -97,7 +97,7 @@ export function ChangePasswordForm({ email }: { email: string }) {
           <KasuatLogo height={36} />
         </div>
         <p className="mt-2 text-center font-heading text-2xl font-bold text-kasuat-black dark:text-zinc-100">
-          Change Password
+          Ubah Password
         </p>
         <p className="mt-1 text-center text-sm text-zinc-500">
           Masukkan password baru untuk {email}
@@ -106,7 +106,7 @@ export function ChangePasswordForm({ email }: { email: string }) {
         <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
           <div>
             <label htmlFor="new_password" className="mb-1 block text-sm font-medium">
-              New Password
+              Password Baru
             </label>
             <input
               id="new_password"
@@ -122,7 +122,7 @@ export function ChangePasswordForm({ email }: { email: string }) {
 
           <div>
             <label htmlFor="confirm_password" className="mb-1 block text-sm font-medium">
-              Confirm New Password
+              Konfirmasi Password Baru
             </label>
             <input
               id="confirm_password"
@@ -142,7 +142,7 @@ export function ChangePasswordForm({ email }: { email: string }) {
               onChange={(e) => setShow(e.target.checked)}
               className="h-4 w-4"
             />
-            Show password
+            Tampilkan Password
           </label>
 
           {error && (
@@ -156,7 +156,7 @@ export function ChangePasswordForm({ email }: { email: string }) {
             disabled={loading}
             className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-kasuat-gold px-4 py-2 text-sm font-semibold text-kasuat-black disabled:opacity-50"
           >
-            {loading ? 'Saving...' : 'Save New Password'}
+            {loading ? 'Menyimpan...' : 'Simpan Password Baru'}
           </button>
 
           <button
@@ -164,7 +164,7 @@ export function ChangePasswordForm({ email }: { email: string }) {
             onClick={handleLogout}
             className="text-sm font-medium text-zinc-500 hover:underline"
           >
-            Log out
+            Logout
           </button>
         </form>
       </div>

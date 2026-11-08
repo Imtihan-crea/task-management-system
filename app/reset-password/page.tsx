@@ -36,13 +36,13 @@ function readErrorFromHash(): string | null {
   const description = params.get('error_description')
 
   if (errorCode === 'otp_expired') {
-    return 'This password reset link has already been used or has expired. Request a new one from your administrator.'
+    return 'Link reset Password ini sudah dipakai atau kedaluwarsa. Minta yang baru dari administrator Anda.'
   }
 
   if (errorCode) {
     return description
       ? decodeURIComponent(description)
-      : 'This password reset link is no longer valid.'
+      : 'Link reset Password ini sudah tidak berlaku.'
   }
 
   return null
@@ -131,7 +131,7 @@ export default function ResetPasswordPage() {
 
       setLinkError(
         readErrorFromHash() ??
-          'This password reset link is invalid or has already been used.'
+          'Link reset Password ini tidak valid atau sudah dipakai.'
       )
       setPhase('invalid')
     }
@@ -164,7 +164,7 @@ export default function ResetPasswordPage() {
       setError(
         friendlyPasswordError(
           updateError.message,
-          'Your reset session expired. Please open the reset link again.'
+          'Sesi reset Anda telah berakhir. Silakan buka Link reset sekali lagi.'
         )
       )
       return
@@ -200,7 +200,7 @@ export default function ResetPasswordPage() {
 
         {phase === 'checking' && (
           <p className="mt-6 text-center text-sm text-zinc-500">
-            Checking your password reset link...
+            Memeriksa Link reset Password Anda...
           </p>
         )}
 
@@ -208,13 +208,13 @@ export default function ResetPasswordPage() {
           <div className="mt-6 text-center">
             <p className="text-sm font-medium text-red-600">{linkError}</p>
             <p className="mt-2 text-sm text-zinc-500">
-              Each reset link can only be opened once and expires after a while.
+              Setiap Link reset hanya dapat dibuka satu kali dan akan kedaluwarsa setelah beberapa waktu.
             </p>
             <a
               href="/login"
               className="mt-6 inline-flex min-h-[44px] items-center rounded-lg bg-black px-6 py-2 font-semibold text-white dark:bg-white dark:text-black"
             >
-              Go to Login
+              Ke halaman Login
             </a>
           </div>
         )}
@@ -224,17 +224,17 @@ export default function ResetPasswordPage() {
             <p className="mt-2 text-center text-sm text-zinc-500">
               {email ? (
                 <>
-                  Set a new password for <span className="font-medium">{email}</span>.
+                  Atur Password baru untuk <span className="font-medium">{email}</span>.
                 </>
               ) : (
-                'Set a new password for your account.'
+                'Atur Password baru untuk akun Anda.'
               )}
             </p>
 
             <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
               <div>
                 <label htmlFor="password" className="mb-1 block text-sm font-medium">
-                  New Password
+                  Password Baru
                 </label>
                 <input
                   id="password"
@@ -251,7 +251,7 @@ export default function ResetPasswordPage() {
 
               <div>
                 <label htmlFor="confirm" className="mb-1 block text-sm font-medium">
-                  Confirm New Password
+                  Konfirmasi Password Baru
                 </label>
                 <input
                   id="confirm"
@@ -273,7 +273,7 @@ export default function ResetPasswordPage() {
                   onChange={(e) => setShow(e.target.checked)}
                   className="h-4 w-4"
                 />
-                Show password
+                Tampilkan Password
               </label>
 
               {error && (
@@ -287,7 +287,7 @@ export default function ResetPasswordPage() {
                 disabled={phase === 'saving'}
                 className="min-h-[44px] w-full rounded-lg bg-kasuat-gold px-4 py-2 font-semibold text-kasuat-black disabled:opacity-50"
               >
-                {phase === 'saving' ? 'Saving...' : 'Save New Password'}
+                {phase === 'saving' ? 'Menyimpan...' : 'Simpan Password Baru'}
               </button>
             </form>
           </>

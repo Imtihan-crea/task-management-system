@@ -85,11 +85,11 @@ function readErrorFromUrl(): string | null {
   const description = params.get('error_description')
 
   if (errorCode === 'otp_expired') {
-    return 'This invitation link has already been used or has expired. Ask your administrator to send a new invitation.'
+    return 'Link undangan ini sudah dipakai atau kedaluwarsa. Minta administrator Anda mengirim undangan baru.'
   }
 
   if (errorCode) {
-    return description ? decodeURIComponent(description) : 'This invitation link is no longer valid.'
+    return description ? decodeURIComponent(description) : 'Link undangan ini sudah tidak berlaku.'
   }
 
   return null
@@ -133,7 +133,7 @@ export default function AcceptInvitePage() {
       if (!data.session) {
         setLinkError(
           readErrorFromUrl() ??
-            'This invitation link is invalid or has already been used.'
+            'Link undangan ini tidak valid atau sudah dipakai.'
         )
         setPhase('invalid')
         return
@@ -204,7 +204,7 @@ export default function AcceptInvitePage() {
       setError(
         friendlyPasswordError(
           updateError.message,
-          'Your invitation session expired. Please open the invitation link again.'
+          'Sesi undangan Anda telah berakhir. Silakan buka Link undangan sekali lagi.'
         )
       )
       return
@@ -221,7 +221,7 @@ export default function AcceptInvitePage() {
 
         {phase === 'checking' && (
           <p className="mt-6 text-center text-sm text-zinc-500">
-            Checking your invitation...
+            Memeriksa undangan Anda...
           </p>
         )}
 
@@ -229,27 +229,27 @@ export default function AcceptInvitePage() {
           <div className="mt-6 text-center">
             <p className="text-sm font-medium text-red-600">{linkError}</p>
             <p className="mt-2 text-sm text-zinc-500">
-              Each invitation link can only be opened once.
+              Setiap Link undangan hanya dapat dibuka satu kali.
             </p>
             <a
               href="/login"
               className="mt-6 inline-flex min-h-[44px] items-center rounded-lg bg-black px-6 py-2 font-semibold text-white dark:bg-white dark:text-black"
             >
-              Go to Login
+              Ke halaman Login
             </a>
           </div>
         )}
 
         {phase === 'already-active' && (
           <p className="mt-6 text-center text-sm font-medium text-green-600">
-            Account already activated. Redirecting to dashboard...
+            Akun sudah aktif. Mengalihkan ke Dashboard...
           </p>
         )}
 
         {(phase === 'ready' || phase === 'saving') && (
           <>
             <p className="mt-2 text-center text-sm text-zinc-500">
-              Welcome! Set your password to activate your account.
+              Selamat datang! Atur Password Anda untuk mengaktifkan akun.
             </p>
 
             <form onSubmit={handleSubmit} className="mt-6 flex flex-col gap-4">
@@ -275,7 +275,7 @@ export default function AcceptInvitePage() {
                   htmlFor="confirm"
                   className="mb-1 block text-sm font-medium"
                 >
-                  Confirm Password
+                  Konfirmasi Password
                 </label>
                 <input
                   id="confirm"
@@ -301,7 +301,7 @@ export default function AcceptInvitePage() {
                 disabled={phase === 'saving'}
                 className="min-h-[44px] w-full rounded-lg bg-kasuat-gold px-4 py-2 font-semibold text-kasuat-black disabled:opacity-50"
               >
-                {phase === 'saving' ? 'Activating...' : 'Set Password & Activate'}
+                {phase === 'saving' ? 'Mengaktifkan...' : 'Atur Password & Aktifkan'}
               </button>
             </form>
           </>
@@ -309,7 +309,7 @@ export default function AcceptInvitePage() {
 
         {phase === 'done' && (
           <p className="mt-6 text-center text-sm font-medium text-green-600">
-            Account activated. Redirecting to dashboard...
+            Akun aktif. Mengalihkan ke Dashboard...
           </p>
         )}
       </div>

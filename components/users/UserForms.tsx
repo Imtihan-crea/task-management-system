@@ -23,7 +23,7 @@ function SubmitButton({ pending, label }: { pending: boolean; label: string }) {
       disabled={pending}
       className="min-h-[44px] rounded-lg bg-kasuat-gold px-4 py-2 font-semibold text-kasuat-black disabled:opacity-50"
     >
-      {pending ? 'Saving...' : label}
+      {pending ? 'Menyimpan...' : label}
     </button>
   )
 }
@@ -36,7 +36,7 @@ export function StatusToggleForm({ user, isSelf = false }: { user: EditableUser;
   // Audit A7: user INVITED belum punya password; Activate membuatnya tidak
   // bisa login. Status INVITED hanya berubah saat user menerima undangan.
   if (user.status === 'INVITED') {
-    return <p className="text-sm text-zinc-500">Waiting for the user to accept the invitation.</p>
+    return <p className="text-sm text-zinc-500">Menunggu user menerima undangan.</p>
   }
   // Rule 05: akun sendiri tidak bisa dinonaktifkan; jangan tampilkan tombol (audit C5).
   if (isSelf) return null
@@ -50,7 +50,7 @@ export function StatusToggleForm({ user, isSelf = false }: { user: EditableUser;
         disabled={pending}
         className="min-h-[44px] rounded-lg border px-4 py-2 font-semibold disabled:opacity-50"
       >
-        {pending ? 'Saving...' : nextStatus === 'ACTIVE' ? 'Activate' : 'Deactivate'}
+        {pending ? 'Menyimpan...' : nextStatus === 'ACTIVE' ? 'Aktifkan' : 'Nonaktifkan'}
       </button>
       {state?.error && (
         <p role="alert" className="text-sm font-medium text-red-600">
@@ -76,7 +76,7 @@ export function EditUserForm({ user, isSelf }: { user: EditableUser; isSelf: boo
 
       <div>
         <label htmlFor="edit_full_name" className="mb-1 block text-sm font-medium">
-          Full Name
+          Nama Lengkap
         </label>
         <input
           id="edit_full_name"
@@ -100,7 +100,7 @@ export function EditUserForm({ user, isSelf }: { user: EditableUser; isSelf: boo
           className="w-full cursor-not-allowed rounded-lg border px-3 py-2 text-base opacity-60 dark:border-zinc-700 dark:bg-zinc-800"
         />
         <p className="mt-1 text-xs text-zinc-500">
-          Email tidak bisa diubah dari sini. Hubungi authentication provider.
+          Email tidak bisa diubah dari sini. Hubungi penyedia autentikasi.
         </p>
       </div>
 
@@ -145,11 +145,11 @@ export function EditUserForm({ user, isSelf }: { user: EditableUser; isSelf: boo
           <input type="hidden" name="status" value={user.status} />
         )}
         {isSelf && (
-          <p className="mt-1 text-xs text-zinc-500">You cannot change your own status.</p>
+          <p className="mt-1 text-xs text-zinc-500">Anda tidak dapat mengubah status Anda sendiri.</p>
         )}
         {!isSelf && user.status === 'INVITED' && (
           <p className="mt-1 text-xs text-zinc-500">
-            Changes when the user accepts the invitation.
+            Berubah saat user menerima undangan.
           </p>
         )}
       </div>
@@ -166,7 +166,7 @@ export function EditUserForm({ user, isSelf }: { user: EditableUser; isSelf: boo
       )}
 
       <div>
-        <SubmitButton pending={pending} label="Save Changes" />
+        <SubmitButton pending={pending} label="Simpan Perubahan" />
       </div>
     </form>
   )
@@ -186,10 +186,10 @@ export function AccessLinkForm({ user }: { user: EditableUser }) {
         className="min-h-[44px] rounded-lg border px-4 py-2 font-semibold disabled:opacity-50"
       >
         {pending
-          ? 'Creating...'
+          ? 'Membuat...'
           : user.status === 'INVITED'
-            ? 'New invitation link'
-            : 'Password reset link'}
+            ? 'Link undangan baru'
+            : 'Link reset Password'}
       </button>
       {state?.error && (
         <p role="alert" className="text-sm font-medium text-red-600">

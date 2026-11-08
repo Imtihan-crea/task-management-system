@@ -70,22 +70,22 @@ export default async function UserDetailPage({
         href="/users"
         className="text-sm font-medium text-zinc-500 hover:underline"
       >
-        &larr; Back to Users
+        &larr; Kembali ke Users
       </Link>
 
-      <h1 className="mt-2 text-2xl font-bold">User Detail</h1>
+      <h1 className="mt-2 text-2xl font-bold">Detail User</h1>
 
       <div className="mt-4 flex flex-col gap-6 lg:flex-row lg:items-start">
         <section className="flex-1 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
           <dl>
-            <Row label="Full Name" value={profile.full_name || '-'} />
+            <Row label="Nama Lengkap" value={profile.full_name || '-'} />
             <Row label="Email" value={profile.email} />
             <Row label="Role" value={ROLE_LABELS[profile.role]} />
             <Row label="Status" value={STATUS_LABELS[profile.status]} />
-            <Row label="Created Date" value={formatDate(profile.created_at)} />
+            <Row label="Tanggal Dibuat" value={formatDate(profile.created_at)} />
             <Row
-              label="Last Login"
-              value={lastLogin ? formatDate(lastLogin) : 'Never logged in'}
+              label="Login Terakhir"
+              value={lastLogin ? formatDate(lastLogin) : 'Belum pernah Login'}
             />
           </dl>
 
@@ -98,7 +98,7 @@ export default async function UserDetailPage({
         </section>
 
         <section className="flex-1 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
-          <h2 className="mb-4 text-lg font-bold">Edit User</h2>
+          <h2 className="mb-4 text-lg font-bold">Ubah User</h2>
           <EditUserForm user={profile} isSelf={viewer.id === profile.id} />
         </section>
       </div>

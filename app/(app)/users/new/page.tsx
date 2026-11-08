@@ -10,9 +10,9 @@ export default async function AddUserPage() {
   return (
     <AppShell>
       <Link href="/users" className="text-sm font-medium text-zinc-500 hover:underline">
-        &larr; Back to Users
+        &larr; Kembali ke Users
       </Link>
-      <h1 className="mt-2 text-xl font-bold">Add User</h1>
+      <h1 className="mt-2 text-xl font-bold">Tambah User</h1>
       <p className="mt-1 text-sm text-zinc-500">
         Dua cara: buat langsung dengan password (tanpa email), atau kirim
         undangan lewat email.

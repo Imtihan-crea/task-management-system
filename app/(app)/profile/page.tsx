@@ -33,7 +33,7 @@ export default async function ProfilePage() {
 
   return (
     <AppShell>
-      <h1 className="text-2xl font-bold">My Profile</h1>
+      <h1 className="text-2xl font-bold">Profil Saya</h1>
       <p className="mt-1 text-sm text-zinc-500">
         Anda hanya bisa mengubah nama sendiri. Role dan status diatur oleh
         administrator.
@@ -41,20 +41,20 @@ export default async function ProfilePage() {
 
       <div className="mt-4 flex flex-col gap-6 lg:flex-row lg:items-start">
         <section className="flex-1 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
-          <h2 className="mb-2 text-lg font-bold">Account</h2>
+          <h2 className="mb-2 text-lg font-bold">Akun</h2>
           <dl>
             <Row label="Email" value={profile.email} />
             <Row label="Role" value={ROLE_LABELS[profile.role]} />
             <Row label="Status" value={STATUS_LABELS[profile.status]} />
             <Row
-              label="Created Date"
+              label="Tanggal Dibuat"
               value={data?.created_at ? formatDate(data.created_at) : '-'}
             />
           </dl>
         </section>
 
         <section id="edit-name" className="flex-1 rounded-2xl bg-white p-5 shadow scroll-mt-20 dark:bg-zinc-900">
-          <h2 className="mb-4 text-lg font-bold">Edit Name</h2>
+          <h2 className="mb-4 text-lg font-bold">Ubah Nama</h2>
           <EditOwnNameForm fullName={profile.full_name ?? ''} />
         </section>
       </div>

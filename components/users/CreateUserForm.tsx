@@ -13,7 +13,7 @@ const INITIAL: UserFormState = undefined
  * Opsi 1 (3 Nov 2026): admin membuat user langsung dengan email + password
  * yang diketik admin. Tidak ada email undangan — user langsung ACTIVE.
  *
- * Opsional: "Require password change on first login" -> user wajib
+ * Opsional: "Wajib ganti Password saat Login pertama" -> user wajib
  * mengganti password sementara saat login pertama.
  */
 export function CreateUserForm() {
@@ -22,7 +22,7 @@ export function CreateUserForm() {
 
   return (
     <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
-      <h2 className="text-lg font-bold">Create User with Password</h2>
+      <h2 className="text-lg font-bold">Buat User dengan Password</h2>
       <p className="mt-1 text-sm text-zinc-500">
         User langsung aktif dan bisa login dengan password yang Anda ketik.
         Tidak ada email undangan yang dikirim — bagikan email &amp; password
@@ -81,7 +81,7 @@ export function CreateUserForm() {
                 onChange={(e) => setShow(e.target.checked)}
                 className="h-4 w-4"
               />
-              Show
+              Tampilkan
             </label>
           </div>
           <p className="mt-1 text-xs text-zinc-500">
@@ -116,7 +116,7 @@ export function CreateUserForm() {
             className="mt-1 h-4 w-4"
           />
           <span>
-            <span className="font-medium">Require password change on first login</span>
+            <span className="font-medium">Wajib ganti Password saat Login pertama</span>
             <span className="block text-xs text-zinc-500">
               Opsional. User harus mengganti password sementara sebelum bisa
               memakai aplikasi.
@@ -140,7 +140,7 @@ export function CreateUserForm() {
           disabled={pending}
           className="min-h-[44px] w-full rounded-lg bg-kasuat-gold px-4 py-2 font-semibold text-kasuat-black disabled:opacity-50 sm:w-auto"
         >
-          {pending ? 'Creating...' : 'Create User'}
+          {pending ? 'Membuat...' : 'Buat User'}
         </button>
       </form>
     </section>

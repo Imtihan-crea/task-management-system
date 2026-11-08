@@ -21,7 +21,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "Kasuat Task Management System",
-  description: "Kasuat internal task management system",
+  description: "Sistem Task Management internal Kasuat",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
