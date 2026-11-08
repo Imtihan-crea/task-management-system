@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import { AppShell } from '@/components/layout/AppShell'
 import { PriorityBadge, TaskStatusBadge, OverdueBadge } from '@/components/ui/Badges'
 import { formatDate, formatDateTime, showsOverdueBadge } from '@/lib/utils/dates'
@@ -116,8 +117,8 @@ export default async function TaskDetailPage({
     sourceBlock = { label: 'Import', href: null }
   }
 
-  // Activity timeline task ini.
-  const { data: activityData } = await admin
+  // Activity timeline task ini. Client user (RLS), sama dengan /activity (audit B3).
+  const { data: activityData } = await (await createClient())
     .from('activity_logs')
     .select('*')
     .eq('entity_type', 'task')

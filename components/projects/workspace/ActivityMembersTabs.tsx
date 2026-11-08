@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
+import { createClient } from '@/lib/supabase/server'
 import {
   ActivityTimeline,
   resolveActorNames,
@@ -6,9 +7,11 @@ import {
 } from '@/components/activity/ActivityTimeline'
 
 export async function ActivityTab({ projectId }: { projectId: string }) {
-  const admin = createAdminClient()
+  // Client user (RLS "Activity readable by scope"), sama dengan /activity
+  // (audit B3): log yang tidak boleh dibaca user tidak ikut tampil.
+  const supabase = await createClient()
 
-  const { data: activityData } = await admin
+  const { data: activityData } = await supabase
     .from('activity_logs')
     .select('*')
     .eq('project_id', projectId)
