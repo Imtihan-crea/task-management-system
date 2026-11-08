@@ -1,6 +1,7 @@
 import { Suspense } from 'react'
 import { requireProfile } from '@/lib/auth/session'
 import { createClient } from '@/lib/supabase/server'
+import { createAdminClient } from '@/lib/supabase/admin'
 import { AppShell } from '@/components/layout/AppShell'
 import { Tabs } from '@/components/ui/Tabs'
 import { SkeletonRows } from '@/components/ui/Skeleton'
@@ -75,6 +76,26 @@ async function ActivityResults({ filters }: { filters: ActivityFilters }) {
     .order('created_at', { ascending: false })
     .range(offset, offset + PAGE_SIZE - 1)
 
+  // Audit B17: filter actor di query (sebelum paginasi), bukan setelahnya.
+  if (actor) {
+    const like = `%${actor.replace(/[\\%_]/g, (c) => `\\${c}`)}%`
+    const admin = createAdminClient()
+    const [{ data: byName }, { data: byEmail }] = await Promise.all([
+      admin.from('profiles').select('id').ilike('full_name', like).limit(200),
+      admin.from('profiles').select('id').ilike('email', like).limit(200),
+    ])
+    const ids = [
+      ...new Set([...(byName ?? []), ...(byEmail ?? [])].map((r) => (r as { id: string }).id)),
+    ]
+    const system = 'system'.includes(actor.toLowerCase())
+    if (ids.length > 0) {
+      query = system
+        ? query.or(`actor_user_id.in.(${ids.join(',')}),actor_user_id.is.null`)
+        : query.in('actor_user_id', ids)
+    } else {
+      query = system ? query.is('actor_user_id', null) : query.eq('id', '00000000-0000-0000-0000-000000000000')
+    }
+  }
   if (entity) query = query.eq('entity_type', entity)
   if (action) query = query.eq('action', action)
   if (project) query = query.eq('project_id', project)
@@ -82,17 +103,8 @@ async function ActivityResults({ filters }: { filters: ActivityFilters }) {
   if (to) query = query.lte('created_at', `${to}T23:59:59`)
 
   const { data, error, count } = await query
-  let entries = (data ?? []) as ActivityEntry[]
+  const entries = (data ?? []) as ActivityEntry[]
   const total = count ?? 0
-
-  if (actor) {
-    const needle = actor.toLowerCase()
-    const names = await resolveActorNames(entries)
-    entries = entries.filter((e) => {
-      if (!e.actor_user_id) return 'system'.includes(needle)
-      return (names[e.actor_user_id] ?? '').toLowerCase().includes(needle)
-    })
-  }
 
   const actorNames = await resolveActorNames(entries)
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE))
