@@ -464,6 +464,30 @@ export async function createUserWithPassword(
 /* 18 - Edit User (Full Name + Role + Status)                          */
 /* ------------------------------------------------------------------ */
 
+/**
+ * Audit B13 [keputusan default: peringatan, tidak memblokir]: setelah user
+ * dinonaktifkan, beri tahu admin task terbuka dan jabatan PM yang ditinggal.
+ */
+async function deactivationNote(userId: string): Promise<string> {
+  const admin = createAdminClient()
+  const [{ count: openTasks }, { count: pmProjects }] = await Promise.all([
+    admin
+      .from('tasks')
+      .select('id', { count: 'exact', head: true })
+      .eq('assignee_id', userId)
+      .eq('is_deleted', false)
+      .not('status', 'in', '(DONE,CANCELLED)'),
+    admin
+      .from('project_managers')
+      .select('project_id', { count: 'exact', head: true })
+      .eq('user_id', userId),
+  ])
+  const parts: string[] = []
+  if (openTasks) parts.push(`${openTasks} open task(s)`)
+  if (pmProjects) parts.push(`PM of ${pmProjects} project(s)`)
+  return parts.length ? ` Still has ${parts.join(' and ')}: please reassign.` : ''
+}
+
 export async function updateUser(
   _prev: UserFormState,
   formData: FormData
@@ -559,10 +583,9 @@ export async function updateUser(
     })
   }
 
+  const note = statusChanged && status === 'INACTIVE' ? await deactivationNote(targetId) : ''
   return {
-    success: roleChanged
-      ? 'User role updated successfully.'
-      : 'User updated successfully.',
+    success: (roleChanged ? 'User role updated successfully.' : 'User updated successfully.') + note,
   }
 }
 
@@ -630,7 +653,10 @@ export async function setUserStatus(
   })
 
   return {
-    success: status === 'ACTIVE' ? 'User activated successfully.' : 'User deactivated successfully.',
+    success:
+      status === 'ACTIVE'
+        ? 'User activated successfully.'
+        : `User deactivated successfully.${await deactivationNote(targetId)}`,
   }
 }
 

@@ -54,10 +54,20 @@ export async function emitNotification(input: EmitInput): Promise<{
   emailsSent: number
 }> {
   const empty = { emitted: false, notifiedUsers: 0, emailsSent: 0 }
-  const userIds = [...new Set(input.userIds.filter(Boolean))]
-  if (userIds.length === 0) return empty
+  const requested = [...new Set(input.userIds.filter(Boolean))]
+  if (requested.length === 0) return empty
 
   const admin = createAdminClient()
+
+  // Hanya user ACTIVE (audit B13): user nonaktif/undangan tidak lagi
+  // menerima notifikasi cron atau notifikasi PM.
+  const { data: activeRows } = await admin
+    .from('profiles')
+    .select('id')
+    .in('id', requested)
+    .eq('status', 'ACTIVE')
+  const userIds = ((activeRows ?? []) as { id: string }[]).map((r) => r.id)
+  if (userIds.length === 0) return empty
 
   // 1. Klaim event. Kalau key sudah ada = duplicate → berhenti.
   const { error: claimError } = await admin
