@@ -30,6 +30,7 @@
     "e2e:write": "node scripts/e2e/write-flow.mjs",
     "e2e:cleanup": "node scripts/e2e/cleanup.mjs",
     "e2e:rbac": "node scripts/e2e/rbac.mjs",
+    "e2e:a3": "node scripts/e2e/a3-password.mjs",
     "test:user-status": "tsx tests/user-status.check.ts",
     "check:secrets": "node scripts/check-secrets.mjs",
     "test:db": "tsx tests/postgrest-or.check.ts",

@@ -3,8 +3,8 @@
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { completePasswordChange } from '@/app/actions/password'
-import { friendlyPasswordError, validateSelfPassword } from '@/lib/auth/password'
+import { setOwnPassword } from '@/app/actions/password'
+import { validateSelfPassword } from '@/lib/auth/password'
 import { KasuatLogo } from '@/components/brand/KasuatLogo'
 
 /**
@@ -14,8 +14,8 @@ import { KasuatLogo } from '@/components/brand/KasuatLogo'
  * "Require password change on first login", tapi user juga bisa membuka
  * /change-password kapan saja untuk mengganti password sendiri.
  *
- * Password diubah lewat sesi user (`supabase.auth.updateUser`), jadi
- * tidak ada admin/service-role yang menyentuh password baru.
+ * Password diset oleh server action `setOwnPassword` (audit A3), yang juga
+ * membersihkan flag; tidak ada jalur yang hanya menghapus flag.
  */
 export function ChangePasswordForm({ email }: { email: string }) {
   const router = useRouter()
@@ -24,10 +24,6 @@ export function ChangePasswordForm({ email }: { email: string }) {
   const [show, setShow] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
-  // Password sudah tersimpan tapi flag belum bersih: coba ulang tanpa
-  // updateUser lagi (Supabase menolak password yang sama).
-  // Disimpan nilainya: bila user mengetik password lain, simpan ulang.
-  const [savedPassword, setSavedPassword] = useState<string | null>(null)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -43,38 +39,21 @@ export function ChangePasswordForm({ email }: { email: string }) {
 
     try {
       const supabase = createClient()
-
-      if (savedPassword !== password) {
-        const { error: updateError } = await supabase.auth.updateUser({ password })
-
-        if (updateError) {
-          console.error('[change-password] updateUser failed:', updateError.message)
-          setError(
-            friendlyPasswordError(
-              updateError.message,
-              'Sesi Anda telah berakhir. Silakan Login kembali.'
-            )
-          )
-          return
-        }
-        setSavedPassword(password)
-      }
-
-      // Password minimal tersimpan di Supabase. Jangan panggil
-      // refreshSession() — rotasi refresh token bisa membuang sesi.
-      // Kirim access token ke server action supaya profil tetap ditemukan
-      // walau cookie sesi belum sempat terbaca.
+      // Kirim access token sebagai cadangan bila cookie sesi belum terbaca.
       const { data: sessionData } = await supabase.auth.getSession()
-      const result = await completePasswordChange(sessionData.session?.access_token)
+      const result = await setOwnPassword(password, sessionData.session?.access_token)
       if (result.error) {
         // Audit B18: jangan redirect (halaman akan kembali ke sini tanpa
         // penjelasan); tampilkan pesannya.
-        console.error('[change-password] completePasswordChange:', result.error)
+        console.error('[change-password] setOwnPassword:', result.error)
         setError(result.error)
         return
       }
 
-      router.push('/dashboard')
+      // Ganti password di server mencabut sesi lama; masuk lagi dengan
+      // password baru supaya user tetap di aplikasi.
+      const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
+      router.push(signInError ? '/login' : '/dashboard')
       router.refresh()
     } catch {
       setError('Terjadi kesalahan. Silakan coba lagi.')

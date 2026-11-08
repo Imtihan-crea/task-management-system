@@ -3,8 +3,8 @@
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
-import { completePasswordChange } from '@/app/actions/password'
-import { MIN_SELF_PASSWORD_LENGTH, validateSelfPassword, friendlyPasswordError } from '@/lib/auth/password'
+import { setOwnPassword } from '@/app/actions/password'
+import { MIN_SELF_PASSWORD_LENGTH, validateSelfPassword } from '@/lib/auth/password'
 
 type Phase = 'checking' | 'ready' | 'invalid' | 'saving'
 
@@ -61,7 +61,7 @@ function readErrorFromHash(): string | null {
  * 3. `?code=...` (PKCE)
  *
  * Setelah session terbentuk, user mengisi password baru (minimal 8 karakter).
- * Password diubah lewat sesi user sendiri, bukan service role.
+ * Password diset oleh server action `setOwnPassword` (audit A3).
  */
 export default function ResetPasswordPage() {
   const router = useRouter()
@@ -156,31 +156,14 @@ export default function ResetPasswordPage() {
     setPhase('saving')
 
     const supabase = createClient()
-    const { error: updateError } = await supabase.auth.updateUser({ password })
-
-    if (updateError) {
-      console.error('[reset-password] updateUser failed:', updateError.message)
-      setPhase('ready')
-      setError(
-        friendlyPasswordError(
-          updateError.message,
-          'Sesi reset Anda telah berakhir. Silakan buka Link reset sekali lagi.'
-        )
-      )
-      return
-    }
-
-    // JANGAN panggil refreshSession() di sini. Pada sesi hasil link recovery,
-    // rotasi refresh token bisa membuat sesi terbuang, lalu server action
-    // mengira sesi sudah habis padahal password sudah tersimpan.
     const { data: sessionData } = await supabase.auth.getSession()
-    const result = await completePasswordChange(sessionData.session?.access_token)
+    const result = await setOwnPassword(password, sessionData.session?.access_token)
 
     if (result.error) {
-      // Password SUDAH tersimpan. Jangan suruh user mengulang reset —
-      // cukup catat; guard /change-password akan menangani kalau flag
-      // must_change_password belum sempat dibersihkan.
-      console.error('[reset-password] completePasswordChange:', result.error)
+      console.error('[reset-password] setOwnPassword:', result.error)
+      setPhase('ready')
+      setError(result.error)
+      return
     }
 
     try {
@@ -189,7 +172,11 @@ export default function ResetPasswordPage() {
       // sessionStorage bisa diblokir; tidak masalah.
     }
 
-    router.push('/dashboard')
+    // Ganti password di server mencabut sesi lama; masuk lagi dengan password baru.
+    const { error: signInError } = email
+      ? await supabase.auth.signInWithPassword({ email, password })
+      : { error: new Error('no email') }
+    router.push(signInError ? '/login' : '/dashboard')
     router.refresh()
   }
 

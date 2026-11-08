@@ -29,6 +29,7 @@ export E2E_CONFIRM_PRODUCTION=ya
 npm run e2e:smoke     # baca-saja: buka semua halaman admin
 npm run e2e:write     # 14 langkah alur tulis (project -> task -> usulan -> meeting -> nonaktifkan user)
 npm run e2e:rbac      # matriks hak akses per role (hasil: tabel di konsol + ~/.cache/taskmgmt-smoke/rbac-result.json)
+npm run e2e:a3       # ganti password paksa + link reset (audit A3)
 npm run e2e:cleanup   # hapus sisa data UJI-E2E (jika run terputus)
 ```
 

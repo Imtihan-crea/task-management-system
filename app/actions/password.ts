@@ -1,12 +1,14 @@
 'use server'
 
-import { revalidatePath } from 'next/cache'
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
 import { getCurrentProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { logActivity } from '@/lib/activity-log/service'
+import { friendlyPasswordError, validateSelfPassword } from '@/lib/auth/password'
 
 export type PasswordChangeResult = { error?: string; success?: boolean }
+
+const SESSION_EXPIRED = 'Sesi Anda telah berakhir. Silakan Login kembali.'
 
 type ActorProfile = { id: string; email: string; status: string }
 
@@ -54,24 +56,37 @@ async function resolveActor(accessToken?: string): Promise<ActorProfile | null> 
 }
 
 /**
- * Dipanggil SETELAH user berhasil `supabase.auth.updateUser({ password })`
- * di browser (3 Nov 2026, diperluas 5 Nov 2026 untuk link recovery).
+ * Satu-satunya jalan mengganti password sendiri (audit A3, 9 Nov 2026).
  *
- * Password-nya sendiri diubah lewat sesi user (bukan service role), jadi
- * admin tidak pernah bisa melihat password baru. Di sini kita hanya
- * membersihkan flag `must_change_password` milik user tersebut.
+ * Dulu browser memanggil `auth.updateUser` lalu action yang hanya menghapus
+ * flag `must_change_password`; action itu bisa dipanggil langsung tanpa
+ * mengganti password. Sekarang password diset di server (service role) dan
+ * flag dibersihkan hanya setelah penggantian berhasil. Password tidak pernah
+ * dicatat ke log.
  */
-export async function completePasswordChange(
+export async function setOwnPassword(
+  password: string,
   accessToken?: string
 ): Promise<PasswordChangeResult> {
+  const fieldError = validateSelfPassword(password, password)
+  if (fieldError) return { error: fieldError }
+
   const profile = await resolveActor(accessToken)
 
-  if (!profile) return { error: 'Sesi Anda telah berakhir. Silakan Login kembali.' }
+  if (!profile) return { error: SESSION_EXPIRED }
   if (profile.status !== 'ACTIVE') {
     return { error: 'Akun Anda nonaktif. Silakan hubungi administrator.' }
   }
 
   const admin = createAdminClient()
+  const { error: authError } = await admin.auth.admin.updateUserById(profile.id, {
+    password,
+  })
+  if (authError) {
+    console.error('[change-password] updateUserById failed:', authError.message)
+    return { error: friendlyPasswordError(authError.message, SESSION_EXPIRED) }
+  }
+
   const { error } = await admin
     .from('profiles')
     .update({ must_change_password: false })
@@ -98,8 +113,8 @@ export async function completePasswordChange(
     metadata: { password_changed: true },
   })
 
-  revalidatePath('/dashboard')
-  revalidatePath('/users')
+  // Tanpa revalidatePath: sesi lama sudah dicabut, jadi refresh halaman oleh
+  // action akan melempar ke /login sebelum klien sempat masuk lagi.
 
   return { success: true }
 }

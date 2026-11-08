@@ -12,6 +12,8 @@ import {
   friendlyPasswordError,
 } from '../lib/auth/password'
 
+import { readFileSync } from 'node:fs'
+
 let ok = 0
 let gagal = 0
 
@@ -52,6 +54,12 @@ cek('sesi habis', friendlyPasswordError('Auth session missing!', EXP), EXP)
 cek('rate limit', friendlyPasswordError('For security purposes, you can only request this after 30 seconds.', EXP), 'Terlalu banyak percobaan. Tunggu semenit lalu coba lagi.')
 cek('jenis karakter', friendlyPasswordError('Password should contain at least one character of each: abc', EXP), 'Password harus berisi huruf besar dan kecil, angka, dan simbol.')
 cek('tak dikenal -> generik', friendlyPasswordError('xyz', EXP), 'Tidak dapat mengubah Password. Silakan coba lagi.')
+
+// Guard A3: action password harus mengganti password SEBELUM menghapus flag
+const act = readFileSync('app/actions/password.ts', 'utf8')
+cek('tidak ada export hapus-flag saja', /export async function completePasswordChange/.test(act), false)
+cek('setOwnPassword diekspor', /export async function setOwnPassword/.test(act), true)
+cek('updateUserById sebelum hapus flag', act.indexOf('updateUserById') > 0 && act.indexOf('updateUserById') < act.indexOf('must_change_password: false'), true)
 
 console.log(`LULUS: ${ok}`)
 console.log(`GAGAL: ${gagal}`)
