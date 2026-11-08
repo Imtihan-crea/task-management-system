@@ -3,6 +3,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { PriorityBadge, TaskStatusBadge, OverdueBadge } from '@/components/ui/Badges'
 import { showsOverdueBadge } from '@/lib/utils/dates'
 import type { TaskStatus } from '@/types/task'
+import type { UserRole } from '@/types/profile'
 
 type TaskRow = {
   id: string
@@ -21,12 +22,28 @@ export async function TasksTab({
   projectId,
   canCreate,
   filters,
+  viewer,
 }: {
   projectId: string
   canCreate: boolean
   filters: { ws: string; status: string; priority: string }
+  /** Audit B1: daftar dan link mengikuti aturan baca /tasks/[id]. */
+  viewer: { id: string; role: UserRole; managesProject: boolean }
 }) {
   const admin = createAdminClient()
+
+  let taskQuery = admin
+    .from('tasks')
+    .select('id, code, title, workstream_id, assignee_id, priority, status, deadline, completed_at, cancelled_at')
+    .eq('project_id', projectId)
+    .eq('is_deleted', false)
+  // TEAM_MEMBER hanya task miliknya (sama dengan /tasks).
+  if (viewer.role === 'TEAM_MEMBER') taskQuery = taskQuery.eq('assignee_id', viewer.id)
+  // PM project lain hanya bisa membuka task yang di-assign kepadanya.
+  const rowCls =
+    'flex flex-col gap-1 rounded-xl border p-3 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-700'
+  const canOpen = (t: TaskRow) =>
+    viewer.role !== 'PROJECT_MANAGER' || viewer.managesProject || t.assignee_id === viewer.id
 
   const [{ data: workstreams }, { data: tasks }] = await Promise.all([
     admin
@@ -34,13 +51,7 @@ export async function TasksTab({
       .select('id, code, name')
       .eq('project_id', projectId)
       .order('created_at', { ascending: true }),
-    admin
-      .from('tasks')
-      .select('id, code, title, workstream_id, assignee_id, priority, status, deadline, completed_at, cancelled_at')
-      .eq('project_id', projectId)
-      .eq('is_deleted', false)
-      .order('deadline', { ascending: true })
-      .limit(500),
+    taskQuery.order('deadline', { ascending: true }).limit(500),
   ])
 
   const wsList = (workstreams ?? []) as { id: string; code: string; name: string }[]
@@ -157,12 +168,9 @@ export async function TasksTab({
         <p className="mt-3 text-sm text-zinc-500">No tasks yet.</p>
       ) : (
         <ul className="mt-3 flex flex-col gap-2">
-          {visibleTasks.map((task) => (
-            <li key={task.id}>
-              <Link
-                href={`/tasks/${task.id}`}
-                className="flex flex-col gap-1 rounded-xl border p-3 hover:bg-zinc-50 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-700 dark:hover:bg-zinc-800"
-              >
+          {visibleTasks.map((task) => {
+            const body = (
+              <>
                 <div className="min-w-0">
                   <p className="truncate font-medium">
                     <span className="mr-2 rounded-md bg-zinc-100 px-1.5 py-0.5 font-mono text-xs dark:bg-zinc-800">
@@ -180,9 +188,20 @@ export async function TasksTab({
                   <TaskStatusBadge status={task.status} />
                   {showsOverdueBadge(task.deadline, task.status, task.completed_at, task.cancelled_at) && <OverdueBadge />}
                 </div>
-              </Link>
-            </li>
-          ))}
+              </>
+            )
+            return (
+              <li key={task.id}>
+                {canOpen(task) ? (
+                  <Link href={`/tasks/${task.id}`} className={`${rowCls} hover:bg-zinc-50 dark:hover:bg-zinc-800`}>
+                    {body}
+                  </Link>
+                ) : (
+                  <div className={rowCls}>{body}</div>
+                )}
+              </li>
+            )
+          })}
         </ul>
       )}
     </section>

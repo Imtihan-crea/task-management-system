@@ -62,7 +62,7 @@ task terbuka milik user nonaktif, tidak ada task terbuka di project tertutup.
 
 | # | Area | Lokasi | Masalah | Usulan | Bukti |
 | --- | --- | --- | --- | --- | --- |
-| B1 | Project/RBAC | `components/projects/workspace/TasksTab.tsx:35-41,163` | TEAM/VIEWER/PM non-owner melihat semua task project (judul, assignee); link detail 404. | Filter per role seperti `/tasks`, atau tanpa link. | AUDIT |
+| B1 | Project/RBAC | `components/projects/workspace/TasksTab.tsx:35-41,163` | TEAM/VIEWER/PM non-owner melihat semua task project (judul, assignee); link detail 404. | Filter per role seperti `/tasks`, atau tanpa link. | DIPERBAIKI: TEAM_MEMBER hanya task miliknya; PM project lain tanpa link kecuali task miliknya |
 | B2 | Project/RBAC | `app/(app)/projects/[id]/page.tsx:116-128,220` | PM non-owner melihat semua suggestion project + tombol "+ Suggest Task" yang pasti ditolak; link 404. | Tampilkan hanya untuk pemilik project / filter `suggested_by`. | AUDIT |
 | B3 | RBAC | `components/projects/workspace/ActivityMembersTabs.tsx:12`, `app/(app)/tasks/[id]/page.tsx:118` | Tab Activity project/timeline task memakai admin client tanpa scope; log yang ditutup RLS di `/activity` tetap terbaca. | Pakai user client (RLS) seperti `/activity`. | AUDIT |
 | B4 | Meeting | `components/meetings/detail/WorkspaceForms.tsx:424`, `lib/meetings/rules.ts:124` | Tombol "Create Task" di action item tampil lalu pasti gagal untuk meeting tanpa project / PM bukan pemilik. | Ikutkan syarat project + PM di `canCreateTaskFromMeeting`. | AUDIT |

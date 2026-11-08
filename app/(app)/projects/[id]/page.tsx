@@ -183,6 +183,7 @@ export default async function ProjectDetailPage({
               projectId={id}
               canCreate={can(profile.role, 'tasks.create') && canEditThis}
               filters={{ ws: fWs, status: fStatus, priority: fPriority }}
+              viewer={{ id: profile.id, role: profile.role, managesProject: isOwner }}
             />
           </Suspense>
         )}
