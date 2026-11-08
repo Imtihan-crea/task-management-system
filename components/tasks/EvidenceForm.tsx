@@ -20,7 +20,7 @@ export function EvidenceForm({
     <div className="flex flex-col gap-2">
       {current ? (
         <p className="text-sm">
-          Current:{' '}
+          Saat ini:{' '}
           <a
             href={current}
             target="_blank"
@@ -31,14 +31,14 @@ export function EvidenceForm({
           </a>
         </p>
       ) : (
-        <p className="text-sm text-zinc-500">No evidence yet.</p>
+        <p className="text-sm text-zinc-500">Belum ada Evidence.</p>
       )}
 
       {canSubmit && (
         <form {...formAction} className="flex flex-col gap-2">
           <input type="hidden" name="id" value={id} />
           <label htmlFor="evidence_url" className="text-sm font-medium">
-            Submit Evidence (link)
+            Submit Evidence (Link)
           </label>
           <div className="flex flex-col gap-2 sm:flex-row">
             <input
@@ -56,7 +56,7 @@ export function EvidenceForm({
               disabled={pending}
               className="min-h-[44px] rounded-lg bg-kasuat-gold px-4 py-2 font-semibold text-kasuat-black disabled:opacity-50"
             >
-              {pending ? 'Saving...' : 'Save'}
+              {pending ? 'Menyimpan...' : 'Simpan'}
             </button>
           </div>
           {state?.error && (

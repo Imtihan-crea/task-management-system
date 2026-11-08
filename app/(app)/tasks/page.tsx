@@ -60,10 +60,10 @@ export default async function TasksPage({
         subtitle="Kelola semua task, pantau progress, dan pastikan semua selesai tepat waktu."
         actions={
           <>
-            {canCreate && <ButtonLink href="/tasks/new">+ Add Task</ButtonLink>}
+            {canCreate && <ButtonLink href="/tasks/new">+ Tambah Task</ButtonLink>}
             {can(profile.role, 'suggestions.create') && (
               <ButtonLink href="/task-suggestions/new" variant="secondary">
-                + Suggest Task
+                + Usulkan Task
               </ButtonLink>
             )}
           </>

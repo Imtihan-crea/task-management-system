@@ -26,7 +26,7 @@ export function ChangeStatusForm({
     <form {...formAction} className="flex flex-col gap-2">
       <input type="hidden" name="id" value={id} />
       <label htmlFor="status_change" className="text-sm font-medium">
-        Change Status
+        Ubah Status
       </label>
       <div className="flex flex-col gap-2 sm:flex-row">
         <select
@@ -47,7 +47,7 @@ export function ChangeStatusForm({
           disabled={pending}
           className="min-h-[44px] rounded-lg bg-kasuat-gold px-4 py-2 font-semibold text-kasuat-black disabled:opacity-50"
         >
-          {pending ? 'Saving...' : 'Update'}
+          {pending ? 'Menyimpan...' : 'Perbarui'}
         </button>
       </div>
       {state?.error && (
@@ -96,7 +96,7 @@ export function SubmitTaskForm({ id }: { id: string }) {
         disabled={pending}
         className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
       >
-        {pending ? 'Submitting...' : 'Submit as Done'}
+        {pending ? 'Mengirim...' : 'Submit sebagai Done'}
       </button>
       <SubmitStateMessage state={state} />
     </form>
@@ -110,7 +110,7 @@ export function CancelTaskForm({ id }: { id: string }) {
     <form
       {...formAction}
       onSubmit={(e) => {
-        if (!window.confirm('Cancel this task? It will be locked like done tasks.')) {
+        if (!window.confirm('Batalkan task ini? Task akan terkunci seperti task yang sudah Done.')) {
           e.preventDefault()
         }
       }}
@@ -122,7 +122,7 @@ export function CancelTaskForm({ id }: { id: string }) {
         disabled={pending}
         className="inline-flex min-h-[44px] items-center justify-center rounded-lg border border-zinc-400 px-4 py-2 text-sm font-semibold text-zinc-600 disabled:opacity-50 dark:border-zinc-600 dark:text-zinc-300"
       >
-        {pending ? 'Cancelling...' : 'Cancel Task'}
+        {pending ? 'Membatalkan...' : 'Batalkan Task'}
       </button>
       <SubmitStateMessage state={state} />
     </form>
@@ -136,7 +136,7 @@ export function DeleteTaskForm({ id }: { id: string }) {
     <form
       {...formAction}
       onSubmit={(e) => {
-        if (!window.confirm('Delete this task? It will be hidden from lists.')) {
+        if (!window.confirm('Hapus task ini? Task akan disembunyikan dari daftar.')) {
           e.preventDefault()
         }
       }}
@@ -148,7 +148,7 @@ export function DeleteTaskForm({ id }: { id: string }) {
         disabled={pending}
         className="min-h-[44px] rounded-lg border border-red-300 px-4 py-2 font-semibold text-red-600 disabled:opacity-50 dark:border-red-700 dark:text-red-300"
       >
-        {pending ? 'Deleting...' : 'Delete Task'}
+        {pending ? 'Menghapus...' : 'Hapus Task'}
       </button>
       {state?.error && (
         <p role="alert" className="text-sm font-medium text-red-600">

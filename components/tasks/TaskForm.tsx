@@ -51,7 +51,7 @@ export function TaskForm({
 
       <div>
         <label htmlFor="task_title" className="mb-1 block text-sm font-medium">
-          Task Name <span aria-hidden="true">*</span>
+          Nama Task <span aria-hidden="true">*</span>
         </label>
         <input
           id="task_title"
@@ -66,7 +66,7 @@ export function TaskForm({
 
       <div>
         <label htmlFor="task_desc" className="mb-1 block text-sm font-medium">
-          Description
+          Deskripsi
         </label>
         <textarea
           id="task_desc"
@@ -111,7 +111,7 @@ export function TaskForm({
             defaultValue={values.workstream_id ?? ''}
             className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
           >
-            <option value="">— None —</option>
+            <option value="">— Tidak ada —</option>
             {filteredWorkstreams.map((w) => (
               <option key={w.id} value={w.id}>
                 {w.code} · {w.name}
@@ -135,7 +135,7 @@ export function TaskForm({
           <option value="">— Pilih —</option>
           {/* Assignee lama nonaktif tetap terlihat, tidak hilang diam-diam (audit C11). */}
           {values.assignee_id && !users.some((u) => u.id === values.assignee_id) && (
-            <option value={values.assignee_id}>Current assignee (inactive)</option>
+            <option value={values.assignee_id}>Assignee saat ini (nonaktif)</option>
           )}
           {users.map((u) => (
             <option key={u.id} value={u.id}>
@@ -148,7 +148,7 @@ export function TaskForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="task_priority" className="mb-1 block text-sm font-medium">
-            Priority <span aria-hidden="true">*</span>
+            Prioritas <span aria-hidden="true">*</span>
           </label>
           <select
             id="task_priority"
@@ -177,7 +177,7 @@ export function TaskForm({
                 Task yang sudah selesai: status lama jadi pilihan default,
                 memilih status terbuka berarti membuka ulang (reopen). */}
             {(values.status === 'DONE' || values.status === 'CANCELLED') && (
-              <option value={values.status}>{values.status} (unchanged)</option>
+              <option value={values.status}>{values.status} (tidak diubah)</option>
             )}
             {OPEN_TASK_STATUSES.map((s) => (
               <option key={s} value={s}>
@@ -191,7 +191,7 @@ export function TaskForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="task_start" className="mb-1 block text-sm font-medium">
-            Start Date
+            Tanggal Mulai
           </label>
           <input
             id="task_start"
@@ -232,7 +232,7 @@ export function TaskForm({
         disabled={pending}
         className="min-h-[44px] w-full rounded-lg bg-kasuat-gold px-4 py-2 font-semibold text-kasuat-black disabled:opacity-50 sm:w-auto"
       >
-        {pending ? 'Saving...' : mode === 'create' ? 'Create Task' : 'Save Changes'}
+        {pending ? 'Menyimpan...' : mode === 'create' ? 'Buat Task' : 'Simpan Perubahan'}
       </button>
     </form>
   )

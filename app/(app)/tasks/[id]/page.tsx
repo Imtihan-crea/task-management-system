@@ -113,7 +113,7 @@ export default async function TaskDetailPage({
       .maybeSingle<{ id: string; code: string; title: string }>()
     sourceBlock = meeting
       ? { label: `Meeting ${meeting.code} · ${meeting.title}`, href: `/meetings/${meeting.id}` }
-      : { label: 'Meeting (deleted)', href: null }
+      : { label: 'Meeting (dihapus)', href: null }
   } else if (task.source_type === 'SUGGESTION' && task.source_id) {
     const { data: suggestion } = await admin
       .from('task_suggestions')
@@ -122,7 +122,7 @@ export default async function TaskDetailPage({
       .maybeSingle<{ id: string; code: string; title: string }>()
     sourceBlock = suggestion
       ? { label: `Suggestion ${suggestion.code} · ${suggestion.title}`, href: `/task-suggestions/${suggestion.id}` }
-      : { label: 'Suggestion (deleted)', href: null }
+      : { label: 'Suggestion (dihapus)', href: null }
   } else if (task.source_type === 'IMPORT') {
     sourceBlock = { label: 'Import', href: null }
   }
@@ -141,7 +141,7 @@ export default async function TaskDetailPage({
   return (
     <AppShell>
       <Link href="/tasks" className="text-sm font-medium text-zinc-500 hover:underline">
-        &larr; Back to Tasks
+        &larr; Kembali ke Tasks
       </Link>
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -156,40 +156,40 @@ export default async function TaskDetailPage({
 
       <div className="mt-4 grid gap-6 lg:grid-cols-2 lg:items-start">
         <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
-          <h2 className="mb-2 text-lg font-bold">Task Detail</h2>
+          <h2 className="mb-2 text-lg font-bold">Detail Task</h2>
           <dl>
             <Row label="Project" value={project ? `${project.code} · ${project.name}` : '-'} />
             <Row label="Workstream" value={workstream ? `${workstream.code} · ${workstream.name}` : '-'} />
-            <Row label="Description" value={task.description || '-'} />
+            <Row label="Deskripsi" value={task.description || '-'} />
             <Row
               label="Assignee"
               value={assignee ? assignee.full_name || assignee.email : '-'}
             />
             <Row
-              label="Created By"
+              label="Dibuat Oleh"
               value={creator ? creator.full_name || creator.email : '-'}
             />
-            <Row label="Priority" value={task.priority} />
+            <Row label="Prioritas" value={task.priority} />
             <Row label="Status" value={task.status.replace('_', ' ')} />
-            <Row label="Start Date" value={formatDate(task.start_date)} />
+            <Row label="Tanggal Mulai" value={formatDate(task.start_date)} />
             <Row label="Deadline" value={formatDate(task.deadline)} />
             {task.status === 'DONE' && (
-              <Row label="Submitted Date" value={formatDateTime(task.completed_at)} />
+              <Row label="Tanggal Submit" value={formatDateTime(task.completed_at)} />
             )}
             {task.status === 'CANCELLED' && (
-              <Row label="Canceled Date" value={formatDateTime(task.cancelled_at)} />
+              <Row label="Tanggal Dibatalkan" value={formatDateTime(task.cancelled_at)} />
             )}
           </dl>
 
           {sourceBlock && (
             <div className="mt-4 border-t pt-4 dark:border-zinc-700">
-              <h3 className="mb-2 text-base font-bold">Source</h3>
+              <h3 className="mb-2 text-base font-bold">Sumber</h3>
               {sourceBlock.href ? (
                 <Link
                   href={sourceBlock.href}
                   className="text-sm font-medium text-kasuat-deep-gold hover:underline"
                 >
-                  {sourceBlock.label} — View
+                  {sourceBlock.label} — Lihat
                 </Link>
               ) : (
                 <p className="text-sm text-zinc-500">{sourceBlock.label}</p>
@@ -202,7 +202,7 @@ export default async function TaskDetailPage({
               !canFullEdit && (
                 <div className="mt-4 border-t pt-4 dark:border-zinc-700">
                   <p className="text-sm text-zinc-500">
-                    This task is locked. Ask a PM or Admin to make changes.
+                    Task ini terkunci. Minta PM atau Admin untuk mengubahnya.
                   </p>
                 </div>
               )
@@ -248,7 +248,7 @@ export default async function TaskDetailPage({
 
         {canFullEdit && (
           <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
-            <h2 className="mb-4 text-lg font-bold">Edit Task</h2>
+            <h2 className="mb-4 text-lg font-bold">Ubah Task</h2>
             <TaskForm
               mode="edit"
               projects={(projectsRes.data ?? []) as { id: string; code: string; name: string }[]}

@@ -3,11 +3,11 @@ import { DebouncedTaskSearch } from '@/components/tasks/TaskSearch'
 import type { TaskTabKey } from '@/components/tasks/TaskTabs'
 
 const SORT_OPTIONS = [
-  { value: 'deadline.asc', label: 'Deadline (nearest, unfinished first)' },
-  { value: 'deadline.desc', label: 'Deadline (farthest, unfinished first)' },
-  { value: 'priority', label: 'Priority (High first)' },
-  { value: 'created_at.desc', label: 'Created (newest)' },
-  { value: 'updated_at.desc', label: 'Updated (newest)' },
+  { value: 'deadline.asc', label: 'Deadline (terdekat, belum selesai dulu)' },
+  { value: 'deadline.desc', label: 'Deadline (terjauh, belum selesai dulu)' },
+  { value: 'priority', label: 'Prioritas (HIGH dulu)' },
+  { value: 'created_at.desc', label: 'Dibuat (terbaru)' },
+  { value: 'updated_at.desc', label: 'Diperbarui (terbaru)' },
 ]
 
 export type TaskFilterState = {
@@ -52,7 +52,7 @@ export async function TaskFilterForm({ state }: { state: TaskFilterState }) {
             defaultValue={state.project}
             className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
           >
-            <option value="">All</option>
+            <option value="">Semua</option>
             {lookups.projects.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.code} · {p.name}
@@ -70,7 +70,7 @@ export async function TaskFilterForm({ state }: { state: TaskFilterState }) {
             defaultValue={state.workstream}
             className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
           >
-            <option value="">All</option>
+            <option value="">Semua</option>
             {lookups.workstreams
               .filter((w) => !state.project || w.project_id === state.project)
               .map((w) => (
@@ -90,7 +90,7 @@ export async function TaskFilterForm({ state }: { state: TaskFilterState }) {
             defaultValue={state.status}
             className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
           >
-            <option value="">All</option>
+            <option value="">Semua</option>
             {(['TODO', 'IN_PROGRESS', 'REVIEW', 'BLOCKED', 'DONE', 'CANCELLED'] as const).map((s) => (
               <option key={s} value={s}>
                 {s.replace('_', ' ')}
@@ -100,7 +100,7 @@ export async function TaskFilterForm({ state }: { state: TaskFilterState }) {
         </div>
         <div>
           <label htmlFor="priority" className="mb-1 block text-sm font-medium">
-            Priority
+            Prioritas
           </label>
           <select
             id="priority"
@@ -108,7 +108,7 @@ export async function TaskFilterForm({ state }: { state: TaskFilterState }) {
             defaultValue={state.priority}
             className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
           >
-            <option value="">All</option>
+            <option value="">Semua</option>
             {(['LOW', 'MEDIUM', 'HIGH'] as const).map((p) => (
               <option key={p} value={p}>
                 {p}
@@ -126,14 +126,14 @@ export async function TaskFilterForm({ state }: { state: TaskFilterState }) {
             defaultValue={state.deadline}
             className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
           >
-            <option value="">All</option>
+            <option value="">Semua</option>
             <option value="overdue">Overdue</option>
-            <option value="week">Due this week</option>
+            <option value="week">Jatuh tempo minggu ini</option>
           </select>
         </div>
         <div>
           <label htmlFor="sort" className="mb-1 block text-sm font-medium">
-            Sort
+            Urutkan
           </label>
           <select
             id="sort"
@@ -153,7 +153,7 @@ export async function TaskFilterForm({ state }: { state: TaskFilterState }) {
         type="submit"
         className="min-h-[44px] rounded-lg bg-kasuat-gold px-5 py-2 font-semibold text-kasuat-black sm:w-auto"
       >
-        Apply
+        Terapkan
       </button>
     </form>
   )

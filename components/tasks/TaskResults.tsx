@@ -120,7 +120,7 @@ export async function TaskResults({ filters }: { filters: TaskFilters }) {
   if (tasks.length === 0 && allTasks.length === 0) {
     return (
       <div className="mt-4">
-        <EmptyState title="No tasks found." message="Try a different search, tab, or filter." />
+        <EmptyState title="Task tidak ditemukan." message="Coba pencarian, tab, atau filter lain." />
       </div>
     )
   }
@@ -128,8 +128,8 @@ export async function TaskResults({ filters }: { filters: TaskFilters }) {
   return (
     <>
       <p className="mt-3 text-sm text-zinc-500" role="status">
-        {tasks.length} task{tasks.length === 1 ? '' : 's'}
-        {overdueCount > 0 ? ` · ${overdueCount} overdue` : ''}
+        {tasks.length} task
+        {overdueCount > 0 ? ` · ${overdueCount} Overdue` : ''}
       </p>
       <div className="mt-3 hidden overflow-x-auto rounded-2xl bg-white shadow md:block dark:bg-zinc-900">
         <table className="w-full text-left text-sm">
@@ -140,7 +140,7 @@ export async function TaskResults({ filters }: { filters: TaskFilters }) {
               <th scope="col" className="px-4 py-3">Project</th>
               <th scope="col" className="px-4 py-3">Workstream</th>
               <th scope="col" className="px-4 py-3">Assignee</th>
-              <th scope="col" className="px-4 py-3">Priority</th>
+              <th scope="col" className="px-4 py-3">Prioritas</th>
               <th scope="col" className="px-4 py-3">Status</th>
               <th scope="col" className="px-4 py-3">Deadline</th>
             </tr>
@@ -187,7 +187,7 @@ export async function TaskResults({ filters }: { filters: TaskFilters }) {
               </p>
               <p className="mt-0.5 truncate text-sm text-zinc-500">
                 {projectNames[task.project_id] ?? '-'} &middot;{' '}
-                {task.workstream_id ? (workstreamNames[task.workstream_id] ?? '-') : 'No workstream'} &middot;{' '}
+                {task.workstream_id ? (workstreamNames[task.workstream_id] ?? '-') : 'Tanpa Workstream'} &middot;{' '}
                 {assigneeNames[task.assignee_id] ?? '-'}
               </p>
               <div className="mt-2 flex flex-wrap items-center gap-1.5">
@@ -208,7 +208,7 @@ export async function TaskResults({ filters }: { filters: TaskFilters }) {
         page={safePage}
         totalPages={totalPages}
         total={tasks.length}
-        label="tasks"
+        label="task"
       />
     </>
   )

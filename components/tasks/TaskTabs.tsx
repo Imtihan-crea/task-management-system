@@ -6,9 +6,9 @@ import type { TaskStatus } from '@/types/task'
 export type TaskTabKey = 'all' | 'mine' | 'ongoing' | 'todo' | 'blocked' | 'done' | 'cancelled' | 'overdue'
 
 const TAB_DEFS: { key: TaskTabKey; label: string }[] = [
-  { key: 'all', label: 'All' },
-  { key: 'mine', label: 'My Tasks' },
-  { key: 'ongoing', label: 'On Going' },
+  { key: 'all', label: 'Semua' },
+  { key: 'mine', label: 'Task Saya' },
+  { key: 'ongoing', label: 'Berjalan' },
   { key: 'todo', label: 'To Do' },
   { key: 'blocked', label: 'Blocked' },
   { key: 'done', label: 'Done' },
@@ -105,7 +105,7 @@ export async function TaskTabs({
 
   return (
     <Tabs
-      label="Task views"
+      label="Tampilan Task"
       items={TAB_DEFS.map((def) => ({
         key: def.key,
         label: def.label,

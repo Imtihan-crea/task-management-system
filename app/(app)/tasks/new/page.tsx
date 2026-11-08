@@ -44,9 +44,9 @@ export default async function NewTaskPage({
   return (
     <AppShell>
       <Link href="/tasks" className="text-sm font-medium text-zinc-500 hover:underline">
-        &larr; Back to Tasks
+        &larr; Kembali ke Tasks
       </Link>
-      <h1 className="mt-2 text-2xl font-bold">Create Task</h1>
+      <h1 className="mt-2 text-2xl font-bold">Buat Task</h1>
 
       <div className="mt-4 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
         <TaskForm
