@@ -4,7 +4,12 @@ import { revalidatePath } from 'next/cache'
 import { requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isTaskPriority } from '@/lib/auth/roles'
-import { canManageProjectFor, isProjectManager } from '@/lib/data/projects'
+import {
+  CLOSED_PROJECT_ERROR,
+  canManageProjectFor,
+  isProjectClosed,
+  isProjectManager,
+} from '@/lib/data/projects'
 import { canSuggestForProject } from '@/lib/auth/project-access'
 import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
@@ -153,6 +158,7 @@ export async function createSuggestion(
   if (!(await assertCanSuggestProject(projectId, profile.id, profile.role))) {
     return { error: 'You do not have permission to perform this action.' }
   }
+  if (await isProjectClosed(projectId)) return { error: CLOSED_PROJECT_ERROR } // audit B14
 
   const admin = createAdminClient()
 
@@ -501,6 +507,7 @@ async function approveSuggestionInternal(
   if (!(await assertActiveUser(assigneeId))) {
     return { error: 'Selected assignee is not active. Please choose another.' }
   }
+  if (await isProjectClosed(current.project_id)) return { error: CLOSED_PROJECT_ERROR } // audit B14
 
   // Buat task dengan guard: hanya jika masih PENDING (atomic-ish).
   const { data: task, error: taskError } = await admin

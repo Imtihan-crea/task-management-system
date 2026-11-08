@@ -4,7 +4,7 @@ import { revalidatePath } from 'next/cache'
 import { requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { can } from '@/lib/auth/permissions'
-import { isProjectManager } from '@/lib/data/projects'
+import { CLOSED_PROJECT_ERROR, isProjectClosed, isProjectManager } from '@/lib/data/projects'
 import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
 import { logActivity } from '@/lib/activity-log/service'
@@ -1774,6 +1774,7 @@ export async function createTaskFromActionItem(
   if (profile.role === 'PROJECT_MANAGER' && !(await isProjectManager(projectId, profile.id))) {
     return { error: 'You do not have permission to perform this action.' }
   }
+  if (await isProjectClosed(projectId)) return { error: CLOSED_PROJECT_ERROR } // audit B14
 
   // Metadata warisan (§20). Form boleh menimpa, default dari action item.
   const title = readField(formData, 'title') || action.title

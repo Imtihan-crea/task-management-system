@@ -44,6 +44,22 @@ export async function canManageProjectFor(
   )
 }
 
+/**
+ * Project COMPLETED/CANCELLED tertutup untuk task/suggestion baru
+ * (audit B14 [keputusan default]). Project yang tidak ada dianggap tertutup.
+ */
+export const CLOSED_PROJECT_ERROR =
+  'This project is completed or cancelled. Reopen it to add new tasks.'
+
+export async function isProjectClosed(projectId: string): Promise<boolean> {
+  const { data } = await createAdminClient()
+    .from('projects')
+    .select('status')
+    .eq('id', projectId)
+    .maybeSingle<{ status: string }>()
+  return !data || data.status === 'COMPLETED' || data.status === 'CANCELLED'
+}
+
 /** Nama semua PM sebuah project (untuk tampilan). */
 export async function getProjectManagerNames(
   projectId: string

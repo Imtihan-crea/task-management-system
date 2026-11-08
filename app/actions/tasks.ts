@@ -4,7 +4,12 @@ import { revalidatePath } from 'next/cache'
 import { requireManager, requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isTaskPriority, isTaskStatus } from '@/lib/auth/roles'
-import { canManageProjectFor, isProjectManager } from '@/lib/data/projects'
+import {
+  CLOSED_PROJECT_ERROR,
+  canManageProjectFor,
+  isProjectClosed,
+  isProjectManager,
+} from '@/lib/data/projects'
 import { canActOnTask } from '@/lib/auth/task-access'
 import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
@@ -148,6 +153,7 @@ export async function createTask(
   if (!(await canManageProjectFor(profile, projectId))) {
     return { error: 'You do not have permission to perform this action.' }
   }
+  if (await isProjectClosed(projectId)) return { error: CLOSED_PROJECT_ERROR }
 
   if (workstreamId && !(await assertWorkstreamInProject(workstreamId, projectId))) {
     return { error: 'Workstream does not belong to this project.' }
@@ -253,6 +259,10 @@ export async function updateTask(
   // Pindah project: PM juga harus PM di project tujuan (sama seperti createTask).
   if (projectId !== scope.projectId && !(await canManageProjectFor(profile, projectId))) {
     return { error: 'You do not have permission to perform this action.' }
+  }
+  // Pindah ke project tertutup ditolak (audit B14).
+  if (projectId !== scope.projectId && (await isProjectClosed(projectId))) {
+    return { error: CLOSED_PROJECT_ERROR }
   }
 
   if (workstreamId && !(await assertWorkstreamInProject(workstreamId, projectId))) {

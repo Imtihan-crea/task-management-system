@@ -58,8 +58,6 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Failed to fetch tasks.' }, { status: 500 })
   }
 
-  const dueToday = ((tasks ?? []) as DueTask[]).filter((t) => t.deadline === today)
-  const overdue = ((tasks ?? []) as DueTask[]).filter((t) => t.deadline < today)
 
   let baseUrl = ''
   try {
@@ -71,18 +69,23 @@ export async function GET(request: Request) {
   // Nama project sekali jalan.
   const projectIds = [...new Set(((tasks ?? []) as DueTask[]).map((t) => t.project_id))]
   let projectNames: Record<string, string> = {}
+  let closedProjects = new Set<string>()
   if (projectIds.length > 0) {
     const { data: projects } = await admin
       .from('projects')
-      .select('id, code, name')
+      .select('id, code, name, status')
       .in('id', projectIds)
-    projectNames = Object.fromEntries(
-      ((projects ?? []) as { id: string; code: string; name: string }[]).map((p) => [
-        p.id,
-        `${p.code} · ${p.name}`,
-      ])
+    const rows = (projects ?? []) as { id: string; code: string; name: string; status: string }[]
+    projectNames = Object.fromEntries(rows.map((p) => [p.id, `${p.code} · ${p.name}`]))
+    closedProjects = new Set(
+      rows.filter((p) => p.status === 'COMPLETED' || p.status === 'CANCELLED').map((p) => p.id)
     )
   }
+
+  // Project COMPLETED/CANCELLED tidak lagi mengirim reminder (audit B14).
+  const open = ((tasks ?? []) as DueTask[]).filter((t) => !closedProjects.has(t.project_id))
+  const dueToday = open.filter((t) => t.deadline === today)
+  const overdue = open.filter((t) => t.deadline < today)
 
   let dueTodaySent = 0
   for (const task of dueToday) {
