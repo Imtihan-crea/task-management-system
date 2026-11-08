@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { completePasswordChange } from '@/app/actions/password'
-import { validateSelfPassword } from '@/lib/auth/password'
+import { friendlyPasswordError, validateSelfPassword } from '@/lib/auth/password'
 import { KasuatLogo } from '@/components/brand/KasuatLogo'
 
 /**
@@ -48,7 +48,13 @@ export function ChangePasswordForm({ email }: { email: string }) {
         const { error: updateError } = await supabase.auth.updateUser({ password })
 
         if (updateError) {
-          setError(updateError.message)
+          console.error('[change-password] updateUser failed:', updateError.message)
+          setError(
+            friendlyPasswordError(
+              updateError.message,
+              'Your session has expired. Please log in again.'
+            )
+          )
           return
         }
         setSavedPassword(password)

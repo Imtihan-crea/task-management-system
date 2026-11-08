@@ -9,6 +9,7 @@ import {
   MIN_SELF_PASSWORD_LENGTH,
   validateAdminPassword,
   validateSelfPassword,
+  friendlyPasswordError,
 } from '../lib/auth/password'
 
 let ok = 0
@@ -43,6 +44,13 @@ cek('self 8 karakter ok', validateSelfPassword('abcdefgh', 'abcdefgh'), null)
 cek('self konfirmasi beda ditolak', validateSelfPassword('abcdefgh', 'abcdefgi'), 'Passwords do not match.')
 cek('self konfirmasi kosong ditolak', validateSelfPassword('abcdefgh', ''), 'Passwords do not match.')
 cek('self spasi 8 ok', validateSelfPassword('        ', '        '), null)
+
+// friendlyPasswordError (audit C13)
+const EXP = 'expired'
+cek('sama dengan lama', friendlyPasswordError('New password should be different from the old password.', EXP), 'The new password must be different from your current password.')
+cek('sesi habis', friendlyPasswordError('Auth session missing!', EXP), EXP)
+cek('rate limit', friendlyPasswordError('For security purposes, you can only request this after 30 seconds.', EXP), 'Too many attempts. Please wait a minute and try again.')
+cek('tak dikenal -> generik', friendlyPasswordError('xyz', EXP), 'Unable to change the password. Please try again.')
 
 console.log(`LULUS: ${ok}`)
 console.log(`GAGAL: ${gagal}`)

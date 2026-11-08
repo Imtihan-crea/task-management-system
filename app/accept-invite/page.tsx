@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { completeInvite } from '@/app/actions/invite'
+import { friendlyPasswordError } from '@/lib/auth/password'
 
 type Phase = 'checking' | 'ready' | 'invalid' | 'saving' | 'done' | 'already-active'
 
@@ -201,9 +202,10 @@ export default function AcceptInvitePage() {
       console.error('[accept-invite] updateUser failed:', updateError.message)
       setPhase('ready')
       setError(
-        /session|token|jwt|auth/i.test(updateError.message)
-          ? 'Your invitation session expired. Please open the invitation link again.'
-          : 'Unable to set password. Please try again.'
+        friendlyPasswordError(
+          updateError.message,
+          'Your invitation session expired. Please open the invitation link again.'
+        )
       )
       return
     }

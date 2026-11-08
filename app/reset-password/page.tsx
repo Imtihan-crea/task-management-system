@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
 import { completePasswordChange } from '@/app/actions/password'
-import { MIN_SELF_PASSWORD_LENGTH, validateSelfPassword } from '@/lib/auth/password'
+import { MIN_SELF_PASSWORD_LENGTH, validateSelfPassword, friendlyPasswordError } from '@/lib/auth/password'
 
 type Phase = 'checking' | 'ready' | 'invalid' | 'saving'
 
@@ -162,9 +162,10 @@ export default function ResetPasswordPage() {
       console.error('[reset-password] updateUser failed:', updateError.message)
       setPhase('ready')
       setError(
-        /session|token|jwt|auth/i.test(updateError.message)
-          ? 'Your reset session expired. Please open the reset link again.'
-          : updateError.message
+        friendlyPasswordError(
+          updateError.message,
+          'Your reset session expired. Please open the reset link again.'
+        )
       )
       return
     }
