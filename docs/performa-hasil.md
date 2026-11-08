@@ -11,35 +11,37 @@ Diukur dengan `npm run e2e:perf` (`scripts/e2e/perf.mjs`) sebagai admin uji `UJI
 
 ## Hasil
 
+Pengukuran akhir pada build terakhir (setelah `loading.tsx`, refactor helper, dan pembaruan dependensi fase 14).
+
 | Halaman | TTFB sebelum | TTFB sesudah | Muat sebelum | Muat sesudah |
 |---|---:|---:|---:|---:|
-| `/settings` | 556 | 455 | 586 | 486 |
-| `/profile` | 555 | 451 | 590 | 486 |
-| `/notifications` | 554 | 450 | 587 | 484 |
-| `/projects/{id}` | 465 | 341 | 1030 | 899 |
-| `/task-suggestions` | 457 | 358 | 673 | 584 |
-| `/tasks?view=overdue` | 456 | 341 | 574 | 460 |
-| `/users/new` | 455 | 346 | 503 | 398 |
-| `/meetings` | 454 | 338 | 798 | 747 |
-| `/projects` | 453 | 341 | 895 | 791 |
-| `/users` | 452 | 345 | 573 | 468 |
-| `/projects/{id}?tab=workstreams` | 452 | 341 | 895 | 777 |
-| `/projects/{id}?tab=meetings` | 452 | 341 | 906 | 794 |
-| `/activity` | 448 | 338 | 714 | 581 |
-| `/projects/{id}?tab=tasks` | 448 | 341 | 1015 | 911 |
-| `/projects/{id}?tab=settings` | 447 | 339 | 887 | 785 |
-| `/workstreams/new?project={id}` | 447 | 353 | 552 | 459 |
-| `/dashboard` | 446 | 351 | 686 | 600 |
-| `/tasks/new` | 445 | 342 | 558 | 456 |
-| `/projects/{id}?tab=activity` | 445 | 345 | 994 | 907 |
-| `/tasks` | 443 | 353 | 572 | 494 |
-| `/meetings/new` | 443 | 346 | 664 | 566 |
-| `/task-suggestions/new` | 443 | 344 | 668 | 563 |
-| `/projects/new` | 442 | 349 | 553 | 458 |
-| `/projects/{id}?tab=members` | 440 | 341 | 980 | 900 |
-| `/task-suggestions/{id}` | 440 | 342 | 981 | 918 |
-| `/tasks/{id}` | 438 | 350 | 1011 | 922 |
+| `/settings` | 556 | 340 | 586 | 458 |
+| `/profile` | 555 | 351 | 590 | 459 |
+| `/notifications` | 554 | 366 | 587 | 478 |
+| `/projects/{id}` | 465 | 338 | 1030 | 886 |
+| `/task-suggestions` | 457 | 343 | 673 | 567 |
+| `/tasks?view=overdue` | 456 | 344 | 574 | 464 |
+| `/users/new` | 455 | 348 | 503 | 387 |
+| `/meetings` | 454 | 359 | 798 | 704 |
+| `/projects` | 453 | 351 | 895 | 790 |
+| `/users` | 452 | 348 | 573 | 468 |
+| `/projects/{id}?tab=workstreams` | 452 | 344 | 895 | 791 |
+| `/projects/{id}?tab=meetings` | 452 | 340 | 906 | 786 |
+| `/activity` | 448 | 349 | 714 | 591 |
+| `/projects/{id}?tab=tasks` | 448 | 339 | 1015 | 897 |
+| `/projects/{id}?tab=settings` | 447 | 349 | 887 | 798 |
+| `/workstreams/new?project={id}` | 447 | 364 | 552 | 510 |
+| `/dashboard` | 446 | 353 | 686 | 592 |
+| `/tasks/new` | 445 | 338 | 558 | 455 |
+| `/projects/{id}?tab=activity` | 445 | 346 | 994 | 901 |
+| `/tasks` | 443 | 352 | 572 | 479 |
+| `/meetings/new` | 443 | 347 | 664 | 568 |
+| `/task-suggestions/new` | 443 | 337 | 668 | 563 |
+| `/projects/new` | 442 | 337 | 553 | 456 |
+| `/projects/{id}?tab=members` | 440 | 346 | 980 | 908 |
+| `/task-suggestions/{id}` | 440 | 343 | 981 | 918 |
+| `/tasks/{id}` | 438 | 354 | 1011 | 1060 |
 
-Median seluruh halaman: TTFB 448 -> 344 ms; muat 681 -> 582 ms
+Median seluruh halaman: TTFB 448 -> 346 ms; muat 681 -> 580 ms
 
-Catatan: `/settings`, `/profile`, `/notifications` sekitar 100 ms lebih lambat pada TTFB karena belum punya `loading.tsx` (halaman lain mengalirkan kerangka dulu, jadi TTFB-nya lebih awal); waktu muat penuhnya setara. `loading.tsx` untuk ketiganya ditambahkan setelah pengukuran ini. Satu pengukuran dengan jaringan nyata, jadi selisih di bawah sekitar 30 ms termasuk derau.
+Catatan: selisih di bawah sekitar 30 ms termasuk derau (satu sesi, jaringan nyata ke Supabase). Sebelum fase 14, pengukuran terpisah setelah perubahan autentikasi memberi median TTFB 344 ms; `/settings`, `/profile`, `/notifications` saat itu masih sekitar 450 ms karena belum punya `loading.tsx`.
