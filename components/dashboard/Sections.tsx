@@ -96,17 +96,22 @@ async function AdminUserKpis() {
       .eq('status', status)
     return count ?? 0
   }
-  const [invited, active, inactive] = await Promise.all([
+  const [invited, active, inactive, { count: pendingSuggestions }] = await Promise.all([
     countBy('INVITED'),
     countBy('ACTIVE'),
     countBy('INACTIVE'),
+    // Sebelumnya hardcode 0 (audit C6). Kartu ini hanya untuk ADMIN.
+    admin
+      .from('task_suggestions')
+      .select('id', { count: 'exact', head: true })
+      .eq('status', 'PENDING'),
   ])
   return (
     <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
       <KpiLink label="TOTAL USERS" value={invited + active + inactive} href="/users" />
       <KpiLink label="INVITED" value={invited} href="/users" />
       <KpiLink label="INACTIVE" value={inactive} href="/users" />
-      <KpiLink label="PENDING SUGGESTIONS" value={0} href="/task-suggestions?status=PENDING" />
+      <KpiLink label="PENDING SUGGESTIONS" value={pendingSuggestions ?? 0} href="/task-suggestions?status=PENDING" />
     </div>
   )
 }
