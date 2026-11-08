@@ -1,4 +1,6 @@
 import Link from 'next/link'
+import { can } from '@/lib/auth/permissions'
+import type { UserRole } from '@/types/profile'
 import { MeetingStatusBadge, MeetingTypeBadge } from '@/components/meetings/MeetingBadges'
 import { EmptyState } from '@/components/ui/primitives'
 import {
@@ -52,7 +54,12 @@ export async function MeetingResults({
         <EmptyState
           title="Meeting tidak ditemukan."
           message={emptyMessage}
-          action={<Link href="/meetings/new" className="font-semibold text-kasuat-deep-gold hover:underline">+ Buat Meeting</Link>}
+          // Hanya untuk role yang boleh membuat meeting (VIEWER tidak; temuan e2e:rbac).
+          action={
+            can(scope.role as UserRole, 'meetings.create') ? (
+              <Link href="/meetings/new" className="font-semibold text-kasuat-deep-gold hover:underline">+ Buat Meeting</Link>
+            ) : undefined
+          }
         />
       </div>
     )
