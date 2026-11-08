@@ -133,6 +133,10 @@ export function TaskForm({
           className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
         >
           <option value="">— Pilih —</option>
+          {/* Assignee lama nonaktif tetap terlihat, tidak hilang diam-diam (audit C11). */}
+          {values.assignee_id && !users.some((u) => u.id === values.assignee_id) && (
+            <option value={values.assignee_id}>Current assignee (inactive)</option>
+          )}
           {users.map((u) => (
             <option key={u.id} value={u.id}>
               {displayName(u)} ({u.email})

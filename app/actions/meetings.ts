@@ -1351,7 +1351,19 @@ export async function updateActionItem(
     return { error: 'You do not have permission to perform this action.' }
   }
 
-  if (assigneeId && !(await assertActiveUser(assigneeId))) {
+  // Assignee lama yang kini nonaktif boleh tetap (tidak diubah); hanya
+  // assignee baru yang wajib aktif (audit C11).
+  const { data: currentItem } = await createAdminClient()
+    .from('meeting_action_items')
+    .select('assignee_id')
+    .eq('id', id)
+    .eq('meeting_id', meetingId)
+    .maybeSingle<{ assignee_id: string | null }>()
+  if (
+    assigneeId &&
+    assigneeId !== currentItem?.assignee_id &&
+    !(await assertActiveUser(assigneeId))
+  ) {
     return { error: 'Assignee must be an active user.' }
   }
 

@@ -269,9 +269,6 @@ export async function updateTask(
   if (workstreamId && !(await assertWorkstreamInProject(workstreamId, projectId))) {
     return { error: 'Workstream does not belong to this project.' }
   }
-  if (!(await assertActiveUser(assigneeId))) {
-    return { error: 'Assignee must be an active user.' }
-  }
 
   const adminClient = createAdminClient()
   const { data: before } = await adminClient
@@ -287,6 +284,11 @@ export async function updateTask(
       workstream_id: string | null
       project_id: string
     }>()
+
+  // Assignee lama yang kini nonaktif boleh tetap; assignee baru wajib aktif (audit C11).
+  if (before?.assignee_id !== assigneeId && !(await assertActiveUser(assigneeId))) {
+    return { error: 'Assignee must be an active user.' }
+  }
 
   if (isTerminal && before?.status !== status) {
     return { error: 'Use the Submit / Cancel buttons below to close a task.' }

@@ -368,6 +368,9 @@ export function ActionItemCard({
             className={inputCls}
           >
             <option value="">Assignee...</option>
+            {item.assignee_id && !users.some((u) => u.id === item.assignee_id) && (
+              <option value={item.assignee_id}>Current assignee (inactive)</option>
+            )}
             {users.map((u) => (
               <option key={u.id} value={u.id}>
                 {u.full_name || u.email}
