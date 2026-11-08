@@ -440,6 +440,32 @@ export function ActionItemCard({
                 ))}
               </select>
             )}
+            {/* Audit B11: assignee + deadline task dipilih eksplisit (default
+                dari action item), bukan diam-diam kosong / hari ini. */}
+            <select
+              name="assignee_id"
+              required
+              defaultValue={users.some((u) => u.id === item.assignee_id) ? (item.assignee_id ?? '') : ''}
+              aria-label="Task assignee"
+              className={inputCls}
+            >
+              <option value="" disabled>
+                Task assignee...
+              </option>
+              {users.map((u) => (
+                <option key={u.id} value={u.id}>
+                  {u.full_name || u.email}
+                </option>
+              ))}
+            </select>
+            <input
+              name="deadline"
+              type="date"
+              required
+              defaultValue={item.deadline ?? ''}
+              aria-label="Task deadline"
+              className={inputCls}
+            />
             {/* Metadata diwarisi dari action item; workstream opsional (§20). */}
             {workstreams.length > 0 && (
               <select name="workstream_id" defaultValue="" aria-label="Workstream (optional)" className={inputCls}>

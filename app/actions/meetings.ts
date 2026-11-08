@@ -1780,13 +1780,12 @@ export async function createTaskFromActionItem(
   const assigneeId = readField(formData, 'assignee_id') || action.assignee_id || ''
   const workstreamId = readField(formData, 'workstream_id')
   const priority = readField(formData, 'priority') || action.priority || 'MEDIUM'
-  const deadline =
-    readField(formData, 'deadline') ||
-    action.deadline ||
-    new Date().toISOString().slice(0, 10)
+  // Deadline wajib (audit B11): tidak lagi diam-diam menjadi hari ini.
+  const deadline = readField(formData, 'deadline') || action.deadline || ''
 
   if (!title) return { error: 'Task title is required.' }
   if (!isTaskPriority(priority)) return { error: 'Please choose a valid priority.' }
+  if (!deadline) return { error: 'Please set a deadline for this task.' }
   if (!validDate(deadline)) return { error: 'Please enter a valid deadline.' }
   if (!assigneeId) return { error: 'Please select an assignee to create this task.' }
   if (!(await assertActiveUser(assigneeId))) {
