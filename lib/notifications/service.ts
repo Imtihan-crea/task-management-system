@@ -95,6 +95,9 @@ export async function emitNotification(input: EmitInput): Promise<{
 
   if (insertError) {
     console.error('[notify] Failed to insert notifications:', insertError.message)
+    // Lepas klaim (audit B16) supaya event yang sama bisa dicoba lagi
+    // (mis. cron berikutnya), tidak hilang permanen.
+    await admin.from('notification_events').delete().eq('event_key', input.key)
     return empty
   }
 
