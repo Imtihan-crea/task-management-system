@@ -515,6 +515,9 @@ async function approveSuggestionInternal(
       status: 'TODO',
       start_date: null,
       deadline: review.deadline,
+      // Traceability (audit B10): blok "Source" di detail task.
+      source_type: 'SUGGESTION',
+      source_id: suggestionId,
     })
     .select('id, code, updated_at')
     .single<{ id: string; code: string; updated_at: string }>()
