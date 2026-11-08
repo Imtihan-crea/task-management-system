@@ -15,6 +15,7 @@ import { MeetingsTab } from '@/components/projects/workspace/MeetingsTab'
 import { ActivityTab, MembersTab } from '@/components/projects/workspace/ActivityMembersTabs'
 import { SettingsTab } from '@/components/projects/workspace/SettingsTab'
 import { isProjectManager } from '@/lib/data/projects'
+import { canSuggestForProject } from '@/lib/auth/project-access'
 import type { Project } from '@/types/project'
 
 const TABS = [
@@ -120,12 +121,23 @@ export default async function ProjectDetailPage({
       .eq('project_id', id)
       .order('created_at', { ascending: false })
       .limit(10)
-    if (profile.role === 'TEAM_MEMBER') {
+    // Selain Admin/PM project ini: hanya suggestion miliknya (sama dengan
+    // aturan baca /task-suggestions/[id]; audit B2).
+    if (!canEditThis) {
       sugQuery = sugQuery.eq('suggested_by', profile.id)
     }
     const { data: sug } = await sugQuery
     projectSuggestions = (sug ?? []) as typeof projectSuggestions
   }
+
+  // Tombol "+ Suggest Task" hanya bila server akan menerimanya (audit B2).
+  // TEAM_MEMBER yang sampai di halaman ini pasti punya task di project ini.
+  const canSuggestHere =
+    can(profile.role, 'suggestions.create') &&
+    canSuggestForProject(profile.role, {
+      managesProject: isOwner,
+      hasAssignedTask: profile.role === 'TEAM_MEMBER',
+    })
 
   const fWs = str(query.ws)
   const fStatus = str(query.status)
@@ -218,7 +230,7 @@ export default async function ProjectDetailPage({
         <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-lg font-bold">Suggestions</h2>
-            {can(profile.role, 'suggestions.create') && (
+            {canSuggestHere && (
               <Link
                 href={`/task-suggestions/new?project=${id}`}
                 className="inline-flex min-h-[44px] items-center rounded-lg border px-4 py-2 text-sm font-semibold"
