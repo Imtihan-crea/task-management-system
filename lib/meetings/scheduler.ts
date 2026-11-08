@@ -62,16 +62,16 @@ async function projectLabels(projectIds: (string | null)[]): Promise<Map<string 
 /** Peserta (user_id unik) banyak meeting sekali query (kunci: meeting_id). */
 async function participantsByMeeting(meetingIds: string[]): Promise<Map<string, string[]>> {
   const result = new Map<string, string[]>()
-  if (meetingIds.length === 0) return result
-
-  // Dipecah per 50 meeting supaya tidak menabrak batas 1000 baris PostgREST.
   for (let i = 0; i < meetingIds.length; i += 50) {
-    const { data } = await createAdminClient()
-      .from('meeting_participants')
-      .select('meeting_id, user_id')
-      .in('meeting_id', meetingIds.slice(i, i + 50))
-
-    for (const p of (data ?? []) as { meeting_id: string; user_id: string | null }[]) {
+    const rows = await allRows<{ meeting_id: string; user_id: string | null }>((from, to) =>
+      createAdminClient()
+        .from('meeting_participants')
+        .select('meeting_id, user_id')
+        .in('meeting_id', meetingIds.slice(i, i + 50))
+        .order('id')
+        .range(from, to)
+    )
+    for (const p of rows) {
       if (!p.user_id) continue
       const list = result.get(p.meeting_id) ?? []
       if (!list.includes(p.user_id)) list.push(p.user_id)
@@ -87,15 +87,35 @@ async function meetingsWithOldNotesEvent(meetingIds: string[]): Promise<Set<stri
   // Dipecah per 50 supaya filter .or() di URL tidak terlalu panjang.
   for (let i = 0; i < meetingIds.length; i += 50) {
     const chunk = meetingIds.slice(i, i + 50)
-    const { data } = await createAdminClient()
-      .from('notification_events')
-      .select('event_key')
-      .or(chunk.map((id) => `event_key.like.meeting-notes:${id}:%`).join(','))
-    for (const row of (data ?? []) as { event_key: string }[]) {
-      found.add(row.event_key.split(':')[1])
-    }
+    const rows = await allRows<{ event_key: string }>((from, to) =>
+      createAdminClient()
+        .from('notification_events')
+        .select('event_key')
+        .or(chunk.map((id) => `event_key.like.meeting-notes:${id}:%`).join(','))
+        .order('event_key')
+        .range(from, to)
+    )
+    for (const row of rows) found.add(row.event_key.split(':')[1])
   }
   return found
+}
+
+/**
+ * Ambil semua baris per halaman 1000 (batas PostgREST memotong tanpa error).
+ * Error dilempar: lebih baik cron gagal dan dicoba lagi daripada peserta
+ * terlewat atau notifikasi terkirim ganda.
+ */
+async function allRows<T>(
+  page: (from: number, to: number) => PromiseLike<{ data: unknown; error: { message: string } | null }>
+): Promise<T[]> {
+  const out: T[] = []
+  for (let from = 0; ; from += 1000) {
+    const { data, error } = await page(from, from + 999)
+    if (error) throw new Error(`[cron:meetings] query gagal: ${error.message}`)
+    const rows = (data ?? []) as T[]
+    out.push(...rows)
+    if (rows.length < 1000) return out
+  }
 }
 
 function baseUrlOrEmpty(): string {

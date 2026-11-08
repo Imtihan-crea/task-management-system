@@ -155,7 +155,14 @@ await step('S9 PM approve suggestion', async () => {
   const { data: s } = await db.from('task_suggestions').select('status, converted_task_id, review_note').eq('id', ids.suggestion).single()
   ids.taskFromSuggestion = s.converted_task_id
   const { data: t } = await db.from('tasks').select('assignee_id, deadline, priority, source_type, source_id').eq('id', s.converted_task_id).maybeSingle()
-  const { data: nPm } = await db.from('notifications').select('type').eq('user_id', pm.id).eq('entity_id', s.converted_task_id)
+  // Notifikasi TASK_ASSIGNED ditulis di akhir action (setelah event review),
+  // jadi tunggu sampai 10 detik sebelum menyimpulkan tidak ada.
+  let nPm = []
+  for (let i = 0; i < 20; i++) {
+    nPm = (await db.from('notifications').select('type').eq('user_id', pm.id).eq('entity_id', s.converted_task_id)).data ?? []
+    if (nPm.some((x) => x.type === 'TASK_ASSIGNED')) break
+    await new Promise((r) => setTimeout(r, 500))
+  }
   const { data: nMem } = await db.from('notifications').select('type').eq('user_id', mem.id).eq('entity_id', s.converted_task_id)
   check('S9 suggestion CONVERTED + catatan tersimpan', s.status === 'CONVERTED' && s.review_note === 'Catatan approve uji', `${s.status} ${await statusText(f)}`)
   check('S9 (B8) task: assignee PM, deadline, HIGH', t && t.assignee_id === pm.id && t.deadline === day(10) && t.priority === 'HIGH', JSON.stringify(t))

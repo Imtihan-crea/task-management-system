@@ -1,14 +1,15 @@
 'use server'
 
 import { createClient as createSupabaseClient } from '@supabase/supabase-js'
-import { getCurrentProfile } from '@/lib/auth/session'
+import { createClient as createServerClient } from '@/lib/supabase/server'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { logActivity } from '@/lib/activity-log/service'
 import { friendlyPasswordError, validateSelfPassword } from '@/lib/auth/password'
 
 /**
  * `passwordSaved` + `error`: password sudah diganti tetapi flag belum bersih.
- * Sesi lama sudah dicabut, jadi klien harus mengarahkan ke /login (bukan retry).
+ * Teramati di e2e:a3: setelah ganti password sesi lama tidak lagi dipakai,
+ * jadi klien mengarahkan ke /login (bukan retry).
  */
 export type PasswordChangeResult = { error?: string; success?: boolean; passwordSaved?: boolean }
 
@@ -53,10 +54,20 @@ async function resolveActor(accessToken?: string): Promise<ActorProfile | null> 
     return profile ?? null
   }
 
-  const current = await getCurrentProfile()
-  if (!current) return null
+  // Jalur cookie: verifikasi sesi ke Supabase (getUser), bukan hanya tanda
+  // tangan JWT seperti getCurrentProfile/getClaims. Halaman /reset-password
+  // publik tidak dijaga proxy, jadi sesi yang sudah dicabut harus ditolak di sini.
+  const supabase = await createServerClient()
+  const { data, error } = await supabase.auth.getUser()
+  if (error || !data.user) return null
 
-  return { id: current.id, email: current.email, status: current.status }
+  const { data: profile } = await createAdminClient()
+    .from('profiles')
+    .select('id, email, status')
+    .eq('id', data.user.id)
+    .single<ActorProfile>()
+
+  return profile ?? null
 }
 
 /**
@@ -93,7 +104,18 @@ export async function setOwnPassword(
     email: profile.email,
     password,
   })
-  if (!sameError) return { error: 'Password baru harus berbeda dari password saat ini.' }
+  if (!sameError) {
+    // Sesi probe dibuang supaya tidak tertinggal di auth.sessions (scope local:
+    // sesi user yang lain tidak ikut dicabut).
+    await probe.auth.signOut({ scope: 'local' })
+    return { error: 'Password baru harus berbeda dari password saat ini.' }
+  }
+  // Hanya "kredensial salah" yang berarti password berbeda. Error lain (rate
+  // limit, jaringan) jangan dianggap lolos.
+  if (sameError.code !== 'invalid_credentials') {
+    console.error('[change-password] same-password probe failed:', sameError.code ?? sameError.message)
+    return { error: 'Tidak dapat memeriksa password saat ini. Coba lagi sebentar lagi.' }
+  }
 
   const admin = createAdminClient()
   const { error: authError } = await admin.auth.admin.updateUserById(profile.id, {
@@ -133,8 +155,9 @@ export async function setOwnPassword(
     metadata: { password_changed: true },
   })
 
-  // Tanpa revalidatePath: sesi lama sudah dicabut, jadi refresh halaman oleh
-  // action akan melempar ke /login sebelum klien sempat masuk lagi.
+  // Tanpa revalidatePath: sesi lama tidak lagi berlaku (teramati di e2e:a3),
+  // jadi refresh halaman oleh action akan melempar ke /login sebelum klien
+  // sempat masuk lagi.
 
   return { success: true }
 }
