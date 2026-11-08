@@ -18,9 +18,9 @@ import { logActivity } from '@/lib/activity-log/service'
 import { can } from '@/lib/auth/permissions'
 import type { SuggestionStatus, TaskSuggestion } from '@/types/suggestion'
 import type { TaskPriority } from '@/types/task'
-import { escapeEmailHtml as h } from '@/lib/email/layout'
 import { readLimitedField } from '@/lib/forms/limits'
 import { isValidDateInput } from '@/lib/forms/dates'
+import { suggestionNewBody, suggestionReviewBody } from '@/lib/email/templates'
 
 export type SuggestionFormState = {
   error?: string
@@ -198,9 +198,6 @@ async function notifySuggestionPms(input: {
 
   const projectText = project ? `${project.code} · ${project.name}` : 'sebuah Project'
   const verb = input.resubmitted ? 'mengirim ulang Suggestion yang direvisi' : 'mengusulkan task baru'
-  const intro = input.resubmitted
-    ? 'Usulan task berikut sudah direvisi dan menunggu review Anda lagi:'
-    : 'Ada usulan task baru yang menunggu review Anda:'
 
   await emitNotification({
     key: input.key,
@@ -213,7 +210,7 @@ async function notifySuggestionPms(input: {
     email: baseUrl
       ? {
           subject: `[Suggestion ${input.code}] ${input.title}`,
-          html: `<p>Halo,</p><p>${intro}</p><ul><li><strong>${h(input.code)} ${h(input.title)}</strong></li><li><strong>Project:</strong> ${project ? `${h(project.code)} · ${h(project.name)}` : '-'}</li><li><strong>Diusulkan oleh:</strong> ${h(input.actorName)}</li></ul><p>Review di sini:<br><a href="${baseUrl}/task-suggestions/${input.id}">${baseUrl}/task-suggestions/${input.id}</a></p>`,
+          html: suggestionNewBody({ baseUrl, id: input.id, code: input.code, title: input.title, projectLabel: project ? `${project.code} · ${project.name}` : '-', actorName: input.actorName, resubmitted: Boolean(input.resubmitted) }),
           category: 'suggestion',
         }
       : null,
@@ -572,7 +569,6 @@ async function emitReviewEvent(
   }
 
   const projectLabel = project ? `${project.code} · ${project.name}` : '-'
-  const suggestionUrl = baseUrl ? `${baseUrl}/task-suggestions/${suggestion.id}` : ''
 
   const config = {
     APPROVED: {
@@ -607,7 +603,7 @@ async function emitReviewEvent(
     email: baseUrl
       ? {
           subject: config.subject,
-          html: `<p>Halo,</p><p>${h(config.message)}</p><p><strong>Project:</strong> ${h(projectLabel)}</p>${reviewNote ? `<p><strong>Catatan review:</strong> ${h(reviewNote)}</p>` : ''}${convertedTaskId && baseUrl ? `<p>Lihat task:<br><a href="${baseUrl}/tasks/${convertedTaskId}">${baseUrl}/tasks/${convertedTaskId}</a></p>` : ''}<p>Detail suggestion:<br><a href="${suggestionUrl}">${suggestionUrl}</a></p>`,
+          html: suggestionReviewBody({ baseUrl, id: suggestion.id, message: config.message, projectLabel, reviewNote, convertedTaskId: convertedTaskId ?? null }),
           category: 'suggestion',
         }
       : null,

@@ -26,6 +26,7 @@
     "test:alert": "tsx tests/error-alert.check.ts",
     "test:task-access": "tsx tests/task-access.check.ts",
     "test:project-access": "tsx tests/project-access.check.ts",
+    "emails:render": "tsx scripts/render-emails.ts",
     "e2e:smoke": "node scripts/e2e/smoke.mjs",
     "e2e:write": "node scripts/e2e/write-flow.mjs",
     "e2e:cleanup": "node scripts/e2e/cleanup.mjs",

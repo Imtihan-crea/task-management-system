@@ -9,7 +9,7 @@ import {
   todayInAppTime,
 } from '@/lib/utils/meeting-time'
 import { needsNotes } from '@/types/meeting'
-import { escapeEmailHtml as h } from '@/lib/email/layout'
+import { meetingReminderBody, meetingNotesPendingBody } from '@/lib/email/templates'
 
 /**
  * Scheduler Meeting (Phase 11, §31).
@@ -124,8 +124,8 @@ export async function runMeetingScheduler(now: Date = new Date()): Promise<{
         entityType: 'meeting',
         entityId: m.id,
         email: {
-          subject: `[Reminder] ${m.code} ${m.title} — ${m.start_time.slice(0, 5)}`,
-          html: `<p>Halo,</p><p>Meeting berikut dimulai <strong>sebentar lagi</strong>:</p><ul><li><strong>${h(m.code)} ${h(m.title)}</strong></li><li><strong>Waktu:</strong> ${h(m.meeting_date)} ${h(m.start_time.slice(0, 5))}</li><li><strong>Project:</strong> ${h(label)}</li></ul>${baseUrl ? `<p>Lihat detail:<br><a href="${baseUrl}/meetings/${m.id}">${baseUrl}/meetings/${m.id}</a></p>` : ''}`,
+          subject: `[Pengingat] ${m.code} ${m.title} — ${m.start_time.slice(0, 5)}`,
+          html: meetingReminderBody({ baseUrl, meetingId: m.id, code: m.code, title: m.title, date: m.meeting_date, time: m.start_time.slice(0, 5), projectLabel: label }),
           category: 'meeting',
         },
       })
@@ -176,7 +176,7 @@ export async function runMeetingScheduler(now: Date = new Date()): Promise<{
         entityId: m.id,
         email: {
           subject: `[Perlu Notes] ${m.code} ${m.title}`,
-          html: `<p>Halo,</p><p>Meeting berikut <strong>belum memiliki notes</strong>:</p><ul><li><strong>${h(m.code)} ${h(m.title)}</strong></li><li><strong>Tanggal:</strong> ${h(m.meeting_date)}</li><li><strong>Project:</strong> ${h(label)}</li></ul>${baseUrl ? `<p>Lengkapi di sini:<br><a href="${baseUrl}/meetings/${m.id}?tab=notes">${baseUrl}/meetings/${m.id}?tab=notes</a></p>` : ''}`,
+          html: meetingNotesPendingBody({ baseUrl, meetingId: m.id, code: m.code, title: m.title, date: m.meeting_date, projectLabel: label }),
           category: 'meeting',
         },
       })

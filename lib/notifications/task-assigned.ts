@@ -1,7 +1,7 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
-import { escapeEmailHtml as h } from '@/lib/email/layout'
+import { taskAssignedBody } from '@/lib/email/templates'
 
 /**
  * Event TASK_ASSIGNED (in-app + email) ke assignee. Dipakai create/update task
@@ -45,7 +45,7 @@ export async function emitTaskAssigned(input: {
     email: baseUrl
       ? {
           subject: `[Ditugaskan] ${input.taskCode} ${input.taskTitle}`,
-          html: `<p>Halo,</p><p>Task berikut ditugaskan kepada Anda:</p><ul><li><strong>${h(input.taskCode)} ${h(input.taskTitle)}</strong></li><li><strong>Project:</strong> ${h(projectLabel)}</li></ul><p>Lihat detail:<br><a href="${baseUrl}/tasks/${input.taskId}">${baseUrl}/tasks/${input.taskId}</a></p>`,
+          html: taskAssignedBody({ baseUrl, taskId: input.taskId, code: input.taskCode, title: input.taskTitle, projectLabel }),
           category: 'task',
         }
       : null,

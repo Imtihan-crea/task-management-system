@@ -17,9 +17,9 @@ import { emitTaskAssigned } from '@/lib/notifications/task-assigned'
 import { logActivity } from '@/lib/activity-log/service'
 import type { TaskPriority, TaskStatus } from '@/types/task'
 import type { UserRole } from '@/types/profile'
-import { escapeEmailHtml as h } from '@/lib/email/layout'
 import { readLimitedField } from '@/lib/forms/limits'
 import { isValidDateInput } from '@/lib/forms/dates'
+import { taskBlockedBody, taskDoneBody } from '@/lib/email/templates'
 
 export type TaskFormState = {
   error?: string
@@ -756,7 +756,7 @@ async function emitTaskStatusChanged(input: {
     if (baseUrl) {
       email = {
         subject: `[BLOCKED] ${input.taskCode} ${input.taskTitle}`,
-        html: `<p>Halo,</p><p>Task berikut terhambat dan membutuhkan perhatian:</p><ul><li><strong>${h(input.taskCode)} ${h(input.taskTitle)}</strong></li><li><strong>Project:</strong> ${h(ctx.projectLabel)}</li><li><strong>Status sebelumnya:</strong> ${h(input.fromStatus.replace('_', ' '))}</li></ul><p>Lihat detail:<br><a href="${baseUrl}/tasks/${input.taskId}">${baseUrl}/tasks/${input.taskId}</a></p>`,
+        html: taskBlockedBody({ baseUrl, taskId: input.taskId, code: input.taskCode, title: input.taskTitle, projectLabel: ctx.projectLabel, fromStatus: input.fromStatus }),
         category: 'task',
       }
     }
@@ -821,10 +821,6 @@ async function sendDoneEmail(taskId: string): Promise<void> {
     return
   }
 
-  const evidenceBlock = task.evidence_url
-    ? `<p>Link evidence:<br><a href="${h(task.evidence_url)}">${h(task.evidence_url)}</a></p>`
-    : `<p><em>Tidak ada link evidence yang dilampirkan.</em></p>`
-
   await emitNotification({
     key: `task-done:${task.id}:${task.updated_at}`,
     type: 'TASK_DONE',
@@ -835,17 +831,7 @@ async function sendDoneEmail(taskId: string): Promise<void> {
     entityId: task.id,
     email: {
       subject: `[DONE] ${task.code} ${task.title} — ${project?.name ?? '-'}`,
-      html: `<p>Halo,</p>
-<p>Kabar baik — task berikut sudah selesai dan membutuhkan perhatian Anda:</p>
-<ul>
-<li><strong>Task:</strong> ${h(task.code)} ${h(task.title)}</li>
-<li><strong>Project:</strong> ${h(projectLabel)}</li>
-<li><strong>Dikerjakan oleh:</strong> ${h(assigneeName)}</li>
-</ul>
-${evidenceBlock}
-<p>Lihat detail task di sini:<br><a href="${baseUrl}/tasks/${task.id}">${baseUrl}/tasks/${task.id}</a></p>
-<p>Terima kasih.</p>
-<p><em>Email ini dikirim otomatis oleh Task Management System. Mohon tidak membalas email ini.</em></p>`,
+      html: taskDoneBody({ baseUrl, taskId: task.id, code: task.code, title: task.title, projectLabel, assigneeName, evidenceUrl: task.evidence_url }),
       category: 'task',
     },
   })

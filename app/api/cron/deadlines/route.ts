@@ -4,8 +4,8 @@ import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
 import { runMorningDigest } from '@/lib/meetings/digest'
 import { todayISO } from '@/lib/utils/dates'
-import { escapeEmailHtml as h } from '@/lib/email/layout'
 import { isCronAuthorized } from '@/lib/auth/cron'
+import { deadlineTodayBody, taskOverdueBody } from '@/lib/email/templates'
 
 export const dynamic = 'force-dynamic'
 
@@ -99,7 +99,7 @@ export async function GET(request: Request) {
       entityId: task.id,
       email: {
         subject: `[Jatuh Tempo Hari Ini] ${task.code} ${task.title}`,
-        html: `<p>Halo,</p><p>Task berikut deadline <strong>hari ini</strong>:</p><ul><li><strong>${h(task.code)} ${h(task.title)}</strong></li><li><strong>Project:</strong> ${h(projectNames[task.project_id] ?? '-')}</li></ul>${baseUrl ? `<p>Lihat detail:<br><a href="${baseUrl}/tasks/${task.id}">${baseUrl}/tasks/${task.id}</a></p>` : ''}`,
+        html: deadlineTodayBody({ baseUrl, taskId: task.id, code: task.code, title: task.title, projectLabel: projectNames[task.project_id] ?? '-' }),
         category: 'deadline',
       },
     })
@@ -118,7 +118,7 @@ export async function GET(request: Request) {
       entityId: task.id,
       email: {
         subject: `[Overdue] ${task.code} ${task.title}`,
-        html: `<p>Halo,</p><p>Task berikut <strong>melewati deadline</strong>:</p><ul><li><strong>${h(task.code)} ${h(task.title)}</strong></li><li><strong>Project:</strong> ${h(projectNames[task.project_id] ?? '-')}</li><li><strong>Deadline:</strong> ${h(task.deadline)}</li></ul>${baseUrl ? `<p>Lihat detail:<br><a href="${baseUrl}/tasks/${task.id}">${baseUrl}/tasks/${task.id}</a></p>` : ''}`,
+        html: taskOverdueBody({ baseUrl, taskId: task.id, code: task.code, title: task.title, projectLabel: projectNames[task.project_id] ?? '-', deadline: task.deadline }),
         category: 'deadline',
       },
     })
