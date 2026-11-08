@@ -85,7 +85,7 @@ export function StatusDonut({
             <span className="truncate">{s.label}</span>
             <span className="ml-auto font-semibold">
               {s.value}
-              <span className="ml-1 font-normal text-zinc-500">
+              <span className="ml-1 font-normal text-zinc-600 dark:text-zinc-400">
                 ({total === 0 ? 0 : Math.round((s.value / total) * 100)}%)
               </span>
             </span>
@@ -109,7 +109,7 @@ export function PriorityBars({
     >
       {items.map((i) => (
         <li key={i.label} className="flex items-center gap-3">
-          <span className="w-16 shrink-0 text-sm text-zinc-500">{i.label}</span>
+          <span className="w-16 shrink-0 text-sm text-zinc-600 dark:text-zinc-400">{i.label}</span>
           <div
             className="h-4 flex-1 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800"
             role="progressbar"

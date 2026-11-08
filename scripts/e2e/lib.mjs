@@ -169,3 +169,29 @@ export function writeOut(name, data) {
   fs.mkdirSync(OUT_DIR, { recursive: true })
   fs.writeFileSync(path.join(OUT_DIR, name), typeof data === 'string' ? data : JSON.stringify(data, null, 1))
 }
+
+const UUID = '[0-9a-f-]{36}'
+
+/** Daftar path halaman aplikasi (baca-saja) untuk audit; id detail diambil dari daftar yang ada. Perlu sesi admin. */
+export async function appPages(page) {
+  const first = async (listPath, re) => {
+    await page.goto(BASE + listPath, { waitUntil: 'networkidle' })
+    const hrefs = await page.locator('a[href]').evaluateAll((as) => as.map((a) => a.getAttribute('href')))
+    return hrefs.find((h) => re.test(h ?? ''))
+  }
+  const paths = ['/dashboard', '/tasks', '/tasks?view=overdue', '/projects', '/meetings', '/task-suggestions', '/activity', '/users', '/notifications', '/profile', '/settings', '/tasks/new', '/projects/new', '/meetings/new', '/task-suggestions/new', '/users/new']
+  const proj = await first('/projects', new RegExp(`^/projects/${UUID}$`))
+  if (proj) {
+    for (const t of ['', '?tab=tasks', '?tab=workstreams', '?tab=meetings', '?tab=activity', '?tab=members', '?tab=settings']) paths.push(proj + t)
+    paths.push(`/workstreams/new?project=${proj.split('/').pop()}`)
+  }
+  const task = await first('/tasks', new RegExp(`^/tasks/${UUID}$`))
+  if (task) paths.push(task)
+  const mtg = await first('/meetings', new RegExp(`^/meetings/${UUID}$`))
+  if (mtg) for (const t of ['', '?tab=agenda', '?tab=notes', '?tab=decisions', '?tab=actions', '?tab=activity']) paths.push(mtg + t)
+  const usr = await first('/users', new RegExp(`^/users/${UUID}$`))
+  if (usr) paths.push(usr)
+  const sug = await first('/task-suggestions', new RegExp(`^/task-suggestions/${UUID}$`))
+  if (sug) paths.push(sug)
+  return paths
+}

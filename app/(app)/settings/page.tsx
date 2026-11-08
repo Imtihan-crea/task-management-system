@@ -34,23 +34,23 @@ export default async function SettingsPage() {
         <h2 className="mb-2 text-lg font-bold">Akun</h2>
         <dl>
           <div className="flex flex-col gap-0.5 border-b py-2.5 last:border-0 sm:flex-row sm:justify-between sm:gap-4">
-            <dt className="text-sm text-zinc-500">Email</dt>
+            <dt className="text-sm text-zinc-600 dark:text-zinc-400">Email</dt>
             <dd className="text-sm font-medium break-all">{profile.email}</dd>
           </div>
           <div className="flex flex-col gap-0.5 border-b py-2.5 last:border-0 sm:flex-row sm:justify-between sm:gap-4">
-            <dt className="text-sm text-zinc-500">Nama</dt>
+            <dt className="text-sm text-zinc-600 dark:text-zinc-400">Nama</dt>
             <dd className="text-sm font-medium">{profile.full_name || '-'}</dd>
           </div>
           <div className="flex flex-col gap-0.5 border-b py-2.5 last:border-0 sm:flex-row sm:justify-between sm:gap-4">
-            <dt className="text-sm text-zinc-500">Role</dt>
+            <dt className="text-sm text-zinc-600 dark:text-zinc-400">Role</dt>
             <dd className="text-sm font-medium">{ROLE_LABELS[profile.role]}</dd>
           </div>
           <div className="flex flex-col gap-0.5 border-b py-2.5 last:border-0 sm:flex-row sm:justify-between sm:gap-4">
-            <dt className="text-sm text-zinc-500">Status</dt>
+            <dt className="text-sm text-zinc-600 dark:text-zinc-400">Status</dt>
             <dd className="text-sm font-medium">{STATUS_LABELS[profile.status]}</dd>
           </div>
         </dl>
-        <p className="mt-3 text-sm text-zinc-500">
+        <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">
           Role dan status diatur oleh administrator. Ubah nama di{' '}
           <Link href="/profile" className="font-semibold text-kasuat-deep-gold hover:underline">
             Profil Saya
@@ -61,7 +61,7 @@ export default async function SettingsPage() {
 
       <section id="preferences" className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
         <h2 className="mb-2 text-lg font-bold">Preferensi Email</h2>
-        <p className="mb-4 text-sm text-zinc-500">
+        <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-400">
           Notifications di dalam aplikasi selalu muncul. Email dapat dimatikan di sini.
         </p>
         <PreferencesForm

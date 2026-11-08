@@ -46,16 +46,16 @@ export default async function NewSuggestionPage({
 
   return (
     <AppShell>
-      <Link href="/task-suggestions" className="text-sm font-medium text-zinc-500 hover:underline">
+      <Link href="/task-suggestions" className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline">
         &larr; Kembali ke Suggestions
       </Link>
       <h1 className="mt-2 text-2xl font-bold">Usulkan Task</h1>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
         Usulan dibaca oleh PM/Admin sebelum menjadi task resmi.
       </p>
 
       {projects.length === 0 ? (
-        <p className="mt-4 rounded-2xl bg-white p-8 text-center text-sm text-zinc-500 shadow dark:bg-zinc-900">
+        <p className="mt-4 rounded-2xl bg-white p-8 text-center text-sm text-zinc-600 dark:text-zinc-400 shadow dark:bg-zinc-900">
           Tidak ada Project yang tersedia. Anda hanya dapat mengusulkan Task untuk Project yang Anda ikuti.
         </p>
       ) : (

@@ -94,7 +94,7 @@ export function SubmitTaskForm({ id }: { id: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+        className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
       >
         {pending ? 'Mengirim...' : 'Submit sebagai Done'}
       </button>

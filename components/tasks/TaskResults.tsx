@@ -127,13 +127,13 @@ export async function TaskResults({ filters }: { filters: TaskFilters }) {
 
   return (
     <>
-      <p className="mt-3 text-sm text-zinc-500" role="status">
+      <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400" role="status">
         {tasks.length} task
         {overdueCount > 0 ? ` · ${overdueCount} Overdue` : ''}
       </p>
       <div className="mt-3 hidden overflow-x-auto rounded-2xl bg-white shadow md:block dark:bg-zinc-900">
         <table className="w-full text-left text-sm">
-          <thead className="border-b text-xs uppercase text-zinc-500">
+          <thead className="border-b text-xs uppercase text-zinc-600 dark:text-zinc-400">
             <tr>
               <th scope="col" className="px-4 py-3">ID</th>
               <th scope="col" className="px-4 py-3">Task</th>
@@ -185,7 +185,7 @@ export async function TaskResults({ filters }: { filters: TaskFilters }) {
                 </span>
                 {task.title}
               </p>
-              <p className="mt-0.5 truncate text-sm text-zinc-500">
+              <p className="mt-0.5 truncate text-sm text-zinc-600 dark:text-zinc-400">
                 {projectNames[task.project_id] ?? '-'} &middot;{' '}
                 {task.workstream_id ? (workstreamNames[task.workstream_id] ?? '-') : 'Tanpa Workstream'} &middot;{' '}
                 {assigneeNames[task.assignee_id] ?? '-'}
@@ -195,7 +195,7 @@ export async function TaskResults({ filters }: { filters: TaskFilters }) {
                 <TaskStatusBadge status={task.status} />
                 {showsOverdueBadge(task.deadline, task.status, task.completed_at, task.cancelled_at) && <OverdueBadge />}
               </div>
-              <p className="mt-2 text-xs text-zinc-500">
+              <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
                 Deadline {formatDate(task.deadline)}
               </p>
             </Link>

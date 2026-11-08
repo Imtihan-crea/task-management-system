@@ -34,7 +34,7 @@ type UserOption = { id: string; full_name: string | null; email: string }
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-0.5 border-b py-2.5 last:border-0 sm:flex-row sm:justify-between sm:gap-4">
-      <dt className="text-sm text-zinc-500">{label}</dt>
+      <dt className="text-sm text-zinc-600 dark:text-zinc-400">{label}</dt>
       <dd className="text-sm font-medium break-all">{value}</dd>
     </div>
   )
@@ -110,7 +110,7 @@ export async function OverviewSection({
         <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
           <h2 className="mb-2 text-lg font-bold">Peserta ({participants.length})</h2>
           {participants.length === 0 ? (
-            <p className="text-sm text-zinc-500">Belum ada peserta.</p>
+            <p className="text-sm text-zinc-600 dark:text-zinc-400">Belum ada peserta.</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {participants.map((p) => (
@@ -166,7 +166,7 @@ export async function AgendaSection({
     <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
       <h2 className="mb-3 text-lg font-bold">Agenda ({items.length})</h2>
       {items.length === 0 ? (
-        <p className="text-sm text-zinc-500">Belum ada Agenda.</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">Belum ada Agenda.</p>
       ) : (
         <ol className="flex flex-col gap-2">
           {items.map((a, i) =>
@@ -182,10 +182,10 @@ export async function AgendaSection({
             ) : (
               <li key={a.id} className="rounded-xl border p-3 dark:border-zinc-700">
                 <p className="text-sm font-medium">
-                  <span className="mr-2 text-zinc-500">{i + 1}.</span>
+                  <span className="mr-2 text-zinc-600 dark:text-zinc-400">{i + 1}.</span>
                   {a.title}
                 </p>
-                {a.notes && <p className="mt-1 text-sm text-zinc-500 whitespace-pre-wrap">{a.notes}</p>}
+                {a.notes && <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400 whitespace-pre-wrap">{a.notes}</p>}
               </li>
             )
           )}
@@ -242,7 +242,7 @@ export async function DecisionsSection({
     <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
       <h2 className="mb-3 text-lg font-bold">Decisions ({items.length})</h2>
       {items.length === 0 ? (
-        <p className="text-sm text-zinc-500">Belum ada Decision yang dicatat.</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">Belum ada Decision yang dicatat.</p>
       ) : (
         <ol className="flex flex-col gap-2">
           {items.map((d, i) =>
@@ -251,10 +251,10 @@ export async function DecisionsSection({
             ) : (
               <li key={d.id} className="rounded-xl border p-3 dark:border-zinc-700">
                 <p className="text-sm font-medium">
-                  <span className="mr-2 text-zinc-500">{i + 1}.</span>
+                  <span className="mr-2 text-zinc-600 dark:text-zinc-400">{i + 1}.</span>
                   {d.decision}
                 </p>
-                {d.rationale && <p className="mt-1 text-sm text-zinc-500">{d.rationale}</p>}
+                {d.rationale && <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{d.rationale}</p>}
               </li>
             )
           )}
@@ -314,7 +314,7 @@ export async function ActionsSection({
         {openCount > 0 ? ` · ${openCount} terbuka` : ''})
       </h2>
       {items.length === 0 ? (
-        <p className="text-sm text-zinc-500">Belum ada Action Item.</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">Belum ada Action Item.</p>
       ) : (
         <ul className="flex flex-col gap-3">
           {items.map((a) =>
@@ -332,8 +332,8 @@ export async function ActionsSection({
             ) : (
               <li key={a.id} className="rounded-xl border p-3 dark:border-zinc-700">
                 <p className="text-sm font-medium">{a.title}</p>
-                {a.description && <p className="mt-1 text-sm text-zinc-500">{a.description}</p>}
-                <p className="mt-1 text-xs text-zinc-500">
+                {a.description && <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{a.description}</p>}
+                <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
                   {a.status.replace('_', ' ')}
                   {a.task_id && taskCodes[a.task_id] && (
                     <>
@@ -381,7 +381,7 @@ export async function MeetingActivitySection({ meetingId }: { meetingId: string 
     <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
       <h2 className="mb-3 text-lg font-bold">Activity</h2>
       {entries.length === 0 ? (
-        <p className="text-sm text-zinc-500">Belum ada Activity.</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">Belum ada Activity.</p>
       ) : (
         <ActivityTimeline entries={entries} actorNames={actorNames} />
       )}

@@ -17,7 +17,7 @@ const STATUS_STYLE: Record<SuggestionStatus, string> = {
   APPROVED: 'border-blue-400 text-blue-600 dark:text-blue-300',
   REVISION_REQUESTED: 'border-orange-400 text-orange-600 dark:text-orange-300',
   REJECTED: 'border-red-400 text-red-600 dark:text-red-300',
-  CONVERTED: 'border-green-500 text-green-600 dark:text-green-300',
+  CONVERTED: 'border-green-600 text-green-700 dark:text-green-300',
 }
 
 export default async function SuggestionsPage({
@@ -126,7 +126,7 @@ export default async function SuggestionsPage({
           <h1 className="text-2xl font-bold">
             {view === 'mine' ? 'Suggestion Saya' : 'Task Suggestions'}
           </h1>
-          <p className="mt-1 text-sm text-zinc-500">
+          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
             {suggestions.length} suggestion
           </p>
         </div>
@@ -190,7 +190,7 @@ export default async function SuggestionsPage({
           Terjadi kesalahan. Silakan coba lagi.
         </p>
       ) : suggestions.length === 0 ? (
-        <p className="mt-4 rounded-2xl bg-white p-8 text-center text-sm text-zinc-500 shadow dark:bg-zinc-900">
+        <p className="mt-4 rounded-2xl bg-white p-8 text-center text-sm text-zinc-600 dark:text-zinc-400 shadow dark:bg-zinc-900">
           Suggestion tidak ditemukan.
         </p>
       ) : (
@@ -211,7 +211,7 @@ export default async function SuggestionsPage({
                     {SUGGESTION_STATUS_LABELS[s.status]}
                   </span>
                 </div>
-                <p className="mt-1 truncate text-sm text-zinc-500">
+                <p className="mt-1 truncate text-sm text-zinc-600 dark:text-zinc-400">
                   {projectNames[s.project_id] ?? '-'} &middot; {formatDate(s.created_at)}
                 </p>
               </Link>

@@ -15,7 +15,7 @@ function formatDate(value: string): string {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-0.5 border-b py-3 last:border-0 sm:flex-row sm:justify-between sm:gap-4">
-      <dt className="text-sm text-zinc-500">{label}</dt>
+      <dt className="text-sm text-zinc-600 dark:text-zinc-400">{label}</dt>
       <dd className="text-sm font-medium break-all">{value}</dd>
     </div>
   )
@@ -34,7 +34,7 @@ export default async function ProfilePage() {
   return (
     <AppShell>
       <h1 className="text-2xl font-bold">Profil Saya</h1>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
         Anda hanya bisa mengubah nama sendiri. Role dan status diatur oleh
         administrator.
       </p>

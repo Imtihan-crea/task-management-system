@@ -7,7 +7,7 @@ const BASE =
 const STATUS_STYLE: Record<MeetingStatus, string> = {
   DRAFT: 'border-zinc-300 text-zinc-600 dark:border-zinc-600 dark:text-zinc-300',
   SCHEDULED: 'border-blue-400 text-blue-600 dark:text-blue-300',
-  COMPLETED: 'border-green-500 text-green-600 dark:text-green-300',
+  COMPLETED: 'border-green-600 text-green-700 dark:text-green-300',
   CANCELLED: 'border-red-400 text-red-600 dark:text-red-300',
 }
 

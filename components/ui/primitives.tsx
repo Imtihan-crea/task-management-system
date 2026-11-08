@@ -72,7 +72,7 @@ export function KpiCard({ label, value }: { label: string; value: number | strin
   return (
     <div className="rounded-xl border border-zinc-200 bg-white p-3 dark:border-zinc-800 dark:bg-zinc-900">
       <p className="font-heading text-xl font-bold text-kasuat-deep-gold">{value}</p>
-      <p className="mt-0.5 text-xs font-semibold tracking-wide text-zinc-500">{label}</p>
+      <p className="mt-0.5 text-xs font-semibold tracking-wide text-zinc-600 dark:text-zinc-400">{label}</p>
     </div>
   )
 }
@@ -90,7 +90,7 @@ export function PageHeader({
     <div className="flex flex-wrap items-center justify-between gap-2">
       <div>
         <h1 className="font-heading text-xl font-bold">{title}</h1>
-        {subtitle && <p className="mt-0.5 text-sm text-zinc-500">{subtitle}</p>}
+        {subtitle && <p className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">{subtitle}</p>}
       </div>
       {actions && <div className="flex flex-wrap gap-2">{actions}</div>}
     </div>
@@ -109,7 +109,7 @@ export function EmptyState({
   return (
     <div className="rounded-2xl border border-zinc-200 bg-white p-8 text-center dark:border-zinc-800 dark:bg-zinc-900">
       <p className="font-heading text-lg font-semibold">{title}</p>
-      {message && <p className="mt-1 text-sm text-zinc-500">{message}</p>}
+      {message && <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">{message}</p>}
       {action && <div className="mt-4 flex justify-center">{action}</div>}
     </div>
   )

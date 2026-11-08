@@ -280,7 +280,7 @@ export function LifecycleButtons({
           >
             {schedPending ? 'Menjadwalkan...' : 'Jadwalkan Meeting'}
           </button>
-          <p className="mt-1 text-xs text-zinc-500">
+          <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
             DRAFT: peserta belum diberi tahu. Menjadwalkan Meeting akan mengirim undangan.
           </p>
         </form>
@@ -313,7 +313,7 @@ export function LifecycleButtons({
             <button
               type="submit"
               disabled={compPending}
-              className="inline-flex min-h-[44px] items-center rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+              className="inline-flex min-h-[44px] items-center rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
             >
               {compPending ? 'Menyelesaikan...' : 'Selesaikan Meeting'}
             </button>

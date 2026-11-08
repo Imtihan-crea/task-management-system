@@ -41,12 +41,12 @@ export default async function NewWorkstreamPage({
     <AppShell>
       <Link
         href={`/projects/${project.id}?tab=workstreams`}
-        className="text-sm font-medium text-zinc-500 hover:underline"
+        className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline"
       >
         &larr; Kembali ke {project.code} · {project.name}
       </Link>
       <h1 className="mt-2 text-xl font-bold">Buat Workstream</h1>
-      <p className="mt-0.5 text-sm text-zinc-500">
+      <p className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">
         Project: {project.code} · {project.name}
       </p>
 

@@ -23,7 +23,7 @@ import type { Task, TaskStatus } from '@/types/task'
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-0.5 border-b py-2.5 last:border-0 sm:flex-row sm:justify-between sm:gap-4">
-      <dt className="text-sm text-zinc-500">{label}</dt>
+      <dt className="text-sm text-zinc-600 dark:text-zinc-400">{label}</dt>
       <dd className="text-sm font-medium break-all">{value}</dd>
     </div>
   )
@@ -140,7 +140,7 @@ export default async function TaskDetailPage({
 
   return (
     <AppShell>
-      <Link href="/tasks" className="text-sm font-medium text-zinc-500 hover:underline">
+      <Link href="/tasks" className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline">
         &larr; Kembali ke Tasks
       </Link>
 
@@ -192,7 +192,7 @@ export default async function TaskDetailPage({
                   {sourceBlock.label} — Lihat
                 </Link>
               ) : (
-                <p className="text-sm text-zinc-500">{sourceBlock.label}</p>
+                <p className="text-sm text-zinc-600 dark:text-zinc-400">{sourceBlock.label}</p>
               )}
             </div>
           )}
@@ -201,7 +201,7 @@ export default async function TaskDetailPage({
             (task.status === 'DONE' || task.status === 'CANCELLED' ? (
               !canFullEdit && (
                 <div className="mt-4 border-t pt-4 dark:border-zinc-700">
-                  <p className="text-sm text-zinc-500">
+                  <p className="text-sm text-zinc-600 dark:text-zinc-400">
                     Task ini terkunci. Minta PM atau Admin untuk mengubahnya.
                   </p>
                 </div>

@@ -78,7 +78,7 @@ export function ChangePasswordForm({ email }: { email: string }) {
         <p className="mt-2 text-center font-heading text-2xl font-bold text-kasuat-black dark:text-zinc-100">
           Ubah Password
         </p>
-        <p className="mt-1 text-center text-sm text-zinc-500">
+        <p className="mt-1 text-center text-sm text-zinc-600 dark:text-zinc-400">
           Masukkan password baru untuk {email}
         </p>
 
@@ -96,7 +96,7 @@ export function ChangePasswordForm({ email }: { email: string }) {
               onChange={(e) => setPassword(e.target.value)}
               className="w-full rounded-lg border px-3 py-2 text-base outline-none focus:border-kasuat-gold dark:border-zinc-700 dark:bg-zinc-800"
             />
-            <p className="mt-1 text-xs text-zinc-500">Minimal 8 karakter.</p>
+            <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">Minimal 8 karakter.</p>
           </div>
 
           <div>
@@ -141,7 +141,7 @@ export function ChangePasswordForm({ email }: { email: string }) {
           <button
             type="button"
             onClick={handleLogout}
-            className="text-sm font-medium text-zinc-500 hover:underline"
+            className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline"
           >
             Logout
           </button>

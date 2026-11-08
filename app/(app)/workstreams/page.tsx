@@ -121,7 +121,7 @@ export default async function WorkstreamsPage({
         <>
           <div className="mt-4 hidden overflow-x-auto rounded-2xl bg-white shadow md:block dark:bg-zinc-900">
             <table className="w-full text-left text-sm">
-              <thead className="border-b text-xs uppercase text-zinc-500">
+              <thead className="border-b text-xs uppercase text-zinc-600 dark:text-zinc-400">
                 <tr>
                   <th scope="col" className="px-4 py-3">Kode</th>
                   <th scope="col" className="px-4 py-3">Nama</th>
@@ -158,7 +158,7 @@ export default async function WorkstreamsPage({
                     </span>
                     {w.name}
                   </p>
-                  <p className="mt-0.5 truncate text-sm text-zinc-500">
+                  <p className="mt-0.5 truncate text-sm text-zinc-600 dark:text-zinc-400">
                     {projectNames[w.project_id] ?? '-'} &middot; {taskCounts[w.id] ?? 0} tasks
                   </p>
                 </Link>

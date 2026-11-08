@@ -79,7 +79,7 @@ function FormFields({
         <label htmlFor="proj_pm" className="mb-1 block text-sm font-medium">
           Project Manager <span aria-hidden="true">*</span>
         </label>
-        <p className="mb-1 text-xs text-zinc-500">
+        <p className="mb-1 text-xs text-zinc-600 dark:text-zinc-400">
           Bisa pilih lebih dari satu (tahan Ctrl/Cmd saat klik).
         </p>
         <select

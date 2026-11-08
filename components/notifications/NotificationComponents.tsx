@@ -14,7 +14,7 @@ import { formatDate } from '@/lib/utils/dates'
 export function NotificationList({ items }: { items: NotificationItem[] }) {
   if (items.length === 0) {
     return (
-      <p className="rounded-2xl bg-white p-8 text-center text-sm text-zinc-500 shadow dark:bg-zinc-900">
+      <p className="rounded-2xl bg-white p-8 text-center text-sm text-zinc-600 dark:text-zinc-400 shadow dark:bg-zinc-900">
         Belum ada Notifications.
       </p>
     )
@@ -35,8 +35,8 @@ export function NotificationList({ items }: { items: NotificationItem[] }) {
               <Link href={notificationHref(n.entity_type, n.entity_id)} className="font-semibold hover:underline">
                 {n.title}
               </Link>
-              {n.message && <p className="mt-0.5 text-sm text-zinc-500">{n.message}</p>}
-              <p className="mt-1 text-xs text-zinc-400">{formatDate(n.created_at)}</p>
+              {n.message && <p className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">{n.message}</p>}
+              <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">{formatDate(n.created_at)}</p>
             </div>
             {!n.is_read && (
               <form action={markNotificationRead}>

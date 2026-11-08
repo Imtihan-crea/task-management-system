@@ -19,7 +19,7 @@ import type { TaskSuggestion } from '@/types/suggestion'
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-0.5 border-b py-2.5 last:border-0 sm:flex-row sm:justify-between sm:gap-4">
-      <dt className="text-sm text-zinc-500">{label}</dt>
+      <dt className="text-sm text-zinc-600 dark:text-zinc-400">{label}</dt>
       <dd className="text-sm font-medium break-all">{value}</dd>
     </div>
   )
@@ -103,7 +103,7 @@ export default async function SuggestionDetailPage({
 
   return (
     <AppShell>
-      <Link href="/task-suggestions" className="text-sm font-medium text-zinc-500 hover:underline">
+      <Link href="/task-suggestions" className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline">
         &larr; Kembali ke Suggestions
       </Link>
 

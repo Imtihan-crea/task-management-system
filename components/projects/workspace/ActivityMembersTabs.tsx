@@ -63,7 +63,7 @@ export async function MembersTab({ projectId }: { projectId: string }) {
     <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
       <h2 className="mb-3 text-lg font-bold">Anggota ({members.length})</h2>
       {members.length === 0 ? (
-        <p className="text-sm text-zinc-500">Belum ada anggota.</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">Belum ada anggota.</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {members.map((m) => (
@@ -73,7 +73,7 @@ export async function MembersTab({ projectId }: { projectId: string }) {
             >
               <div className="min-w-0">
                 <p className="truncate font-medium">{m.full_name || m.email}</p>
-                <p className="truncate text-xs text-zinc-500">{m.email}</p>
+                <p className="truncate text-xs text-zinc-600 dark:text-zinc-400">{m.email}</p>
               </div>
               <div className="flex items-center gap-2">
                 {pmIds.includes(m.id) && (
@@ -81,7 +81,7 @@ export async function MembersTab({ projectId }: { projectId: string }) {
                     PM
                   </span>
                 )}
-                <span className="text-xs text-zinc-500">{m.role.replace('_', ' ')}</span>
+                <span className="text-xs text-zinc-600 dark:text-zinc-400">{m.role.replace('_', ' ')}</span>
               </div>
             </li>
           ))}

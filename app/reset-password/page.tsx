@@ -186,7 +186,7 @@ export default function ResetPasswordPage() {
         <h1 className="text-center text-2xl font-bold">TASK MANAGEMENT SYSTEM</h1>
 
         {phase === 'checking' && (
-          <p className="mt-6 text-center text-sm text-zinc-500">
+          <p className="mt-6 text-center text-sm text-zinc-600 dark:text-zinc-400">
             Memeriksa Link reset Password Anda...
           </p>
         )}
@@ -194,7 +194,7 @@ export default function ResetPasswordPage() {
         {phase === 'invalid' && (
           <div className="mt-6 text-center">
             <p className="text-sm font-medium text-red-600">{linkError}</p>
-            <p className="mt-2 text-sm text-zinc-500">
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
               Setiap Link reset hanya dapat dibuka satu kali dan akan kedaluwarsa setelah beberapa waktu.
             </p>
             <a
@@ -208,7 +208,7 @@ export default function ResetPasswordPage() {
 
         {(phase === 'ready' || phase === 'saving') && (
           <>
-            <p className="mt-2 text-center text-sm text-zinc-500">
+            <p className="mt-2 text-center text-sm text-zinc-600 dark:text-zinc-400">
               {email ? (
                 <>
                   Atur Password baru untuk <span className="font-medium">{email}</span>.

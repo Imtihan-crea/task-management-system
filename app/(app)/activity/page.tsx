@@ -151,7 +151,7 @@ async function ActivityResults({ filters }: { filters: ActivityFilters }) {
       </div>
 
       <div className="mt-4 flex items-center justify-between">
-        <p className="text-sm text-zinc-500">
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">
           Halaman {page} dari {totalPages} ({total} entri)
         </p>
         <div className="flex gap-2">
@@ -201,7 +201,7 @@ export default async function ActivityPage({
   return (
     <AppShell>
       <h1 className="text-2xl font-bold">Activity Log</h1>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
         Riwayat aktivitas penting di seluruh sistem.
       </p>
 

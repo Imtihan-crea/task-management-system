@@ -25,7 +25,7 @@ export function Pagination({
 
   return (
     <div className="mt-4 flex items-center justify-between">
-      <p className="text-sm text-zinc-500">
+      <p className="text-sm text-zinc-600 dark:text-zinc-400">
         Halaman {page} dari {totalPages} ({total} {label})
       </p>
       <div className="flex gap-2">

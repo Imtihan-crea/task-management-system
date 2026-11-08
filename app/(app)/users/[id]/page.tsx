@@ -30,7 +30,7 @@ function formatDate(value: string): string {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-0.5 border-b py-3 last:border-0 sm:flex-row sm:justify-between sm:gap-4">
-      <dt className="text-sm text-zinc-500">{label}</dt>
+      <dt className="text-sm text-zinc-600 dark:text-zinc-400">{label}</dt>
       <dd className="text-sm font-medium break-all">{value}</dd>
     </div>
   )
@@ -68,7 +68,7 @@ export default async function UserDetailPage({
     <AppShell>
       <Link
         href="/users"
-        className="text-sm font-medium text-zinc-500 hover:underline"
+        className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline"
       >
         &larr; Kembali ke Users
       </Link>

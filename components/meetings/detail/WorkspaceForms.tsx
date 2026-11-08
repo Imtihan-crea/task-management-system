@@ -223,7 +223,7 @@ export function DecisionItem({
       <form {...updAction} className="flex flex-col gap-2">
         <input type="hidden" name="id" value={decision.id} />
         <input type="hidden" name="meeting_id" value={meetingId} />
-        <label className="text-xs font-semibold text-zinc-500">#{index + 1}</label>
+        <label className="text-xs font-semibold text-zinc-600 dark:text-zinc-400">#{index + 1}</label>
         <input
           name="decision"
           required
@@ -488,7 +488,7 @@ export function ActionItemCard({
             <StateMessage state={taskState} />
           </form>
         ) : (
-          <p className="text-sm text-zinc-500">Task: Belum dibuat</p>
+          <p className="text-sm text-zinc-600 dark:text-zinc-400">Task: Belum dibuat</p>
         )}
       </div>
 
@@ -566,10 +566,10 @@ export function ParticipantRow({
               Organizer
             </span>
           )}
-          {isSelf && <span className="ml-2 text-xs text-zinc-500">(Anda)</span>}
+          {isSelf && <span className="ml-2 text-xs text-zinc-600 dark:text-zinc-400">(Anda)</span>}
         </p>
         {!participant.user_id && participant.external_email && (
-          <p className="truncate text-xs text-zinc-500">{participant.external_email}</p>
+          <p className="truncate text-xs text-zinc-600 dark:text-zinc-400">{participant.external_email}</p>
         )}
       </div>
       <div className="flex flex-wrap items-center gap-2">
@@ -595,7 +595,7 @@ export function ParticipantRow({
           </form>
         )}
         {!participant.user_id && (
-          <span className="text-xs text-zinc-500">{ATTENDANCE_LABELS[participant.attendance] ?? participant.attendance}</span>
+          <span className="text-xs text-zinc-600 dark:text-zinc-400">{ATTENDANCE_LABELS[participant.attendance] ?? participant.attendance}</span>
         )}
         {canRemove && (
           <form {...delAction}>

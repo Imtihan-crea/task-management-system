@@ -13,7 +13,7 @@ export function InviteUserForm() {
   return (
     <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
       <h2 className="text-lg font-bold">Undang User</h2>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
         User menerima email untuk mengatur password sendiri. Admin tidak
         pernah melihat password.
       </p>

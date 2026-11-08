@@ -97,13 +97,13 @@ export default async function NewMeetingPage({
     <AppShell>
       <Link
         href={lockedProject ? `/projects/${lockedProject.id}?tab=meetings` : '/meetings'}
-        className="text-sm font-medium text-zinc-500 hover:underline"
+        className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline"
       >
         &larr; Kembali ke {lockedProject ? `${lockedProject.code} · ${lockedProject.name}` : 'Meetings'}
       </Link>
       <h1 className="mt-2 text-xl font-bold">Buat Meeting</h1>
       {lockedProject && (
-        <p className="mt-0.5 text-sm text-zinc-500">
+        <p className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">
           Project otomatis terkunci: {lockedProject.code} · {lockedProject.name}
         </p>
       )}

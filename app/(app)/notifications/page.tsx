@@ -53,7 +53,7 @@ export default async function NotificationsPage({
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="text-2xl font-bold">Notifications</h1>
-          <p className="mt-1 text-sm text-zinc-500">
+          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
             {unreadCount > 0 ? `${unreadCount} belum dibaca` : 'Semua sudah dibaca.'}
           </p>
         </div>
@@ -74,7 +74,7 @@ export default async function NotificationsPage({
 
       <section id="preferences" className="mt-6 rounded-2xl bg-white p-5 shadow scroll-mt-20 dark:bg-zinc-900">
         <h2 className="mb-2 text-lg font-bold">Preferensi Email</h2>
-        <p className="mb-4 text-sm text-zinc-500">
+        <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-400">
           Notifications di dalam aplikasi selalu muncul. Email dapat dimatikan di sini.
         </p>
         <PreferencesForm

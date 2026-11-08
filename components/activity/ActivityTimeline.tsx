@@ -87,7 +87,7 @@ export function ActivityTimeline({
   emptyText?: string
 }) {
   if (entries.length === 0) {
-    return <p className="text-sm text-zinc-500">{emptyText}</p>
+    return <p className="text-sm text-zinc-600 dark:text-zinc-400">{emptyText}</p>
   }
 
   return (
@@ -102,13 +102,13 @@ export function ActivityTimeline({
             <p className="text-sm font-semibold text-[#221F1F] dark:text-zinc-100">
               {describeActivity(entry)}
             </p>
-            <p className="truncate text-sm text-zinc-500">
+            <p className="truncate text-sm text-zinc-600 dark:text-zinc-400">
               {entry.actor_user_id
                 ? (actorNames[entry.actor_user_id] ?? 'User tidak dikenal')
                 : 'Sistem'}
               {entry.entity_code ? ` · ${entry.entity_code}` : ''}
             </p>
-            <p className="text-xs text-[#A6A6A6]">{formatDate(entry.created_at)}</p>
+            <p className="text-xs text-zinc-600 dark:text-zinc-400">{formatDate(entry.created_at)}</p>
           </div>
         </li>
       ))}

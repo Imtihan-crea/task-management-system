@@ -220,7 +220,7 @@ export default function AcceptInvitePage() {
         <h1 className="text-center text-2xl font-bold">TASK MANAGEMENT SYSTEM</h1>
 
         {phase === 'checking' && (
-          <p className="mt-6 text-center text-sm text-zinc-500">
+          <p className="mt-6 text-center text-sm text-zinc-600 dark:text-zinc-400">
             Memeriksa undangan Anda...
           </p>
         )}
@@ -228,7 +228,7 @@ export default function AcceptInvitePage() {
         {phase === 'invalid' && (
           <div className="mt-6 text-center">
             <p className="text-sm font-medium text-red-600">{linkError}</p>
-            <p className="mt-2 text-sm text-zinc-500">
+            <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">
               Setiap Link undangan hanya dapat dibuka satu kali.
             </p>
             <a
@@ -248,7 +248,7 @@ export default function AcceptInvitePage() {
 
         {(phase === 'ready' || phase === 'saving') && (
           <>
-            <p className="mt-2 text-center text-sm text-zinc-500">
+            <p className="mt-2 text-center text-sm text-zinc-600 dark:text-zinc-400">
               Selamat datang! Atur Password Anda untuk mengaktifkan akun.
             </p>
 

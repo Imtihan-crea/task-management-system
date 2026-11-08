@@ -170,7 +170,7 @@ export default async function UsersPage({
           Terjadi kesalahan. Silakan coba lagi.
         </p>
       ) : users.length === 0 ? (
-        <p className="mt-4 rounded-2xl bg-white p-8 text-center text-sm text-zinc-500 shadow dark:bg-zinc-900">
+        <p className="mt-4 rounded-2xl bg-white p-8 text-center text-sm text-zinc-600 dark:text-zinc-400 shadow dark:bg-zinc-900">
           {q || roleFilter || statusFilter
             ? 'Tidak ada User yang cocok dengan pencarian atau filter Anda.'
             : 'Belum ada User. Tambahkan User pertama Anda di bawah.'}
@@ -180,7 +180,7 @@ export default async function UsersPage({
           {/* Desktop: table */}
           <div className="mt-4 hidden overflow-x-auto rounded-2xl bg-white shadow md:block dark:bg-zinc-900">
             <table className="w-full text-left text-sm">
-              <thead className="border-b text-xs uppercase text-zinc-500">
+              <thead className="border-b text-xs uppercase text-zinc-600 dark:text-zinc-400">
                 <tr>
                   <th scope="col" className="px-4 py-3">Nama</th>
                   <th scope="col" className="px-4 py-3">Email</th>
@@ -236,7 +236,7 @@ export default async function UsersPage({
                 className="rounded-2xl bg-white p-4 shadow dark:bg-zinc-900"
               >
                 <p className="font-semibold">{user.full_name || '-'}</p>
-                <p className="break-all text-sm text-zinc-500">{user.email}</p>
+                <p className="break-all text-sm text-zinc-600 dark:text-zinc-400">{user.email}</p>
                 <div className="mt-2 flex flex-wrap gap-2 text-xs">
                   <span className="rounded-full border px-2 py-1">
                     {ROLE_LABELS[user.role]}
@@ -245,7 +245,7 @@ export default async function UsersPage({
                     {STATUS_LABELS[user.status]}
                   </span>
                 </div>
-                <p className="mt-2 text-xs text-zinc-500">
+                <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
                   Created {formatDate(user.created_at)}
                 </p>
                 <div className="mt-3 flex flex-wrap items-center gap-2">

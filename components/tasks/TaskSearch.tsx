@@ -33,7 +33,7 @@ export function DebouncedTaskSearch({ initial }: { initial: string }) {
   // TaskFilterForm. Form bersarang tidak sah di HTML; browser membuang form
   // dalam sehingga hydration gagal (React error #418 di /tasks).
   return (
-    <div role="search">
+    <div role="search" aria-label="Cari task">
       <label htmlFor="task-search" className="mb-1 block text-sm font-medium">
         Cari
       </label>

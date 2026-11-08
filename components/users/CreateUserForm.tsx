@@ -23,7 +23,7 @@ export function CreateUserForm() {
   return (
     <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
       <h2 className="text-lg font-bold">Buat User dengan Password</h2>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
         User langsung aktif dan bisa login dengan password yang Anda ketik.
         Tidak ada email undangan yang dikirim — bagikan email &amp; password
         lewat kanal aman (WhatsApp/chat).
@@ -84,7 +84,7 @@ export function CreateUserForm() {
               Tampilkan
             </label>
           </div>
-          <p className="mt-1 text-xs text-zinc-500">
+          <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
             Minimal {MIN_ADMIN_PASSWORD_LENGTH} karakter (mengikuti batas minimum
             Supabase Auth). Bagikan lewat kanal aman dan pertimbangkan opsi
             &quot;wajib ganti password saat login pertama&quot;.
@@ -117,7 +117,7 @@ export function CreateUserForm() {
           />
           <span>
             <span className="font-medium">Wajib ganti Password saat Login pertama</span>
-            <span className="block text-xs text-zinc-500">
+            <span className="block text-xs text-zinc-600 dark:text-zinc-400">
               Opsional. User harus mengganti password sementara sebelum bisa
               memakai aplikasi.
             </span>

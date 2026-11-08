@@ -112,7 +112,7 @@ export default async function MeetingDetailPage({
 
   return (
     <AppShell>
-      <Link href="/meetings" className="text-sm font-medium text-zinc-500 hover:underline">
+      <Link href="/meetings" className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline">
         &larr; Kembali ke Meetings
       </Link>
 
@@ -126,7 +126,7 @@ export default async function MeetingDetailPage({
         </div>
       </div>
       <h1 className="mt-2 text-2xl font-bold">{meeting.title}</h1>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
         {project ? (
           <Link href={`/projects/${project.id}`} className="font-medium hover:underline">
             {projectName}
@@ -136,7 +136,7 @@ export default async function MeetingDetailPage({
         )}{' '}
         · {timeLabel}
       </p>
-      <p className="mt-0.5 text-sm text-zinc-500">
+      <p className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">
         Organizer: {nameOf(meeting.organizer_id)}
       </p>
 

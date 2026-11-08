@@ -78,9 +78,9 @@ export function BellPopover() {
       </div>
       <ul className="max-h-80 overflow-y-auto">
         {!summary ? (
-          <li className="px-4 py-6 text-center text-sm text-zinc-500">Memuat...</li>
+          <li className="px-4 py-6 text-center text-sm text-zinc-600 dark:text-zinc-400">Memuat...</li>
         ) : summary.recent.length === 0 ? (
-          <li className="px-4 py-6 text-center text-sm text-zinc-500">Belum ada Notifications.</li>
+          <li className="px-4 py-6 text-center text-sm text-zinc-600 dark:text-zinc-400">Belum ada Notifications.</li>
         ) : (
           summary.recent.map((n) => (
             <li key={n.id} className="border-b border-zinc-100 last:border-0 dark:border-zinc-800">
@@ -93,7 +93,7 @@ export function BellPopover() {
                   {!n.is_read && <span aria-hidden="true" className="mr-1 text-red-600">●</span>}
                   {n.title}
                 </p>
-                {n.message && <p className="mt-0.5 truncate text-xs text-zinc-500">{n.message}</p>}
+                {n.message && <p className="mt-0.5 truncate text-xs text-zinc-600 dark:text-zinc-400">{n.message}</p>}
               </Link>
             </li>
           ))
@@ -149,21 +149,23 @@ export function ProfileMenu({
   return (
     <Popover
       label="Menu profil"
+      nameFromContent
       button={
         <span className="flex items-center gap-2">
           <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-full bg-kasuat-gold text-xs font-bold text-kasuat-black">
             {initials || 'U'}
           </span>
+          <span className="sr-only">Menu profil</span>
           <span className="hidden text-left md:block">
-            <span className="block max-w-28 truncate text-sm font-semibold text-zinc-100">{name}</span>
-            <span className="block text-xs text-zinc-400">{role}</span>
+            <span className="block max-w-28 truncate text-sm font-semibold text-kasuat-black dark:text-zinc-100">{name}</span>
+            <span className="block text-xs text-zinc-600 dark:text-zinc-400">{role}</span>
           </span>
         </span>
       }
     >
       <div className="border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
         <p className="truncate text-sm font-bold">{name}</p>
-        <p className="truncate text-xs text-zinc-500">{email}</p>
+        <p className="truncate text-xs text-zinc-600 dark:text-zinc-400">{email}</p>
       </div>
       <ul className="py-1">
         {items.map((item) => (
@@ -220,6 +222,7 @@ export function GlobalSearch() {
   return (
     <form
       role="search"
+      aria-label="Pencarian global"
       className="hidden min-w-0 flex-1 items-center md:flex"
       onSubmit={(e) => {
         e.preventDefault()

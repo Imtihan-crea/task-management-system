@@ -76,7 +76,7 @@ export async function KpiSection({ userId, role, filters }: Ctx & { filters: Das
         <KpiLink label="Task Berjalan" value={ongoing.length} href="/tasks?view=ongoing" />
         <KpiLink label="Task Overdue" value={overdue.length} href="/tasks?view=overdue" />
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-3 text-xs text-zinc-500 sm:grid-cols-4">
+      <div className="mt-3 grid grid-cols-2 gap-3 text-xs text-zinc-600 dark:text-zinc-400 sm:grid-cols-4">
         <p>+{newProjects} dari bulan lalu</p>
         <p>+{newTasks} dari bulan lalu</p>
         <p>{tasks.length === 0 ? '0%' : Math.round((ongoing.length / tasks.length) * 100)}% dari total</p>
@@ -163,7 +163,7 @@ function MiniList({
   assigneeNames: Record<string, string>
 }) {
   if (items.length === 0) {
-    return <p className="text-sm text-zinc-500">{empty}</p>
+    return <p className="text-sm text-zinc-600 dark:text-zinc-400">{empty}</p>
   }
   return (
     <ul className="flex flex-col gap-2">
@@ -180,7 +180,7 @@ function MiniList({
                 </span>
                 {t.title}
               </p>
-              <p className="truncate text-xs text-zinc-500">
+              <p className="truncate text-xs text-zinc-600 dark:text-zinc-400">
                 {projectNames[t.project_id] ?? '-'} &middot; {assigneeNames[t.assignee_id] ?? '-'}
               </p>
             </div>
@@ -254,7 +254,7 @@ export async function WorkloadSection({ userId, role, filters }: Ctx & { filters
     <section className="mt-6 rounded-2xl bg-white p-4 shadow dark:bg-zinc-900">
       <h2 className="mb-3 text-lg font-bold">Workload (task terbuka per Assignee)</h2>
       {workload.length === 0 ? (
-        <p className="text-sm text-zinc-500">Tidak ada task terbuka.</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">Tidak ada task terbuka.</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {workload.map((w) => (
@@ -365,7 +365,7 @@ export async function SuggestionsSection({
     <section className="mt-6 rounded-2xl bg-white p-4 shadow dark:bg-zinc-900">
       <h2 className="mb-3 text-lg font-bold">Pending Suggestions ({items.length})</h2>
       {items.length === 0 ? (
-        <p className="text-sm text-zinc-500">Tidak ada Suggestion PENDING.</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">Tidak ada Suggestion PENDING.</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {items.map((s) => (
@@ -380,7 +380,7 @@ export async function SuggestionsSection({
                   </span>
                   {s.title}
                 </p>
-                <p className="truncate text-xs text-zinc-500">{projectNames[s.project_id] ?? '-'}</p>
+                <p className="truncate text-xs text-zinc-600 dark:text-zinc-400">{projectNames[s.project_id] ?? '-'}</p>
               </Link>
             </li>
           ))}

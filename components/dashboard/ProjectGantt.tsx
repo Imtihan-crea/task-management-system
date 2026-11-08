@@ -216,7 +216,7 @@ export async function ProjectGantt({
       <p className="mb-2 text-center text-sm font-semibold">{monthLabel(cols[0].start)}</p>
 
       {visible.length === 0 ? (
-        <p className="text-sm text-zinc-500">Tidak ada Project bertanggal pada periode ini.</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">Tidak ada Project bertanggal pada periode ini.</p>
       ) : (
         <div className="overflow-x-auto">
           <div className="min-w-[560px]">
@@ -224,9 +224,9 @@ export async function ProjectGantt({
               className="grid gap-1"
               style={{ gridTemplateColumns: `180px repeat(${cols.length}, minmax(36px, 1fr))` }}
             >
-              <div className="px-1 py-1 text-xs font-semibold text-zinc-500">Project</div>
+              <div className="px-1 py-1 text-xs font-semibold text-zinc-600 dark:text-zinc-400">Project</div>
               {cols.map((c) => (
-                <div key={c.key} className="px-1 py-1 text-center text-xs text-zinc-500">
+                <div key={c.key} className="px-1 py-1 text-center text-xs text-zinc-600 dark:text-zinc-400">
                   {c.label}
                 </div>
               ))}
@@ -247,7 +247,7 @@ export async function ProjectGantt({
                       className="truncate px-1 py-1.5 text-xs font-medium hover:underline"
                       title={`${p.code} · ${p.name}`}
                     >
-                      <span className="mr-1 font-mono text-[11px] text-zinc-500">{p.code}</span>
+                      <span className="mr-1 font-mono text-[11px] text-zinc-600 dark:text-zinc-400">{p.code}</span>
                       {p.name}
                     </Link>
                     <div className="relative" style={{ gridColumn: `2 / span ${cols.length}` }}>
@@ -353,7 +353,7 @@ async function ProjectTaskGantt({
             kembali ke global
           </Link>
         </p>
-        <p className="text-sm text-zinc-500">Tidak ada task di Project ini.</p>
+        <p className="text-sm text-zinc-600 dark:text-zinc-400">Tidak ada task di Project ini.</p>
       </div>
     )
   }
@@ -388,9 +388,9 @@ async function ProjectTaskGantt({
             className="grid gap-1"
             style={{ gridTemplateColumns: `200px repeat(${cols.length}, minmax(36px, 1fr))` }}
           >
-            <div className="px-1 py-1 text-xs font-semibold text-zinc-500">Task</div>
+            <div className="px-1 py-1 text-xs font-semibold text-zinc-600 dark:text-zinc-400">Task</div>
             {cols.map((c) => (
-              <div key={c.key} className="px-1 py-1 text-center text-xs text-zinc-500">
+              <div key={c.key} className="px-1 py-1 text-center text-xs text-zinc-600 dark:text-zinc-400">
                 {c.label}
               </div>
             ))}
@@ -412,7 +412,7 @@ async function ProjectTaskGantt({
                     className="truncate px-1 py-1.5 text-xs font-medium hover:underline"
                     title={`${t.code} · ${t.title}${t.workstream_id ? ` · ${wsNames[t.workstream_id] ?? ''}` : ''}`}
                   >
-                    <span className="mr-1 font-mono text-[11px] text-zinc-500">{t.code}</span>
+                    <span className="mr-1 font-mono text-[11px] text-zinc-600 dark:text-zinc-400">{t.code}</span>
                     {t.title}
                   </Link>
                   <div className="relative" style={{ gridColumn: `2 / span ${cols.length}` }}>

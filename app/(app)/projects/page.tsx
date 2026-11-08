@@ -215,7 +215,7 @@ export default async function ProjectsPage({
           Terjadi kesalahan. Silakan coba lagi.
         </p>
       ) : visibleProjects.length === 0 ? (
-        <p className="mt-4 rounded-2xl bg-white p-8 text-center text-sm text-zinc-500 shadow dark:bg-zinc-900">
+        <p className="mt-4 rounded-2xl bg-white p-8 text-center text-sm text-zinc-600 dark:text-zinc-400 shadow dark:bg-zinc-900">
           Belum ada Project. {canCreate ? 'Buat Project pertama Anda di bawah.' : ''}
         </p>
       ) : (
@@ -238,7 +238,7 @@ export default async function ProjectsPage({
                         </span>
                         {project.name}
                       </p>
-                      <p className="truncate text-sm text-zinc-500">
+                      <p className="truncate text-sm text-zinc-600 dark:text-zinc-400">
                         {project.client || 'Tanpa client'} &middot;{' '}
                         {(pmNames[project.id] ?? []).join(', ') || '-'}
                       </p>
@@ -260,7 +260,7 @@ export default async function ProjectsPage({
                         style={{ width: `${progress.percent}%` }}
                       />
                     </div>
-                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-500">
+                    <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-zinc-600 dark:text-zinc-400">
                       <span>Total {progress.total}</span>
                       <span>Done {progress.completed}</span>
                       <span>{progress.percent}%</span>

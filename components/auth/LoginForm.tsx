@@ -97,10 +97,10 @@ export function LoginForm({ inactiveMessage }: { inactiveMessage?: string }) {
         <div className="flex justify-center py-2">
           <KasuatLogo height={36} />
         </div>
-        <p className="mt-2 text-center font-heading text-2xl font-bold text-kasuat-black dark:text-zinc-100">
+        <h1 className="mt-2 text-center font-heading text-2xl font-bold text-kasuat-black dark:text-zinc-100">
           Task Management
-        </p>
-        <p className="mt-1 text-center text-sm text-zinc-500">
+        </h1>
+        <p className="mt-1 text-center text-sm text-zinc-600 dark:text-zinc-400">
           Login untuk lanjut ke dashboard
         </p>
 

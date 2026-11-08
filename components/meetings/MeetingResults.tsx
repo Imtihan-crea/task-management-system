@@ -67,14 +67,14 @@ export async function MeetingResults({
 
   return (
     <>
-      <p className="mt-3 text-sm text-zinc-500" role="status">
+      <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400" role="status">
         {visible.length} meeting
       </p>
 
       {/* Desktop: tabel */}
       <div className="mt-3 hidden overflow-x-auto rounded-2xl bg-white shadow md:block dark:bg-zinc-900">
         <table className="w-full text-left text-sm">
-          <thead className="border-b text-xs uppercase text-zinc-500">
+          <thead className="border-b text-xs uppercase text-zinc-600 dark:text-zinc-400">
             <tr>
               <th scope="col" className="px-4 py-3">ID</th>
               <th scope="col" className="px-4 py-3">Meeting</th>
@@ -116,14 +116,14 @@ function MeetingTableRow({
         <Link href={`/meetings/${m.id}`} className="font-medium hover:underline">
           {m.title}
         </Link>
-        <p className="mt-0.5 text-xs text-zinc-500">
+        <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400">
           {m.participant_count} peserta
         </p>
       </td>
       <td className="px-4 py-3">{projectName}</td>
       <td className="px-4 py-3 whitespace-nowrap">
         {formatMeetingDate(m.meeting_date)}
-        <span className="block text-xs text-zinc-500">{formatTimeRange(m.start_time, m.end_time)}</span>
+        <span className="block text-xs text-zinc-600 dark:text-zinc-400">{formatTimeRange(m.start_time, m.end_time)}</span>
       </td>
       <td className="px-4 py-3">
         <div className="flex flex-wrap gap-1">
@@ -157,11 +157,11 @@ function MeetingCard({
           </span>
           {m.title}
         </p>
-        <p className="mt-0.5 truncate text-sm text-zinc-500">
+        <p className="mt-0.5 truncate text-sm text-zinc-600 dark:text-zinc-400">
           {projectName} · {formatRelativeDay(m.meeting_date)} ·{' '}
           {formatTimeRange(m.start_time, m.end_time)}
         </p>
-        <p className="mt-0.5 text-xs text-zinc-500">
+        <p className="mt-0.5 text-xs text-zinc-600 dark:text-zinc-400">
           {m.participant_count} peserta · {m.action_item_count} Action Item ·{' '}
           {m.task_count} task · {daysAgoLabel(m.meeting_date)}
         </p>

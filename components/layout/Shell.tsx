@@ -92,7 +92,7 @@ export function Shell({
         <main className="mx-auto w-full max-w-5xl flex-1 px-3 py-4">{children}</main>
 
         <footer className="mx-auto w-full max-w-5xl px-3 pb-4">
-          <p className="text-center text-xs text-zinc-400">
+          <p className="text-center text-xs text-zinc-600 dark:text-zinc-400">
             kasuat.co &middot; v1.10.0
           </p>
         </footer>

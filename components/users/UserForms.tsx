@@ -36,7 +36,7 @@ export function StatusToggleForm({ user, isSelf = false }: { user: EditableUser;
   // Audit A7: user INVITED belum punya password; Activate membuatnya tidak
   // bisa login. Status INVITED hanya berubah saat user menerima undangan.
   if (user.status === 'INVITED') {
-    return <p className="text-sm text-zinc-500">Menunggu user menerima undangan.</p>
+    return <p className="text-sm text-zinc-600 dark:text-zinc-400">Menunggu user menerima undangan.</p>
   }
   // Rule 05: akun sendiri tidak bisa dinonaktifkan; jangan tampilkan tombol (audit C5).
   if (isSelf) return null
@@ -99,7 +99,7 @@ export function EditUserForm({ user, isSelf }: { user: EditableUser; isSelf: boo
           disabled
           className="w-full cursor-not-allowed rounded-lg border px-3 py-2 text-base opacity-60 dark:border-zinc-700 dark:bg-zinc-800"
         />
-        <p className="mt-1 text-xs text-zinc-500">
+        <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
           Email tidak bisa diubah dari sini. Hubungi penyedia autentikasi.
         </p>
       </div>
@@ -145,10 +145,10 @@ export function EditUserForm({ user, isSelf }: { user: EditableUser; isSelf: boo
           <input type="hidden" name="status" value={user.status} />
         )}
         {isSelf && (
-          <p className="mt-1 text-xs text-zinc-500">Anda tidak dapat mengubah status Anda sendiri.</p>
+          <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">Anda tidak dapat mengubah status Anda sendiri.</p>
         )}
         {!isSelf && user.status === 'INVITED' && (
-          <p className="mt-1 text-xs text-zinc-500">
+          <p className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">
             Berubah saat user menerima undangan.
           </p>
         )}

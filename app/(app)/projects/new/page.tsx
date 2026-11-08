@@ -10,7 +10,7 @@ export default async function NewProjectPage() {
 
   return (
     <AppShell>
-      <Link href="/projects" className="text-sm font-medium text-zinc-500 hover:underline">
+      <Link href="/projects" className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline">
         &larr; Kembali ke Projects
       </Link>
       <h1 className="mt-2 text-xl font-bold">Buat Project</h1>

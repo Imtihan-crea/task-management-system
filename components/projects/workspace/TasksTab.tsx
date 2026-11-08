@@ -165,7 +165,7 @@ export async function TasksTab({
       </form>
 
       {visibleTasks.length === 0 ? (
-        <p className="mt-3 text-sm text-zinc-500">Belum ada Task.</p>
+        <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">Belum ada Task.</p>
       ) : (
         <ul className="mt-3 flex flex-col gap-2">
           {visibleTasks.map((task) => {
@@ -178,7 +178,7 @@ export async function TasksTab({
                     </span>
                     {task.title}
                   </p>
-                  <p className="truncate text-xs text-zinc-500">
+                  <p className="truncate text-xs text-zinc-600 dark:text-zinc-400">
                     {task.workstream_id ? (wsNames[task.workstream_id] ?? '-') : 'Tanpa Workstream'}
                     {' '} &middot; {assigneeNames[task.assignee_id] ?? '-'}
                   </p>

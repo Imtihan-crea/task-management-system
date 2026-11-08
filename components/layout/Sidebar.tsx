@@ -97,7 +97,7 @@ export function Sidebar({
         return (
           <div key={group.title ?? 'main'}>
             {group.title && !collapsed && (
-              <p className="px-3 pb-1 pt-3 text-[11px] font-semibold tracking-wider text-zinc-500">
+              <p className="px-3 pb-1 pt-3 text-[11px] font-semibold tracking-wider text-zinc-400">
                 {group.title}
               </p>
             )}

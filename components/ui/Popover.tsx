@@ -11,11 +11,14 @@ export function Popover({
   button,
   children,
   align = 'right',
+  nameFromContent = false,
 }: {
   label: string
   button: ReactNode
   children: ReactNode
   align?: 'left' | 'right'
+  /** Nama tombol diambil dari isinya (ada teks terlihat), bukan aria-label: hindari label-content-name-mismatch. */
+  nameFromContent?: boolean
 }) {
   const [open, setOpen] = useState(false)
   const panelId = useId()
@@ -48,11 +51,11 @@ export function Popover({
       <button
         ref={buttonRef}
         type="button"
-        aria-label={label}
+        aria-label={nameFromContent ? undefined : label}
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-zinc-700 px-3 py-2 text-sm font-medium text-zinc-200 hover:bg-zinc-800"
+        className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
       >
         {button}
       </button>

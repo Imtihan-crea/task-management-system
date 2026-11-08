@@ -145,7 +145,7 @@ export default async function ProjectDetailPage({
 
   return (
     <AppShell>
-      <Link href="/projects" className="text-sm font-medium text-zinc-500 hover:underline">
+      <Link href="/projects" className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline">
         &larr; Kembali ke Projects
       </Link>
 
@@ -156,7 +156,7 @@ export default async function ProjectDetailPage({
         <h1 className="text-2xl font-bold">{project.name}</h1>
         <ProjectStatusBadge status={project.status} />
       </div>
-      <p className="mt-1 text-sm text-zinc-500">
+      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
         {project.client || 'Tanpa client'}
       </p>
 
@@ -245,7 +245,7 @@ export default async function ProjectDetailPage({
             )}
           </div>
           {projectSuggestions.length === 0 ? (
-            <p className="mt-3 text-sm text-zinc-500">Belum ada Suggestion.</p>
+            <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">Belum ada Suggestion.</p>
           ) : (
             <ul className="mt-3 flex flex-col gap-2">
               {projectSuggestions.map((s) => (
@@ -260,7 +260,7 @@ export default async function ProjectDetailPage({
                       </span>
                       {s.title}
                     </p>
-                    <span className="shrink-0 text-xs text-zinc-500">
+                    <span className="shrink-0 text-xs text-zinc-600 dark:text-zinc-400">
                       {s.status.replace('_', ' ')}
                     </span>
                   </Link>

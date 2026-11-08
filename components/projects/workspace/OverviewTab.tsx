@@ -6,7 +6,7 @@ import type { Project, ProjectProgress } from '@/types/project'
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex flex-col gap-0.5 border-b py-2.5 last:border-0 sm:flex-row sm:justify-between sm:gap-4">
-      <dt className="text-sm text-zinc-500">{label}</dt>
+      <dt className="text-sm text-zinc-600 dark:text-zinc-400">{label}</dt>
       <dd className="text-sm font-medium break-all">{value}</dd>
     </div>
   )
@@ -26,7 +26,7 @@ export async function OverviewTab({ projectId }: { projectId: string }) {
     admin.from('project_managers').select('user_id').eq('project_id', projectId),
   ])
 
-  if (!project) return <p className="text-sm text-zinc-500">Project tidak ditemukan.</p>
+  if (!project) return <p className="text-sm text-zinc-600 dark:text-zinc-400">Project tidak ditemukan.</p>
 
   const taskList = (tasks ?? []) as { status: string; deadline: string; assignee_id: string }[]
   // CANCELLED keluar dari progress (di luar scope) — hanya DONE yang selesai.
@@ -86,6 +86,7 @@ export async function OverviewTab({ projectId }: { projectId: string }) {
         <div
           className="mt-3 h-3 overflow-hidden rounded-full bg-zinc-200 dark:bg-zinc-700"
           role="progressbar"
+          aria-label={`Progress ${progress.percent} persen`}
           aria-valuenow={progress.percent}
           aria-valuemin={0}
           aria-valuemax={100}

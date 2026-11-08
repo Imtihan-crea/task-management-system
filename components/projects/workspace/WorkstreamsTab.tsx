@@ -36,7 +36,7 @@ export async function WorkstreamsTab({
     <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
       <h2 className="text-lg font-bold">Workstreams ({wsList.length})</h2>
       {wsList.length === 0 ? (
-        <p className="mt-2 text-sm text-zinc-500">Belum ada Workstream.</p>
+        <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">Belum ada Workstream.</p>
       ) : (
         <ul className="mt-3 flex flex-col gap-3">
           {wsList.map((ws) => {
@@ -50,12 +50,12 @@ export async function WorkstreamsTab({
                         {ws.code}
                       </span>
                       {ws.name}{' '}
-                      <span className="text-xs font-normal text-zinc-500">
+                      <span className="text-xs font-normal text-zinc-600 dark:text-zinc-400">
                         ({count} task{count === 1 ? '' : 's'})
                       </span>
                     </p>
                     {ws.description && (
-                      <p className="text-sm text-zinc-500">{ws.description}</p>
+                      <p className="text-sm text-zinc-600 dark:text-zinc-400">{ws.description}</p>
                     )}
                   </div>
                   {canManage && (
@@ -66,7 +66,7 @@ export async function WorkstreamsTab({
                 </div>
                 {canManage && (
                   <details className="mt-2">
-                    <summary className="cursor-pointer text-sm font-medium text-zinc-500">
+                    <summary className="cursor-pointer text-sm font-medium text-zinc-600 dark:text-zinc-400">
                       Ubah
                     </summary>
                     <div className="mt-2">
