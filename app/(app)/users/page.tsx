@@ -44,7 +44,7 @@ export default async function UsersPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  await requireAdmin()
+  const viewer = await requireAdmin()
 
   const params = await searchParams
   const q = sanitizeSearch(
@@ -210,6 +210,7 @@ export default async function UsersPage({
                         </Link>
                         <div className="w-[140px]">
                           <StatusToggleForm
+                            isSelf={user.id === viewer.id}
                             user={{
                               id: user.id,
                               full_name: user.full_name,
@@ -256,6 +257,7 @@ export default async function UsersPage({
                   </Link>
                   <div className="w-full max-w-[160px]">
                     <StatusToggleForm
+                      isSelf={user.id === viewer.id}
                       user={{
                         id: user.id,
                         full_name: user.full_name,

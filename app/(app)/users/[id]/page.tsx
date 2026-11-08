@@ -90,7 +90,7 @@ export default async function UserDetailPage({
           </dl>
 
           <div className="mt-4 max-w-[220px]">
-            <StatusToggleForm user={profile} />
+            <StatusToggleForm user={profile} isSelf={viewer.id === profile.id} />
           </div>
           <div className="mt-2 max-w-[320px]">
             <AccessLinkForm user={profile} />

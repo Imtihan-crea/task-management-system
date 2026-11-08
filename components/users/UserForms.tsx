@@ -29,7 +29,7 @@ function SubmitButton({ pending, label }: { pending: boolean; label: string }) {
 }
 
 /** Tombol cepat aktif/nonaktif. Menutupi bagian "Activate / Deactivate". */
-export function StatusToggleForm({ user }: { user: EditableUser }) {
+export function StatusToggleForm({ user, isSelf = false }: { user: EditableUser; isSelf?: boolean }) {
   const [state, formAction, pending] = useFormAction(setUserStatus, INITIAL)
   const nextStatus: UserStatus = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
 
@@ -38,6 +38,8 @@ export function StatusToggleForm({ user }: { user: EditableUser }) {
   if (user.status === 'INVITED') {
     return <p className="text-sm text-zinc-500">Waiting for the user to accept the invitation.</p>
   }
+  // Rule 05: akun sendiri tidak bisa dinonaktifkan; jangan tampilkan tombol (audit C5).
+  if (isSelf) return null
 
   return (
     <form {...formAction} className="flex flex-col gap-2">
