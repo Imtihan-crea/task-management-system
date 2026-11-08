@@ -6,7 +6,7 @@
 // dibersihkan di finally. Rahasia tidak pernah dicetak.
 import {
   guard, serviceClient, loadPlaywright, loginAdmin, loginPassword, makeUser,
-  adminEmail, runCleanup, writeOut, BASE, PREFIX as P, day,
+  ensureAdmin, runCleanup, writeOut, BASE, PREFIX as P, day,
 } from './lib.mjs'
 
 await guard()
@@ -129,7 +129,7 @@ try {
     MEMBER: await makeUser(db, 'rbac-member', 'TEAM_MEMBER', `${P} Member`),
     VIEWER: await makeUser(db, 'rbac-viewer', 'VIEWER', `${P} Viewer`),
   }
-  const { data: adminProf } = await db.from('profiles').select('id').eq('email', adminEmail()).single()
+  const adminProf = await ensureAdmin(db)
   const one = async (q) => { const { data, error } = await q.select('id').single(); if (error) throw new Error(error.message); return data.id }
   const pa = await one(db.from('projects').insert({ name: `${P} RBAC A`, status: 'ACTIVE', start_date: day(0), end_date: day(30) }))
   const pb = await one(db.from('projects').insert({ name: `${P} RBAC B`, status: 'ACTIVE', start_date: day(0), end_date: day(30) }))

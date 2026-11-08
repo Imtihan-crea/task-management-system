@@ -34,6 +34,7 @@
     "e2e:a11y": "node scripts/e2e/a11y.mjs",
     "e2e:mobile": "node scripts/e2e/mobile.mjs",
     "e2e:a3": "node scripts/e2e/a3-password.mjs",
+    "e2e:perf": "node scripts/e2e/perf.mjs",
     "test:user-status": "tsx tests/user-status.check.ts",
     "check:secrets": "node scripts/check-secrets.mjs",
     "test:db": "tsx tests/postgrest-or.check.ts",

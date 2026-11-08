@@ -6,7 +6,11 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { logActivity } from '@/lib/activity-log/service'
 import { friendlyPasswordError, validateSelfPassword } from '@/lib/auth/password'
 
-export type PasswordChangeResult = { error?: string; success?: boolean }
+/**
+ * `passwordSaved` + `error`: password sudah diganti tetapi flag belum bersih.
+ * Sesi lama sudah dicabut, jadi klien harus mengarahkan ke /login (bukan retry).
+ */
+export type PasswordChangeResult = { error?: string; success?: boolean; passwordSaved?: boolean }
 
 const SESSION_EXPIRED = 'Sesi Anda telah berakhir. Silakan Login kembali.'
 
@@ -78,6 +82,19 @@ export async function setOwnPassword(
     return { error: 'Akun Anda nonaktif. Silakan hubungi administrator.' }
   }
 
+  // updateUserById menerima password yang sama dengan sekarang; tolak di sini
+  // supaya password sementara dari admin tidak bisa "diganti" dengan dirinya sendiri.
+  const probe = createSupabaseClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+    { auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false } }
+  )
+  const { error: sameError } = await probe.auth.signInWithPassword({
+    email: profile.email,
+    password,
+  })
+  if (!sameError) return { error: 'Password baru harus berbeda dari password saat ini.' }
+
   const admin = createAdminClient()
   const { error: authError } = await admin.auth.admin.updateUserById(profile.id, {
     password,
@@ -100,7 +117,10 @@ export async function setOwnPassword(
     )
   } else if (error) {
     console.error('[change-password] Failed to clear flag:', error.message)
-    return { error: 'Password berhasil diubah, tetapi profil Anda tidak dapat diperbarui. Silakan coba lagi.' }
+    return {
+      passwordSaved: true,
+      error: 'Password sudah diubah, tetapi profil Anda belum dapat diperbarui. Masuk dengan password baru.',
+    }
   }
 
   await logActivity({

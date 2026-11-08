@@ -64,20 +64,18 @@ export async function guard() {
   }
 }
 
-export function adminEmail() {
-  const md = fs.readFileSync(path.join(REPO, 'private/akun-admin.md'), 'utf8')
-  return md.match(/\|\s*([^\s|]+@[^\s|]+)\s*\|/)[1]
+let tempAdmin
+/** Admin uji sementara (UJI-E2E, dihapus runCleanup); akun admin produksi tidak disentuh. */
+export async function ensureAdmin(db) {
+  tempAdmin ??= await makeUser(db, 'admin', 'ADMIN', `${PREFIX} Admin`)
+  return tempAdmin
 }
 
-/** Sesi admin dari link recovery sekali pakai; password TIDAK diubah. */
+/** Login lewat password sebagai admin uji; mengembalikan id profilnya. */
 export async function loginAdmin(db, page) {
-  const email = adminEmail()
-  const { data, error } = await db.auth.admin.generateLink({ type: 'recovery', email })
-  if (error) throw new Error('generateLink: ' + error.message)
-  const { data: prof } = await db.from('profiles').select('id').eq('email', email).single()
-  await page.goto(`${BASE}/reset-password#token_hash=${data.properties.hashed_token}&type=recovery`, { waitUntil: 'networkidle' })
-  await page.locator('input[type="password"]').first().waitFor({ timeout: 30000 })
-  return prof.id
+  const u = await ensureAdmin(db)
+  await loginPassword(page, u)
+  return u.id
 }
 
 export async function makeUser(db, key, role, name) {

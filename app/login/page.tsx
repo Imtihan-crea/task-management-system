@@ -10,7 +10,9 @@ export default async function LoginPage({
   const inactiveMessage =
     reason === 'inactive'
       ? 'Akun Anda nonaktif. Silakan hubungi administrator.'
-      : undefined
+      : reason === 'password-changed'
+        ? 'Password sudah diubah. Masuk dengan password baru.'
+        : undefined
 
   return <LoginForm inactiveMessage={inactiveMessage} />
 }

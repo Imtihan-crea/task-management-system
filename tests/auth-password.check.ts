@@ -61,6 +61,9 @@ cek('tidak ada export hapus-flag saja', /export async function completePasswordC
 cek('setOwnPassword diekspor', /export async function setOwnPassword/.test(act), true)
 cek('updateUserById sebelum hapus flag', act.indexOf('updateUserById') > 0 && act.indexOf('updateUserById') < act.indexOf('must_change_password: false'), true)
 
+cek('tolak password sama dengan sekarang', /signInWithPassword/.test(act) && act.indexOf('auth.signInWithPassword') < act.indexOf('updateUserById(profile.id'), true)
+cek('passwordSaved bila flag gagal dibersihkan', /passwordSaved: true/.test(act), true)
+
 console.log(`LULUS: ${ok}`)
 console.log(`GAGAL: ${gagal}`)
 if (gagal > 0) process.exit(1)

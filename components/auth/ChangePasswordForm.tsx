@@ -42,6 +42,12 @@ export function ChangePasswordForm({ email }: { email: string }) {
       // Kirim access token sebagai cadangan bila cookie sesi belum terbaca.
       const { data: sessionData } = await supabase.auth.getSession()
       const result = await setOwnPassword(password, sessionData.session?.access_token)
+      if (result.passwordSaved) {
+        // Sesi lama sudah dicabut; login + guard menyelesaikan sisanya.
+        router.push('/login?reason=password-changed')
+        router.refresh()
+        return
+      }
       if (result.error) {
         // Audit B18: jangan redirect (halaman akan kembali ke sini tanpa
         // penjelasan); tampilkan pesannya.

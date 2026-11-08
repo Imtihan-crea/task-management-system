@@ -11,11 +11,11 @@ Database lokal (`.env.local`) adalah **database PRODUKSI**. Skrip ini membuat da
 3. Server **harus** dimulai dengan email mati. Skrip membaca environment proses server dan menolak jalan bila `BREVO_API_KEY` tidak kosong.
 4. Semua data uji berawalan `UJI-E2E` (user: `uji-e2e-...@example.com`). `write-flow.mjs` dan `rbac.mjs` memanggil pembersihan di `finally`; `cleanup.mjs` bisa dijalankan manual dan harus melaporkan `sisa` semua 0.
 5. RAM laptop terbatas: jangan `next dev`; satu `next start` saja di port 3100.
-6. Sesi admin dibuat dari link recovery sekali pakai (`auth.admin.generateLink`), password admin **tidak diubah**. Email admin dibaca dari `private/akun-admin.md` (di-gitignore). Rahasia tidak pernah dicetak.
+6. Sesi admin memakai user ADMIN sementara `uji-e2e-admin@example.com` (login password, dibuat `ensureAdmin`, dihapus `runCleanup`). Akun admin produksi tidak disentuh dan pembersihan hanya menghapus `uji-e2e-%@example.com`. Rahasia tidak pernah dicetak.
 
 ## Prasyarat
 
-- `.env.local` terisi dan `private/akun-admin.md` ada.
+- `.env.local` terisi.
 - Playwright **tidak** ada di `package.json`. Skrip mencarinya di `PLAYWRIGHT_MODULE_DIR` (folder `node_modules` yang berisi `playwright`); bawaan: `~/.npm/_npx/e41f203b7505f1fb/node_modules`. Chromium headless harus sudah terpasang untuk Playwright itu.
 - Hasil ditulis ke `~/.cache/taskmgmt-smoke/` (bukan `/tmp`).
 

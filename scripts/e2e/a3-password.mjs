@@ -34,7 +34,11 @@ try {
   await page.click('button[type="submit"]'); await page.waitForTimeout(1500)
   check('password pendek ditolak, flag tetap', (await flag(u.id)) === true && /change-password/.test(page.url()))
 
-  // Password sama dengan lama: server menerima (admin API) tapi harus tetap mengganti; cek password baru berbeda.
+  // Password sama dengan password sementara: ditolak, flag tetap.
+  await page.fill('#new_password', u.password); await page.fill('#confirm_password', u.password)
+  await page.click('button[type="submit"]'); await page.waitForTimeout(2500)
+  check('password sama dengan lama ditolak, flag tetap', (await flag(u.id)) === true && /change-password/.test(page.url()) && /berbeda/.test(await page.locator('[role="alert"]').allInnerTexts().then((a) => a.join(' '))))
+
   const pw2 = newPw()
   await page.fill('#new_password', pw2); await page.fill('#confirm_password', pw2)
   await page.click('button[type="submit"]')

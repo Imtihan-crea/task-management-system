@@ -159,6 +159,12 @@ export default function ResetPasswordPage() {
     const { data: sessionData } = await supabase.auth.getSession()
     const result = await setOwnPassword(password, sessionData.session?.access_token)
 
+    if (result.passwordSaved) {
+      router.push('/login?reason=password-changed')
+      router.refresh()
+      return
+    }
+
     if (result.error) {
       console.error('[reset-password] setOwnPassword:', result.error)
       setPhase('ready')
