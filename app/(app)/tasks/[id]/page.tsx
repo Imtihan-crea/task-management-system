@@ -84,10 +84,20 @@ export default async function TaskDetailPage({
         : Promise.resolve({ data: null }),
     ])
 
-  // Data untuk form edit (hanya diambil kalau boleh edit penuh)
+  // Data untuk form edit (hanya diambil kalau boleh edit penuh).
+  // PM: dropdown project hanya project miliknya (audit C3; server menolak
+  // pindah ke project PM lain).
+  let projectsQuery = admin.from('projects').select('id, code, name').order('name', { ascending: true }).limit(500)
+  if (isPM && canFullEdit) {
+    const { data: links } = await admin.from('project_managers').select('project_id').eq('user_id', profile.id)
+    projectsQuery = projectsQuery.in(
+      'id',
+      ((links ?? []) as { project_id: string }[]).map((l) => l.project_id)
+    )
+  }
   const [projectsRes, workstreamsRes, users] = canFullEdit
     ? await Promise.all([
-        admin.from('projects').select('id, code, name').order('name', { ascending: true }).limit(500),
+        projectsQuery,
         admin.from('workstreams').select('id, project_id, code, name').order('name', { ascending: true }).limit(1000),
         getActiveUsers(),
       ])
