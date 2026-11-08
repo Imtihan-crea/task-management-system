@@ -1,6 +1,7 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useState } from 'react'
+import { useFormAction } from '@/lib/forms/use-form-action'
 import { createTask, updateTask, type TaskFormState } from '@/app/actions/tasks'
 import { TASK_PRIORITIES, OPEN_TASK_STATUSES } from '@/lib/auth/roles'
 import { displayName, type UserOption } from '@/lib/data/user-options'
@@ -38,14 +39,14 @@ export function TaskForm({
   initial?: TaskFormValues
 }) {
   const action = mode === 'create' ? createTask : updateTask
-  const [state, formAction, pending] = useActionState(action, INITIAL)
+  const [state, formAction, pending] = useFormAction(action, INITIAL)
   const values = initial ?? {}
 
   const [projectId, setProjectId] = useState(values.project_id ?? '')
   const filteredWorkstreams = workstreams.filter((w) => w.project_id === projectId)
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form {...formAction} className="flex flex-col gap-4">
       {values.id && <input type="hidden" name="id" value={values.id} />}
 
       <div>

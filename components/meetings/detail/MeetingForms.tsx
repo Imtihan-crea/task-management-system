@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useFormAction } from '@/lib/forms/use-form-action'
 import {
   cancelMeeting,
   completeMeeting,
@@ -47,10 +47,10 @@ export function MeetingEditForm({
   users: UserOption[]
   canPickOrganizer: boolean
 }) {
-  const [state, formAction, pending] = useActionState(updateMeeting, INITIAL)
+  const [state, formAction, pending] = useFormAction(updateMeeting, INITIAL)
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form {...formAction} className="flex flex-col gap-4">
       <input type="hidden" name="id" value={meeting.id} />
 
       <div>
@@ -212,10 +212,10 @@ export function MeetingEditForm({
 
 /** Notes (§17): plain text, tetap bisa diisi setelah COMPLETED. */
 export function NotesForm({ meetingId, initial }: { meetingId: string; initial: string }) {
-  const [state, formAction, pending] = useActionState(updateMeetingNotes, INITIAL)
+  const [state, formAction, pending] = useFormAction(updateMeetingNotes, INITIAL)
 
   return (
-    <form action={formAction} className="flex flex-col gap-3">
+    <form {...formAction} className="flex flex-col gap-3">
       <input type="hidden" name="id" value={meetingId} />
       <label htmlFor="mn-notes" className="text-sm font-medium">
         Discussion Notes
@@ -254,14 +254,14 @@ export function LifecycleButtons({
   status: string
   summary?: { actionItems: number; tasksCreated: number; tasksReady: number }
 }) {
-  const [schedState, schedAction, schedPending] = useActionState(scheduleMeeting, INITIAL)
-  const [compState, compAction, compPending] = useActionState(completeMeeting, INITIAL)
-  const [cancelState, cancelAction, cancelPending] = useActionState(cancelMeeting, INITIAL)
+  const [schedState, schedAction, schedPending] = useFormAction(scheduleMeeting, INITIAL)
+  const [compState, compAction, compPending] = useFormAction(completeMeeting, INITIAL)
+  const [cancelState, cancelAction, cancelPending] = useFormAction(cancelMeeting, INITIAL)
 
   return (
     <div className="flex flex-col gap-3">
       {status === 'DRAFT' && (
-        <form action={schedAction}>
+        <form {...schedAction}>
           <input type="hidden" name="id" value={meetingId} />
           {schedState?.error && (
             <p role="alert" className="mb-2 text-sm font-medium text-red-600">
@@ -295,7 +295,7 @@ export function LifecycleButtons({
               </ul>
             </div>
           )}
-          <form action={compAction}>
+          <form {...compAction}>
             <input type="hidden" name="id" value={meetingId} />
             {compState?.error && (
               <p role="alert" className="mb-2 text-sm font-medium text-red-600">
@@ -319,7 +319,7 @@ export function LifecycleButtons({
       )}
 
       {(status === 'DRAFT' || status === 'SCHEDULED') && (
-        <form action={cancelAction}>
+        <form {...cancelAction}>
           <input type="hidden" name="id" value={meetingId} />
           {cancelState?.error && (
             <p role="alert" className="mb-2 text-sm font-medium text-red-600">

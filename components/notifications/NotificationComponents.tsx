@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useFormAction } from '@/lib/forms/use-form-action'
 import {
   markAllNotificationsRead,
   markNotificationRead,
@@ -80,13 +80,13 @@ const PREF_FIELDS = [
 ] as const
 
 export function PreferencesForm({ initial }: { initial: NotificationPreferences }) {
-  const [state, formAction, pending] = useActionState<PreferenceFormState, FormData>(
+  const [state, formAction, pending] = useFormAction<PreferenceFormState>(
     saveNotificationPreferences,
     undefined
   )
 
   return (
-    <form action={formAction} className="flex flex-col gap-3">
+    <form {...formAction} className="flex flex-col gap-3">
       {PREF_FIELDS.map((field) => (
         <label key={field.name} className="flex min-h-[44px] cursor-pointer items-center gap-3">
           <input

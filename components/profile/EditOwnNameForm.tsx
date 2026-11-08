@@ -1,15 +1,15 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useFormAction } from '@/lib/forms/use-form-action'
 import { updateOwnName, type ProfileFormState } from '@/app/actions/profile'
 
 const INITIAL: ProfileFormState = undefined
 
 export function EditOwnNameForm({ fullName }: { fullName: string }) {
-  const [state, formAction, pending] = useActionState(updateOwnName, INITIAL)
+  const [state, formAction, pending] = useFormAction(updateOwnName, INITIAL)
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form {...formAction} className="flex flex-col gap-4">
       <div>
         <label htmlFor="full_name" className="mb-1 block text-sm font-medium">
           Full Name

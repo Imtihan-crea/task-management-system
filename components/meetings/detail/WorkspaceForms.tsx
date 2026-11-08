@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useFormAction } from '@/lib/forms/use-form-action'
 import Link from 'next/link'
 import {
   addParticipant,
@@ -61,9 +61,9 @@ type UserOption = { id: string; full_name: string | null; email: string }
  * ========================================================================== */
 
 export function AgendaCreateForm({ meetingId }: { meetingId: string }) {
-  const [state, formAction, pending] = useActionState(createAgenda, INITIAL)
+  const [state, formAction, pending] = useFormAction(createAgenda, INITIAL)
   return (
-    <form action={formAction} className="flex flex-col gap-2 rounded-xl border p-3 dark:border-zinc-700">
+    <form {...formAction} className="flex flex-col gap-2 rounded-xl border p-3 dark:border-zinc-700">
       <input type="hidden" name="meeting_id" value={meetingId} />
       <input
         name="title"
@@ -97,9 +97,9 @@ export function AgendaItem({
   /** Semua id agenda berurutan — untuk reorder naik/turun. */
   moveIds: string[]
 }) {
-  const [updState, updAction, updPending] = useActionState(updateAgenda, INITIAL)
-  const [delState, delAction, delPending] = useActionState(deleteAgenda, INITIAL)
-  const [moveState, moveAction, movePending] = useActionState(reorderAgendas, INITIAL)
+  const [updState, updAction, updPending] = useFormAction(updateAgenda, INITIAL)
+  const [delState, delAction, delPending] = useFormAction(deleteAgenda, INITIAL)
+  const [moveState, moveAction, movePending] = useFormAction(reorderAgendas, INITIAL)
 
   const idx = moveIds.indexOf(agenda.id)
   const move = (dir: -1 | 1) => {
@@ -112,7 +112,7 @@ export function AgendaItem({
 
   return (
     <li className="rounded-xl border p-3 dark:border-zinc-700">
-      <form action={updAction} className="flex flex-col gap-2">
+      <form {...updAction} className="flex flex-col gap-2">
         <input type="hidden" name="id" value={agenda.id} />
         <input type="hidden" name="meeting_id" value={meetingId} />
         <input
@@ -140,7 +140,7 @@ export function AgendaItem({
         <StateMessage state={updState} />
       </form>
       <div className="mt-2 flex flex-wrap items-center gap-2">
-        <form action={moveAction}>
+        <form {...moveAction}>
           <input type="hidden" name="meeting_id" value={meetingId} />
           {move(-1).map((v) => (
             <input key={v} type="hidden" name="ordered_ids" value={v} />
@@ -149,7 +149,7 @@ export function AgendaItem({
             ↑
           </button>
         </form>
-        <form action={moveAction}>
+        <form {...moveAction}>
           <input type="hidden" name="meeting_id" value={meetingId} />
           {move(1).map((v) => (
             <input key={v} type="hidden" name="ordered_ids" value={v} />
@@ -158,7 +158,7 @@ export function AgendaItem({
             ↓
           </button>
         </form>
-        <form action={delAction}>
+        <form {...delAction}>
           <input type="hidden" name="id" value={agenda.id} />
           <input type="hidden" name="meeting_id" value={meetingId} />
           <button type="submit" disabled={delPending} className={btnDanger}>
@@ -177,9 +177,9 @@ export function AgendaItem({
  * ========================================================================== */
 
 export function DecisionCreateForm({ meetingId }: { meetingId: string }) {
-  const [state, formAction, pending] = useActionState(createDecision, INITIAL)
+  const [state, formAction, pending] = useFormAction(createDecision, INITIAL)
   return (
-    <form action={formAction} className="flex flex-col gap-2 rounded-xl border p-3 dark:border-zinc-700">
+    <form {...formAction} className="flex flex-col gap-2 rounded-xl border p-3 dark:border-zinc-700">
       <input type="hidden" name="meeting_id" value={meetingId} />
       <input
         name="decision"
@@ -215,12 +215,12 @@ export function DecisionItem({
   decision: DecisionRow
   index: number
 }) {
-  const [updState, updAction, updPending] = useActionState(updateDecision, INITIAL)
-  const [delState, delAction, delPending] = useActionState(deleteDecision, INITIAL)
+  const [updState, updAction, updPending] = useFormAction(updateDecision, INITIAL)
+  const [delState, delAction, delPending] = useFormAction(deleteDecision, INITIAL)
 
   return (
     <li className="rounded-xl border p-3 dark:border-zinc-700">
-      <form action={updAction} className="flex flex-col gap-2">
+      <form {...updAction} className="flex flex-col gap-2">
         <input type="hidden" name="id" value={decision.id} />
         <input type="hidden" name="meeting_id" value={meetingId} />
         <label className="text-xs font-semibold text-zinc-500">#{index + 1}</label>
@@ -247,7 +247,7 @@ export function DecisionItem({
         </div>
         <StateMessage state={updState} />
       </form>
-      <form action={delAction} className="mt-2">
+      <form {...delAction} className="mt-2">
         <input type="hidden" name="id" value={decision.id} />
         <input type="hidden" name="meeting_id" value={meetingId} />
         <button type="submit" disabled={delPending} className={btnDanger}>
@@ -270,9 +270,9 @@ export function ActionItemCreateForm({
   meetingId: string
   users: UserOption[]
 }) {
-  const [state, formAction, pending] = useActionState(createActionItem, INITIAL)
+  const [state, formAction, pending] = useFormAction(createActionItem, INITIAL)
   return (
-    <form action={formAction} className="flex flex-col gap-3 rounded-xl border p-3 dark:border-zinc-700">
+    <form {...formAction} className="flex flex-col gap-3 rounded-xl border p-3 dark:border-zinc-700">
       <input type="hidden" name="meeting_id" value={meetingId} />
       <input
         name="title"
@@ -335,13 +335,13 @@ export function ActionItemCard({
   /** Kode task kalau sudah dibuat (T-081) — untuk link balik §21. */
   taskCode?: string | null
 }) {
-  const [updState, updAction, updPending] = useActionState(updateActionItem, INITIAL)
-  const [delState, delAction, delPending] = useActionState(deleteActionItem, INITIAL)
-  const [taskState, taskAction, taskPending] = useActionState(createTaskFromActionItem, INITIAL)
+  const [updState, updAction, updPending] = useFormAction(updateActionItem, INITIAL)
+  const [delState, delAction, delPending] = useFormAction(deleteActionItem, INITIAL)
+  const [taskState, taskAction, taskPending] = useFormAction(createTaskFromActionItem, INITIAL)
 
   return (
     <li className="rounded-xl border p-3 dark:border-zinc-700">
-      <form action={updAction} className="flex flex-col gap-2">
+      <form {...updAction} className="flex flex-col gap-2">
         <input type="hidden" name="id" value={item.id} />
         <input type="hidden" name="meeting_id" value={meetingId} />
         <input
@@ -425,7 +425,7 @@ export function ActionItemCard({
             </Link>
           </p>
         ) : canCreateTask ? (
-          <form action={taskAction} className="flex flex-col gap-2">
+          <form {...taskAction} className="flex flex-col gap-2">
             <input type="hidden" name="action_item_id" value={item.id} />
             <input type="hidden" name="meeting_id" value={meetingId} />
             {taskProjects && (
@@ -464,7 +464,7 @@ export function ActionItemCard({
       </div>
 
       {!item.task_id && (
-        <form action={delAction} className="mt-2">
+        <form {...delAction} className="mt-2">
           <input type="hidden" name="id" value={item.id} />
           <input type="hidden" name="meeting_id" value={meetingId} />
           <button type="submit" disabled={delPending} className={btnDanger}>
@@ -488,9 +488,9 @@ export function ParticipantAddForm({
   meetingId: string
   users: UserOption[]
 }) {
-  const [state, formAction, pending] = useActionState(addParticipant, INITIAL)
+  const [state, formAction, pending] = useFormAction(addParticipant, INITIAL)
   return (
-    <form action={formAction} className="flex flex-col gap-2 rounded-xl border p-3 dark:border-zinc-700">
+    <form {...formAction} className="flex flex-col gap-2 rounded-xl border p-3 dark:border-zinc-700">
       <input type="hidden" name="meeting_id" value={meetingId} />
       <select name="user_id" defaultValue="" aria-label="Kasuat user" className={inputCls}>
         <option value="">Pilih user...</option>
@@ -524,8 +524,8 @@ export function ParticipantRow({
   canRemove: boolean
   isSelf: boolean
 }) {
-  const [delState, delAction, delPending] = useActionState(removeParticipant, INITIAL)
-  const [attState, attAction, attPending] = useActionState(updateAttendance, INITIAL)
+  const [delState, delAction, delPending] = useFormAction(removeParticipant, INITIAL)
+  const [attState, attAction, attPending] = useFormAction(updateAttendance, INITIAL)
 
   return (
     <li className="flex flex-wrap items-center justify-between gap-2 rounded-xl border p-3 dark:border-zinc-700">
@@ -545,7 +545,7 @@ export function ParticipantRow({
       </div>
       <div className="flex flex-wrap items-center gap-2">
         {participant.user_id && (isSelf || canRemove) && (
-          <form action={attAction} className="flex items-center gap-1">
+          <form {...attAction} className="flex items-center gap-1">
             <input type="hidden" name="meeting_id" value={meetingId} />
             <input type="hidden" name="participant_id" value={participant.id} />
             <select
@@ -569,7 +569,7 @@ export function ParticipantRow({
           <span className="text-xs text-zinc-500">{ATTENDANCE_LABELS[participant.attendance] ?? participant.attendance}</span>
         )}
         {canRemove && (
-          <form action={delAction}>
+          <form {...delAction}>
             <input type="hidden" name="meeting_id" value={meetingId} />
             <input type="hidden" name="participant_id" value={participant.id} />
             <button type="submit" disabled={delPending} className={btnDanger}>

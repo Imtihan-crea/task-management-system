@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useFormAction } from '@/lib/forms/use-form-action'
 import { createMeeting, type MeetingFormState } from '@/app/actions/meetings'
 import { MEETING_TYPES } from '@/lib/db/schema'
 import { MEETING_TYPE_LABELS } from '@/types/meeting'
@@ -36,10 +36,10 @@ export function MeetingForm({
   canPickOrganizer: boolean
   lockedProject?: { id: string; code: string; name: string } | null
 }) {
-  const [state, formAction, pending] = useActionState(createMeeting, INITIAL)
+  const [state, formAction, pending] = useFormAction(createMeeting, INITIAL)
 
   return (
-    <form action={formAction} className="mt-4 flex flex-col gap-4">
+    <form {...formAction} className="mt-4 flex flex-col gap-4">
       {lockedProject ? (
         <div>
           <span className="mb-1 block text-sm font-medium">Project</span>

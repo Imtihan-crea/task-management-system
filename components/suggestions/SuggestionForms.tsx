@@ -1,6 +1,7 @@
 'use client'
 
-import { useActionState, useState } from 'react'
+import { useState } from 'react'
+import { useFormAction } from '@/lib/forms/use-form-action'
 import {
   createSuggestion,
   resubmitSuggestion,
@@ -26,7 +27,7 @@ export function SuggestionForm({
   users: AssigneeOption[]
   initialProjectId?: string
 }) {
-  const [state, formAction, pending] = useActionState(createSuggestion, INITIAL)
+  const [state, formAction, pending] = useFormAction(createSuggestion, INITIAL)
   // Preset dari ?project=, tapi hanya dipakai kalau project itu ada di list.
   const validPreset =
     initialProjectId && projects.some((p) => p.id === initialProjectId)
@@ -36,7 +37,7 @@ export function SuggestionForm({
   const filteredWorkstreams = workstreams.filter((w) => w.project_id === projectId)
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form {...formAction} className="flex flex-col gap-4">
       <div>
         <label htmlFor="sug_title" className="mb-1 block text-sm font-medium">
           Task Title <span aria-hidden="true">*</span>
@@ -200,11 +201,11 @@ export function ResubmitForm({
   users: AssigneeOption[]
   projectId: string
 }) {
-  const [state, formAction, pending] = useActionState(resubmitSuggestion, INITIAL)
+  const [state, formAction, pending] = useFormAction(resubmitSuggestion, INITIAL)
   const scopedWorkstreams = workstreams.filter((w) => w.project_id === projectId)
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form {...formAction} className="flex flex-col gap-4">
       <input type="hidden" name="id" value={id} />
 
       <div>
@@ -338,10 +339,10 @@ export function ReviewForm({
   users: { id: string; full_name: string | null; email: string }[]
   suggestedAssigneeId: string | null
 }) {
-  const [state, formAction, pending] = useActionState(reviewSuggestion, INITIAL)
+  const [state, formAction, pending] = useFormAction(reviewSuggestion, INITIAL)
 
   return (
-    <form action={formAction} className="flex flex-col gap-3">
+    <form {...formAction} className="flex flex-col gap-3">
       <input type="hidden" name="id" value={id} />
 
       <div>

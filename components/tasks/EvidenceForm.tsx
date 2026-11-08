@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useFormAction } from '@/lib/forms/use-form-action'
 import { submitEvidence, type TaskFormState } from '@/app/actions/tasks'
 
 const INITIAL: TaskFormState = undefined
@@ -14,7 +14,7 @@ export function EvidenceForm({
   current: string | null
   canSubmit: boolean
 }) {
-  const [state, formAction, pending] = useActionState(submitEvidence, INITIAL)
+  const [state, formAction, pending] = useFormAction(submitEvidence, INITIAL)
 
   return (
     <div className="flex flex-col gap-2">
@@ -35,7 +35,7 @@ export function EvidenceForm({
       )}
 
       {canSubmit && (
-        <form action={formAction} className="flex flex-col gap-2">
+        <form {...formAction} className="flex flex-col gap-2">
           <input type="hidden" name="id" value={id} />
           <label htmlFor="evidence_url" className="text-sm font-medium">
             Submit Evidence (link)

@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useFormAction } from '@/lib/forms/use-form-action'
 import { inviteUser } from '@/app/actions/users'
 import { ROLE_LABELS, USER_ROLES } from '@/lib/auth/roles'
 import type { UserFormState } from '@/app/actions/users'
@@ -8,7 +8,7 @@ import type { UserFormState } from '@/app/actions/users'
 const INITIAL: UserFormState = undefined
 
 export function InviteUserForm() {
-  const [state, formAction, pending] = useActionState(inviteUser, INITIAL)
+  const [state, formAction, pending] = useFormAction(inviteUser, INITIAL)
 
   return (
     <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
@@ -18,7 +18,7 @@ export function InviteUserForm() {
         pernah melihat password.
       </p>
 
-      <form action={formAction} className="mt-4 flex flex-col gap-4">
+      <form {...formAction} className="mt-4 flex flex-col gap-4">
         <div>
           <label htmlFor="full_name" className="mb-1 block text-sm font-medium">
             Full Name <span aria-hidden="true">*</span>

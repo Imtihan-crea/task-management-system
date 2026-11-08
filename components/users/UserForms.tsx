@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useFormAction } from '@/lib/forms/use-form-action'
 import { generateAccessLink, setUserStatus, updateUser, type UserFormState } from '@/app/actions/users'
 import { CopyLinkBox } from '@/components/users/InviteUserForm'
 import { ROLE_LABELS, STATUS_LABELS, USER_ROLES, USER_STATUSES } from '@/lib/auth/roles'
@@ -30,7 +30,7 @@ function SubmitButton({ pending, label }: { pending: boolean; label: string }) {
 
 /** Tombol cepat aktif/nonaktif. Menutupi bagian "Activate / Deactivate". */
 export function StatusToggleForm({ user }: { user: EditableUser }) {
-  const [state, formAction, pending] = useActionState(setUserStatus, INITIAL)
+  const [state, formAction, pending] = useFormAction(setUserStatus, INITIAL)
   const nextStatus: UserStatus = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
 
   // Audit A7: user INVITED belum punya password; Activate membuatnya tidak
@@ -40,7 +40,7 @@ export function StatusToggleForm({ user }: { user: EditableUser }) {
   }
 
   return (
-    <form action={formAction} className="flex flex-col gap-2">
+    <form {...formAction} className="flex flex-col gap-2">
       <input type="hidden" name="id" value={user.id} />
       <input type="hidden" name="status" value={nextStatus} />
       <button
@@ -66,10 +66,10 @@ export function StatusToggleForm({ user }: { user: EditableUser }) {
 
 /** Form edit: Full Name + Role + Status. Email read-only (PRD section 18). */
 export function EditUserForm({ user, isSelf }: { user: EditableUser; isSelf: boolean }) {
-  const [state, formAction, pending] = useActionState(updateUser, INITIAL)
+  const [state, formAction, pending] = useFormAction(updateUser, INITIAL)
 
   return (
-    <form action={formAction} className="flex flex-col gap-4">
+    <form {...formAction} className="flex flex-col gap-4">
       <input type="hidden" name="id" value={user.id} />
 
       <div>
@@ -172,11 +172,11 @@ export function EditUserForm({ user, isSelf }: { user: EditableUser; isSelf: boo
 
 /** Audit A8: kirim ulang undangan (INVITED) atau link reset password (ACTIVE). */
 export function AccessLinkForm({ user }: { user: EditableUser }) {
-  const [state, formAction, pending] = useActionState(generateAccessLink, INITIAL)
+  const [state, formAction, pending] = useFormAction(generateAccessLink, INITIAL)
   if (user.status === 'INACTIVE') return null
 
   return (
-    <form action={formAction} className="flex flex-col gap-2">
+    <form {...formAction} className="flex flex-col gap-2">
       <input type="hidden" name="id" value={user.id} />
       <button
         type="submit"

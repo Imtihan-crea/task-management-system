@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useFormAction } from '@/lib/forms/use-form-action'
 import {
   cancelTask,
   changeTaskStatus,
@@ -20,10 +20,10 @@ export function ChangeStatusForm({
   id: string
   current: TaskStatus
 }) {
-  const [state, formAction, pending] = useActionState(changeTaskStatus, INITIAL)
+  const [state, formAction, pending] = useFormAction(changeTaskStatus, INITIAL)
 
   return (
-    <form action={formAction} className="flex flex-col gap-2">
+    <form {...formAction} className="flex flex-col gap-2">
       <input type="hidden" name="id" value={id} />
       <label htmlFor="status_change" className="text-sm font-medium">
         Change Status
@@ -86,10 +86,10 @@ function SubmitStateMessage({ state }: { state: TaskFormState }) {
 }
 
 export function SubmitTaskForm({ id }: { id: string }) {
-  const [state, formAction, pending] = useActionState(submitTask, INITIAL)
+  const [state, formAction, pending] = useFormAction(submitTask, INITIAL)
 
   return (
-    <form action={formAction} className="flex flex-col gap-2">
+    <form {...formAction} className="flex flex-col gap-2">
       <input type="hidden" name="id" value={id} />
       <button
         type="submit"
@@ -104,11 +104,11 @@ export function SubmitTaskForm({ id }: { id: string }) {
 }
 
 export function CancelTaskForm({ id }: { id: string }) {
-  const [state, formAction, pending] = useActionState(cancelTask, INITIAL)
+  const [state, formAction, pending] = useFormAction(cancelTask, INITIAL)
 
   return (
     <form
-      action={formAction}
+      {...formAction}
       onSubmit={(e) => {
         if (!window.confirm('Cancel this task? It will be locked like done tasks.')) {
           e.preventDefault()
@@ -130,11 +130,11 @@ export function CancelTaskForm({ id }: { id: string }) {
 }
 
 export function DeleteTaskForm({ id }: { id: string }) {
-  const [state, formAction, pending] = useActionState(deleteTask, INITIAL)
+  const [state, formAction, pending] = useFormAction(deleteTask, INITIAL)
 
   return (
     <form
-      action={formAction}
+      {...formAction}
       onSubmit={(e) => {
         if (!window.confirm('Delete this task? It will be hidden from lists.')) {
           e.preventDefault()

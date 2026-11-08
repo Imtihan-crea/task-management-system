@@ -1,6 +1,6 @@
 'use client'
 
-import { useActionState } from 'react'
+import { useFormAction } from '@/lib/forms/use-form-action'
 import {
   createWorkstream,
   deleteWorkstream,
@@ -11,13 +11,13 @@ import {
 const INITIAL: WorkstreamFormState = undefined
 
 export function CreateWorkstreamForm({ projectId }: { projectId: string }) {
-  const [state, formAction, pending] = useActionState(createWorkstream, INITIAL)
+  const [state, formAction, pending] = useFormAction(createWorkstream, INITIAL)
 
   return (
     <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
       <h2 className="text-lg font-bold">Create Workstream</h2>
 
-      <form action={formAction} className="mt-4 flex flex-col gap-4">
+      <form {...formAction} className="mt-4 flex flex-col gap-4">
         <input type="hidden" name="project_id" value={projectId} />
 
         <div>
@@ -79,10 +79,10 @@ export function EditWorkstreamForm({
   name: string
   description: string | null
 }) {
-  const [state, formAction, pending] = useActionState(updateWorkstream, INITIAL)
+  const [state, formAction, pending] = useFormAction(updateWorkstream, INITIAL)
 
   return (
-    <form action={formAction} className="flex flex-col gap-2">
+    <form {...formAction} className="flex flex-col gap-2">
       <input type="hidden" name="id" value={id} />
       <input
         name="name"
@@ -122,11 +122,11 @@ export function EditWorkstreamForm({
 }
 
 export function DeleteWorkstreamForm({ id }: { id: string }) {
-  const [state, formAction, pending] = useActionState(deleteWorkstream, INITIAL)
+  const [state, formAction, pending] = useFormAction(deleteWorkstream, INITIAL)
 
   return (
     <form
-      action={formAction}
+      {...formAction}
       onSubmit={(e) => {
         if (!window.confirm('Delete this workstream? This cannot be undone.')) {
           e.preventDefault()

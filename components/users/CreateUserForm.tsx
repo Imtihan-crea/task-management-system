@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import { useActionState } from 'react'
+import { useFormAction } from '@/lib/forms/use-form-action'
 import { createUserWithPassword } from '@/app/actions/users'
 import { ROLE_LABELS, USER_ROLES } from '@/lib/auth/roles'
 import { MIN_ADMIN_PASSWORD_LENGTH } from '@/lib/auth/password'
@@ -17,7 +17,7 @@ const INITIAL: UserFormState = undefined
  * mengganti password sementara saat login pertama.
  */
 export function CreateUserForm() {
-  const [state, formAction, pending] = useActionState(createUserWithPassword, INITIAL)
+  const [state, formAction, pending] = useFormAction(createUserWithPassword, INITIAL)
   const [show, setShow] = useState(false)
 
   return (
@@ -29,7 +29,7 @@ export function CreateUserForm() {
         lewat kanal aman (WhatsApp/chat).
       </p>
 
-      <form action={formAction} className="mt-4 flex flex-col gap-4">
+      <form {...formAction} className="mt-4 flex flex-col gap-4">
         <div>
           <label htmlFor="create_full_name" className="mb-1 block text-sm font-medium">
             Full Name <span aria-hidden="true">*</span>
