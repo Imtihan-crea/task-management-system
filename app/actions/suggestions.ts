@@ -8,6 +8,7 @@ import { canManageProjectFor, isProjectManager } from '@/lib/data/projects'
 import { canSuggestForProject } from '@/lib/auth/project-access'
 import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
+import { emitTaskAssigned } from '@/lib/notifications/task-assigned'
 import { logActivity } from '@/lib/activity-log/service'
 import { can } from '@/lib/auth/permissions'
 import type { SuggestionStatus, TaskSuggestion } from '@/types/suggestion'
@@ -462,8 +463,8 @@ async function approveSuggestionInternal(
       start_date: null,
       deadline: current.suggested_deadline ?? new Date().toISOString().slice(0, 10),
     })
-    .select('id, code')
-    .single<{ id: string; code: string }>()
+    .select('id, code, updated_at')
+    .single<{ id: string; code: string; updated_at: string }>()
 
   if (taskError || !task) {
     console.error('approveSuggestion create task failed:', taskError?.message)
@@ -491,6 +492,15 @@ async function approveSuggestionInternal(
   }
 
   await emitReviewEvent(current, 'APPROVED', { id: reviewerId }, '', task.id)
+  // Audit A9: assignee yang dipilih reviewer (bisa beda dari usulan).
+  await emitTaskAssigned({
+    taskId: task.id,
+    taskCode: task.code,
+    taskTitle: current.title,
+    projectId: current.project_id,
+    assigneeId,
+    stamp: task.updated_at,
+  })
 
   await logActivity({
     actorUserId: reviewerId,
@@ -590,7 +600,8 @@ async function emitReviewEvent(
       : null,
   })
 
-  // Event tambahan saat convert: beri tahu assignee + PM (in-app).
+  // Event tambahan saat convert: beri tahu creator + PM (in-app). Assignee
+  // sudah mendapat TASK_ASSIGNED dari approveSuggestion.
   if (outcome === 'APPROVED' && convertedTaskId) {
     const { data: links } = await admin
       .from('project_managers')
@@ -601,11 +612,7 @@ async function emitReviewEvent(
     await emitNotification({
       key: `task-from-suggestion:${convertedTaskId}`,
       type: 'TASK_CREATED_FROM_SUGGESTION',
-      userIds: [
-        ...(suggestion.suggested_assignee_id ? [suggestion.suggested_assignee_id] : []),
-        suggestion.suggested_by,
-        ...pmIds,
-      ],
+      userIds: [suggestion.suggested_by, ...pmIds],
       title: `New task from suggestion ${suggestion.code}`,
       message: `Suggestion "${suggestion.title}" was approved and created as an official task.`,
       entityType: 'task',

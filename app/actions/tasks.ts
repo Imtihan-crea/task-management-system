@@ -8,6 +8,7 @@ import { canManageProjectFor, isProjectManager } from '@/lib/data/projects'
 import { canActOnTask } from '@/lib/auth/task-access'
 import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
+import { emitTaskAssigned } from '@/lib/notifications/task-assigned'
 import { logActivity } from '@/lib/activity-log/service'
 import type { TaskPriority, TaskStatus } from '@/types/task'
 import type { UserRole } from '@/types/profile'
@@ -704,50 +705,6 @@ async function getTaskContext(taskId: string) {
     projectName: project?.name ?? '-',
     managerIds: ((managers ?? []) as { user_id: string }[]).map((m) => m.user_id),
   }
-}
-
-async function emitTaskAssigned(input: {
-  taskId: string
-  taskCode: string
-  taskTitle: string
-  projectId: string
-  assigneeId: string
-  stamp: string
-}): Promise<void> {
-  const admin = createAdminClient()
-  const { data: project } = await admin
-    .from('projects')
-    .select('code, name')
-    .eq('id', input.projectId)
-    .single<{ code: string; name: string }>()
-
-  const projectLabel = project ? `${project.code} · ${project.name}` : '-'
-
-  let baseUrl = ''
-  try {
-    baseUrl = getAppBaseUrl()
-  } catch {
-    console.error('[notify] APP_URL missing, skipping assigned email.')
-  }
-
-  await emitNotification({
-    // Stamp = updated_at saat itu: reassign bolak-balik tetap terkirim,
-    // double-submit dalam satu update tetap satu event.
-    key: `task-assigned:${input.taskId}:${input.assigneeId}:${input.stamp}`,
-    type: 'TASK_ASSIGNED',
-    userIds: [input.assigneeId],
-    title: `Task ${input.taskCode} assigned to you`,
-    message: `"${input.taskTitle}" di ${projectLabel} di-assign kepadamu.`,
-    entityType: 'task',
-    entityId: input.taskId,
-    email: baseUrl
-      ? {
-          subject: `[Assigned] ${input.taskCode} ${input.taskTitle}`,
-          html: `<p>Halo,</p><p>Task berikut di-assign kepadamu:</p><ul><li><strong>${h(input.taskCode)} ${h(input.taskTitle)}</strong></li><li><strong>Project:</strong> ${h(projectLabel)}</li></ul><p>Lihat detail:<br><a href="${baseUrl}/tasks/${input.taskId}">${baseUrl}/tasks/${input.taskId}</a></p>`,
-          category: 'task',
-        }
-      : null,
-  })
 }
 
 async function emitTaskStatusChanged(input: {
