@@ -360,8 +360,17 @@ export async function reviewSuggestion(
   }
 
   if (decision === 'approve') {
-    const approveAssignee = readField(formData, 'assignee_id')
-    return approveSuggestionInternal(id, profile.id, approveAssignee || null)
+    // Audit B8: prioritas, deadline, dan catatan dari reviewer ikut dipakai.
+    const priority = readField(formData, 'priority') || current.suggested_priority || 'MEDIUM'
+    const deadline = readField(formData, 'deadline') || current.suggested_deadline || ''
+    if (!isTaskPriority(priority)) return { error: 'Please choose a valid priority.' }
+    if (!deadline) return { error: 'Please set a deadline to approve this suggestion.' }
+    if (!validDate(deadline)) return { error: 'Please enter a valid deadline.' }
+    return approveSuggestionInternal(id, profile.id, readField(formData, 'assignee_id') || null, {
+      priority,
+      deadline,
+      reviewNote,
+    })
   }
 
   const nextStatus = decision === 'revise' ? 'REVISION_REQUESTED' : 'REJECTED'
@@ -418,7 +427,8 @@ export async function reviewSuggestion(
 async function approveSuggestionInternal(
   suggestionId: string,
   reviewerId: string,
-  chosenAssigneeId: string | null
+  chosenAssigneeId: string | null,
+  review: { priority: TaskPriority; deadline: string; reviewNote: string }
 ): Promise<SuggestionFormState> {
   const admin = createAdminClient()
 
@@ -458,10 +468,10 @@ async function approveSuggestionInternal(
       workstream_id: current.workstream_id,
       assignee_id: assigneeId,
       created_by: reviewerId,
-      priority: (current.suggested_priority ?? 'MEDIUM') as TaskPriority,
+      priority: review.priority,
       status: 'TODO',
       start_date: null,
-      deadline: current.suggested_deadline ?? new Date().toISOString().slice(0, 10),
+      deadline: review.deadline,
     })
     .select('id, code, updated_at')
     .single<{ id: string; code: string; updated_at: string }>()
@@ -479,6 +489,7 @@ async function approveSuggestionInternal(
       status: 'CONVERTED' as SuggestionStatus,
       reviewer_id: reviewerId,
       reviewed_at: new Date().toISOString(),
+      review_note: review.reviewNote || null,
       converted_task_id: task.id,
     })
     .eq('id', suggestionId)
@@ -491,7 +502,7 @@ async function approveSuggestionInternal(
     return { success: 'Suggestion already converted to a task.' }
   }
 
-  await emitReviewEvent(current, 'APPROVED', { id: reviewerId }, '', task.id)
+  await emitReviewEvent(current, 'APPROVED', { id: reviewerId }, review.reviewNote, task.id)
   // Audit A9: assignee yang dipilih reviewer (bisa beda dari usulan).
   await emitTaskAssigned({
     taskId: task.id,

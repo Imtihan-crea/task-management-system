@@ -334,10 +334,14 @@ export function ReviewForm({
   id,
   users,
   suggestedAssigneeId,
+  suggestedPriority,
+  suggestedDeadline,
 }: {
   id: string
   users: { id: string; full_name: string | null; email: string }[]
   suggestedAssigneeId: string | null
+  suggestedPriority: string | null
+  suggestedDeadline: string | null
 }) {
   const [state, formAction, pending] = useFormAction(reviewSuggestion, INITIAL)
 
@@ -364,9 +368,42 @@ export function ReviewForm({
         </select>
       </div>
 
+      {/* Audit B8: reviewer menetapkan prioritas + deadline task saat approve. */}
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <label htmlFor="review_priority" className="mb-1 block text-sm font-medium">
+            Priority (dipakai saat approve)
+          </label>
+          <select
+            id="review_priority"
+            name="priority"
+            defaultValue={suggestedPriority ?? 'MEDIUM'}
+            className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
+          >
+            {TASK_PRIORITIES.map((p) => (
+              <option key={p} value={p}>
+                {p}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label htmlFor="review_deadline" className="mb-1 block text-sm font-medium">
+            Deadline (wajib untuk approve)
+          </label>
+          <input
+            id="review_deadline"
+            name="deadline"
+            type="date"
+            defaultValue={suggestedDeadline ?? ''}
+            className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
+          />
+        </div>
+      </div>
+
       <div>
         <label htmlFor="review_note" className="mb-1 block text-sm font-medium">
-          Review Note (wajib untuk revise/reject)
+          Review Note (wajib untuk revise/reject, opsional untuk approve)
         </label>
         <textarea
           id="review_note"

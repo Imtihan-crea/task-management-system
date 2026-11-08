@@ -169,6 +169,8 @@ export default async function SuggestionDetailPage({
                 id={suggestion.id}
                 users={users}
                 suggestedAssigneeId={suggestion.suggested_assignee_id}
+                suggestedPriority={suggestion.suggested_priority}
+                suggestedDeadline={suggestion.suggested_deadline}
               />
             </section>
           )}
