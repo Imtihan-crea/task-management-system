@@ -115,6 +115,9 @@ export function canManageMeetingFull(access: MeetingAccess, role: string): boole
  * "Edit accessible meeting scoped" (§37) untuk TEAM_MEMBER = konten saja.
  */
 export function canManageMeetingContent(access: MeetingAccess, role: string): boolean {
+  // Audit B5: meeting CANCELLED dikunci konsisten (notes, agenda, keputusan,
+  // action item); sebelumnya hanya notes yang ditolak server.
+  if (access.meeting?.status === 'CANCELLED') return false
   if (canManageMeetingFull(access, role)) return true
   if (role === 'TEAM_MEMBER' && access.isParticipant) return true
   return false
@@ -124,6 +127,7 @@ export function canManageMeetingContent(access: MeetingAccess, role: string): bo
 export function canCreateTaskFromMeeting(access: MeetingAccess, role: UserRole): boolean {
   if (!access.meeting) return false
   if (!can(role, 'tasks.create')) return false
+  if (access.meeting.status === 'CANCELLED') return false // audit B5
   // Audit B4: PM hanya di project miliknya (sama dengan server action).
   // Meeting tanpa project: project dipilih di form dari project miliknya.
   if (role === 'PROJECT_MANAGER' && access.meeting.project_id && !access.isProjectPM) return false

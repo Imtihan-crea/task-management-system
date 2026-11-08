@@ -8,6 +8,7 @@ import {
   matchesMeetingSearch,
   isHistoricalMeetingStatus,
   canCreateTaskFromMeeting,
+  canManageMeetingContent,
   type MeetingAccess,
 } from '../lib/meetings/rules'
 import type { MeetingTabKey } from '../types/meeting'
@@ -189,6 +190,12 @@ cek('PM project ini -> boleh', canCreateTaskFromMeeting(acc(mtg(P1), { isProject
 cek('PM peserta meeting tanpa project -> boleh (pilih project)', canCreateTaskFromMeeting(acc(mtg(null)), 'PROJECT_MANAGER'), true)
 cek('ADMIN peserta -> boleh', canCreateTaskFromMeeting(acc(mtg(P1)), 'ADMIN'), true)
 cek('TEAM_MEMBER -> tidak', canCreateTaskFromMeeting(acc(mtg(P1)), 'TEAM_MEMBER'), false)
+
+/* ---------- meeting CANCELLED dikunci (audit B5) ---------- */
+cek('CANCELLED: konten dikunci walau ADMIN', canManageMeetingContent(acc(mtg(P1, 'CANCELLED')), 'ADMIN'), false)
+cek('CANCELLED: tidak bisa buat task', canCreateTaskFromMeeting(acc(mtg(P1, 'CANCELLED')), 'ADMIN'), false)
+cek('COMPLETED: konten tetap boleh (notes susulan)', canManageMeetingContent(acc(mtg(P1, 'COMPLETED')), 'ADMIN'), true)
+cek('SCHEDULED: TEAM peserta boleh konten', canManageMeetingContent(acc(mtg(P1)), 'TEAM_MEMBER'), true)
 
 console.log(`LULUS: ${ok}`)
 console.log(`GAGAL: ${gagal}`)
