@@ -1486,7 +1486,9 @@ export async function addParticipant(
   const hasInternal = Boolean(userId)
   const hasExternal = Boolean(externalName && externalEmail)
   if (hasInternal === hasExternal) {
-    return { error: 'Add either a Kasuat user or an external participant.' }
+    // Peserta eksternal sengaja tidak ada di UI (akses pihak luar dimatikan,
+    // keputusan pemilik 8 Nov 2026); pesan tidak menyebutnya (audit C10).
+    return { error: 'Please choose a participant.' }
   }
 
   const admin = createAdminClient()
