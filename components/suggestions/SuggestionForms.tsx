@@ -59,6 +59,7 @@ export function SuggestionForm({
         <textarea
           id="sug_desc"
           name="description"
+          maxLength={5000}
           required
           rows={4}
           placeholder="Jelaskan pekerjaan yang diusulkan"
@@ -229,6 +230,7 @@ export function ResubmitForm({
         <textarea
           id="re_desc"
           name="description"
+          maxLength={5000}
           required
           rows={4}
           defaultValue={description}

@@ -5,15 +5,16 @@ import { requireManager } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { canManageProjectFor } from '@/lib/data/projects'
 import { logActivity } from '@/lib/activity-log/service'
+import { readLimitedField } from '@/lib/forms/limits'
 
 export type WorkstreamFormState = {
   error?: string
   success?: string
 } | undefined
 
+// Batas panjang di server (audit B12), lihat lib/forms/limits.ts.
 function readField(formData: FormData, name: string): string {
-  const value = formData.get(name)
-  return typeof value === 'string' ? value.trim() : ''
+  return readLimitedField(formData, name)
 }
 
 export async function createWorkstream(

@@ -67,6 +67,7 @@ function FormFields({
         <textarea
           id="proj_desc"
           name="description"
+          maxLength={5000}
           rows={3}
           defaultValue={initial.description ?? ''}
           placeholder="Deskripsi singkat"

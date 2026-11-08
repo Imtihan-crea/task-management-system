@@ -9,6 +9,7 @@ import { getAppBaseUrl } from '@/lib/app-url'
 import { logActivity } from '@/lib/activity-log/service'
 import type { UserRole, UserStatus } from '@/types/profile'
 import { removesLastActiveAdmin } from '@/lib/auth/project-access'
+import { readLimitedField } from '@/lib/forms/limits'
 
 export type UserFormState = {
   error?: string
@@ -21,9 +22,9 @@ export type UserFormState = {
 /* Validation helpers (tanpa dependency tambahan)                     */
 /* ------------------------------------------------------------------ */
 
+// Batas panjang di server (audit B12), lihat lib/forms/limits.ts.
 function readField(formData: FormData, name: string): string {
-  const value = formData.get(name)
-  return typeof value === 'string' ? value.trim() : ''
+  return readLimitedField(formData, name)
 }
 
 /**

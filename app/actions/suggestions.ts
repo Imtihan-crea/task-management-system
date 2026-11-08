@@ -14,15 +14,16 @@ import { can } from '@/lib/auth/permissions'
 import type { SuggestionStatus, TaskSuggestion } from '@/types/suggestion'
 import type { TaskPriority } from '@/types/task'
 import { escapeEmailHtml as h } from '@/lib/email/layout'
+import { readLimitedField } from '@/lib/forms/limits'
 
 export type SuggestionFormState = {
   error?: string
   success?: string
 } | undefined
 
+// Batas panjang di server (audit B12), lihat lib/forms/limits.ts.
 function readField(formData: FormData, name: string): string {
-  const value = formData.get(name)
-  return typeof value === 'string' ? value.trim() : ''
+  return readLimitedField(formData, name)
 }
 
 function validDate(value: string): boolean {

@@ -40,6 +40,7 @@ export function InviteUserForm() {
           <input
             id="email"
             name="email"
+          maxLength={254}
             type="email"
             required
             autoComplete="off"

@@ -10,6 +10,7 @@ import { emitNotification } from '@/lib/notifications/service'
 import { logActivity } from '@/lib/activity-log/service'
 import type { ProjectStatus } from '@/types/project'
 import { escapeEmailHtml as h } from '@/lib/email/layout'
+import { readLimitedField } from '@/lib/forms/limits'
 
 function projectAssignedEmail(
   baseUrl: string,
@@ -39,9 +40,9 @@ export type ProjectFormState = {
   success?: string
 } | undefined
 
+// Batas panjang di server (audit B12), lihat lib/forms/limits.ts.
 function readField(formData: FormData, name: string): string {
-  const value = formData.get(name)
-  return typeof value === 'string' ? value.trim() : ''
+  return readLimitedField(formData, name)
 }
 
 function readMulti(formData: FormData, name: string): string[] {

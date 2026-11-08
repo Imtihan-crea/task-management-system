@@ -33,6 +33,7 @@ import {
 import type { TaskPriority } from '@/types/task'
 import type { UserRole } from '@/types/profile'
 import { escapeEmailHtml as h } from '@/lib/email/layout'
+import { readLimitedField } from '@/lib/forms/limits'
 
 export type MeetingFormState = {
   error?: string
@@ -43,9 +44,9 @@ export type MeetingFormState = {
  * Helper baca form + validasi dasar
  * ========================================================================== */
 
+// Batas panjang di server (audit B12), lihat lib/forms/limits.ts.
 function readField(formData: FormData, name: string): string {
-  const value = formData.get(name)
-  return typeof value === 'string' ? value.trim() : ''
+  return readLimitedField(formData, name)
 }
 
 function readList(formData: FormData, name: string): string[] {

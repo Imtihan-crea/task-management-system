@@ -71,6 +71,7 @@ export function TaskForm({
         <textarea
           id="task_desc"
           name="description"
+          maxLength={5000}
           rows={3}
           defaultValue={values.description ?? ''}
           placeholder="Deskripsi (opsional)"

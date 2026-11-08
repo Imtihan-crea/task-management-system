@@ -51,6 +51,7 @@ export function CreateUserForm() {
           <input
             id="create_email"
             name="email"
+          maxLength={254}
             type="email"
             required
             autoComplete="off"
