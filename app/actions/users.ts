@@ -263,6 +263,7 @@ export async function inviteUser(
       if (!userCreated) {
         return { error: 'Unable to create the user. Please try again.' }
       }
+      revalidatePath('/users')
       return {
         error:
           'User created, but the invitation link could not be generated. Open the user and use "New invitation link".',

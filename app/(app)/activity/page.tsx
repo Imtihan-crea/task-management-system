@@ -91,7 +91,8 @@ async function ActivityResults({ filters }: { filters: ActivityFilters }) {
 
   // Audit B17: filter actor di query (sebelum paginasi), bukan setelahnya.
   if (actor) {
-    const like = `%${actor.replace(/[\\%_]/g, (c) => `\\${c}`)}%`
+    // PostgREST juga memakai * sebagai wildcard ilike.
+    const like = `%${actor.replace(/[\\%_*]/g, (c) => `\\${c}`)}%`
     const admin = createAdminClient()
     const [{ data: byName }, { data: byEmail }] = await Promise.all([
       admin.from('profiles').select('id').ilike('full_name', like).limit(200),

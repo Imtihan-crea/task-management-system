@@ -26,7 +26,8 @@ export function ChangePasswordForm({ email }: { email: string }) {
   const [error, setError] = useState('')
   // Password sudah tersimpan tapi flag belum bersih: coba ulang tanpa
   // updateUser lagi (Supabase menolak password yang sama).
-  const [passwordSaved, setPasswordSaved] = useState(false)
+  // Disimpan nilainya: bila user mengetik password lain, simpan ulang.
+  const [savedPassword, setSavedPassword] = useState<string | null>(null)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -43,14 +44,14 @@ export function ChangePasswordForm({ email }: { email: string }) {
     try {
       const supabase = createClient()
 
-      if (!passwordSaved) {
+      if (savedPassword !== password) {
         const { error: updateError } = await supabase.auth.updateUser({ password })
 
         if (updateError) {
           setError(updateError.message)
           return
         }
-        setPasswordSaved(true)
+        setSavedPassword(password)
       }
 
       // Password minimal tersimpan di Supabase. Jangan panggil

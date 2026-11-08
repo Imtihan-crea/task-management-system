@@ -45,7 +45,9 @@ export class FieldTooLongError extends Error {
 export function readLimitedField(formData: FormData, name: string): string {
   const value = formData.get(name)
   if (typeof value !== 'string') return ''
-  const trimmed = value.trim()
+  // Browser mengirim baris baru sebagai \r\n, padahal maxLength di UI
+  // menghitungnya satu karakter: samakan dulu supaya isian sah tidak ditolak.
+  const trimmed = value.replace(/\r\n/g, '\n').trim()
   if (trimmed.length > fieldMax(name)) throw new FieldTooLongError(name)
   return trimmed
 }

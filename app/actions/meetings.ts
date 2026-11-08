@@ -286,6 +286,14 @@ async function notifyContentChange(input: {
   /** Pembeda key supaya edit berbeda tidak saling men-suppress. */
   keySuffix: string
 }): Promise<void> {
+  // DRAFT belum mengundang siapa pun (audit B6): edit konten tidak dinotifikasi.
+  const { data: m } = await createAdminClient()
+    .from('meetings')
+    .select('status')
+    .eq('id', input.meetingId)
+    .maybeSingle<{ status: string }>()
+  if (m?.status === 'DRAFT') return
+
   const label = await projectLabel(input.projectId)
   await notifyMeetingParticipants({
     key: `meeting-content:${input.meetingId}:${input.keySuffix}:${Date.now()}`,
@@ -819,17 +827,20 @@ export async function cancelMeeting(
   }
 
   const label = await projectLabel(access.meeting.project_id)
-  await notifyMeetingParticipants({
-    key: `meeting-cancelled:${id}:${updated.updated_at}`,
-    type: 'MEETING_CANCELLED',
-    meetingId: id,
-    code: updated.code,
-    title: access.meeting.title,
-    projectLabel: label,
-    headline: `Meeting ${updated.code} cancelled: ${access.meeting.title}`,
-    emailSubject: `[Meeting Cancelled] ${updated.code} ${access.meeting.title}`,
-    emailBody: 'Meeting berikut dibatalkan:',
-  })
+  // DRAFT belum pernah mengundang siapa pun: pembatalan tidak dinotifikasi (audit B6).
+  if (access.meeting.status !== 'DRAFT') {
+    await notifyMeetingParticipants({
+      key: `meeting-cancelled:${id}:${updated.updated_at}`,
+      type: 'MEETING_CANCELLED',
+      meetingId: id,
+      code: updated.code,
+      title: access.meeting.title,
+      projectLabel: label,
+      headline: `Meeting ${updated.code} cancelled: ${access.meeting.title}`,
+      emailSubject: `[Meeting Cancelled] ${updated.code} ${access.meeting.title}`,
+      emailBody: 'Meeting berikut dibatalkan:',
+    })
+  }
 
   // Rule 2: pembatalan Kasuat tidak menyentuh Google (belum ada koneksi di
   // Opsi A). Status sync dibiarkan apa adanya supaya Retry tetap bisa jalan.
@@ -1449,11 +1460,16 @@ export async function deleteActionItem(
     }
   }
 
-  const { error } = await createAdminClient()
+  // task_id harus masih sama dengan yang dicek (audit B7: hindari race
+  // dengan createTaskFromActionItem yang mengklaim baris ini).
+  const deleteQuery = createAdminClient()
     .from('meeting_action_items')
     .delete()
     .eq('id', id)
     .eq('meeting_id', meetingId)
+  const { error } = await (current.task_id
+    ? deleteQuery.eq('task_id', current.task_id)
+    : deleteQuery.is('task_id', null))
 
   if (error) {
     console.error('deleteActionItem failed:', error.message)

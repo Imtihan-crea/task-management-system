@@ -61,12 +61,18 @@ export async function emitNotification(input: EmitInput): Promise<{
 
   // Hanya user ACTIVE (audit B13): user nonaktif/undangan tidak lagi
   // menerima notifikasi cron atau notifikasi PM.
-  const { data: activeRows } = await admin
+  const { data: activeRows, error: activeError } = await admin
     .from('profiles')
     .select('id')
     .in('id', requested)
     .eq('status', 'ACTIVE')
-  const userIds = ((activeRows ?? []) as { id: string }[]).map((r) => r.id)
+  if (activeError) {
+    // Jangan diam-diam menelan semua notifikasi: catat, lalu pakai daftar asli.
+    console.error('[notify] Failed to filter active users:', activeError.message)
+  }
+  const userIds = activeError
+    ? requested
+    : ((activeRows ?? []) as { id: string }[]).map((r) => r.id)
   if (userIds.length === 0) return empty
 
   // 1. Klaim event. Kalau key sudah ada = duplicate → berhenti.
