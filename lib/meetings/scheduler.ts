@@ -46,29 +46,56 @@ type SchedulerMeeting = {
   notes: string | null
 }
 
-async function projectLabel(projectId: string | null): Promise<string> {
-  if (!projectId) return 'Meeting global (tanpa project)'
-  const { data } = await createAdminClient()
-    .from('projects')
-    .select('code, name')
-    .eq('id', projectId)
-    .maybeSingle<{ code: string; name: string }>()
-  return data ? `${data.code} · ${data.name}` : '-'
+/** Label project untuk banyak meeting sekali query (kunci: project_id). */
+async function projectLabels(projectIds: (string | null)[]): Promise<Map<string | null, string>> {
+  const labels = new Map<string | null, string>([[null, 'Meeting global (tanpa project)']])
+  const ids = [...new Set(projectIds.filter((v): v is string => Boolean(v)))]
+  if (ids.length === 0) return labels
+
+  const { data } = await createAdminClient().from('projects').select('id, code, name').in('id', ids)
+  for (const p of (data ?? []) as { id: string; code: string; name: string }[]) {
+    labels.set(p.id, `${p.code} · ${p.name}`)
+  }
+  return labels
 }
 
-async function participantUserIds(meetingId: string): Promise<string[]> {
-  const { data } = await createAdminClient()
-    .from('meeting_participants')
-    .select('user_id')
-    .eq('meeting_id', meetingId)
+/** Peserta (user_id unik) banyak meeting sekali query (kunci: meeting_id). */
+async function participantsByMeeting(meetingIds: string[]): Promise<Map<string, string[]>> {
+  const result = new Map<string, string[]>()
+  if (meetingIds.length === 0) return result
 
-  return [
-    ...new Set(
-      ((data ?? []) as { user_id: string | null }[])
-        .map((p) => p.user_id)
-        .filter((v): v is string => Boolean(v))
-    ),
-  ]
+  // Dipecah per 50 meeting supaya tidak menabrak batas 1000 baris PostgREST.
+  for (let i = 0; i < meetingIds.length; i += 50) {
+    const { data } = await createAdminClient()
+      .from('meeting_participants')
+      .select('meeting_id, user_id')
+      .in('meeting_id', meetingIds.slice(i, i + 50))
+
+    for (const p of (data ?? []) as { meeting_id: string; user_id: string | null }[]) {
+      if (!p.user_id) continue
+      const list = result.get(p.meeting_id) ?? []
+      if (!list.includes(p.user_id)) list.push(p.user_id)
+      result.set(p.meeting_id, list)
+    }
+  }
+  return result
+}
+
+/** Meeting yang sudah pernah diingatkan notes-nya dengan key lama (per tanggal). */
+async function meetingsWithOldNotesEvent(meetingIds: string[]): Promise<Set<string>> {
+  const found = new Set<string>()
+  // Dipecah per 50 supaya filter .or() di URL tidak terlalu panjang.
+  for (let i = 0; i < meetingIds.length; i += 50) {
+    const chunk = meetingIds.slice(i, i + 50)
+    const { data } = await createAdminClient()
+      .from('notification_events')
+      .select('event_key')
+      .or(chunk.map((id) => `event_key.like.meeting-notes:${id}:%`).join(','))
+    for (const row of (data ?? []) as { event_key: string }[]) {
+      found.add(row.event_key.split(':')[1])
+    }
+  }
+  return found
 }
 
 function baseUrlOrEmpty(): string {
@@ -109,11 +136,16 @@ export async function runMeetingScheduler(now: Date = new Date()): Promise<{
       isWithinReminderWindow(m, REMINDER_WINDOW_MINUTES, now, REMINDER_LEAD_MINUTES)
     )
 
+    const [participants, labels] = await Promise.all([
+      participantsByMeeting(due.map((m) => m.id)),
+      projectLabels(due.map((m) => m.project_id)),
+    ])
+
     for (const m of due) {
-      const userIds = await participantUserIds(m.id)
+      const userIds = participants.get(m.id) ?? []
       if (userIds.length === 0) continue
 
-      const label = await projectLabel(m.project_id)
+      const label = labels.get(m.project_id) ?? '-'
       const result = await emitNotification({
         // Satu meeting = satu reminder per hari, walau cron jalan tiap 15 mnt.
         key: `meeting-reminder:${m.id}:${today}`,
@@ -150,20 +182,20 @@ export async function runMeetingScheduler(now: Date = new Date()): Promise<{
   } else {
     const needy = ((completed ?? []) as SchedulerMeeting[]).filter((m) => needsNotes(m))
 
-    for (const m of needy) {
-      // Meeting yang sudah diingatkan dengan key lama (per tanggal) tidak
-      // dikirim ulang saat key berubah (tanpa ini: banjir sekali saat deploy).
-      const { data: oldEvent } = await admin
-        .from('notification_events')
-        .select('event_key')
-        .like('event_key', `meeting-notes:${m.id}:%`)
-        .limit(1)
-      if (oldEvent && oldEvent.length > 0) continue
+    // Meeting yang sudah diingatkan dengan key lama (per tanggal) tidak
+    // dikirim ulang saat key berubah (tanpa ini: banjir sekali saat deploy).
+    const oldEvents = await meetingsWithOldNotesEvent(needy.map((m) => m.id))
+    const pending = needy.filter((m) => !oldEvents.has(m.id))
+    const [participants, labels] = await Promise.all([
+      participantsByMeeting(pending.map((m) => m.id)),
+      projectLabels(pending.map((m) => m.project_id)),
+    ])
 
-      const userIds = await participantUserIds(m.id)
+    for (const m of pending) {
+      const userIds = participants.get(m.id) ?? []
       if (userIds.length === 0) continue
 
-      const label = await projectLabel(m.project_id)
+      const label = labels.get(m.project_id) ?? '-'
       const result = await emitNotification({
         // Satu follow-up per meeting (§31): key tanpa tanggal, jadi tidak
         // dikirim ulang setiap hari selama notes masih kosong.

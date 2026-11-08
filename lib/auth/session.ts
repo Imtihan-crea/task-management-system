@@ -55,13 +55,16 @@ async function fetchProfile(
 export const getCurrentProfile = cache(async (): Promise<CurrentProfile | null> => {
   const supabase = await createClient()
 
-  const {
-    data: { user },
-  } = await supabase.auth.getUser()
+  // getClaims memverifikasi JWT secara lokal (kunci asimetris) tanpa round trip
+  // ke Supabase Auth; bila proyek memakai kunci simetris ia otomatis memanggil
+  // getUser. Sesi yang dicabut tetap tertangkap: proxy.ts memanggil getUser
+  // pada setiap request sebelum halaman/aksi ini dijalankan.
+  const { data } = await supabase.auth.getClaims()
+  const userId = data?.claims?.sub
 
-  if (!user) return null
+  if (!userId) return null
 
-  return fetchProfile(supabase, user.id)
+  return fetchProfile(supabase, userId)
 })
 
 /**
