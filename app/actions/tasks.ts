@@ -63,8 +63,8 @@ async function assertWorkstreamInProject(
 }
 
 async function assertCanManageTask(taskId: string, profile: { id: string; role: string }) {
-  if (profile.role === 'ADMIN') return { allowed: true, projectId: '' }
-
+  // ADMIN juga memuat task: task terhapus ditolak (audit C15) dan projectId
+  // asli dipakai pemanggil (cek pindah project / project tertutup).
   const admin = createAdminClient()
   const { data: task } = await admin
     .from('tasks')
