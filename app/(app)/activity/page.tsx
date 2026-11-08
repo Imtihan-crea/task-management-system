@@ -113,8 +113,9 @@ async function ActivityResults({ filters }: { filters: ActivityFilters }) {
   if (entity) query = query.eq('entity_type', entity)
   if (action) query = query.eq('action', action)
   if (project) query = query.eq('project_id', project)
-  if (from) query = query.gte('created_at', `${from}T00:00:00`)
-  if (to) query = query.lte('created_at', `${to}T23:59:59`)
+  // Tanggal filter = hari kalender WIB (audit C14), bukan UTC.
+  if (from) query = query.gte('created_at', `${from}T00:00:00+07:00`)
+  if (to) query = query.lte('created_at', `${to}T23:59:59.999+07:00`)
 
   const { data, error, count } = await query
   const entries = (data ?? []) as ActivityEntry[]
