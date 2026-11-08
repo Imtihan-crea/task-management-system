@@ -15,7 +15,8 @@ export const dynamic = 'force-dynamic'
 
 const PAGE_SIZE = 25
 
-const ENTITY_OPTIONS = ['', 'project', 'workstream', 'task', 'suggestion', 'user']
+// meeting + meeting_action_item ditambahkan (audit C7).
+const ENTITY_OPTIONS = ['', 'project', 'workstream', 'task', 'suggestion', 'user', 'meeting', 'meeting_action_item']
 const ACTION_OPTIONS = [
   '',
   'TASK_CREATED',
@@ -44,6 +45,18 @@ const ACTION_OPTIONS = [
   'USER_ACTIVATED',
   'USER_DEACTIVATED',
   'ROLE_CHANGED',
+  'MEETING_CREATED',
+  'MEETING_UPDATED',
+  'MEETING_SCHEDULED',
+  'MEETING_COMPLETED',
+  'MEETING_CANCELLED',
+  'MEETING_PARTICIPANT_ADDED',
+  'MEETING_PARTICIPANT_REMOVED',
+  'MEETING_AGENDA_UPDATED',
+  'MEETING_DECISION_CREATED',
+  'MEETING_ACTION_ITEM_CREATED',
+  'MEETING_ACTION_ITEM_UPDATED',
+  'MEETING_TASK_CREATED',
 ]
 
 function str(v: string | string[] | undefined): string {
