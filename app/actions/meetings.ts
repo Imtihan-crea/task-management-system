@@ -570,7 +570,7 @@ export async function updateMeeting(
       meeting_link: meetingLink || null,
       description: description || null,
       organizer_id: organizerId,
-      add_to_calendar: formData.get('add_to_calendar') === 'on',
+      // add_to_calendar tidak ada di form edit: jangan ditimpa false (audit C9).
     })
     .eq('id', id)
     .select('id, code, updated_at')
