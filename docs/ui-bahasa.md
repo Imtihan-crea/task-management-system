@@ -59,3 +59,11 @@ Sapaan: **Anda**. Hindari campuran "kamu"/"Anda" di satu tempat.
 - Log (`console.*`), komentar, nama variabel, nilai enum di database,
   `metadata` activity log, nama tab di URL.
 - Kode task/meeting/project.
+- Nilai `action` activity log yang tampil apa adanya di dropdown filter
+  `/activity` (mis. `TASK CREATED`) dan sebagai cadangan di timeline untuk
+  aksi yang belum punya kalimat: itu nilai enum database.
+- Notifikasi lama yang sudah tersimpan di database (mis. "Task T-14 due today",
+  dibuat sebelum penyeragaman bahasa). Kode yang menghasilkannya sudah
+  berbahasa Indonesia; data produksi tidak ditulis ulang.
+- Nama klien, project, dan judul yang diketik pengguna (mis. "Client Meeting"
+  sebagai tipe meeting adalah istilah inti).

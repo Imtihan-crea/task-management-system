@@ -32,7 +32,7 @@ export function CreateUserForm() {
       <form {...formAction} className="mt-4 flex flex-col gap-4">
         <div>
           <label htmlFor="create_full_name" className="mb-1 block text-sm font-medium">
-            Full Name <span aria-hidden="true">*</span>
+            Nama Lengkap <span aria-hidden="true">*</span>
           </label>
           <input
             id="create_full_name"

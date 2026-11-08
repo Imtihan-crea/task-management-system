@@ -67,7 +67,7 @@ export function MeetingForm({
 
       <div>
         <label htmlFor="mf-title" className="mb-1 block text-sm font-medium">
-          Meeting Title <span aria-hidden="true">*</span>
+          Judul Meeting <span aria-hidden="true">*</span>
         </label>
         <input
           id="mf-title"
@@ -94,19 +94,19 @@ export function MeetingForm({
         </div>
         <div>
           <label htmlFor="mf-date" className="mb-1 block text-sm font-medium">
-            Date <span aria-hidden="true">*</span>
+            Tanggal <span aria-hidden="true">*</span>
           </label>
           <input id="mf-date" name="meeting_date" type="date" required className={inputCls} />
         </div>
         <div>
           <label htmlFor="mf-start" className="mb-1 block text-sm font-medium">
-            Start Time <span aria-hidden="true">*</span>
+            Jam Mulai <span aria-hidden="true">*</span>
           </label>
           <input id="mf-start" name="start_time" type="time" required className={inputCls} />
         </div>
         <div>
           <label htmlFor="mf-end" className="mb-1 block text-sm font-medium">
-            End Time <span aria-hidden="true">*</span>
+            Jam Selesai <span aria-hidden="true">*</span>
           </label>
           <input id="mf-end" name="end_time" type="time" required className={inputCls} />
         </div>

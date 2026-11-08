@@ -144,7 +144,7 @@ export async function ChartsSection({ userId, role, filters }: Ctx & { filters: 
         <StatusDonut segments={donutSegments} />
       </section>
       <section className="rounded-2xl bg-white p-4 shadow dark:bg-zinc-900">
-        <h2 className="mb-3 text-lg font-bold">Task per Priority</h2>
+        <h2 className="mb-3 text-lg font-bold">Task per Prioritas</h2>
         <PriorityBars items={prioritySummary} />
       </section>
     </div>
@@ -313,7 +313,7 @@ export async function FilterSection({ filters }: { filters: DashboardFilters }) 
         </select>
       </div>
       <div>
-        <label htmlFor="f-priority" className="mb-1 block text-sm font-medium">Priority</label>
+        <label htmlFor="f-priority" className="mb-1 block text-sm font-medium">Prioritas</label>
         <select id="f-priority" name="priority" defaultValue={filters.priority} className="min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800">
           <option value="">Semua</option>
           {(['HIGH', 'MEDIUM', 'LOW'] as const).map((p) => (

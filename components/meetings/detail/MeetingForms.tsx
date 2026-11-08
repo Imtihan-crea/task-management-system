@@ -55,7 +55,7 @@ export function MeetingEditForm({
 
       <div>
         <label htmlFor="me-title" className="mb-1 block text-sm font-medium">
-          Meeting Title <span aria-hidden="true">*</span>
+          Judul Meeting <span aria-hidden="true">*</span>
         </label>
         <input
           id="me-title"
@@ -87,7 +87,7 @@ export function MeetingEditForm({
         </div>
         <div>
           <label htmlFor="me-date" className="mb-1 block text-sm font-medium">
-            Date <span aria-hidden="true">*</span>
+            Tanggal <span aria-hidden="true">*</span>
           </label>
           <input
             id="me-date"
@@ -100,7 +100,7 @@ export function MeetingEditForm({
         </div>
         <div>
           <label htmlFor="me-start" className="mb-1 block text-sm font-medium">
-            Start Time <span aria-hidden="true">*</span>
+            Jam Mulai <span aria-hidden="true">*</span>
           </label>
           <input
             id="me-start"
@@ -113,7 +113,7 @@ export function MeetingEditForm({
         </div>
         <div>
           <label htmlFor="me-end" className="mb-1 block text-sm font-medium">
-            End Time <span aria-hidden="true">*</span>
+            Jam Selesai <span aria-hidden="true">*</span>
           </label>
           <input
             id="me-end"
