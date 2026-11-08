@@ -26,7 +26,7 @@ export function LoginForm({ inactiveMessage }: { inactiveMessage?: string }) {
 
       if (signInError || !data.user) {
         // Pesan sengaja sama untuk email salah maupun password salah
-        setError('Invalid email or password.')
+        setError('Email atau Password salah.')
         return
       }
 
@@ -57,20 +57,20 @@ export function LoginForm({ inactiveMessage }: { inactiveMessage?: string }) {
 
       if (profileError || !profile) {
         await supabase.auth.signOut()
-        setError('Something went wrong. Please try again.')
+        setError('Terjadi kesalahan. Silakan coba lagi.')
         return
       }
 
       // Belum selesai setup password (undangan belum diselesaikan)
       if (profile.status === 'INVITED') {
         await supabase.auth.signOut()
-        setError('Your account invitation is not completed yet.')
+        setError('Undangan akun Anda belum selesai diproses.')
         return
       }
 
       if (profile.status !== 'ACTIVE') {
         await supabase.auth.signOut()
-        setError('Your account is inactive. Please contact an administrator.')
+        setError('Akun Anda nonaktif. Silakan hubungi administrator.')
         return
       }
 
@@ -85,7 +85,7 @@ export function LoginForm({ inactiveMessage }: { inactiveMessage?: string }) {
       router.push('/dashboard')
       router.refresh()
     } catch {
-      setError('Something went wrong. Please try again.')
+      setError('Terjadi kesalahan. Silakan coba lagi.')
     } finally {
       setLoading(false)
     }

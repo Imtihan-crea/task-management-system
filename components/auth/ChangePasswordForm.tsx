@@ -77,7 +77,7 @@ export function ChangePasswordForm({ email }: { email: string }) {
       router.push('/dashboard')
       router.refresh()
     } catch {
-      setError('Something went wrong. Please try again.')
+      setError('Terjadi kesalahan. Silakan coba lagi.')
     } finally {
       setLoading(false)
     }

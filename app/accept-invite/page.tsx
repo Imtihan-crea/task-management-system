@@ -183,12 +183,12 @@ export default function AcceptInvitePage() {
     setError('')
 
     if (password.length < 8) {
-      setError('Password must be at least 8 characters.')
+      setError('Password minimal 8 karakter.')
       return
     }
 
     if (password !== confirm) {
-      setError('Passwords do not match.')
+      setError('Password tidak cocok.')
       return
     }
 
