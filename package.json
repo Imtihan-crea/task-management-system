@@ -30,8 +30,10 @@
     "e2e:write": "node scripts/e2e/write-flow.mjs",
     "e2e:cleanup": "node scripts/e2e/cleanup.mjs",
     "e2e:rbac": "node scripts/e2e/rbac.mjs",
+    "test:user-status": "tsx tests/user-status.check.ts",
     "check:secrets": "node scripts/check-secrets.mjs",
     "test:db": "tsx tests/postgrest-or.check.ts",
+    "test:logic": "npm run test:time && npm run test:rules && npm run test:email && npm run test:layout && npm run test:digest && npm run test:task && npm run test:auth && npm run test:canonical && npm run test:cron && npm run test:permissions && npm run test:alert && npm run test:task-access && npm run test:project-access && npm run test:user-status && npm run test:limits && npm run check:secrets"
   },
   "dependencies": {
     "@sentry/nextjs": "11.11.0",

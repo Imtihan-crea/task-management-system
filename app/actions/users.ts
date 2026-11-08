@@ -9,6 +9,11 @@ import { getAppBaseUrl } from '@/lib/app-url'
 import { logActivity } from '@/lib/activity-log/service'
 import type { UserRole, UserStatus } from '@/types/profile'
 import { removesLastActiveAdmin } from '@/lib/auth/project-access'
+import {
+  quickStatusChangeError,
+  quickStatusTargetError,
+  userEditStatusError,
+} from '@/lib/auth/user-status'
 import { readLimitedField } from '@/lib/forms/limits'
 
 export type UserFormState = {
@@ -508,21 +513,13 @@ export async function updateUser(
 
   if (readError || !current) return { error: 'User tidak ditemukan.' }
 
-  // Rule 05: admin tidak boleh mengubah status dirinya sendiri (INACTIVE
-  // maupun INVITED sama-sama mengunci dia keluar).
-  if (targetId === adminProfile.id && status !== current.status) {
-    return { error: 'Anda tidak dapat mengubah status Anda sendiri.' }
-  }
-
-  // INVITED hanya hasil kirim undangan; status lain tidak boleh kembali ke sana.
-  if (status === 'INVITED' && current.status !== 'INVITED') {
-    return { error: 'Pilih status yang valid.' }
-  }
-  // Audit A7: user INVITED belum punya password; statusnya hanya berubah
-  // lewat /accept-invite.
-  if (current.status === 'INVITED' && status !== 'INVITED') {
-    return { error: 'User ini belum menerima undangan.' }
-  }
+  const statusError = userEditStatusError({
+    actorId: adminProfile.id,
+    targetId,
+    current: current.status,
+    next: status,
+  })
+  if (statusError) return { error: statusError }
 
   // Rule 06: sisakan minimal satu active Admin
   if (await wouldRemoveLastAdmin(targetId, role, status)) {
@@ -600,7 +597,8 @@ export async function setUserStatus(
 
   if (!targetId) return { error: 'User tidak ditemukan.' }
   if (!isUserStatus(status)) return { error: 'Pilih status yang valid.' }
-  if (status === 'INVITED') return { error: 'Status tidak dapat diubah menjadi INVITED di sini.' }
+  const targetError = quickStatusTargetError(status)
+  if (targetError) return { error: targetError }
 
   const admin = createAdminClient()
 
@@ -612,15 +610,13 @@ export async function setUserStatus(
 
   if (readError || !current) return { error: 'User tidak ditemukan.' }
 
-  // Audit A7: lihat updateUser.
-  if (current.status === 'INVITED') {
-    return { error: 'User ini belum menerima undangan.' }
-  }
-
-  // Rule 05: self-deactivation
-  if (targetId === adminProfile.id && status === 'INACTIVE') {
-    return { error: 'Anda tidak dapat menonaktifkan akun Anda sendiri.' }
-  }
+  const changeError = quickStatusChangeError({
+    actorId: adminProfile.id,
+    targetId,
+    current: current.status,
+    next: status,
+  })
+  if (changeError) return { error: changeError }
 
   // Rule 06: last active admin
   if (await wouldRemoveLastAdmin(targetId, current.role, status)) {
