@@ -191,38 +191,14 @@ export async function createSuggestion(
   }
 
   // Event: SUGGESTION_CREATED → semua PM project (in-app + email).
-  const { data: links } = await admin
-    .from('project_managers')
-    .select('user_id')
-    .eq('project_id', projectId)
-  const pmIds = ((links ?? []) as { user_id: string }[]).map((l) => l.user_id)
-
-  const [{ data: project }] = await Promise.all([
-    admin.from('projects').select('code, name').eq('id', projectId).single<{ code: string; name: string }>(),
-  ])
-
-  let baseUrl = ''
-  try {
-    baseUrl = getAppBaseUrl()
-  } catch {
-    console.error('[notify] APP_URL missing, skipping suggestion email.')
-  }
-
-  await emitNotification({
+  await notifySuggestionPms({
+    id: created.id,
+    code: created.code,
+    projectId,
+    title,
+    actorName: profile.full_name || profile.email,
     key: `suggestion-created:${created.id}`,
-    type: 'SUGGESTION_CREATED',
-    userIds: pmIds,
-    title: `New suggestion ${created.code}: ${title}`,
-    message: `${profile.full_name || profile.email} suggested a new task in ${project ? `${project.code} · ${project.name}` : 'a project'}.`,
-    entityType: 'suggestion',
-    entityId: created.id,
-    email: baseUrl
-      ? {
-          subject: `[Suggestion ${created.code}] ${title}`,
-          html: `<p>Halo,</p><p>Ada usulan task baru yang menunggu review Anda:</p><ul><li><strong>${h(created.code)} ${h(title)}</strong></li><li><strong>Project:</strong> ${project ? `${h(project.code)} · ${h(project.name)}` : '-'}</li><li><strong>Suggested by:</strong> ${h(profile.full_name || profile.email)}</li></ul><p>Review di sini:<br><a href="${baseUrl}/task-suggestions/${created.id}">${baseUrl}/task-suggestions/${created.id}</a></p>`,
-          category: 'suggestion',
-        }
-      : null,
+    resubmitted: false,
   })
 
   revalidatePath('/task-suggestions')
@@ -239,6 +215,54 @@ export async function createSuggestion(
   })
 
   return { success: `Suggestion ${created.code} submitted successfully.` }
+}
+
+/** Notifikasi usulan baru / dikirim ulang ke semua PM project (in-app + email). */
+async function notifySuggestionPms(input: {
+  id: string
+  code: string
+  projectId: string
+  title: string
+  actorName: string
+  key: string
+  resubmitted: boolean
+}): Promise<void> {
+  const admin = createAdminClient()
+  const [{ data: links }, { data: project }] = await Promise.all([
+    admin.from('project_managers').select('user_id').eq('project_id', input.projectId),
+    admin.from('projects').select('code, name').eq('id', input.projectId).single<{ code: string; name: string }>(),
+  ])
+  const pmIds = ((links ?? []) as { user_id: string }[]).map((l) => l.user_id)
+
+  let baseUrl = ''
+  try {
+    baseUrl = getAppBaseUrl()
+  } catch {
+    console.error('[notify] APP_URL missing, skipping suggestion email.')
+  }
+
+  const projectText = project ? `${project.code} · ${project.name}` : 'a project'
+  const verb = input.resubmitted ? 'resubmitted a revised suggestion' : 'suggested a new task'
+  const intro = input.resubmitted
+    ? 'Usulan task berikut sudah direvisi dan menunggu review Anda lagi:'
+    : 'Ada usulan task baru yang menunggu review Anda:'
+
+  await emitNotification({
+    key: input.key,
+    type: 'SUGGESTION_CREATED',
+    userIds: pmIds,
+    title: `${input.resubmitted ? 'Revised' : 'New'} suggestion ${input.code}: ${input.title}`,
+    message: `${input.actorName} ${verb} in ${projectText}.`,
+    entityType: 'suggestion',
+    entityId: input.id,
+    email: baseUrl
+      ? {
+          subject: `[Suggestion ${input.code}] ${input.title}`,
+          html: `<p>Halo,</p><p>${intro}</p><ul><li><strong>${h(input.code)} ${h(input.title)}</strong></li><li><strong>Project:</strong> ${project ? `${h(project.code)} · ${h(project.name)}` : '-'}</li><li><strong>Suggested by:</strong> ${h(input.actorName)}</li></ul><p>Review di sini:<br><a href="${baseUrl}/task-suggestions/${input.id}">${baseUrl}/task-suggestions/${input.id}</a></p>`,
+          category: 'suggestion',
+        }
+      : null,
+  })
 }
 
 /** Creator perbaiki lalu resubmit: REVISION_REQUESTED → PENDING. */
@@ -259,6 +283,11 @@ export async function resubmitSuggestion(
   if (!id) return { error: 'Suggestion not found.' }
   if (!title) return { error: 'Task title is required.' }
   if (!description) return { error: 'Description is required.' }
+  // Validasi sama dengan createSuggestion (audit B9).
+  if (priority && !isTaskPriority(priority)) {
+    return { error: 'Please choose a valid priority.' }
+  }
+  if (!validDate(deadline)) return { error: 'Please enter a valid deadline.' }
 
   const admin = createAdminClient()
   const { data: current } = await admin
@@ -288,7 +317,7 @@ export async function resubmitSuggestion(
     return { error: 'Suggested assignee must be an active user.' }
   }
 
-  const { error } = await admin
+  const { data: resubmitted, error } = await admin
     .from('task_suggestions')
     .update({
       title,
@@ -300,11 +329,25 @@ export async function resubmitSuggestion(
       status: 'PENDING' as SuggestionStatus,
     })
     .eq('id', id)
+    .eq('status', 'REVISION_REQUESTED')
+    .select('updated_at')
+    .maybeSingle<{ updated_at: string }>()
 
-  if (error) {
-    console.error('resubmitSuggestion failed:', error.message)
+  if (error || !resubmitted) {
+    console.error('resubmitSuggestion failed:', error?.message)
     return { error: 'Unable to resubmit suggestion.' }
   }
+
+  // PM diberi tahu bahwa usulan menunggu review lagi (audit B9).
+  await notifySuggestionPms({
+    id,
+    code: current.code,
+    projectId: current.project_id,
+    title,
+    actorName: profile.full_name || profile.email,
+    key: `suggestion-resubmitted:${id}:${resubmitted.updated_at}`,
+    resubmitted: true,
+  })
 
   revalidatePath('/task-suggestions')
   revalidatePath(`/task-suggestions/${id}`)
