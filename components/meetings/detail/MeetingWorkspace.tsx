@@ -278,12 +278,15 @@ export async function ActionsSection({
   workstreams,
   canContent,
   canCreateTask,
+  taskProjects,
 }: {
   meetingId: string
   users: UserOption[]
   workstreams: { id: string; code: string; name: string }[]
   canContent: boolean
   canCreateTask: boolean
+  /** Diisi hanya untuk meeting tanpa project (audit A10). */
+  taskProjects?: { id: string; code: string; name: string }[]
 }) {
   const items = await fetchMeetingActionItems(meetingId)
 
@@ -321,6 +324,7 @@ export async function ActionsSection({
                 users={users}
                 workstreams={workstreams}
                 canCreateTask={canCreateTask}
+                taskProjects={taskProjects}
                 taskCode={a.task_id ? (taskCodes[a.task_id] ?? null) : null}
               />
             ) : (

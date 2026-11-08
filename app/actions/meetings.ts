@@ -1735,11 +1735,19 @@ export async function createTaskFromActionItem(
     }
   }
 
-  // Task wajib punya project (§20 mapping). Meeting global tanpa project
-  // tidak bisa melahirkan task — user harus pindahkan meeting ke project dulu.
-  const projectId = access.meeting.project_id
+  // Task wajib punya project (§20 mapping). Meeting global tanpa project:
+  // project dipilih di form saat membuat task (audit A10).
+  const projectId = access.meeting.project_id || readField(formData, 'project_id')
   if (!projectId) {
-    return { error: 'This meeting has no project. Move it to a project first.' }
+    return { error: 'Please choose a project for this task.' }
+  }
+  if (!access.meeting.project_id) {
+    const { data: chosen } = await admin
+      .from('projects')
+      .select('id')
+      .eq('id', projectId)
+      .maybeSingle<{ id: string }>()
+    if (!chosen) return { error: 'Please choose a project for this task.' }
   }
 
   // PM hanya boleh di project miliknya (aturan task yang existing, §47).

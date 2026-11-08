@@ -322,6 +322,7 @@ export function ActionItemCard({
   users,
   workstreams,
   canCreateTask,
+  taskProjects,
   taskCode,
 }: {
   meetingId: string
@@ -329,6 +330,8 @@ export function ActionItemCard({
   users: UserOption[]
   workstreams: { id: string; code: string; name: string }[]
   canCreateTask: boolean
+  /** Meeting tanpa project: project dipilih saat Create Task (audit A10). */
+  taskProjects?: { id: string; code: string; name: string }[]
   /** Kode task kalau sudah dibuat (T-081) — untuk link balik §21. */
   taskCode?: string | null
 }) {
@@ -425,6 +428,18 @@ export function ActionItemCard({
           <form action={taskAction} className="flex flex-col gap-2">
             <input type="hidden" name="action_item_id" value={item.id} />
             <input type="hidden" name="meeting_id" value={meetingId} />
+            {taskProjects && (
+              <select name="project_id" required defaultValue="" aria-label="Project" className={inputCls}>
+                <option value="" disabled>
+                  {taskProjects.length > 0 ? 'Choose project...' : 'No project available'}
+                </option>
+                {taskProjects.map((p) => (
+                  <option key={p.id} value={p.id}>
+                    {p.code} · {p.name}
+                  </option>
+                ))}
+              </select>
+            )}
             {/* Metadata diwarisi dari action item; workstream opsional (§20). */}
             {workstreams.length > 0 && (
               <select name="workstream_id" defaultValue="" aria-label="Workstream (optional)" className={inputCls}>

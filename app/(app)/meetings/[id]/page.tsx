@@ -78,6 +78,22 @@ export default async function MeetingDetailPage({
       : Promise.resolve({ data: [] as { id: string; code: string; name: string }[] }),
   ])
 
+  // Meeting global (tanpa project): pilihan project untuk Create Task dari
+  // action item (audit A10). Sama dengan /tasks/new: PM hanya project miliknya.
+  let taskProjects: { id: string; code: string; name: string }[] | undefined
+  if (!meeting.project_id && canCreateTask) {
+    let q = admin.from('projects').select('id, code, name').order('name', { ascending: true }).limit(500)
+    if (profile.role === 'PROJECT_MANAGER') {
+      const { data: links } = await admin
+        .from('project_managers')
+        .select('project_id')
+        .eq('user_id', profile.id)
+      const ids = ((links ?? []) as { project_id: string }[]).map((l) => l.project_id)
+      q = q.in('id', ids.length > 0 ? ids : ['00000000-0000-0000-0000-000000000000'])
+    }
+    taskProjects = ((await q).data ?? []) as { id: string; code: string; name: string }[]
+  }
+
   const nameOf = (uid: string | null) => {
     if (!uid) return '-'
     const u = users.find((x) => x.id === uid)
@@ -174,6 +190,7 @@ export default async function MeetingDetailPage({
               workstreams={(wsData ?? []) as { id: string; code: string; name: string }[]}
               canContent={canContent}
               canCreateTask={canCreateTask}
+              taskProjects={taskProjects}
             />
           </Suspense>
         )}
