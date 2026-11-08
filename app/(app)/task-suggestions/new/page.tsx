@@ -28,12 +28,21 @@ export default async function NewSuggestionPage({
   const presetProject = typeof params.project === 'string' ? params.project : ''
 
   const admin = createAdminClient()
-  const [projects, users, workstreamsRes] = await Promise.all([
+  const [projects, users] = await Promise.all([
     getSuggestableProjects(profile.id, profile.role),
     getActiveUsers(),
-    admin.from('workstreams').select('id, project_id, code, name').order('name', { ascending: true }).limit(1000),
   ])
-  const workstreams = workstreamsRes.data ?? []
+  // Hanya workstream dari project yang boleh diusulkan user ini (jangan
+  // kirim workstream project lain ke browser).
+  const { data: workstreamsData } = projects.length
+    ? await admin
+        .from('workstreams')
+        .select('id, project_id, code, name')
+        .in('project_id', projects.map((p) => p.id))
+        .order('name', { ascending: true })
+        .limit(1000)
+    : { data: [] }
+  const workstreams = workstreamsData ?? []
 
   return (
     <AppShell>
