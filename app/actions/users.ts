@@ -497,6 +497,11 @@ export async function updateUser(
   if (status === 'INVITED' && current.status !== 'INVITED') {
     return { error: 'Please choose a valid status.' }
   }
+  // Audit A7: user INVITED belum punya password; statusnya hanya berubah
+  // lewat /accept-invite.
+  if (current.status === 'INVITED' && status !== 'INVITED') {
+    return { error: 'This user has not accepted the invitation yet.' }
+  }
 
   // Rule 06: sisakan minimal satu active Admin
   if (await wouldRemoveLastAdmin(targetId, role, status)) {
@@ -586,6 +591,11 @@ export async function setUserStatus(
     .single<{ role: UserRole; status: UserStatus }>()
 
   if (readError || !current) return { error: 'User not found.' }
+
+  // Audit A7: lihat updateUser.
+  if (current.status === 'INVITED') {
+    return { error: 'This user has not accepted the invitation yet.' }
+  }
 
   // Rule 05: self-deactivation
   if (targetId === adminProfile.id && status === 'INACTIVE') {

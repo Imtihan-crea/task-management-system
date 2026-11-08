@@ -32,6 +32,12 @@ export function StatusToggleForm({ user }: { user: EditableUser }) {
   const [state, formAction, pending] = useActionState(setUserStatus, INITIAL)
   const nextStatus: UserStatus = user.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE'
 
+  // Audit A7: user INVITED belum punya password; Activate membuatnya tidak
+  // bisa login. Status INVITED hanya berubah saat user menerima undangan.
+  if (user.status === 'INVITED') {
+    return <p className="text-sm text-zinc-500">Waiting for the user to accept the invitation.</p>
+  }
+
   return (
     <form action={formAction} className="flex flex-col gap-2">
       <input type="hidden" name="id" value={user.id} />
@@ -121,7 +127,7 @@ export function EditUserForm({ user, isSelf }: { user: EditableUser; isSelf: boo
           id="edit_status"
           name="status"
           defaultValue={user.status}
-          disabled={isSelf}
+          disabled={isSelf || user.status === 'INVITED'}
           className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base outline-none focus:border-black dark:border-zinc-700 dark:bg-zinc-800"
         >
           {/* INVITED hanya hasil kirim undangan, tidak dipilih manual. */}
@@ -132,9 +138,16 @@ export function EditUserForm({ user, isSelf }: { user: EditableUser; isSelf: boo
           ))}
         </select>
         {/* select disabled tidak ikut terkirim, jadi kirim status lama. */}
-        {isSelf && <input type="hidden" name="status" value={user.status} />}
+        {(isSelf || user.status === 'INVITED') && (
+          <input type="hidden" name="status" value={user.status} />
+        )}
         {isSelf && (
           <p className="mt-1 text-xs text-zinc-500">You cannot change your own status.</p>
+        )}
+        {!isSelf && user.status === 'INVITED' && (
+          <p className="mt-1 text-xs text-zinc-500">
+            Changes when the user accepts the invitation.
+          </p>
         )}
       </div>
 
