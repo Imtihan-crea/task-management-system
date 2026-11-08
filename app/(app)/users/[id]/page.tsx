@@ -4,7 +4,7 @@ import { requireAdmin } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ROLE_LABELS, STATUS_LABELS } from '@/lib/auth/roles'
 import { AppShell } from '@/components/layout/AppShell'
-import { EditUserForm, StatusToggleForm } from '@/components/users/UserForms'
+import { AccessLinkForm, EditUserForm, StatusToggleForm } from '@/components/users/UserForms'
 import type { UserRole, UserStatus } from '@/types/profile'
 
 type ProfileRow = {
@@ -91,6 +91,9 @@ export default async function UserDetailPage({
 
           <div className="mt-4 max-w-[220px]">
             <StatusToggleForm user={profile} />
+          </div>
+          <div className="mt-2 max-w-[320px]">
+            <AccessLinkForm user={profile} />
           </div>
         </section>
 

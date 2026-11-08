@@ -52,9 +52,10 @@ async function exchangeTokenIfPresent(
 
   // `token_hash` (bukan `token`) adalah parameter yang benar untuk
   // verifyOtp dari link email. Mengirim `token` akan ditolak 403.
+  // type=recovery: link undangan ulang dari admin (audit A8).
   await supabase.auth.verifyOtp({
     token_hash: tokenHash,
-    type: 'invite',
+    type: params.get('type') === 'recovery' ? 'recovery' : 'invite',
   })
 }
 

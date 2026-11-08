@@ -632,3 +632,84 @@ export async function setUserStatus(
     success: status === 'ACTIVE' ? 'User activated successfully.' : 'User deactivated successfully.',
   }
 }
+
+/* ------------------------------------------------------------------ */
+/* Kirim ulang undangan / link reset password (audit A8, 8 Nov 2026)   */
+/* ------------------------------------------------------------------ */
+
+/**
+ * Admin membuat link sekali pakai untuk dikirim sendiri (WhatsApp/chat),
+ * pola yang sama dengan fallback undangan: `generateLink` tidak memakai
+ * kuota email Supabase.
+ * - INVITED: link undangan baru ke /accept-invite (link lama tidak berlaku).
+ * - ACTIVE: link reset password ke /reset-password.
+ */
+export async function generateAccessLink(
+  _prev: UserFormState,
+  formData: FormData
+): Promise<UserFormState> {
+  const actor = await requireAdmin()
+  const targetId = readField(formData, 'id')
+
+  const admin = createAdminClient()
+  const { data: target } = await admin
+    .from('profiles')
+    .select('email, status')
+    .eq('id', targetId)
+    .single<{ email: string; status: UserStatus }>()
+
+  if (!target) return { error: 'User not found.' }
+  if (target.status === 'INACTIVE') {
+    return { error: 'Activate the user first.' }
+  }
+
+  let baseUrl: string
+  try {
+    baseUrl = getAppBaseUrl()
+  } catch (configError) {
+    console.error('APP_URL missing:', (configError as Error).message)
+    return { error: 'Server is not configured for links. Ask your developer to set APP_URL.' }
+  }
+
+  async function tokenFor(type: 'invite' | 'recovery', page: string): Promise<string | null> {
+    const { data, error } = await admin.auth.admin.generateLink({
+      type,
+      email: target!.email,
+      options: { redirectTo: `${baseUrl}${page}` },
+    })
+    if (error) console.error(`[access-link] generateLink ${type} failed:`, error.message)
+    const actionLink = data?.properties?.action_link
+    return actionLink ? new URL(actionLink).searchParams.get('token') : null
+  }
+
+  let link: string | null = null
+  let kind: 'invite' | 'recovery' = 'recovery'
+  if (target.status === 'INVITED') {
+    // Undangan ulang; bila Supabase menolak (user Auth sudah terkonfirmasi),
+    // link recovery juga memberi sesi, lalu /accept-invite meminta password.
+    let token = await tokenFor('invite', '/accept-invite')
+    if (token) kind = 'invite'
+    else token = await tokenFor('recovery', '/accept-invite')
+    if (token) link = `${baseUrl}/accept-invite#token_hash=${token}&type=${kind}`
+  } else {
+    const token = await tokenFor('recovery', '/reset-password')
+    if (token) link = `${baseUrl}/reset-password#token_hash=${token}&type=recovery`
+  }
+
+  if (!link) return { error: 'Unable to generate the link. Please try again.' }
+
+  await logActivity({
+    actorUserId: actor.id,
+    action: 'USER_UPDATED',
+    entityType: 'user',
+    entityId: targetId,
+    entityCode: target.email,
+    projectId: null,
+    metadata: { access_link: kind },
+  })
+
+  return {
+    success: kind === 'invite' ? 'New invitation link created.' : 'Password reset link created.',
+    inviteLink: link,
+  }
+}

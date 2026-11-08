@@ -1,7 +1,8 @@
 'use client'
 
 import { useActionState } from 'react'
-import { setUserStatus, updateUser, type UserFormState } from '@/app/actions/users'
+import { generateAccessLink, setUserStatus, updateUser, type UserFormState } from '@/app/actions/users'
+import { CopyLinkBox } from '@/components/users/InviteUserForm'
 import { ROLE_LABELS, STATUS_LABELS, USER_ROLES, USER_STATUSES } from '@/lib/auth/roles'
 import type { UserRole, UserStatus } from '@/types/profile'
 
@@ -165,6 +166,35 @@ export function EditUserForm({ user, isSelf }: { user: EditableUser; isSelf: boo
       <div>
         <SubmitButton pending={pending} label="Save Changes" />
       </div>
+    </form>
+  )
+}
+
+/** Audit A8: kirim ulang undangan (INVITED) atau link reset password (ACTIVE). */
+export function AccessLinkForm({ user }: { user: EditableUser }) {
+  const [state, formAction, pending] = useActionState(generateAccessLink, INITIAL)
+  if (user.status === 'INACTIVE') return null
+
+  return (
+    <form action={formAction} className="flex flex-col gap-2">
+      <input type="hidden" name="id" value={user.id} />
+      <button
+        type="submit"
+        disabled={pending}
+        className="min-h-[44px] rounded-lg border px-4 py-2 font-semibold disabled:opacity-50"
+      >
+        {pending
+          ? 'Creating...'
+          : user.status === 'INVITED'
+            ? 'New invitation link'
+            : 'Password reset link'}
+      </button>
+      {state?.error && (
+        <p role="alert" className="text-sm font-medium text-red-600">
+          {state.error}
+        </p>
+      )}
+      {state?.inviteLink && <CopyLinkBox link={state.inviteLink} />}
     </form>
   )
 }
