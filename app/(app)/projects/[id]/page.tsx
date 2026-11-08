@@ -205,7 +205,12 @@ export default async function ProjectDetailPage({
               projectId={id}
               userId={profile.id}
               role={profile.role}
-              canCreate={can(profile.role, 'meetings.create') && canEditThis}
+              // Sama dengan assertCanCreateInProject (audit C2): TEAM_MEMBER yang
+              // sampai di halaman ini pasti punya task di project ini.
+              canCreate={
+                can(profile.role, 'meetings.create') &&
+                (canEditThis || profile.role === 'TEAM_MEMBER')
+              }
             />
           </Suspense>
         )}
