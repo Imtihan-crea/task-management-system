@@ -70,12 +70,12 @@ export function AgendaCreateForm({ meetingId }: { meetingId: string }) {
         required
         maxLength={300}
         placeholder="Tambah agenda..."
-        aria-label="Agenda title"
+        aria-label="Judul Agenda"
         className={inputCls}
       />
       <div className="flex items-center gap-2">
         <button type="submit" disabled={pending} className={btnSecondary}>
-          {pending ? 'Adding...' : '+ Add'}
+          {pending ? 'Menambah...' : '+ Tambah'}
         </button>
       </div>
       <StateMessage state={state} />
@@ -98,7 +98,7 @@ export function AgendaItem({
   moveIds: string[]
 }) {
   const [updState, updAction, updPending] = useFormAction(updateAgenda, INITIAL)
-  const [delState, delAction, delPending] = useFormAction(deleteAgenda, INITIAL, () => 'Delete this agenda item?')
+  const [delState, delAction, delPending] = useFormAction(deleteAgenda, INITIAL, () => 'Hapus item Agenda ini?')
   const [moveState, moveAction, movePending] = useFormAction(reorderAgendas, INITIAL)
 
   const idx = moveIds.indexOf(agenda.id)
@@ -120,7 +120,7 @@ export function AgendaItem({
           required
           maxLength={300}
           defaultValue={agenda.title}
-          aria-label="Agenda title"
+          aria-label="Judul Agenda"
           className={inputCls}
         />
         <textarea
@@ -129,12 +129,12 @@ export function AgendaItem({
           maxLength={2000}
           defaultValue={agenda.notes ?? ''}
           placeholder="Catatan agenda (opsional)..."
-          aria-label="Agenda notes"
+          aria-label="Catatan Agenda"
           className={inputCls}
         />
         <div className="flex flex-wrap items-center gap-2">
           <button type="submit" disabled={updPending} className={btnSecondary}>
-            {updPending ? 'Saving...' : 'Save'}
+            {updPending ? 'Menyimpan...' : 'Simpan'}
           </button>
         </div>
         <StateMessage state={updState} />
@@ -162,7 +162,7 @@ export function AgendaItem({
           <input type="hidden" name="id" value={agenda.id} />
           <input type="hidden" name="meeting_id" value={meetingId} />
           <button type="submit" disabled={delPending} className={btnDanger}>
-            {delPending ? 'Deleting...' : 'Delete'}
+            {delPending ? 'Menghapus...' : 'Hapus'}
           </button>
         </form>
         {(moveState?.error || moveState?.success) && <StateMessage state={moveState} />}
@@ -193,12 +193,12 @@ export function DecisionCreateForm({ meetingId }: { meetingId: string }) {
         name="rationale"
         maxLength={1000}
         placeholder="Alasan (opsional)..."
-        aria-label="Rationale"
+        aria-label="Alasan"
         className={inputCls}
       />
       <div>
         <button type="submit" disabled={pending} className={btnSecondary}>
-          {pending ? 'Adding...' : '+ Add'}
+          {pending ? 'Menambah...' : '+ Tambah'}
         </button>
       </div>
       <StateMessage state={state} />
@@ -216,7 +216,7 @@ export function DecisionItem({
   index: number
 }) {
   const [updState, updAction, updPending] = useFormAction(updateDecision, INITIAL)
-  const [delState, delAction, delPending] = useFormAction(deleteDecision, INITIAL, () => 'Delete this decision?')
+  const [delState, delAction, delPending] = useFormAction(deleteDecision, INITIAL, () => 'Hapus Decision ini?')
 
   return (
     <li className="rounded-xl border p-3 dark:border-zinc-700">
@@ -237,12 +237,12 @@ export function DecisionItem({
           maxLength={1000}
           defaultValue={decision.rationale ?? ''}
           placeholder="Alasan (opsional)..."
-          aria-label="Rationale"
+          aria-label="Alasan"
           className={inputCls}
         />
         <div className="flex flex-wrap gap-2">
           <button type="submit" disabled={updPending} className={btnSecondary}>
-            {updPending ? 'Saving...' : 'Save'}
+            {updPending ? 'Menyimpan...' : 'Simpan'}
           </button>
         </div>
         <StateMessage state={updState} />
@@ -251,7 +251,7 @@ export function DecisionItem({
         <input type="hidden" name="id" value={decision.id} />
         <input type="hidden" name="meeting_id" value={meetingId} />
         <button type="submit" disabled={delPending} className={btnDanger}>
-          {delPending ? 'Deleting...' : 'Delete'}
+          {delPending ? 'Menghapus...' : 'Hapus'}
         </button>
         {(delState?.error || delState?.success) && <StateMessage state={delState} />}
       </form>
@@ -279,15 +279,15 @@ export function ActionItemCreateForm({
         required
         maxLength={300}
         placeholder="Tambah action item..."
-        aria-label="Action item title"
+        aria-label="Judul Action Item"
         className={inputCls}
       />
       <textarea
         name="description"
         rows={2}
         maxLength={2000}
-        placeholder="Description (opsional)..."
-        aria-label="Action item description"
+        placeholder="Deskripsi (opsional)..."
+        aria-label="Deskripsi Action Item"
         className={inputCls}
       />
       <div className="grid gap-3 sm:grid-cols-3">
@@ -300,15 +300,15 @@ export function ActionItemCreateForm({
           ))}
         </select>
         <input name="deadline" type="date" aria-label="Deadline" className={inputCls} />
-        <select name="priority" defaultValue="MEDIUM" aria-label="Priority" className={inputCls}>
-          <option value="HIGH">High</option>
-          <option value="MEDIUM">Medium</option>
-          <option value="LOW">Low</option>
+        <select name="priority" defaultValue="MEDIUM" aria-label="Prioritas" className={inputCls}>
+          <option value="HIGH">HIGH</option>
+          <option value="MEDIUM">MEDIUM</option>
+          <option value="LOW">LOW</option>
         </select>
       </div>
       <div>
         <button type="submit" disabled={pending} className={btnSecondary}>
-          {pending ? 'Adding...' : '+ Add Action Item'}
+          {pending ? 'Menambah...' : '+ Tambah Action Item'}
         </button>
       </div>
       <StateMessage state={state} />
@@ -336,7 +336,7 @@ export function ActionItemCard({
   taskCode?: string | null
 }) {
   const [updState, updAction, updPending] = useFormAction(updateActionItem, INITIAL)
-  const [delState, delAction, delPending] = useFormAction(deleteActionItem, INITIAL, () => 'Delete this action item?')
+  const [delState, delAction, delPending] = useFormAction(deleteActionItem, INITIAL, () => 'Hapus Action Item ini?')
   const [taskState, taskAction, taskPending] = useFormAction(createTaskFromActionItem, INITIAL)
 
   return (
@@ -349,7 +349,7 @@ export function ActionItemCard({
           required
           maxLength={300}
           defaultValue={item.title}
-          aria-label="Action item title"
+          aria-label="Judul Action Item"
           className={inputCls}
         />
         <textarea
@@ -357,7 +357,7 @@ export function ActionItemCard({
           rows={2}
           maxLength={2000}
           defaultValue={item.description ?? ''}
-          aria-label="Action item description"
+          aria-label="Deskripsi Action Item"
           className={inputCls}
         />
         <div className="grid gap-2 sm:grid-cols-4">
@@ -369,7 +369,7 @@ export function ActionItemCard({
           >
             <option value="">Assignee...</option>
             {item.assignee_id && !users.some((u) => u.id === item.assignee_id) && (
-              <option value={item.assignee_id}>Current assignee (inactive)</option>
+              <option value={item.assignee_id}>Assignee saat ini (nonaktif)</option>
             )}
             {users.map((u) => (
               <option key={u.id} value={u.id}>
@@ -387,17 +387,17 @@ export function ActionItemCard({
           <select
             name="priority"
             defaultValue={item.priority ?? 'MEDIUM'}
-            aria-label="Priority"
+            aria-label="Prioritas"
             className={inputCls}
           >
-            <option value="HIGH">High</option>
-            <option value="MEDIUM">Medium</option>
-            <option value="LOW">Low</option>
+            <option value="HIGH">HIGH</option>
+            <option value="MEDIUM">MEDIUM</option>
+            <option value="LOW">LOW</option>
           </select>
           <select
             name="status"
             defaultValue={item.status}
-            aria-label="Action item status"
+            aria-label="Status Action Item"
             className={inputCls}
           >
             {ACTION_ITEM_STATUSES.map((s) => (
@@ -409,7 +409,7 @@ export function ActionItemCard({
         </div>
         <div className="flex flex-wrap gap-2">
           <button type="submit" disabled={updPending} className={btnSecondary}>
-            {updPending ? 'Saving...' : 'Save'}
+            {updPending ? 'Menyimpan...' : 'Simpan'}
           </button>
         </div>
         <StateMessage state={updState} />
@@ -434,7 +434,7 @@ export function ActionItemCard({
             {taskProjects && (
               <select name="project_id" required defaultValue="" aria-label="Project" className={inputCls}>
                 <option value="" disabled>
-                  {taskProjects.length > 0 ? 'Choose project...' : 'No project available'}
+                  {taskProjects.length > 0 ? 'Pilih Project...' : 'Tidak ada Project'}
                 </option>
                 {taskProjects.map((p) => (
                   <option key={p.id} value={p.id}>
@@ -449,11 +449,11 @@ export function ActionItemCard({
               name="assignee_id"
               required
               defaultValue={users.some((u) => u.id === item.assignee_id) ? (item.assignee_id ?? '') : ''}
-              aria-label="Task assignee"
+              aria-label="Assignee Task"
               className={inputCls}
             >
               <option value="" disabled>
-                Task assignee...
+                Assignee Task...
               </option>
               {users.map((u) => (
                 <option key={u.id} value={u.id}>
@@ -466,13 +466,13 @@ export function ActionItemCard({
               type="date"
               required
               defaultValue={item.deadline ?? ''}
-              aria-label="Task deadline"
+              aria-label="Deadline Task"
               className={inputCls}
             />
             {/* Metadata diwarisi dari action item; workstream opsional (§20). */}
             {workstreams.length > 0 && (
-              <select name="workstream_id" defaultValue="" aria-label="Workstream (optional)" className={inputCls}>
-                <option value="">Workstream (optional)...</option>
+              <select name="workstream_id" defaultValue="" aria-label="Workstream (opsional)" className={inputCls}>
+                <option value="">Workstream (opsional)...</option>
                 {workstreams.map((w) => (
                   <option key={w.id} value={w.id}>
                     {w.code} · {w.name}
@@ -482,13 +482,13 @@ export function ActionItemCard({
             )}
             <div>
               <button type="submit" disabled={taskPending} className={btnPrimary}>
-                {taskPending ? 'Creating...' : 'Create Task'}
+                {taskPending ? 'Membuat...' : 'Buat Task'}
               </button>
             </div>
             <StateMessage state={taskState} />
           </form>
         ) : (
-          <p className="text-sm text-zinc-500">Task: Not created</p>
+          <p className="text-sm text-zinc-500">Task: Belum dibuat</p>
         )}
       </div>
 
@@ -497,7 +497,7 @@ export function ActionItemCard({
           <input type="hidden" name="id" value={item.id} />
           <input type="hidden" name="meeting_id" value={meetingId} />
           <button type="submit" disabled={delPending} className={btnDanger}>
-            {delPending ? 'Deleting...' : 'Delete'}
+            {delPending ? 'Menghapus...' : 'Hapus'}
           </button>
           {(delState?.error || delState?.success) && <StateMessage state={delState} />}
         </form>
@@ -521,7 +521,7 @@ export function ParticipantAddForm({
   return (
     <form {...formAction} className="flex flex-col gap-2 rounded-xl border p-3 dark:border-zinc-700">
       <input type="hidden" name="meeting_id" value={meetingId} />
-      <select name="user_id" defaultValue="" aria-label="Kasuat user" className={inputCls}>
+      <select name="user_id" defaultValue="" aria-label="User Kasuat" className={inputCls}>
         <option value="">Pilih user...</option>
         {users.map((u) => (
           <option key={u.id} value={u.id}>
@@ -531,7 +531,7 @@ export function ParticipantAddForm({
       </select>
       <div>
         <button type="submit" disabled={pending} className={btnSecondary}>
-          {pending ? 'Adding...' : '+ Add Participant'}
+          {pending ? 'Menambah...' : '+ Tambah Peserta'}
         </button>
       </div>
       <StateMessage state={state} />
@@ -553,7 +553,7 @@ export function ParticipantRow({
   canRemove: boolean
   isSelf: boolean
 }) {
-  const [delState, delAction, delPending] = useFormAction(removeParticipant, INITIAL, () => 'Remove this participant from the meeting?')
+  const [delState, delAction, delPending] = useFormAction(removeParticipant, INITIAL, () => 'Hapus peserta ini dari Meeting?')
   const [attState, attAction, attPending] = useFormAction(updateAttendance, INITIAL)
 
   return (
@@ -566,7 +566,7 @@ export function ParticipantRow({
               Organizer
             </span>
           )}
-          {isSelf && <span className="ml-2 text-xs text-zinc-500">(you)</span>}
+          {isSelf && <span className="ml-2 text-xs text-zinc-500">(Anda)</span>}
         </p>
         {!participant.user_id && participant.external_email && (
           <p className="truncate text-xs text-zinc-500">{participant.external_email}</p>
@@ -580,7 +580,7 @@ export function ParticipantRow({
             <select
               name="attendance"
               defaultValue={participant.attendance}
-              aria-label="Attendance"
+              aria-label="Kehadiran"
               className="min-h-[40px] rounded-lg border px-2 py-1 text-sm dark:border-zinc-700 dark:bg-zinc-800"
             >
               {(Object.keys(ATTENDANCE_LABELS) as (keyof typeof ATTENDANCE_LABELS)[]).map((a) => (
@@ -602,7 +602,7 @@ export function ParticipantRow({
             <input type="hidden" name="meeting_id" value={meetingId} />
             <input type="hidden" name="participant_id" value={participant.id} />
             <button type="submit" disabled={delPending} className={btnDanger}>
-              {delPending ? '...' : 'Remove'}
+              {delPending ? '...' : 'Hapus'}
             </button>
           </form>
         )}

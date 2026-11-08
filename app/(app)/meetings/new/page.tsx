@@ -99,9 +99,9 @@ export default async function NewMeetingPage({
         href={lockedProject ? `/projects/${lockedProject.id}?tab=meetings` : '/meetings'}
         className="text-sm font-medium text-zinc-500 hover:underline"
       >
-        &larr; Back to {lockedProject ? `${lockedProject.code} · ${lockedProject.name}` : 'Meetings'}
+        &larr; Kembali ke {lockedProject ? `${lockedProject.code} · ${lockedProject.name}` : 'Meetings'}
       </Link>
-      <h1 className="mt-2 text-xl font-bold">Create Meeting</h1>
+      <h1 className="mt-2 text-xl font-bold">Buat Meeting</h1>
       {lockedProject && (
         <p className="mt-0.5 text-sm text-zinc-500">
           Project otomatis terkunci: {lockedProject.code} · {lockedProject.name}

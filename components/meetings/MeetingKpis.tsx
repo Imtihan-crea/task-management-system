@@ -17,14 +17,14 @@ export async function MeetingKpis({
   return (
     <>
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <KpiCard label="Upcoming Meetings" value={kpis.upcoming} />
-        <KpiCard label="Today's Meetings" value={kpis.today} />
-        <KpiCard label="Needs Notes" value={kpis.needsNotes} />
-        <KpiCard label="Completed This Week" value={kpis.completedThisWeek} />
+        <KpiCard label="Meeting Mendatang" value={kpis.upcoming} />
+        <KpiCard label="Meeting Hari Ini" value={kpis.today} />
+        <KpiCard label="Perlu Notes" value={kpis.needsNotes} />
+        <KpiCard label="Selesai Minggu Ini" value={kpis.completedThisWeek} />
       </div>
       <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <KpiCard label="Open Action Items" value={kpis.openActionItems} />
-        <KpiCard label="Tasks Created This Month" value={kpis.tasksCreatedThisMonth} />
+        <KpiCard label="Action Item Terbuka" value={kpis.openActionItems} />
+        <KpiCard label="Task Dibuat Bulan Ini" value={kpis.tasksCreatedThisMonth} />
       </div>
     </>
   )

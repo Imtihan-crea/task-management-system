@@ -107,13 +107,13 @@ export default async function MeetingDetailPage({
     return s ? `/meetings/${id}?${s}` : `/meetings/${id}`
   }
 
-  const projectName = project ? `${project.code} · ${project.name}` : 'Global meeting'
+  const projectName = project ? `${project.code} · ${project.name}` : 'Meeting global'
   const timeLabel = `${formatMeetingDate(meeting.meeting_date)} · ${formatTimeRange(meeting.start_time, meeting.end_time)}`
 
   return (
     <AppShell>
       <Link href="/meetings" className="text-sm font-medium text-zinc-500 hover:underline">
-        &larr; Back to Meetings
+        &larr; Kembali ke Meetings
       </Link>
 
       <div className="mt-2 flex flex-wrap items-center gap-2">
@@ -142,7 +142,7 @@ export default async function MeetingDetailPage({
 
       <div className="mt-4">
         <Tabs
-          label="Meeting workspace"
+          label="Workspace Meeting"
           items={MEETING_DETAIL_TABS.map((key) => ({
             key,
             label: MEETING_DETAIL_TAB_LABELS[key],

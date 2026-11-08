@@ -70,7 +70,7 @@ export function MeetingEditForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="me-type" className="mb-1 block text-sm font-medium">
-            Meeting Type
+            Tipe Meeting
           </label>
           <select
             id="me-type"
@@ -129,7 +129,7 @@ export function MeetingEditForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="me-location" className="mb-1 block text-sm font-medium">
-            Location
+            Lokasi
           </label>
           <input
             id="me-location"
@@ -141,7 +141,7 @@ export function MeetingEditForm({
         </div>
         <div>
           <label htmlFor="me-link" className="mb-1 block text-sm font-medium">
-            Meeting Link
+            Link Meeting
           </label>
           <input
             id="me-link"
@@ -156,7 +156,7 @@ export function MeetingEditForm({
 
       <div>
         <label htmlFor="me-desc" className="mb-1 block text-sm font-medium">
-          Description
+          Deskripsi
         </label>
         <textarea
           id="me-desc"
@@ -185,7 +185,7 @@ export function MeetingEditForm({
                 mempertahankan organizer bila nilainya sama atau kosong. */}
             {!users.some((u) => u.id === meeting.organizer_id) && (
               <option value={meeting.organizer_id ?? ''}>
-                {meeting.organizer_id ? 'Current organizer (inactive)' : 'No organizer'}
+                {meeting.organizer_id ? 'Organizer saat ini (nonaktif)' : 'Tanpa Organizer'}
               </option>
             )}
             {users.map((u) => (
@@ -204,7 +204,7 @@ export function MeetingEditForm({
         disabled={pending}
         className="min-h-[44px] w-full rounded-lg bg-kasuat-gold px-4 py-2 font-semibold text-kasuat-black disabled:opacity-50 sm:w-auto"
       >
-        {pending ? 'Saving...' : 'Save Changes'}
+        {pending ? 'Menyimpan...' : 'Simpan Perubahan'}
       </button>
     </form>
   )
@@ -218,7 +218,7 @@ export function NotesForm({ meetingId, initial }: { meetingId: string; initial: 
     <form {...formAction} className="flex flex-col gap-3">
       <input type="hidden" name="id" value={meetingId} />
       <label htmlFor="mn-notes" className="text-sm font-medium">
-        Discussion Notes
+        Notes Diskusi
       </label>
       <textarea
         id="mn-notes"
@@ -235,7 +235,7 @@ export function NotesForm({ meetingId, initial }: { meetingId: string; initial: 
         disabled={pending}
         className="min-h-[44px] w-full rounded-lg bg-kasuat-gold px-4 py-2 font-semibold text-kasuat-black disabled:opacity-50 sm:w-auto"
       >
-        {pending ? 'Saving...' : 'Save Notes'}
+        {pending ? 'Menyimpan...' : 'Simpan Notes'}
       </button>
     </form>
   )
@@ -278,10 +278,10 @@ export function LifecycleButtons({
             disabled={schedPending}
             className="inline-flex min-h-[44px] items-center rounded-lg bg-kasuat-gold px-4 py-2 text-sm font-semibold text-kasuat-black disabled:opacity-50"
           >
-            {schedPending ? 'Scheduling...' : 'Schedule Meeting'}
+            {schedPending ? 'Menjadwalkan...' : 'Jadwalkan Meeting'}
           </button>
           <p className="mt-1 text-xs text-zinc-500">
-            Draft: participants are not notified yet. Scheduling sends the invitations.
+            DRAFT: peserta belum diberi tahu. Menjadwalkan Meeting akan mengirim undangan.
           </p>
         </form>
       )}
@@ -293,8 +293,8 @@ export function LifecycleButtons({
               <p className="font-semibold">Sebelum menyelesaikan meeting:</p>
               <ul className="mt-1 list-disc pl-5 text-zinc-600 dark:text-zinc-300">
                 <li>Action Items: {summary.actionItems}</li>
-                <li>Tasks already created: {summary.tasksCreated}</li>
-                <li>Tasks ready to create: {summary.tasksReady}</li>
+                <li>Task yang sudah dibuat: {summary.tasksCreated}</li>
+                <li>Task siap dibuat: {summary.tasksReady}</li>
               </ul>
             </div>
           )}
@@ -315,7 +315,7 @@ export function LifecycleButtons({
               disabled={compPending}
               className="inline-flex min-h-[44px] items-center rounded-lg bg-green-600 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
             >
-              {compPending ? 'Completing...' : 'Complete Meeting'}
+              {compPending ? 'Menyelesaikan...' : 'Selesaikan Meeting'}
             </button>
           </form>
         </>
@@ -339,7 +339,7 @@ export function LifecycleButtons({
             disabled={cancelPending}
             className="inline-flex min-h-[44px] items-center rounded-lg border border-red-300 px-4 py-2 text-sm font-semibold text-red-600 disabled:opacity-50 dark:border-red-700 dark:text-red-300"
           >
-            {cancelPending ? 'Cancelling...' : 'Cancel Meeting'}
+            {cancelPending ? 'Membatalkan...' : 'Batalkan Meeting'}
           </button>
         </form>
       )}

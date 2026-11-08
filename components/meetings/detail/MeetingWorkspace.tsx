@@ -74,25 +74,25 @@ export async function OverviewSection({
   return (
     <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
       <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
-        <h2 className="mb-2 text-lg font-bold">Meeting Detail</h2>
+        <h2 className="mb-2 text-lg font-bold">Detail Meeting</h2>
         <dl>
           <Row label="Project" value={project ? `${project.code} · ${project.name}` : 'Global (tanpa project)'} />
-          <Row label="Type" value={meeting.meeting_type.replaceAll('_', ' ')} />
-          <Row label="Date" value={formatMeetingDate(meeting.meeting_date)} />
+          <Row label="Tipe" value={meeting.meeting_type.replaceAll('_', ' ')} />
+          <Row label="Tanggal" value={formatMeetingDate(meeting.meeting_date)} />
           <Row
-            label="Time"
+            label="Waktu"
             value={`${formatTimeRange(meeting.start_time, meeting.end_time)} (${formatDuration(meeting.start_time, meeting.end_time)})`}
           />
-          <Row label="Location" value={meeting.location || '-'} />
-          <Row label="Meeting Link" value={meeting.meeting_link || '-'} />
-          <Row label="Description" value={meeting.description || '-'} />
+          <Row label="Lokasi" value={meeting.location || '-'} />
+          <Row label="Link Meeting" value={meeting.meeting_link || '-'} />
+          <Row label="Deskripsi" value={meeting.description || '-'} />
           <Row label="Organizer" value={organizerName} />
-          <Row label="Created By" value={creatorName} />
+          <Row label="Dibuat Oleh" value={creatorName} />
         </dl>
 
         {canFull && (
           <div className="mt-4 border-t pt-4 dark:border-zinc-700">
-            <h3 className="mb-2 text-base font-bold">Lifecycle</h3>
+            <h3 className="mb-2 text-base font-bold">Siklus Meeting</h3>
             <LifecycleButtons
               meetingId={meeting.id}
               status={meeting.status}
@@ -108,9 +108,9 @@ export async function OverviewSection({
 
       <div className="flex flex-col gap-6">
         <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
-          <h2 className="mb-2 text-lg font-bold">Participants ({participants.length})</h2>
+          <h2 className="mb-2 text-lg font-bold">Peserta ({participants.length})</h2>
           {participants.length === 0 ? (
-            <p className="text-sm text-zinc-500">No participants yet.</p>
+            <p className="text-sm text-zinc-500">Belum ada peserta.</p>
           ) : (
             <ul className="flex flex-col gap-2">
               {participants.map((p) => (
@@ -135,7 +135,7 @@ export async function OverviewSection({
 
         {editable && (
           <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
-            <h2 className="mb-4 text-lg font-bold">Edit Meeting</h2>
+            <h2 className="mb-4 text-lg font-bold">Ubah Meeting</h2>
             <MeetingEditForm
               meeting={meeting}
               users={users}
@@ -166,7 +166,7 @@ export async function AgendaSection({
     <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
       <h2 className="mb-3 text-lg font-bold">Agenda ({items.length})</h2>
       {items.length === 0 ? (
-        <p className="text-sm text-zinc-500">No agenda yet.</p>
+        <p className="text-sm text-zinc-500">Belum ada Agenda.</p>
       ) : (
         <ol className="flex flex-col gap-2">
           {items.map((a, i) =>
@@ -219,7 +219,7 @@ export function NotesSection({
       {canContent ? (
         <NotesForm meetingId={meetingId} initial={notes} />
       ) : (
-        <p className="text-sm whitespace-pre-wrap">{notes || 'No notes yet.'}</p>
+        <p className="text-sm whitespace-pre-wrap">{notes || 'Belum ada Notes.'}</p>
       )}
     </section>
   )
@@ -242,7 +242,7 @@ export async function DecisionsSection({
     <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
       <h2 className="mb-3 text-lg font-bold">Decisions ({items.length})</h2>
       {items.length === 0 ? (
-        <p className="text-sm text-zinc-500">No decisions recorded yet.</p>
+        <p className="text-sm text-zinc-500">Belum ada Decision yang dicatat.</p>
       ) : (
         <ol className="flex flex-col gap-2">
           {items.map((d, i) =>
@@ -311,10 +311,10 @@ export async function ActionsSection({
     <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
       <h2 className="mb-3 text-lg font-bold">
         Action Items ({items.length}
-        {openCount > 0 ? ` · ${openCount} open` : ''})
+        {openCount > 0 ? ` · ${openCount} terbuka` : ''})
       </h2>
       {items.length === 0 ? (
-        <p className="text-sm text-zinc-500">No action items yet.</p>
+        <p className="text-sm text-zinc-500">Belum ada Action Item.</p>
       ) : (
         <ul className="flex flex-col gap-3">
           {items.map((a) =>
@@ -381,7 +381,7 @@ export async function MeetingActivitySection({ meetingId }: { meetingId: string 
     <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
       <h2 className="mb-3 text-lg font-bold">Activity</h2>
       {entries.length === 0 ? (
-        <p className="text-sm text-zinc-500">No activity yet.</p>
+        <p className="text-sm text-zinc-500">Belum ada Activity.</p>
       ) : (
         <ActivityTimeline entries={entries} actorNames={actorNames} />
       )}

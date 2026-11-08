@@ -43,16 +43,16 @@ export async function MeetingResults({
   if (visible.length === 0) {
     const emptyMessage =
       filters.tab === 'needs_notes'
-        ? "You're all caught up. No meetings need notes."
+        ? 'Semua sudah beres. Tidak ada Meeting yang perlu Notes.'
         : filters.tab === 'today'
-          ? 'No meetings today.'
-          : 'Try a different search, tab, or filter.'
+          ? 'Tidak ada Meeting hari ini.'
+          : 'Coba pencarian, tab, atau filter lain.'
     return (
       <div className="mt-4">
         <EmptyState
-          title="No meetings found."
+          title="Meeting tidak ditemukan."
           message={emptyMessage}
-          action={<Link href="/meetings/new" className="font-semibold text-kasuat-deep-gold hover:underline">+ New Meeting</Link>}
+          action={<Link href="/meetings/new" className="font-semibold text-kasuat-deep-gold hover:underline">+ Buat Meeting</Link>}
         />
       </div>
     )
@@ -61,7 +61,7 @@ export async function MeetingResults({
   return (
     <>
       <p className="mt-3 text-sm text-zinc-500" role="status">
-        {visible.length} meeting{visible.length === 1 ? '' : 's'}
+        {visible.length} meeting
       </p>
 
       {/* Desktop: tabel */}
@@ -72,9 +72,9 @@ export async function MeetingResults({
               <th scope="col" className="px-4 py-3">ID</th>
               <th scope="col" className="px-4 py-3">Meeting</th>
               <th scope="col" className="px-4 py-3">Project</th>
-              <th scope="col" className="px-4 py-3">Schedule</th>
+              <th scope="col" className="px-4 py-3">Jadwal</th>
               <th scope="col" className="px-4 py-3">Status</th>
-              <th scope="col" className="px-4 py-3">Items / Tasks</th>
+              <th scope="col" className="px-4 py-3">Item / Task</th>
             </tr>
           </thead>
           <tbody>
@@ -110,7 +110,7 @@ function MeetingTableRow({
           {m.title}
         </Link>
         <p className="mt-0.5 text-xs text-zinc-500">
-          {m.participant_count} participant{m.participant_count === 1 ? '' : 's'}
+          {m.participant_count} peserta
         </p>
       </td>
       <td className="px-4 py-3">{projectName}</td>
@@ -125,7 +125,7 @@ function MeetingTableRow({
         </div>
       </td>
       <td className="px-4 py-3 whitespace-nowrap">
-        {m.action_item_count} items · {m.task_count} tasks
+        {m.action_item_count} item · {m.task_count} task
       </td>
     </tr>
   )
@@ -155,8 +155,8 @@ function MeetingCard({
           {formatTimeRange(m.start_time, m.end_time)}
         </p>
         <p className="mt-0.5 text-xs text-zinc-500">
-          {m.participant_count} participants · {m.action_item_count} action items ·{' '}
-          {m.task_count} tasks · {daysAgoLabel(m.meeting_date)}
+          {m.participant_count} peserta · {m.action_item_count} Action Item ·{' '}
+          {m.task_count} task · {daysAgoLabel(m.meeting_date)}
         </p>
         <div className="mt-2 flex flex-wrap items-center gap-1.5">
           <MeetingStatusBadge status={m.status} />

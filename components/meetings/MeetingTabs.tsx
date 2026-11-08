@@ -36,7 +36,7 @@ export async function MeetingTabs({
 
   return (
     <Tabs
-      label="Meeting views"
+      label="Tampilan Meeting"
       items={MEETING_TABS.map((key) => ({
         key,
         label: MEETING_TAB_LABELS[key],

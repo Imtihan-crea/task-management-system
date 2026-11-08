@@ -24,14 +24,14 @@ export async function MeetingFilterForm({ filters }: { filters: MeetingFilters }
       <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
         <div className="sm:col-span-2 lg:col-span-1">
           <label htmlFor="mq" className="mb-1 block text-sm font-medium">
-            Search
+            Cari
           </label>
           <input
             id="mq"
             name="q"
             defaultValue={filters.q}
             maxLength={60}
-            placeholder="Code, title, location..."
+            placeholder="Kode, judul, lokasi..."
             className={inputCls}
           />
         </div>
@@ -40,7 +40,7 @@ export async function MeetingFilterForm({ filters }: { filters: MeetingFilters }
             Project
           </label>
           <select id="mproject" name="project" defaultValue={filters.project} className={inputCls}>
-            <option value="">All Projects</option>
+            <option value="">Semua Project</option>
             {projects.map((p) => (
               <option key={p.id} value={p.id}>
                 {p.code} · {p.name}
@@ -50,10 +50,10 @@ export async function MeetingFilterForm({ filters }: { filters: MeetingFilters }
         </div>
         <div>
           <label htmlFor="mtype" className="mb-1 block text-sm font-medium">
-            Meeting Type
+            Tipe Meeting
           </label>
           <select id="mtype" name="type" defaultValue={filters.type} className={inputCls}>
-            <option value="">All</option>
+            <option value="">Semua</option>
             {MEETING_TYPES.map((t) => (
               <option key={t} value={t}>
                 {MEETING_TYPE_LABELS[t]}
@@ -66,7 +66,7 @@ export async function MeetingFilterForm({ filters }: { filters: MeetingFilters }
             Status
           </label>
           <select id="mstatus" name="status" defaultValue={filters.status} className={inputCls}>
-            <option value="">All</option>
+            <option value="">Semua</option>
             {MEETING_STATUSES.map((s) => (
               <option key={s} value={s}>
                 {MEETING_STATUS_LABELS[s]}
@@ -84,7 +84,7 @@ export async function MeetingFilterForm({ filters }: { filters: MeetingFilters }
             defaultValue={filters.organizer}
             className={inputCls}
           >
-            <option value="">All</option>
+            <option value="">Semua</option>
             {users.map((u) => (
               <option key={u.id} value={u.id}>
                 {u.full_name || u.email}
@@ -95,7 +95,7 @@ export async function MeetingFilterForm({ filters }: { filters: MeetingFilters }
         <div className="grid grid-cols-2 gap-3">
           <div>
             <label htmlFor="mfrom" className="mb-1 block text-sm font-medium">
-              From
+              Dari
             </label>
             <input
               id="mfrom"
@@ -107,7 +107,7 @@ export async function MeetingFilterForm({ filters }: { filters: MeetingFilters }
           </div>
           <div>
             <label htmlFor="mto" className="mb-1 block text-sm font-medium">
-              To
+              Sampai
             </label>
             <input
               id="mto"
@@ -123,7 +123,7 @@ export async function MeetingFilterForm({ filters }: { filters: MeetingFilters }
         type="submit"
         className="min-h-[44px] rounded-lg bg-kasuat-gold px-5 py-2 font-semibold text-kasuat-black sm:w-auto"
       >
-        Apply
+        Terapkan
       </button>
     </form>
   )

@@ -62,8 +62,8 @@ export default async function MeetingsPage({
     <AppShell>
       <PageHeader
         title="Meetings"
-        subtitle="Operational control center untuk semua meeting."
-        actions={canCreate ? <ButtonLink href="/meetings/new">+ New Meeting</ButtonLink> : undefined}
+        subtitle="Pusat kontrol operasional untuk semua meeting."
+        actions={canCreate ? <ButtonLink href="/meetings/new">+ Buat Meeting</ButtonLink> : undefined}
       />
 
       {/* KPI: boundary sendiri */}

@@ -45,17 +45,17 @@ export function MeetingForm({
           <span className="mb-1 block text-sm font-medium">Project</span>
           <p className="rounded-lg border border-zinc-200 bg-zinc-50 px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800">
             {lockedProject.code} · {lockedProject.name}
-            <span className="ml-2 text-xs text-zinc-500">(locked)</span>
+            <span className="ml-2 text-xs text-zinc-500">(terkunci)</span>
           </p>
           <input type="hidden" name="project_id" value={lockedProject.id} />
         </div>
       ) : (
         <div>
           <label htmlFor="mf-project" className="mb-1 block text-sm font-medium">
-            Project <span className="font-normal text-zinc-500">(optional — kosongkan untuk global)</span>
+            Project <span className="font-normal text-zinc-500">(opsional — kosongkan untuk global)</span>
           </label>
           <select id="mf-project" name="project_id" defaultValue="" className={inputCls}>
-            <option value="">Global meeting (tanpa project)</option>
+            <option value="">Meeting global (tanpa project)</option>
             {projects.map((p) => (
               <option key={p.id} value={p.id}>
                 {labelOf(p)}
@@ -82,7 +82,7 @@ export function MeetingForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="mf-type" className="mb-1 block text-sm font-medium">
-            Meeting Type
+            Tipe Meeting
           </label>
           <select id="mf-type" name="meeting_type" defaultValue="INTERNAL_MEETING" className={inputCls}>
             {MEETING_TYPES.map((t) => (
@@ -115,7 +115,7 @@ export function MeetingForm({
       <div className="grid gap-4 sm:grid-cols-2">
         <div>
           <label htmlFor="mf-location" className="mb-1 block text-sm font-medium">
-            Location
+            Lokasi
           </label>
           <input
             id="mf-location"
@@ -127,7 +127,7 @@ export function MeetingForm({
         </div>
         <div>
           <label htmlFor="mf-link" className="mb-1 block text-sm font-medium">
-            Meeting Link
+            Link Meeting
           </label>
           <input
             id="mf-link"
@@ -142,7 +142,7 @@ export function MeetingForm({
 
       <div>
         <label htmlFor="mf-desc" className="mb-1 block text-sm font-medium">
-          Description
+          Deskripsi
         </label>
         <textarea
           id="mf-desc"
@@ -172,9 +172,9 @@ export function MeetingForm({
       )}
 
       <fieldset>
-        <legend className="mb-1 block text-sm font-medium">Participants</legend>
+        <legend className="mb-1 block text-sm font-medium">Peserta</legend>
         <div className="flex max-h-56 flex-col gap-1 overflow-y-auto rounded-lg border p-2 dark:border-zinc-700">
-          {users.length === 0 && <p className="text-sm text-zinc-500">No active users.</p>}
+          {users.length === 0 && <p className="text-sm text-zinc-500">Tidak ada user aktif.</p>}
           {users.map((u) => (
             <label
               key={u.id}
@@ -209,7 +209,7 @@ export function MeetingForm({
         disabled={pending}
         className="min-h-[44px] w-full rounded-lg bg-kasuat-gold px-4 py-2 font-semibold text-kasuat-black disabled:opacity-50 sm:w-auto"
       >
-        {pending ? 'Saving...' : 'Create Meeting'}
+        {pending ? 'Menyimpan...' : 'Buat Meeting'}
       </button>
     </form>
   )

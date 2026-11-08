@@ -40,7 +40,7 @@ export const MEETING_TYPE_LABELS: Record<MeetingType, string> = {
   OPERATIONAL_REVIEW: 'Operational Review',
   MANAGEMENT_REVIEW: 'Management Review',
   AD_HOC: 'Ad Hoc',
-  OTHER: 'Other',
+  OTHER: 'Lainnya',
 }
 
 export const MEETING_STATUS_LABELS: Record<MeetingStatus, string> = {
@@ -78,10 +78,10 @@ export const MEETING_TABS = [
 export type MeetingTabKey = (typeof MEETING_TABS)[number]
 
 export const MEETING_TAB_LABELS: Record<MeetingTabKey, string> = {
-  all: 'All',
-  upcoming: 'Upcoming',
-  today: 'Today',
-  needs_notes: 'Needs Notes',
+  all: 'Semua',
+  upcoming: 'Mendatang',
+  today: 'Hari Ini',
+  needs_notes: 'Perlu Notes',
   completed: 'Completed',
 }
 
@@ -108,7 +108,7 @@ export const MEETING_DETAIL_TABS = [
 export type MeetingDetailTabKey = (typeof MEETING_DETAIL_TABS)[number]
 
 export const MEETING_DETAIL_TAB_LABELS: Record<MeetingDetailTabKey, string> = {
-  overview: 'Overview',
+  overview: 'Ringkasan',
   agenda: 'Agenda',
   notes: 'Notes',
   decisions: 'Decisions',
