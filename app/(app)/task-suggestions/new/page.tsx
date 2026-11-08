@@ -4,7 +4,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { can } from '@/lib/auth/permissions'
 import { AppShell } from '@/components/layout/AppShell'
 import { SuggestionForm } from '@/components/suggestions/SuggestionForms'
-import { getSuggestableProjects } from '@/app/actions/suggestions'
+import { getSuggestableProjects } from '@/lib/data/suggestions'
 import { getActiveUsers } from '@/lib/data/users'
 
 export default async function NewSuggestionPage({

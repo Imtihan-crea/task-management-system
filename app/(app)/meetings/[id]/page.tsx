@@ -3,7 +3,7 @@ import { Suspense } from 'react'
 import { notFound } from 'next/navigation'
 import { requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getMeetingAccess } from '@/app/actions/meetings'
+import { getMeetingAccess } from '@/lib/data/meeting-access'
 import { getActiveUsers } from '@/lib/data/users'
 import { fetchMeetingById } from '@/lib/data/meetings'
 import {

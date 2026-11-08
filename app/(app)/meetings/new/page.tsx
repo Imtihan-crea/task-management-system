@@ -4,7 +4,7 @@ import { requireProfile } from '@/lib/auth/session'
 import { can } from '@/lib/auth/permissions'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getActiveUsers } from '@/lib/data/users'
-import { assertCanCreateInProject } from '@/app/actions/meetings'
+import { assertCanCreateInProject } from '@/lib/data/meeting-access'
 import { AppShell } from '@/components/layout/AppShell'
 import { MeetingForm } from '@/components/meetings/MeetingForm'
 
