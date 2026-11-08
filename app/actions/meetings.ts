@@ -474,18 +474,8 @@ export async function createMeeting(
     console.error('createMeeting participants failed:', partError.message)
   }
 
-  const label = await projectLabel(projectId || null)
-  await notifyMeetingParticipants({
-    key: `meeting-invitation:${created.id}:${created.updated_at}`,
-    type: 'MEETING_INVITATION',
-    meetingId: created.id,
-    code: created.code,
-    title,
-    projectLabel: label,
-    headline: `You are invited to ${created.code}: ${title}`,
-    emailSubject: `[Meeting Invitation] ${created.code} ${title}`,
-    emailBody: 'Anda diundang ke meeting berikut:',
-  })
+  // Audit B6 [keputusan default, 8 Nov 2026]: meeting baru berstatus DRAFT;
+  // undangan dikirim saat dijadwalkan (scheduleMeeting), bukan saat dibuat.
 
   await logActivity({
     actorUserId: profile.id,
@@ -588,17 +578,20 @@ export async function updateMeeting(
   }
 
   const label = await projectLabel(access.meeting.project_id)
-  await notifyMeetingParticipants({
-    key: `meeting-updated:${id}:${updated.updated_at}`,
-    type: 'MEETING_UPDATED',
-    meetingId: id,
-    code: updated.code,
-    title,
-    projectLabel: label,
-    headline: `Meeting ${updated.code} updated: ${title}`,
-    emailSubject: `[Meeting Updated] ${updated.code} ${title}`,
-    emailBody: 'Meeting berikut diperbarui:',
-  })
+  // DRAFT belum mengundang siapa pun: perubahan tidak dinotifikasi (audit B6).
+  if (access.meeting.status !== 'DRAFT') {
+    await notifyMeetingParticipants({
+      key: `meeting-updated:${id}:${updated.updated_at}`,
+      type: 'MEETING_UPDATED',
+      meetingId: id,
+      code: updated.code,
+      title,
+      projectLabel: label,
+      headline: `Meeting ${updated.code} updated: ${title}`,
+      emailSubject: `[Meeting Updated] ${updated.code} ${title}`,
+      emailBody: 'Meeting berikut diperbarui:',
+    })
+  }
 
   await logActivity({
     actorUserId: profile.id,
@@ -644,6 +637,19 @@ export async function scheduleMeeting(
     console.error('scheduleMeeting failed:', error?.message)
     return { error: 'Unable to schedule meeting.' }
   }
+
+  // Undangan ke semua peserta saat DRAFT -> SCHEDULED (audit B6).
+  await notifyMeetingParticipants({
+    key: `meeting-invitation:${id}:${updated.updated_at}`,
+    type: 'MEETING_INVITATION',
+    meetingId: id,
+    code: updated.code,
+    title: access.meeting.title,
+    projectLabel: await projectLabel(access.meeting.project_id),
+    headline: `You are invited to ${updated.code}: ${access.meeting.title}`,
+    emailSubject: `[Meeting Invitation] ${updated.code} ${access.meeting.title}`,
+    emailBody: 'Anda diundang ke meeting berikut:',
+  })
 
   await logActivity({
     actorUserId: profile.id,
@@ -1497,7 +1503,8 @@ export async function addParticipant(
     // Undang yang baru ditambahkan (key mencakup user supaya tidak bentrok
     // dengan undangan massal saat create). Setelah COMPLETED/CANCELLED,
     // undangan hanya in-app (tanpa email).
-    if (added) {
+    // DRAFT: undangan menyusul saat meeting dijadwalkan (audit B6).
+    if (added && access.meeting.status !== 'DRAFT') {
       const historical = isHistoricalMeetingStatus(access.meeting.status)
       const label = await projectLabel(access.meeting.project_id)
       let baseUrl = ''
