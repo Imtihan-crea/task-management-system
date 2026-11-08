@@ -1,8 +1,6 @@
 # Task Management System
 
-Aplikasi internal untuk mengelola project, workstream, task, user, dan role.
-Status roadmap: **Phase 1 (Foundation), Phase 2 (User Management), Phase 3 (Task)
-& Phase 4 (Project & Workstream) selesai.**
+Aplikasi internal untuk mengelola Project, Workstream, Task, Suggestion, Meeting, user, dan role, lengkap dengan Notifications, email pengingat, dan Activity Log. Dipakai staf kantor KASUAT. Panduan untuk pengguna: [`docs/panduan-pengguna.md`](docs/panduan-pengguna.md).
 
 ## Production
 
@@ -28,404 +26,128 @@ Login: **https://kasuat-task.vercel.app/login**
 
 ## Stack
 
-- Next.js 16 (App Router) + TypeScript
-- Supabase Auth + PostgreSQL + Row Level Security
-- Vercel (hosting) + GitHub (source control)
+- Next.js 16 (App Router) + TypeScript + Tailwind
+- Supabase Auth + PostgreSQL + Row Level Security (akses tulis lewat service role di server)
+- Brevo (email transaksional), Sentry (opsional), Drizzle Kit (pembuat skema/migrasi)
+- Vercel (hosting + cron harian) dan GitHub (source control)
 
-## Pages
+## Halaman
 
-| Route | Untuk siapa | Isi |
-|---|---|---|
-| `/login` | semua | Login |
-| `/accept-invite` ||Calon user | Set password & aktivasi akun (dari link undangan) |
-| `/dashboard` | semua | Welcome + KPI + Gantt global + donut + Task Terdekat + Recent Activity |
-| `/projects` | semua (member: yang dia terlibat) | Project board + progress + create (Admin/PM) |
-| `/projects/[id]` | semua (member: yang dia terlibat) | Workspace tabs: Overview/Workstreams/Tasks/Activity/Members/Settings |
-| `/workstreams` | semua (scope project) | List workstream global + task count |
-| `/tasks` | semua (member: miliknya) | Tabs (All/My/On Going/To Do/Blocked/Done/Overdue) + search debounce + filter/sort |
-| `/tasks/new` | Admin, PM (project miliknya) | Create task |
-| `/tasks/[id]` | sesuai scope | Detail + edit + status + evidence + delete + activity |
-| `/task-suggestions` | semua kecuali Viewer (via tombol, tidak di nav) | List + My Suggestions + review dalam scope |
-| `/task-suggestions/new` | Admin, PM, Member | Create suggestion (juga via tombol di Tasks & Project) |
-| `/task-suggestions/[id]` | creator/PM scope/Admin | Detail + review (assignee picker) + resubmit + approve→task + history |
-| `/notifications` | semua | Center + preferensi email (bell popover di header) |
-| `/activity` | semua (scope per role) | Tabs entity + filter + timeline + pagination |
-| `/settings` | semua | Account + preferensi email |
-| `/users` | **Admin saja** | List, search, filter, sort, invite, aktif/nonaktif |
-| `/users/[id]` | **Admin saja** | Detail + edit user |
-| `/profile` | semua | Lihat & ubah nama sendiri |
+Rute utama: `/login`, `/accept-invite`, `/reset-password`, `/change-password`, `/dashboard`, `/projects` (+ `[id]`, `new`), `/workstreams`, `/tasks` (+ `[id]`, `new`), `/task-suggestions`, `/meetings`, `/activity`, `/notifications`, `/settings`, `/profile`, `/users` (Admin). Hak akses per role dan halaman: [`docs/rbac-matrix-hasil.md`](docs/rbac-matrix-hasil.md). Semua penjagaan ada di server, bukan hanya menu yang disembunyikan.
 
-`/users` dan `/users/[id]` dilindungi di **server**, bukan hanya disembunyikan di frontend.
-
-## 1. Jalankan di laptop
+## Setup lokal
 
 ```bash
 npm install
-cp .env.example .env.local   # Windows: copy .env.example .env.local
+cp .env.example .env.local
+npm run dev            # http://localhost:3000
 ```
 
-Isi `.env.local`:
+Nama variabel di `.env.local` (nilainya jangan pernah di-commit; `.env.example` hanya berisi nama):
+
+- `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY` (Supabase Dashboard > Project Settings > API; service role hanya untuk server)
+- `APP_URL` (dasar semua link undangan dan email; bukan `NEXT_PUBLIC_SITE_URL`)
+- `BREVO_API_KEY`, `BREVO_SENDER_EMAIL`, `BREVO_SENDER_NAME` (email; panduan di `docs/setup-email.md`)
+- `CRON_SECRET` (menjaga `/api/cron/*`)
+- Opsional: `SENTRY_DSN`, `NEXT_PUBLIC_SENTRY_DSN`, `APP_TIMEZONE` (bawaan `Asia/Jakarta`)
+
+**Peringatan:** `.env.local` di laptop pengembang biasanya menunjuk database **produksi**. Jangan menjalankan skrip yang menulis data tanpa membaca bagian e2e di bawah.
+
+## Perintah npm
+
+| Perintah | Fungsi |
+| --- | --- |
+| `npm run dev` / `build` / `start` | server pengembangan, build produksi, jalankan hasil build |
+| `npm run lint` | ESLint |
+| `npm run test:logic` | semua tes logika murni (waktu, aturan meeting, email, digest, alur task, password, izin, akses task/project, status user, batas form) **ditambah** `check:secrets`; tanpa database |
+| `npm run test:<nama>` | satu tes saja (mis. `test:permissions`, `test:rules`, `test:task-access`) |
+| `npm run check:secrets` | memindai file ter-track git untuk secret dan email asli; wajib bersih sebelum commit |
+| `npm run test:rls` | uji kebijakan RLS terhadap database |
+| `npm run test:db` | tes pembentuk filter PostgREST |
+| `npm run emails:render` | merender 18 template email dengan data palsu dan memeriksa escape/tautan (tidak mengirim email) |
+| `npm run e2e:smoke` / `e2e:write` / `e2e:rbac` / `e2e:a3` / `e2e:a11y` / `e2e:mobile` / `e2e:perf` / `e2e:cleanup` | uji browser Playwright (lihat di bawah) |
+| `npm run db:generate` / `db:check` / `db:status` | Drizzle Kit dan status migrasi |
+| `npm run db:backup` | cadangan database ke `private/backups/` (lihat `docs/backup.md`) |
+
+## Uji e2e dan keselamatan terhadap produksi
+
+Skrip di `scripts/e2e/` menjalankan browser sungguhan dan **bukan** bagian `test:logic` maupun CI. Karena database lokal adalah produksi, aturan ini wajib (rinci di [`scripts/e2e/README.md`](scripts/e2e/README.md)):
+
+1. Skrip menolak jalan kecuali `E2E_CONFIRM_PRODUCTION=ya` di-set.
+2. `BASE` harus `http://localhost:<port>` (bawaan `http://localhost:3100`).
+3. Server uji harus dimulai dengan email mati (`BREVO_API_KEY` dan `BREVO_SENDER_EMAIL` kosong); skrip menolak jalan bila kunci email aktif.
+4. Semua data uji berawalan `UJI-E2E` (user `uji-e2e-...@example.com`). Skrip menghapusnya di akhir; `npm run e2e:cleanup` menyapu sisa dan harus melaporkan semua 0.
+5. Sesi admin memakai user ADMIN sementara yang dibuat dan dihapus skrip; akun admin produksi tidak disentuh.
+6. Satu `next start` di port 3100, jangan `next dev` (RAM terbatas).
+
+## Deploy dan CI
+
+- **Deploy:** setiap push ke `main` di-deploy otomatis oleh Vercel ke https://kasuat-task.vercel.app. Jangan mengisi Output Directory di Vercel. Env var Vercel: nama sama seperti di atas, `APP_URL` untuk Production **dan** Preview. `vercel.json` menjadwalkan `/api/cron/deadlines` setiap hari pukul 00.00 UTC (07.00 WIB); pengingat meeting dipanggil tiap 15 menit oleh `pg_cron` Supabase ke `/api/cron/meetings`.
+- **CI** (`.github/workflows/ci.yml`) sengaja hemat: hanya jalan untuk perubahan penting, dengan filter path `app/actions/**`, `app/api/**`, `lib/auth/**`, `lib/supabase/**`, `lib/email/**`, `lib/notifications/**`, `lib/monitoring/**`, `lib/data/**`, `lib/forms/**`, `instrumentation*.ts`, `database/**`, `proxy.ts`, `next.config.ts`, `package.json`, `package-lock.json`, dan `.github/workflows/**`. Langkahnya: audit dependensi, typecheck, lint, `test:logic`, build. Perubahan UI atau dokumen tidak memicu CI; tes lokal harus lulus sebelum push.
+- Supabase: Authentication > URL Configuration, **Site URL** wajib `https://kasuat-task.vercel.app` dan Redirect URLs `https://kasuat-task.vercel.app/**` (serta `http://localhost:3000/**` untuk pengembangan).
+
+## Setup Supabase (sekali saja)
+
+1. SQL Editor: jalankan berurutan semua berkas `database/migrations/001` sampai `015` (satu per satu, tiap berkas salin lalu **Run**).
+2. Authentication > Users > Add user: buat Admin pertama (centang Auto Confirm User), lalu Table Editor > `profiles` > ubah `role` menjadi `ADMIN` dan `status` menjadi `ACTIVE`.
+
+`profiles.status` adalah satu-satunya sumber kebenaran: `INVITED` (belum membuat password), `ACTIVE` (bisa Login), `INACTIVE` (ditolak). `is_active` hanya kolom turunan.
+
+## Onboarding dan password
+
+- **Undang User:** Supabase mengirim email undangan; user membuka Link, membuat password (minimal 8 karakter), status menjadi `ACTIVE`. Bila email gagal (kuota gratis terbatas), aplikasi membuat user dan menampilkan Link sekali pakai untuk dikirim manual. Link memakai `APP_URL`.
+- **Buat User dengan Password:** admin mengetik password awal (minimal 6 karakter), user langsung `ACTIVE`; opsi "Wajib ganti Password saat Login pertama" mengarahkan ke `/change-password` (minimal 8 karakter). Penggantian dilakukan di server (`setOwnPassword`), bukan di browser.
+- **Lupa password:** belum ada tombol mandiri. Admin membuat "Link reset Password" di halaman Ubah User; Link menuju `/reset-password`.
+- Kedaluwarsa Link undangan: 30 menit (`GOTRUE_MAIL_VERIFY_EXPIRY=1800` di Supabase). Email Supabase gratis: sekitar 2 per jam, hanya ke anggota tim; untuk produksi konfigurasikan SMTP sendiri (`docs/setup-email.md`).
+
+## Aturan data privat
+
+Repo ini tidak boleh menyimpan atau mencetak secret, token, Link undangan/recovery, password, atau email dan data pribadi user. Aturan lengkap di `AGENTS.md`; `npm run check:secrets` memeriksanya. Bila secret terlanjur ter-commit: rotasi dulu, baru bersihkan histori.
+
+## Struktur proyek
 
 ```
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-APP_URL=http://localhost:3000
-BREVO_API_KEY=
-BREVO_SENDER_EMAIL=
-BREVO_SENDER_NAME=Task Management System
+app/            halaman (App Router), app/actions (server action), app/api (cron, notifikasi)
+components/     komponen UI per modul (tasks, projects, meetings, users, ...)
+lib/            auth (izin), data, supabase, email, notifications, meetings, utils
+database/       migrasi SQL (001-015) dan tes RLS
+scripts/        check-secrets, db-backup, render-emails, e2e (Playwright)
+tests/          tes logika (tsx)
+docs/           dokumentasi (indeks di bawah)
+proxy.ts        penjaga rute dan sesi (pengganti middleware di Next 16)
 ```
 
-Lokasi nilainya: Supabase Dashboard > **Project Settings** > **API**.
-`BREVO_API_KEY` dari Brevo Dashboard > **SMTP & API** (untuk email notifikasi
-task DONE, assignment, dan suggestion; panduan SMTP ada di `docs/setup-email.md`).
+## Indeks dokumen (`docs/`)
 
-Notifikasi terpusat di `lib/notifications/service.ts`: klaim event key dulu
-(idempotent, tidak ada duplikat) → tulis in-app → kirim email sesuai policy
-+ preferensi user. Kegagalan email tidak menggagalkan transaksi. Suggestion
-(`S-001`) di-review PM/Admin; approve menghasilkan tepat satu task.
+Panduan dan operasional
+- [`panduan-pengguna.md`](docs/panduan-pengguna.md): panduan staf kantor.
+- [`ui-bahasa.md`](docs/ui-bahasa.md): aturan bahasa UI (campur Indonesia + istilah inti Inggris).
+- [`setup-email.md`](docs/setup-email.md): konfigurasi SMTP/Brevo.
+- [`backup.md`](docs/backup.md): cadangan dan restore database.
+- [`monitoring.md`](docs/monitoring.md): alert error dan Sentry.
+- [`acceptance-test.md`](docs/acceptance-test.md): daftar uji penerimaan manual.
 
-Activity append-only di `lib/activity-log/service.ts`: semua mutation penting
-mencatat actor + old/new values; timeline tampil di task/project/suggestion
-dan dashboard. Scheduler deadline (`/api/cron/deadlines`, Bearer `CRON_SECRET`,
-harian) memakai service notifikasi yang sama.
+Audit dan hasil uji
+- [`audit-ui-rbac.md`](docs/audit-ui-rbac.md): audit UI/alur/RBAC dan tindak lanjutnya (termasuk kerja AFK lanjutan).
+- [`rbac-matrix-hasil.md`](docs/rbac-matrix-hasil.md): matriks akses per role hasil e2e.
+- [`review-admin-client.md`](docs/review-admin-client.md): review pemakaian `createAdminClient()`.
+- [`review-rls.md`](docs/review-rls.md): review kebijakan RLS dan usulan SQL.
+- [`laporan-data-2026-11-09.md`](docs/laporan-data-2026-11-09.md): konsistensi data produksi.
+- [`a11y-hasil.md`](docs/a11y-hasil.md): audit aksesibilitas.
+- [`mobile-hasil.md`](docs/mobile-hasil.md): cek tata letak mobile.
+- [`email-hasil.md`](docs/email-hasil.md): pemeriksaan template email.
+- [`performa-hasil.md`](docs/performa-hasil.md): pengukuran performa.
 
-Visual: Kasuat gold + Poppins/Onest + logo; sidebar collapsible + drawer mobile;
-bell popover + profile menu di header; lihat `docs/completion-report-phase10.md`.
-
-`SUPABASE_SERVICE_ROLE_KEY` hanya boleh dipakai di server. File `.env.local`
-sudah masuk `.gitignore` dan tidak pernah di-push.
-
-Jalankan:
-
-```bash
-npm run dev
-```
-
-Buka http://localhost:3000
-
-## 2. Setup Supabase (sekali saja)
-
-1. **SQL Editor** > New Query > salin `database/migrations/001_create_profiles.sql` > **Run**
-2. **SQL Editor** > New Query > salin `database/migrations/002_user_management.sql` > **Run**
-3. **SQL Editor** > New Query > salin `database/migrations/003_projects_workstreams_tasks.sql` > **Run**
-4. **SQL Editor** > New Query > salin `database/migrations/004_multi_pm_and_evidence.sql` > **Run**
-5. **SQL Editor** > New Query > salin `database/migrations/005_human_readable_codes.sql` > **Run**
-6. **SQL Editor** > New Query > salin `database/migrations/006_suggestions_notifications.sql` > **Run**
-3. **Authentication** > **Users** > **Add user** > buat user pertama:
-   - isi Email + Password, centang **Auto Confirm User**
-   - lalu **Table Editor** > `profiles` > ubah `role` jadi `ADMIN` dan `status` jadi `ACTIVE`
-
-### Catatan penting tentang `status`
-
-`status` adalah **satu-satunya sumber kebenaran**:
-
-| Nilai | Arti |
-|---|---|
-| `INVITED` | User sudah dibuat, belum selesai mengatur password (khusus opsi invite) |
-| `ACTIVE` | Bisa login |
-| `INACTIVE` | Tidak bisa login |
-
-User yang dibuat lewat **Create User with Password** langsung `ACTIVE`
-(tidak melewati `INVITED`), karena admin sudah menetapkan password awal.
-
-Kolom `is_active` sekarang jadi **generated column** (`status = 'ACTIVE'`).
-Tidak bisa diisi manual, jadi tidak mungkin jadi sumber kebenaran kedua.
-Kode aplikasi membaca `status`, bukan `is_active`.
-
-## 3. Environment Variables di Vercel
-
-Tambahkan di **Settings** > **Environment Variables**:
-
-```
-NEXT_PUBLIC_SUPABASE_URL=
-NEXT_PUBLIC_SUPABASE_ANON_KEY=
-SUPABASE_SERVICE_ROLE_KEY=
-APP_URL=https://kasuat-task.vercel.app
-BREVO_API_KEY=
-BREVO_SENDER_EMAIL=
-BREVO_SENDER_NAME=Task Management System
-CRON_SECRET=string_acak_panjang (untuk /api/cron/deadlines)
-```
-
-> **Penting - pakai `APP_URL`, bukan `NEXT_PUBLIC_SITE_URL`.**
-> Link invitation selalu dibangun dari `APP_URL`, bukan dari domain request.
-> Kalautaken dari domain request, setiap link yang dibuat dari **Preview
-> Deployment** akan mengarah ke domain preview yang tidak terdaftar di
-> Supabase, dan Supabase akan menolak mengirim email.
->
-> Pastikan `APP_URL` diisi untuk **Production dan Preview** di Vercel
-> (centang semua kolom Environment).
-
-> Jangan set **Output Directory** menjadi `.next` di Vercel.
-> Biarkan default Vercel, kalau diisi manual hasilnya 404 semua halaman.
-
-## 4. Supabase URL Configuration
-
-**Authentication** > **URL Configuration**:
-
-- **Site URL**: `https://kasuat-task.vercel.app`
-- **Redirect URLs**:
-  - `https://kasuat-task.vercel.app/**`
-  - `http://localhost:3000/**` (untuk development)
-
-> **Penting:** `Site URL` **wajib** diganti ke domain production. Kalau masih
-> `localhost`, link undangan akan mengarah ke `localhost:3000` dan user tidak
-> akan pernah sampai ke halaman `/accept-invite`.
-
-## 4b. Alur onboarding user (dua opsi, 3 Nov 2026)
-
-**Opsi 1 — Create with Password (tanpa email):**
-
-```text
-Admin: /users -> + Add User -> Create User with Password
-        ↓
-Admin isi nama, email, password awal (min. 4 karakter), role
-        ↓
-Opsional: centang "Require password change on first login"
-        ↓
-User langsung ACTIVE — tidak ada email yang dikirim
-        ↓
-Admin bagikan email + password lewat kanal aman (WhatsApp/chat)
-        ↓
-(jika dicentang) login pertama -> /change-password -> dashboard
-```
-
-**Opsi 2 — Send Invite (email):**
-
-```text
-Admin: /users -> + Add User -> Send Invitation
-        ↓
-Supabase kirim email "You've been invited"
-        ↓
-User klik "Accept invitation"
-        ↓
-/accept-invite  -> user buat password sendiri
-        ↓
-Status otomatis: INVITED -> ACTIVE
-        ↓
-User login dengan email + password tadi
-```
-
-Pada Opsi 1 admin **membuat** password awal (konsekuensi yang disadari
-owner). Karena itu:
-- password awal minimal **4 karakter** (aturan owner), tapi **Supabase
-  punya minimum sendiri** — default 6. Kalau ingin benar-benar 4, turunkan
-  di **Supabase Dashboard → Authentication → Settings → Password minimum
-  length**.
-- centang **"Require password change on first login"** supaya password
-  sementara wajib diganti user sebelum memakai aplikasi (user diarahkan ke
-  `/change-password`, minimal 8 karakter).
-
-Pada Opsi 2 admin **tidak pernah** melihat atau membuat password user.
-Link undangan selalu dibangun dari env var `APP_URL`, bukan dari domain
-request, jadi tidak akan pernah mengarah ke `localhost` atau ke domain
-preview yang tidak terdaftar di Supabase.
-
-## 4c. Lupa password (reset)
-
-Ditambahkan 5 Nov 2026. Sebelumnya link recovery Supabase selalu gagal
-karena dianggap link undangan dan diarahkan ke `/accept-invite`.
-
-```text
-Admin/user minta reset (Supabase Dashboard -> Authentication -> Users
-  -> pilih user -> Send recovery, ATAU nanti lewat tombol di aplikasi)
-        ↓
-Email berisi link recovery
-        ↓
-Link membuka "/" -> router mendeteksi type=recovery -> /reset-password
-        ↓
-/reset-password menukar token menjadi session
-  (mendukung #access_token, #token_hash, dan ?code= PKCE)
-        ↓
-User mengisi password baru (minimal 8 karakter) + konfirmasi
-        ↓
-Dashboard
-```
-
-Catatan:
-- Link recovery bersifat **sekali pakai** dan kedaluwarsa (default 1 jam).
-- Kalau email recovery tidak masuk (batas free tier Supabase), link bisa
-  dibuat lewat Admin API / Supabase Dashboard.
-- Password baru diubah lewat sesi user sendiri (`supabase.auth.updateUser`),
-  bukan service role.
-
-## 4c-bis. Backup database
-
-Plan FREE Supabase **tidak menyimpan backup**. Buat backup sendiri dengan
-`npm run db:backup` (hasil di `private/backups/`, gitignored). Panduan
-lengkap, jadwal, dan cara restore: [`docs/backup.md`](docs/backup.md).
-
-## 4c-ter. Error monitoring
-
-Error server dikirim ke email admin (maks. 1 email per hari). Sentry
-terpasang dan aktif setelah `SENTRY_DSN`/`NEXT_PUBLIC_SENTRY_DSN` diisi di
-Vercel. Detail: [`docs/monitoring.md`](docs/monitoring.md).
-
-## 4d. Aturan data privat
-
-Repo ini **tidak boleh** menyimpan atau mencetak data privat:
-
-- service role key, anon key, Brevo API key, `CRON_SECRET`, connection string
-- access/refresh token, `token_hash`, link recovery/undangan
-- password user, email pribadi, nomor telepon
-
-Aturan lengkap ada di `AGENTS.md` bagian **Aturan Data Privat**. Pemeriksa
-otomatis:
-
-```bash
-npm run check:secrets
-```
-
-Script memindai file yang ter-track git dan **gagal** kalau menemukan token,
-API key, connection string, private key, atau email non-placeholder. Nilai
-temuan tidak pernah dicetak. Pemeriksaan ini juga ikut `npm run test:logic`.
-
-Kalau ada secret yang terlanjur ter-commit: **rotasi dulu** (Supabase JWT /
-service role, Brevo key, `CRON_SECRET`), baru bersihkan histori.
-
-## 5. Deploy
-
-```bash
-git add .
-git commit -m "phase 2 user management"
-git push
-```
-
-Setiap push ke `main` = deploy production otomatis oleh Vercel.
-
-## Struktur project
-
-```
-app/
-  login/            Halaman login
-  accept-invite/    Set password dari link undangan
-  reset-password/   Set password baru dari link recovery (lupa password)
-  dashboard/        Welcome + statistik + My Tasks
-  projects/         Project board (semua role bisa lihat)
-    [id]/           Detail + workstream + task + edit (Admin/PM)
-  tasks/            Task list + search/filter/sort + My Tasks
-    new/            Create task (Admin, PM)
-    [id]/           Detail + edit + status + delete
-  users/            User Management (Admin only)
-    [id]/           Detail + edit user
-  profile/          Profile self-service
-  actions/          Server Actions (semua operasi tulis)
-components/
-  auth/             Login form, tombol logout
-  layout/           AppShell + navigasi
-  profile/          Form ubah nama sendiri
-  projects/         Form project + workstream
-  tasks/            Form task + status + delete
-  users/            Form invite, edit, aktivasi
-  ui/               Badge status/priority/overdue
-lib/
-  supabase/
-    client.ts       Client browser (anon key)
-    server.ts       Client server (anon key + cookie)
-    admin.ts        Client service role - HANYA server
-    proxy.ts        Refresh session + jaga route
-  app-url.ts        URL aplikasi untuk link invitation (dari env var)
-  auth/
-    permissions.ts  Permission matrix per role
-    roles.ts        Label + validasi role/status project/task
-    session.ts      requireProfile() / requireAdmin() / requireManager()
-  data/
-    users.ts        getActiveUsers() - HANYA server
-    user-options.ts Tipe + label user (aman untuk client)
-  utils/
-    dates.ts        Format tanggal + overdue check
-types/              profile.ts, project.ts, workstream.ts, task.ts
-database/migrations/  001 (phase 1), 002 (phase 2), 003 (phase 3&4)
-docs/               Panduan setup email SMTP + checklist acceptance test
-proxy.ts            Route guard (pengganti middleware di Next 16)
-```
-
-## Keamanan
-
-- **Admin check di server.** `requireAdmin()` dipanggil di halaman maupun
-  di setiap Server Action, jadi dipanggil langsung dari browser pun tetap ditolak.
-- **Role & status tidak bisa diubah user sendiri.** Database hanya memberi hak
-  `UPDATE` pada kolom `full_name` untuk user biasa.
-- **Service Role Key tidak pernah masuk browser.** File `lib/supabase/admin.ts`
-  memakai `server-only` supaya gagal build kalau terbawa ke client.
-- **Session user INACTIVE langsung ditendang** di `proxy.ts`, даже kalau
-  browser masih menyimpan session.
-- **Minimal satu Admin aktif** dijaga di Server Action dan fungsi database.
-- **Admin tidak bisa menonaktifkan dirinya sendiri.**
-- Password tidak pernah disimpan di `profiles`, tidak pernah ditampilkan,
-  dan tidak pernah masuk log.
-
-## Testing
-
-```bash
-npm run lint
-npm run build
-npm run dev
-```
-
-Checklist manual (lihat `docs/acceptance-test.md`):
-
-1. Desktop & mobile: login, dashboard, logout
-2. `/users`: search, filter role/status, sort
-3. Invite user, ganti role, deactivate, activate
-4. User non-Admin buka `/users` -> ditolak
-5. User INACTIVE -> ditolak saat login
-6. Nonaktifkan Admin terakhir -> ditolak
-7. Admin coba ubah role sendiri jadi non-Admin -> ditolak
+Rencana dan laporan fase
+- [`plan-rbac.md`](docs/plan-rbac.md), [`plan-phase11-meetings.md`](docs/plan-phase11-meetings.md)
+- [`acceptance-report-phase2.md`](docs/acceptance-report-phase2.md), [`acceptance-report-phase34.md`](docs/acceptance-report-phase34.md)
+- [`completion-report-phase34.md`](docs/completion-report-phase34.md), [`completion-report-phase57.md`](docs/completion-report-phase57.md), [`completion-report-phase89.md`](docs/completion-report-phase89.md), [`completion-report-phase10.md`](docs/completion-report-phase10.md), [`completion-report-phase10-performance-orm.md`](docs/completion-report-phase10-performance-orm.md), [`completion-report-phase11-meetings.md`](docs/completion-report-phase11-meetings.md)
 
 ## Troubleshooting
 
-### `Unable to invite user. Please try again.`
-
-Cek **Vercel > Project > Logs**, cari baris `[invite] Supabase error:`.
-Pesan di situ yang menentukan penyebabnya:
-
-| Pesan di log | Penyebab | Solusi |
-|---|---|---|
-| `redirect_to ... not allowed` | Domain preview tidak terdaftar | Set `APP_URL` untuk Preview juga, atau pakai domain production |
-| `rate limit` / `security purposes` | Kuota email gratis habis | Tunggu 1 jam, atau konfigurasi SMTP |
-| `User already registered` | User masih ada di Supabase Auth | Hapus di **Authentication > Users** |
-
-### `This email is still registered in Supabase Auth.`
-
-User yang dihapus dari tabel `profiles` **masih ada** di Supabase Auth.
-Hapus lewat **Supabase Dashboard > Authentication > Users**, bukan dari
-Table Editor. Profile akan ikut terhapus otomatis karena trigger
-`ON DELETE CASCADE` di `auth.users`.
-
-### Link invitation dianggap expired
-
-Setiap link invitation hanya bisa dibuka **satu kali**. Kalau sudah
-terbuka, minta user membuka email terbaru, atau hapus user di
-Supabase Auth lalu invite ulang.
-
-Durasi expired link invitation: **30 menit** (owner, 29 Okt 2026 —
-perubahan dari 60 menit default). Nilai 30 menit = **1800 detik**.
-
-Setting ini ada di **Supabase Dashboard → Authentication → Settings**
-(token expiry untuk invite/magic link/verifikasi) atau via CLI:
-
-```bash
-supabase secrets set GOTRUE_MAIL_VERIFY_EXPIRY=1800
-# lalu restart/redeploy Supabase Auth
-```
-
-Link fallback (`generateLink`) memakai token yang sama, jadi ikut ter‑update
-dengan setting ini. Link yang sudah terbit sebelumnya **tidak terpengaruh** —
-hanya link yang baru yang akan menggunakan 30 menit.
-
-### Email tidak sampai ke user
-
-Project Supabase gratis hanya bisa mengirim email ke anggota tim project,
-dengan kuota sekitar 2 email per jam. Untuk production, wajib konfigurasi
-SMTP sendiri. Panduan lengkap ada di
-[`docs/setup-email.md`](docs/setup-email.md).
-
-### Link invitation tidak terkirim (kuota email habis)
-
-Aplikasi otomatis membuat user lalu menampilkan **link invitation** yang bisa
-disalin dan dikirim manual (WhatsApp/email). Ini fallback agar tidak bergantung
-pada email. `generateLink` tidak memakai kuota email.
-
-Link invitation hanya bisa dibuka **satu kali** dan hanya untuk user tersebut.
+| Gejala | Penyebab dan solusi |
+| --- | --- |
+| "Tidak dapat mengundang user" | Lihat log Vercel, baris `[invite] Supabase error:`. `redirect_to ... not allowed`: set `APP_URL` untuk Preview juga. `rate limit`: kuota email habis, pakai Link manual atau SMTP sendiri. |
+| "Email ini masih terdaftar di Supabase Auth" | Menghapus baris `profiles` tidak menghapus user Auth. Hapus di Supabase Dashboard > Authentication > Users. |
+| Link undangan atau reset dianggap kedaluwarsa | Link sekali pakai. Admin membuat Link baru di halaman Ubah User. |
+| Link undangan mengarah ke `localhost` | Site URL Supabase atau `APP_URL` salah (lihat Deploy dan CI). |

@@ -204,3 +204,69 @@ commit saja). Satu commit per temuan supaya bisa di-revert satu-satu.
 - Tidak dicek: form filter GET (TaskFilterForm, MeetingFilterForm, Topbar),
   isi rinci `lib/data/dashboard.ts`, policy RLS selain yang disebut, perilaku
   React 19 reset form di browser (A13).
+
+## I. Kerja AFK lanjutan (9 Nov 2026)
+
+Lima fase di cabang bertumpuk `afk2/fase1-uji` sampai `afk2/fase5-dokumen` (belum di-merge dan belum di-push; hanya commit). Daftar commit: `git log --oneline ebd02ca..HEAD`. Basis data dan hasil rinci ada di laporan masing-masing.
+
+| Fase | Isi | Hasil | Laporan |
+| --- | --- | --- | --- |
+| 1. Uji | skrip e2e masuk repo (`e2e:smoke`, `e2e:write`, `e2e:cleanup`, `e2e:rbac`, `e2e:a3`); matriks RBAC end-to-end; aturan status user jadi fungsi murni + tes | 145 kombinasi halaman x role, 1 ketidaksesuaian (tombol "+ Buat Meeting" tampil untuk VIEWER, kosmetik; link kosong di empty state sudah dibenahi); **A3 DIPERBAIKI** | `rbac-matrix-hasil.md` |
+| 2. Review keamanan | review semua titik `createAdminClient()` (sekitar 150); review kebijakan RLS terhadap aturan aplikasi; konsistensi data produksi (baca saja) | tidak ada celah tulis; satu kebocoran baca ditutup (workstream semua project dikirim ke browser di form Suggestion); RLS tabel `tasks`, `projects`, `workstreams`, `project_managers` terbaca semua user ACTIVE; data: 1 project tanpa PM aktif, 35 notifikasi lama belum dibaca | `review-admin-client.md`, `review-rls.md`, `laporan-data-2026-11-09.md` |
+| 3. Kualitas | aksesibilitas (axe-core), tata letak mobile 375 px, template email | pelanggaran axe 414 menjadi 2 (sisa: warna brand `deep-gold` di atas putih); halaman overflow mobile 3 menjadi 0; 18 template email ter-escape, subject berbahasa Indonesia, kalimat penutup ganda dibuang; sisa teks UI Inggris diterjemahkan | `a11y-hasil.md`, `mobile-hasil.md`, `email-hasil.md` |
+| 4. Performa | autentikasi per request tanpa round trip kedua (`getClaims`), N+1 scheduler meeting dibatch, `loading.tsx`, helper form dipusatkan, dependensi diperbarui | median TTFB 448 menjadi 346 ms, waktu muat 681 menjadi 580 ms | `performa-hasil.md` |
+| 5. Dokumen | `panduan-pengguna.md`, README ditulis ulang, bagian ini | - | - |
+
+Perbaikan hasil review ikut dicatat sebagai commit terpisah (mis. password baru tidak boleh sama dengan sementara, pesan flag gagal, e2e membersihkan diri).
+
+**Status temuan lama yang berubah**
+
+| # | Status |
+| --- | --- |
+| A3 | **DIPERBAIKI**: `setOwnPassword` mengganti password dan membersihkan flag `must_change_password` di server; diuji `npm run e2e:a3`. |
+| B15 | tetap: kode memisah penerima per email, **kirim nyata belum diuji** (menunggu keputusan penerima uji, lihat di bawah). |
+
+### Keputusan pemilik yang masih terbuka
+
+1. **C14, Overdue UTC atau WIB.** Overdue task dihitung dengan tanggal UTC (`lib/utils/dates.ts`), sehingga Task berdeadline 10 Nov menjadi Overdue 11 Nov pukul 07.00 WIB. Digest dan meeting sudah WIB. Pilih: tetap (sudah tercantum di panduan pengguna) atau satu helper tanggal WIB.
+2. **C20, Team Member membatalkan task sendiri.** Sekarang boleh (lalu task terkunci). Pilih: tetap atau hanya PM/Admin.
+3. **Lupa password mandiri.** Belum ada; pengguna meminta Admin membuat "Link reset Password". Pilih: tambah tombol di halaman Login (butuh email Supabase/Brevo yang andal) atau tetap lewat Admin.
+4. **B15, penerima uji kirim email nyata.** Perlu alamat penerima uji yang boleh dipakai untuk memastikan email per penerima terkirim.
+5. **PM untuk project `001`.** Satu-satunya PM-nya berstatus INACTIVE; project ACTIVE dengan 4 task aktif. Tambah PM di tab Pengaturan project, atau ubah status project.
+6. **Pengetatan RLS.** Usulan SQL ada di `review-rls.md` (policy scoped untuk `tasks`, `projects`, `workstreams`; cabut EXECUTE fungsi `SECURITY DEFINER`; cabut grant berlebih). Aplikasi tidak membaca tabel itu lewat client user, jadi perilaku seharusnya tidak berubah. Uji dulu dalam transaksi yang di-rollback, lalu `npm run test:rls` dan `npm run e2e:rbac`.
+7. **Dua catatan cakupan RBAC** (`rbac-matrix-hasil.md`): (a) VIEWER dan PM lain bisa membuka halaman Project orang lain (nama, workstream, anggota); (b) VIEWER melihat seluruh daftar task dan detail task siapa pun. Pilih: dibiarkan atau dibatasi di `projects/[id]` dan `tasks/[id]`.
+8. **Login ulang Supabase CLI.** Timer cadangan hari Senin gagal selama CLI masuk ke akun Supabase lain. Pemilik perlu login ulang ke akun yang memiliki project ini (`docs/backup.md`).
+
+### Temuan baru
+
+**Urutan kode `meeting_code_seq` tertinggal dari data.** Saat e2e, satu putaran gagal dengan `duplicate key ... meetings_code_unique`. Kode Meeting tertinggi di produksi adalah `M-012`, tetapi `meeting_code_seq` masih di bawahnya. Percobaan yang gagal itu memakai satu nilai, sehingga urutan kini melewati `M-012`. Sebab tertinggalnya urutan belum diketahui [INFERENCE: data Meeting pernah dimasukkan atau diubah tanpa lewat default kolom]. Dampaknya bila terulang: membuat Meeting baru bisa gagal dengan "Tidak dapat membuat Meeting. Silakan coba lagi." sampai urutan melewati kode terbesar.
+
+Rekomendasi: pemilik menjalankan lewat SQL editor Supabase (belum dijalankan oleh siapa pun; pemeriksaan bisa dijalankan lebih dulu).
+
+Pemeriksaan (hanya membaca): `last_value` urutan harus >= angka kode tertinggi.
+
+```sql
+select 'meeting'    as urutan, (select last_value from public.meeting_code_seq)    as last_value, (select max(substring(code from 3)::int) from public.meetings)         as kode_tertinggi
+union all
+select 'task',       (select last_value from public.task_code_seq),       (select max(substring(code from 3)::int) from public.tasks)
+union all
+select 'suggestion', (select last_value from public.suggestion_code_seq), (select max(substring(code from 3)::int) from public.task_suggestions)
+union all
+select 'project',    (select last_value from public.project_code_seq),    (select max(code::int) from public.projects);
+```
+
+Perbaikan untuk Meeting (pernyataan yang direkomendasikan):
+
+```sql
+select setval('public.meeting_code_seq', (select max(substring(code from 3)::int) from public.meetings));
+```
+
+Padanan untuk urutan kode lain, dijalankan hanya bila pemeriksaan menunjukkan `last_value` lebih kecil dari `kode_tertinggi`:
+
+```sql
+select setval('public.task_code_seq',       (select max(substring(code from 3)::int) from public.tasks));
+select setval('public.suggestion_code_seq', (select max(substring(code from 3)::int) from public.task_suggestions));
+select setval('public.project_code_seq',    (select max(code::int) from public.projects));
+```
+
+Catatan: `setval` menurunkan urutan bila angka yang diberikan lebih kecil dari `last_value` saat ini, jadi jalankan hanya bila pemeriksaan menunjukkan urutan tertinggal. Tabel yang masih kosong membuat `max` bernilai NULL dan `setval` gagal; lewati urutan itu. Kode Workstream (A, B, C, ...) dibuat trigger per project, bukan urutan, sehingga tidak ikut diperiksa. Nama urutan diambil dari `database/migrations/005`, `006`, dan `008`.
