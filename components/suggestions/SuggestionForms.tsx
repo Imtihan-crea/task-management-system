@@ -345,7 +345,9 @@ export function ReviewForm({
   suggestedPriority: string | null
   suggestedDeadline: string | null
 }) {
-  const [state, formAction, pending] = useFormAction(reviewSuggestion, INITIAL)
+  const [state, formAction, pending] = useFormAction(reviewSuggestion, INITIAL, (fd) =>
+    fd.get('decision') === 'reject' ? 'Reject this suggestion? This cannot be undone.' : null
+  )
 
   return (
     <form {...formAction} className="flex flex-col gap-3">

@@ -15,7 +15,9 @@ import { startTransition, useActionState, useEffect, useRef, type FormEvent } fr
  */
 export function useFormAction<S extends { error?: string } | undefined>(
   action: (prev: Awaited<S>, formData: FormData) => Promise<S>,
-  initial: Awaited<S>
+  initial: Awaited<S>,
+  /** Pesan konfirmasi sebelum kirim (null = tanpa konfirmasi); audit C12. */
+  confirmMessage?: (formData: FormData) => string | null
 ) {
   const [state, dispatch, pending] = useActionState<S, FormData>(action, initial)
   const ref = useRef<HTMLFormElement>(null)
@@ -28,6 +30,8 @@ export function useFormAction<S extends { error?: string } | undefined>(
     e.preventDefault()
     const submitter = (e.nativeEvent as SubmitEvent).submitter
     const formData = new FormData(e.currentTarget, submitter)
+    const message = confirmMessage?.(formData)
+    if (message && !window.confirm(message)) return
     startTransition(() => dispatch(formData))
   }
 

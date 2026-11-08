@@ -98,7 +98,7 @@ export function AgendaItem({
   moveIds: string[]
 }) {
   const [updState, updAction, updPending] = useFormAction(updateAgenda, INITIAL)
-  const [delState, delAction, delPending] = useFormAction(deleteAgenda, INITIAL)
+  const [delState, delAction, delPending] = useFormAction(deleteAgenda, INITIAL, () => 'Delete this agenda item?')
   const [moveState, moveAction, movePending] = useFormAction(reorderAgendas, INITIAL)
 
   const idx = moveIds.indexOf(agenda.id)
@@ -216,7 +216,7 @@ export function DecisionItem({
   index: number
 }) {
   const [updState, updAction, updPending] = useFormAction(updateDecision, INITIAL)
-  const [delState, delAction, delPending] = useFormAction(deleteDecision, INITIAL)
+  const [delState, delAction, delPending] = useFormAction(deleteDecision, INITIAL, () => 'Delete this decision?')
 
   return (
     <li className="rounded-xl border p-3 dark:border-zinc-700">
@@ -336,7 +336,7 @@ export function ActionItemCard({
   taskCode?: string | null
 }) {
   const [updState, updAction, updPending] = useFormAction(updateActionItem, INITIAL)
-  const [delState, delAction, delPending] = useFormAction(deleteActionItem, INITIAL)
+  const [delState, delAction, delPending] = useFormAction(deleteActionItem, INITIAL, () => 'Delete this action item?')
   const [taskState, taskAction, taskPending] = useFormAction(createTaskFromActionItem, INITIAL)
 
   return (
@@ -553,7 +553,7 @@ export function ParticipantRow({
   canRemove: boolean
   isSelf: boolean
 }) {
-  const [delState, delAction, delPending] = useFormAction(removeParticipant, INITIAL)
+  const [delState, delAction, delPending] = useFormAction(removeParticipant, INITIAL, () => 'Remove this participant from the meeting?')
   const [attState, attAction, attPending] = useFormAction(updateAttendance, INITIAL)
 
   return (
