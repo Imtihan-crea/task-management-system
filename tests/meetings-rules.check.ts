@@ -2,7 +2,14 @@
  * Uji boundary untuk lib/meetings/rules.ts — bagian ATURAN, tanpa database.
  * Jalankan: npm run test:rules
  */
-import { scopeFilter, matchesMeetingTab, matchesMeetingSearch, isHistoricalMeetingStatus } from '../lib/meetings/rules'
+import {
+  scopeFilter,
+  matchesMeetingTab,
+  matchesMeetingSearch,
+  isHistoricalMeetingStatus,
+  canCreateTaskFromMeeting,
+  type MeetingAccess,
+} from '../lib/meetings/rules'
 import type { MeetingTabKey } from '../types/meeting'
 
 let ok = 0
@@ -168,6 +175,20 @@ cek('CANCELLED = historical', isHistoricalMeetingStatus('CANCELLED'), true)
 cek('DRAFT bukan historical', isHistoricalMeetingStatus('DRAFT'), false)
 cek('SCHEDULED bukan historical', isHistoricalMeetingStatus('SCHEDULED'), false)
 cek('status asing bukan historical', isHistoricalMeetingStatus('BAHASA'), false)
+
+/* ---------- canCreateTaskFromMeeting (audit B4) ---------- */
+const mtg = (project_id: string | null, status = 'SCHEDULED') => ({
+  id: M1, code: 'M-1', title: 'X', project_id, status,
+  organizer_id: 'other', created_by: 'other', meeting_date: '2026-11-08',
+})
+const acc = (meeting: ReturnType<typeof mtg>, o: Partial<MeetingAccess> = {}): MeetingAccess => ({
+  meeting, isOwner: false, isParticipant: true, isProjectPM: false, ...o,
+})
+cek('PM peserta meeting project PM lain -> tidak', canCreateTaskFromMeeting(acc(mtg(P1)), 'PROJECT_MANAGER'), false)
+cek('PM project ini -> boleh', canCreateTaskFromMeeting(acc(mtg(P1), { isProjectPM: true }), 'PROJECT_MANAGER'), true)
+cek('PM peserta meeting tanpa project -> boleh (pilih project)', canCreateTaskFromMeeting(acc(mtg(null)), 'PROJECT_MANAGER'), true)
+cek('ADMIN peserta -> boleh', canCreateTaskFromMeeting(acc(mtg(P1)), 'ADMIN'), true)
+cek('TEAM_MEMBER -> tidak', canCreateTaskFromMeeting(acc(mtg(P1)), 'TEAM_MEMBER'), false)
 
 console.log(`LULUS: ${ok}`)
 console.log(`GAGAL: ${gagal}`)

@@ -124,6 +124,9 @@ export function canManageMeetingContent(access: MeetingAccess, role: string): bo
 export function canCreateTaskFromMeeting(access: MeetingAccess, role: UserRole): boolean {
   if (!access.meeting) return false
   if (!can(role, 'tasks.create')) return false
+  // Audit B4: PM hanya di project miliknya (sama dengan server action).
+  // Meeting tanpa project: project dipilih di form dari project miliknya.
+  if (role === 'PROJECT_MANAGER' && access.meeting.project_id && !access.isProjectPM) return false
   return canViewMeeting(access, role)
 }
 
