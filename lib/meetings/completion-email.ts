@@ -98,13 +98,13 @@ export function buildCompletionEmailBody(summary: CompletionSummary): string {
         if (a.assigneeName) meta.push(`Assignee: ${escapeHtml(a.assigneeName)}`)
         if (a.deadline) meta.push(`Deadline: ${escapeHtml(a.deadline)}`)
         meta.push(`Status: ${escapeHtml(a.status.replace('_', ' '))}`)
-        meta.push(a.taskCode ? `Task: ${escapeHtml(a.taskCode)}` : 'Task: Not created')
+        meta.push(a.taskCode ? `Task: ${escapeHtml(a.taskCode)}` : 'Task: Belum dibuat')
         return `<li><strong>${escapeHtml(a.title)}</strong><br><span>${meta.join(' · ')}</span></li>`
       })
       .join('')
     parts.push(
       `<h3>Action Items (${summary.actionItems.length}` +
-        (summary.openActionItems > 0 ? ` · ${summary.openActionItems} open` : '') +
+        (summary.openActionItems > 0 ? ` · ${summary.openActionItems} terbuka` : '') +
         `)</h3><ol>${items}</ol>`
     )
   } else {

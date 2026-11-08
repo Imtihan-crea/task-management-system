@@ -38,14 +38,14 @@ export async function emitTaskAssigned(input: {
     key: `task-assigned:${input.taskId}:${input.assigneeId}:${input.stamp}`,
     type: 'TASK_ASSIGNED',
     userIds: [input.assigneeId],
-    title: `Task ${input.taskCode} assigned to you`,
-    message: `"${input.taskTitle}" di ${projectLabel} di-assign kepadamu.`,
+    title: `Task ${input.taskCode} ditugaskan kepada Anda`,
+    message: `"${input.taskTitle}" di ${projectLabel} ditugaskan kepada Anda.`,
     entityType: 'task',
     entityId: input.taskId,
     email: baseUrl
       ? {
-          subject: `[Assigned] ${input.taskCode} ${input.taskTitle}`,
-          html: `<p>Halo,</p><p>Task berikut di-assign kepadamu:</p><ul><li><strong>${h(input.taskCode)} ${h(input.taskTitle)}</strong></li><li><strong>Project:</strong> ${h(projectLabel)}</li></ul><p>Lihat detail:<br><a href="${baseUrl}/tasks/${input.taskId}">${baseUrl}/tasks/${input.taskId}</a></p>`,
+          subject: `[Ditugaskan] ${input.taskCode} ${input.taskTitle}`,
+          html: `<p>Halo,</p><p>Task berikut ditugaskan kepada Anda:</p><ul><li><strong>${h(input.taskCode)} ${h(input.taskTitle)}</strong></li><li><strong>Project:</strong> ${h(projectLabel)}</li></ul><p>Lihat detail:<br><a href="${baseUrl}/tasks/${input.taskId}">${baseUrl}/tasks/${input.taskId}</a></p>`,
           category: 'task',
         }
       : null,

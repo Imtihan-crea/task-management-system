@@ -126,15 +126,15 @@ export async function inviteUser(
   const email = readField(formData, 'email').toLowerCase()
   const role = readField(formData, 'role')
 
-  if (!fullName) return { error: 'Full name is required.' }
-  if (!validEmail(email)) return { error: 'Please enter a valid email address.' }
-  if (!isUserRole(role)) return { error: 'Please choose a valid role.' }
+  if (!fullName) return { error: 'Nama lengkap wajib diisi.' }
+  if (!validEmail(email)) return { error: 'Masukkan alamat Email yang valid.' }
+  if (!isUserRole(role)) return { error: 'Pilih role yang valid.' }
 
   const admin = createAdminClient()
 
   // Cek di profiles
   if (await findProfileByEmail(email)) {
-    return { error: 'A user with this email already exists.' }
+    return { error: 'User dengan Email ini sudah ada.' }
   }
 
   // Cek juga di Supabase Auth. Menghapus baris di tabel `profiles`
@@ -143,7 +143,7 @@ export async function inviteUser(
   if (existingAuthUser) {
     return {
       error:
-        'This email is still registered in Supabase Auth. Delete the user in Supabase Dashboard > Authentication > Users first, then invite again.',
+        'Email ini masih terdaftar di Supabase Auth. Hapus user di Supabase Dashboard > Authentication > Users terlebih dahulu, lalu undang lagi.',
     }
   }
 
@@ -157,7 +157,7 @@ export async function inviteUser(
     console.error('APP_URL missing:', (configError as Error).message)
     return {
       error:
-        'Server is not configured for invitations. Ask your developer to set APP_URL in the deployment platform.',
+        'Server belum dikonfigurasi untuk undangan. Minta developer Anda mengatur APP_URL di platform deployment.',
     }
   }
 
@@ -235,7 +235,7 @@ export async function inviteUser(
 
   if (error) {
     if (/already|registered|exists/i.test(error.message)) {
-      return { error: 'A user with this email already exists.' }
+      return { error: 'User dengan Email ini sudah ada.' }
     }
 
     // Detail teknis tetap dicatat di server log untuk diagnosa.
@@ -254,19 +254,19 @@ export async function inviteUser(
         revalidatePath('/dashboard')
         return {
           success:
-            'User created, but Supabase could not send the email (email limit). Send the invitation link below.',
+            'User berhasil dibuat, tetapi Supabase tidak dapat mengirim Email (batas Email). Kirim Link undangan di bawah.',
           inviteLink: directLink,
         }
       }
 
       // Audit B19: bedakan user gagal dibuat vs link gagal dibuat.
       if (!userCreated) {
-        return { error: 'Unable to create the user. Please try again.' }
+        return { error: 'Tidak dapat membuat user. Silakan coba lagi.' }
       }
       revalidatePath('/users')
       return {
         error:
-          'User created, but the invitation link could not be generated. Open the user and use "New invitation link".',
+          'User berhasil dibuat, tetapi Link undangan tidak dapat dibuat. Buka user lalu gunakan "Link undangan baru".',
       }
     }
 
@@ -275,11 +275,11 @@ export async function inviteUser(
     if (/redirect|not allowed|invalid.*url|uri/i.test(error.message)) {
       return {
         error:
-          'Supabase rejected the application URL. Ask your developer to check the APP_URL and Supabase Redirect URLs settings.',
+          'Supabase menolak URL aplikasi. Minta developer Anda memeriksa pengaturan APP_URL dan Supabase Redirect URLs.',
       }
     }
 
-    return { error: 'Unable to invite user. Please try again.' }
+    return { error: 'Tidak dapat mengundang user. Silakan coba lagi.' }
   }
 
   const userId = data.user?.id
@@ -319,7 +319,7 @@ export async function inviteUser(
     })
   }
 
-  return { success: 'Invitation sent successfully.' }
+  return { success: 'Undangan berhasil dikirim.' }
 }
 
 /* ------------------------------------------------------------------ */
@@ -346,9 +346,9 @@ export async function createUserWithPassword(
   const role = readField(formData, 'role')
   const requireChange = formData.get('require_change') === 'on'
 
-  if (!fullName) return { error: 'Full name is required.' }
-  if (!validEmail(email)) return { error: 'Please enter a valid email address.' }
-  if (!isUserRole(role)) return { error: 'Please choose a valid role.' }
+  if (!fullName) return { error: 'Nama lengkap wajib diisi.' }
+  if (!validEmail(email)) return { error: 'Masukkan alamat Email yang valid.' }
+  if (!isUserRole(role)) return { error: 'Pilih role yang valid.' }
 
   const passwordError = validateAdminPassword(password)
   if (passwordError) return { error: passwordError }
@@ -356,12 +356,12 @@ export async function createUserWithPassword(
   const admin = createAdminClient()
 
   if (await findProfileByEmail(email)) {
-    return { error: 'A user with this email already exists.' }
+    return { error: 'User dengan Email ini sudah ada.' }
   }
   if (await findAuthUserByEmail(email)) {
     return {
       error:
-        'This email is still registered in Supabase Auth. Delete the user in Supabase Dashboard > Authentication > Users first, then create again.',
+        'Email ini masih terdaftar di Supabase Auth. Hapus user di Supabase Dashboard > Authentication > Users terlebih dahulu, lalu buat lagi.',
     }
   }
 
@@ -378,7 +378,7 @@ export async function createUserWithPassword(
     console.error('[create-user] Supabase error:', createError?.message)
 
     if (/already|registered|exists/i.test(createError?.message ?? '')) {
-      return { error: 'A user with this email already exists.' }
+      return { error: 'User dengan Email ini sudah ada.' }
     }
     // Supabase punya minimum password sendiri (default 6). Pesannya jelas,
     // jadi teruskan ke admin daripada pesan generik.
@@ -386,7 +386,7 @@ export async function createUserWithPassword(
     if (/password/i.test(message)) {
       return { error: message }
     }
-    return { error: 'Unable to create user. Please try again.' }
+    return { error: 'Tidak dapat membuat user. Silakan coba lagi.' }
   }
 
   const userId = created.user.id
@@ -451,8 +451,8 @@ export async function createUserWithPassword(
 
   return {
     success: requireChange
-      ? `User created. They must change the password on first login — share the temporary password securely.`
-      : `User created. They can log in immediately with the password you set.`,
+      ? `User berhasil dibuat. User harus mengganti Password saat Login pertama — bagikan Password sementara dengan aman.`
+      : `User berhasil dibuat. User dapat langsung Login dengan Password yang Anda tetapkan.`,
   }
 }
 
@@ -479,9 +479,9 @@ async function deactivationNote(userId: string): Promise<string> {
       .eq('user_id', userId),
   ])
   const parts: string[] = []
-  if (openTasks) parts.push(`${openTasks} open task(s)`)
-  if (pmProjects) parts.push(`PM of ${pmProjects} project(s)`)
-  return parts.length ? ` Still has ${parts.join(' and ')}: please reassign.` : ''
+  if (openTasks) parts.push(`${openTasks} task terbuka`)
+  if (pmProjects) parts.push(`PM di ${pmProjects} Project`)
+  return parts.length ? ` Masih memiliki ${parts.join(' dan ')}: silakan tetapkan ulang.` : ''
 }
 
 export async function updateUser(
@@ -495,10 +495,10 @@ export async function updateUser(
   const role = readField(formData, 'role')
   const status = readField(formData, 'status')
 
-  if (!targetId) return { error: 'User not found.' }
-  if (!fullName) return { error: 'Full name is required.' }
-  if (!isUserRole(role)) return { error: 'Please choose a valid role.' }
-  if (!isUserStatus(status)) return { error: 'Please choose a valid status.' }
+  if (!targetId) return { error: 'User tidak ditemukan.' }
+  if (!fullName) return { error: 'Nama lengkap wajib diisi.' }
+  if (!isUserRole(role)) return { error: 'Pilih role yang valid.' }
+  if (!isUserStatus(status)) return { error: 'Pilih status yang valid.' }
 
   const { data: current, error: readError } = await createAdminClient()
     .from('profiles')
@@ -506,27 +506,27 @@ export async function updateUser(
     .eq('id', targetId)
     .single<{ role: UserRole; status: UserStatus }>()
 
-  if (readError || !current) return { error: 'User not found.' }
+  if (readError || !current) return { error: 'User tidak ditemukan.' }
 
   // Rule 05: admin tidak boleh mengubah status dirinya sendiri (INACTIVE
   // maupun INVITED sama-sama mengunci dia keluar).
   if (targetId === adminProfile.id && status !== current.status) {
-    return { error: 'You cannot change your own status.' }
+    return { error: 'Anda tidak dapat mengubah status Anda sendiri.' }
   }
 
   // INVITED hanya hasil kirim undangan; status lain tidak boleh kembali ke sana.
   if (status === 'INVITED' && current.status !== 'INVITED') {
-    return { error: 'Please choose a valid status.' }
+    return { error: 'Pilih status yang valid.' }
   }
   // Audit A7: user INVITED belum punya password; statusnya hanya berubah
   // lewat /accept-invite.
   if (current.status === 'INVITED' && status !== 'INVITED') {
-    return { error: 'This user has not accepted the invitation yet.' }
+    return { error: 'User ini belum menerima undangan.' }
   }
 
   // Rule 06: sisakan minimal satu active Admin
   if (await wouldRemoveLastAdmin(targetId, role, status)) {
-    return { error: 'At least one active administrator must remain.' }
+    return { error: 'Minimal satu administrator aktif harus tetap ada.' }
   }
 
   const admin = createAdminClient()
@@ -537,7 +537,7 @@ export async function updateUser(
 
   if (error) {
     console.error('updateUser failed:', error.message)
-    return { error: 'Unable to update user.' }
+    return { error: 'Tidak dapat memperbarui user.' }
   }
 
   revalidatePath('/users')
@@ -581,7 +581,7 @@ export async function updateUser(
 
   const note = statusChanged && status === 'INACTIVE' ? await deactivationNote(targetId) : ''
   return {
-    success: (roleChanged ? 'User role updated successfully.' : 'User updated successfully.') + note,
+    success: (roleChanged ? 'Role user berhasil diperbarui.' : 'User berhasil diperbarui.') + note,
   }
 }
 
@@ -598,9 +598,9 @@ export async function setUserStatus(
   const targetId = readField(formData, 'id')
   const status = readField(formData, 'status')
 
-  if (!targetId) return { error: 'User not found.' }
-  if (!isUserStatus(status)) return { error: 'Please choose a valid status.' }
-  if (status === 'INVITED') return { error: 'Status cannot be set to INVITED here.' }
+  if (!targetId) return { error: 'User tidak ditemukan.' }
+  if (!isUserStatus(status)) return { error: 'Pilih status yang valid.' }
+  if (status === 'INVITED') return { error: 'Status tidak dapat diubah menjadi INVITED di sini.' }
 
   const admin = createAdminClient()
 
@@ -610,28 +610,28 @@ export async function setUserStatus(
     .eq('id', targetId)
     .single<{ role: UserRole; status: UserStatus }>()
 
-  if (readError || !current) return { error: 'User not found.' }
+  if (readError || !current) return { error: 'User tidak ditemukan.' }
 
   // Audit A7: lihat updateUser.
   if (current.status === 'INVITED') {
-    return { error: 'This user has not accepted the invitation yet.' }
+    return { error: 'User ini belum menerima undangan.' }
   }
 
   // Rule 05: self-deactivation
   if (targetId === adminProfile.id && status === 'INACTIVE') {
-    return { error: 'You cannot deactivate your own account.' }
+    return { error: 'Anda tidak dapat menonaktifkan akun Anda sendiri.' }
   }
 
   // Rule 06: last active admin
   if (await wouldRemoveLastAdmin(targetId, current.role, status)) {
-    return { error: 'At least one active administrator must remain.' }
+    return { error: 'Minimal satu administrator aktif harus tetap ada.' }
   }
 
   const { error } = await admin.from('profiles').update({ status }).eq('id', targetId)
 
   if (error) {
     console.error('setUserStatus failed:', error.message)
-    return { error: 'Unable to update user.' }
+    return { error: 'Tidak dapat memperbarui user.' }
   }
 
   revalidatePath('/users')
@@ -651,8 +651,8 @@ export async function setUserStatus(
   return {
     success:
       status === 'ACTIVE'
-        ? 'User activated successfully.'
-        : `User deactivated successfully.${await deactivationNote(targetId)}`,
+        ? 'User berhasil diaktifkan.'
+        : `User berhasil dinonaktifkan.${await deactivationNote(targetId)}`,
   }
 }
 
@@ -681,9 +681,9 @@ export async function generateAccessLink(
     .eq('id', targetId)
     .single<{ email: string; status: UserStatus }>()
 
-  if (!target) return { error: 'User not found.' }
+  if (!target) return { error: 'User tidak ditemukan.' }
   if (target.status === 'INACTIVE') {
-    return { error: 'Activate the user first.' }
+    return { error: 'Aktifkan user terlebih dahulu.' }
   }
 
   let baseUrl: string
@@ -691,7 +691,7 @@ export async function generateAccessLink(
     baseUrl = getAppBaseUrl()
   } catch (configError) {
     console.error('APP_URL missing:', (configError as Error).message)
-    return { error: 'Server is not configured for links. Ask your developer to set APP_URL.' }
+    return { error: 'Server belum dikonfigurasi untuk Link. Minta developer Anda mengatur APP_URL.' }
   }
 
   async function tokenFor(type: 'invite' | 'recovery', page: string): Promise<string | null> {
@@ -719,7 +719,7 @@ export async function generateAccessLink(
     if (token) link = `${baseUrl}/reset-password#token_hash=${token}&type=recovery`
   }
 
-  if (!link) return { error: 'Unable to generate the link. Please try again.' }
+  if (!link) return { error: 'Tidak dapat membuat Link. Silakan coba lagi.' }
 
   await logActivity({
     actorUserId: actor.id,
@@ -732,7 +732,7 @@ export async function generateAccessLink(
   })
 
   return {
-    success: kind === 'invite' ? 'New invitation link created.' : 'Password reset link created.',
+    success: kind === 'invite' ? 'Link undangan baru berhasil dibuat.' : 'Link reset Password berhasil dibuat.',
     inviteLink: link,
   }
 }

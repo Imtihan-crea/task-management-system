@@ -16,7 +16,7 @@ export async function POST() {
   } = await supabase.auth.getUser()
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 })
+    return NextResponse.json({ error: 'Tidak diizinkan.' }, { status: 401 })
   }
 
   const { error } = await createAdminClient()
@@ -26,7 +26,7 @@ export async function POST() {
     .eq('is_read', false)
 
   if (error) {
-    return NextResponse.json({ error: 'Failed.' }, { status: 500 })
+    return NextResponse.json({ error: 'Gagal.' }, { status: 500 })
   }
 
   return NextResponse.json({ ok: true })

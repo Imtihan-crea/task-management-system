@@ -29,7 +29,7 @@ cek('admin min = 6', MIN_ADMIN_PASSWORD_LENGTH, 6)
 cek('self min = 8', MIN_SELF_PASSWORD_LENGTH, 8)
 
 /* ---------- password awal dari admin ---------- */
-cek('kosong ditolak', validateAdminPassword(''), 'Password is required.')
+cek('kosong ditolak', validateAdminPassword(''), 'Password wajib diisi.')
 cek('5 karakter ditolak', validateAdminPassword('abcde') !== null, true)
 cek('6 karakter diterima', validateAdminPassword('abcdef'), null)
 cek('20 karakter diterima', validateAdminPassword('x'.repeat(20)), null)
@@ -38,20 +38,20 @@ cek('4 karakter + spasi ditolak (total 5)', validateAdminPassword('abcd ') !== n
 cek('unicode 6 karakter diterima', validateAdminPassword('pässwo'), null)
 
 /* ---------- password baru pilihan user ---------- */
-cek('self kosong ditolak', validateSelfPassword('', ''), 'Password is required.')
+cek('self kosong ditolak', validateSelfPassword('', ''), 'Password wajib diisi.')
 cek('self 7 karakter ditolak', validateSelfPassword('abcdefg', 'abcdefg') !== null, true)
 cek('self 8 karakter ok', validateSelfPassword('abcdefgh', 'abcdefgh'), null)
-cek('self konfirmasi beda ditolak', validateSelfPassword('abcdefgh', 'abcdefgi'), 'Passwords do not match.')
-cek('self konfirmasi kosong ditolak', validateSelfPassword('abcdefgh', ''), 'Passwords do not match.')
+cek('self konfirmasi beda ditolak', validateSelfPassword('abcdefgh', 'abcdefgi'), 'Password tidak cocok.')
+cek('self konfirmasi kosong ditolak', validateSelfPassword('abcdefgh', ''), 'Password tidak cocok.')
 cek('self spasi 8 ok', validateSelfPassword('        ', '        '), null)
 
 // friendlyPasswordError (audit C13)
 const EXP = 'expired'
-cek('sama dengan lama', friendlyPasswordError('New password should be different from the old password.', EXP), 'The new password must be different from your current password.')
+cek('sama dengan lama', friendlyPasswordError('New password should be different from the old password.', EXP), 'Password baru harus berbeda dari Password Anda saat ini.')
 cek('sesi habis', friendlyPasswordError('Auth session missing!', EXP), EXP)
-cek('rate limit', friendlyPasswordError('For security purposes, you can only request this after 30 seconds.', EXP), 'Too many attempts. Please wait a minute and try again.')
-cek('jenis karakter', friendlyPasswordError('Password should contain at least one character of each: abc', EXP), 'Password must mix upper- and lowercase letters, numbers, and symbols.')
-cek('tak dikenal -> generik', friendlyPasswordError('xyz', EXP), 'Unable to change the password. Please try again.')
+cek('rate limit', friendlyPasswordError('For security purposes, you can only request this after 30 seconds.', EXP), 'Terlalu banyak percobaan. Tunggu semenit lalu coba lagi.')
+cek('jenis karakter', friendlyPasswordError('Password should contain at least one character of each: abc', EXP), 'Password harus berisi huruf besar dan kecil, angka, dan simbol.')
+cek('tak dikenal -> generik', friendlyPasswordError('xyz', EXP), 'Tidak dapat mengubah Password. Silakan coba lagi.')
 
 console.log(`LULUS: ${ok}`)
 console.log(`GAGAL: ${gagal}`)

@@ -103,17 +103,17 @@ function validateTaskFields(input: {
   startDate: string
   deadline: string
 }): string | null {
-  if (!input.title) return 'Task name is required.'
-  if (!input.projectId) return 'Project is required.'
-  if (!input.assigneeId) return 'Assignee is required.'
-  if (!isTaskPriority(input.priority)) return 'Please choose a valid priority.'
-  if (!isTaskStatus(input.status)) return 'Please choose a valid status.'
-  if (!input.deadline) return 'Deadline is required.'
+  if (!input.title) return 'Nama Task wajib diisi.'
+  if (!input.projectId) return 'Project wajib diisi.'
+  if (!input.assigneeId) return 'Assignee wajib diisi.'
+  if (!isTaskPriority(input.priority)) return 'Pilih prioritas yang valid.'
+  if (!isTaskStatus(input.status)) return 'Pilih status yang valid.'
+  if (!input.deadline) return 'Deadline wajib diisi.'
   if (!validDate(input.startDate) || !validDate(input.deadline)) {
-    return 'Please enter valid dates.'
+    return 'Masukkan tanggal yang valid.'
   }
   if (input.startDate && input.deadline < input.startDate) {
-    return 'Deadline must be after start date.'
+    return 'Deadline harus setelah tanggal mulai.'
   }
   return null
 }
@@ -147,20 +147,20 @@ export async function createTask(
 
   // Task baru selalu terbuka — DONE/CANCELLED hanya lewat tombol submit.
   if (status === 'DONE' || status === 'CANCELLED') {
-    return { error: 'New tasks cannot be created as done or cancelled.' }
+    return { error: 'Task baru tidak dapat dibuat sebagai DONE atau CANCELLED.' }
   }
 
   // PM hanya boleh buat task di project miliknya.
   if (!(await canManageProjectFor(profile, projectId))) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
   if (await isProjectClosed(projectId)) return { error: CLOSED_PROJECT_ERROR }
 
   if (workstreamId && !(await assertWorkstreamInProject(workstreamId, projectId))) {
-    return { error: 'Workstream does not belong to this project.' }
+    return { error: 'Workstream bukan milik Project ini.' }
   }
   if (!(await assertActiveUser(assigneeId))) {
-    return { error: 'Assignee must be an active user.' }
+    return { error: 'Assignee harus berupa user aktif.' }
   }
 
   const { data: created, error } = await createAdminClient()
@@ -182,7 +182,7 @@ export async function createTask(
 
   if (error || !created) {
     console.error('createTask failed:', error?.message)
-    return { error: 'Unable to create task. Please try again.' }
+    return { error: 'Tidak dapat membuat Task. Silakan coba lagi.' }
   }
 
   // Event: TASK_ASSIGNED → assignee baru (in-app + email).
@@ -215,7 +215,7 @@ export async function createTask(
   revalidatePath('/tasks')
   revalidatePath('/projects')
   revalidatePath(`/projects/${projectId}`)
-  return { success: 'Task created successfully.' }
+  return { success: 'Task berhasil dibuat.' }
 }
 
 export async function updateTask(
@@ -235,7 +235,7 @@ export async function updateTask(
   const startDate = readField(formData, 'start_date')
   const deadline = readField(formData, 'deadline')
 
-  if (!id) return { error: 'Task not found.' }
+  if (!id) return { error: 'Task tidak ditemukan.' }
 
   const fieldError = validateTaskFields({
     title,
@@ -255,11 +255,11 @@ export async function updateTask(
 
   const scope = await assertCanManageTask(id, profile)
   if (!scope.allowed) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
   // Pindah project: PM juga harus PM di project tujuan (sama seperti createTask).
   if (projectId !== scope.projectId && !(await canManageProjectFor(profile, projectId))) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
   // Pindah ke project tertutup ditolak (audit B14).
   if (projectId !== scope.projectId && (await isProjectClosed(projectId))) {
@@ -267,7 +267,7 @@ export async function updateTask(
   }
 
   if (workstreamId && !(await assertWorkstreamInProject(workstreamId, projectId))) {
-    return { error: 'Workstream does not belong to this project.' }
+    return { error: 'Workstream bukan milik Project ini.' }
   }
 
   const adminClient = createAdminClient()
@@ -287,11 +287,11 @@ export async function updateTask(
 
   // Assignee lama yang kini nonaktif boleh tetap; assignee baru wajib aktif (audit C11).
   if (before?.assignee_id !== assigneeId && !(await assertActiveUser(assigneeId))) {
-    return { error: 'Assignee must be an active user.' }
+    return { error: 'Assignee harus berupa user aktif.' }
   }
 
   if (isTerminal && before?.status !== status) {
-    return { error: 'Use the Submit / Cancel buttons below to close a task.' }
+    return { error: 'Gunakan tombol Submit / Batalkan di bawah untuk menutup task.' }
   }
 
   const { data: updated, error } = await adminClient
@@ -317,7 +317,7 @@ export async function updateTask(
 
   if (error || !updated) {
     console.error('updateTask failed:', error?.message)
-    return { error: 'Unable to update task.' }
+    return { error: 'Tidak dapat memperbarui Task.' }
   }
 
   // Catatan: transisi ke DONE tidak mungkin lewat sini (guard di atas
@@ -419,7 +419,7 @@ export async function updateTask(
   revalidatePath(`/tasks/${id}`)
   revalidatePath('/projects')
   revalidatePath(`/projects/${projectId}`)
-  return { success: 'Task updated successfully.' }
+  return { success: 'Task berhasil diperbarui.' }
 }
 
 /**
@@ -433,18 +433,18 @@ export async function changeTaskStatus(
   const profile = await requireProfile()
 
   if (profile.role === 'VIEWER') {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
   const id = readField(formData, 'id')
   const status = readField(formData, 'status')
 
-  if (!id) return { error: 'Task not found.' }
-  if (!isTaskStatus(status)) return { error: 'Please choose a valid status.' }
+  if (!id) return { error: 'Task tidak ditemukan.' }
+  if (!isTaskStatus(status)) return { error: 'Pilih status yang valid.' }
 
   // DONE/CANCELLED hanya lewat tombol submit (ada tanggalnya).
   if (status === 'DONE' || status === 'CANCELLED') {
-    return { error: 'Use the Submit / Cancel buttons below to close a task.' }
+    return { error: 'Gunakan tombol Submit / Batalkan di bawah untuk menutup task.' }
   }
 
   const admin = createAdminClient()
@@ -455,11 +455,11 @@ export async function changeTaskStatus(
     .eq('is_deleted', false)
     .single<{ id: string; assignee_id: string; project_id: string }>()
 
-  if (!task) return { error: 'Task not found.' }
+  if (!task) return { error: 'Task tidak ditemukan.' }
 
   // TEAM_MEMBER: hanya task miliknya. ADMIN/PM: semua dalam scope-nya.
   if (!(await canActOnLoadedTask(profile, task))) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
   // Email notifikasi HANYA saat transisi menjadi DONE.
@@ -470,11 +470,11 @@ export async function changeTaskStatus(
     .eq('is_deleted', false)
     .single<{ status: TaskStatus; title: string; code: string }>()
 
-  if (!before) return { error: 'Task not found.' }
+  if (!before) return { error: 'Task tidak ditemukan.' }
 
   // Task terminal dikunci: buka ulang hanya lewat form edit penuh (PM/Admin).
   if (before.status === 'DONE' || before.status === 'CANCELLED') {
-    return { error: 'This task is locked. Ask a PM or Admin to reopen it.' }
+    return { error: 'Task ini terkunci. Minta PM atau Admin untuk membukanya kembali.' }
   }
 
   const { error } = await admin
@@ -484,7 +484,7 @@ export async function changeTaskStatus(
 
   if (error) {
     console.error('changeTaskStatus failed:', error.message)
-    return { error: 'Unable to update task status.' }
+    return { error: 'Tidak dapat memperbarui status Task.' }
   }
 
   // DONE hanya lewat submitTask (ada email + tanggalnya); jalur ini
@@ -521,7 +521,7 @@ export async function changeTaskStatus(
   revalidatePath(`/tasks/${id}`)
   revalidatePath('/projects')
   revalidatePath(`/projects/${task.project_id}`)
-  return { success: 'Task status updated successfully.' }
+  return { success: 'Status Task berhasil diperbarui.' }
 }
 
 /**
@@ -535,11 +535,11 @@ export async function submitTask(
   const profile = await requireProfile()
 
   if (profile.role === 'VIEWER') {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
   const id = readField(formData, 'id')
-  if (!id) return { error: 'Task not found.' }
+  if (!id) return { error: 'Task tidak ditemukan.' }
 
   const admin = createAdminClient()
   const { data: task } = await admin
@@ -556,15 +556,15 @@ export async function submitTask(
       status: TaskStatus
     }>()
 
-  if (!task) return { error: 'Task not found.' }
+  if (!task) return { error: 'Task tidak ditemukan.' }
 
   if (!(await canActOnLoadedTask(profile, task))) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
-  if (task.status === 'DONE') return { success: 'Task is already submitted.' }
+  if (task.status === 'DONE') return { success: 'Task sudah di-submit.' }
   if (task.status === 'CANCELLED') {
-    return { error: 'Cancelled tasks cannot be submitted.' }
+    return { error: 'Task yang CANCELLED tidak dapat di-submit.' }
   }
 
   const now = new Date().toISOString()
@@ -575,7 +575,7 @@ export async function submitTask(
 
   if (error) {
     console.error('submitTask failed:', error.message)
-    return { error: 'Unable to submit task.' }
+    return { error: 'Tidak dapat men-submit Task.' }
   }
 
   await sendDoneEmail(id)
@@ -599,7 +599,7 @@ export async function submitTask(
   revalidatePath(`/tasks/${id}`)
   revalidatePath('/projects')
   revalidatePath(`/projects/${task.project_id}`)
-  return { success: `Task ${task.code} submitted as done.` }
+  return { success: `Task ${task.code} di-submit sebagai Done.` }
 }
 
 /**
@@ -613,11 +613,11 @@ export async function cancelTask(
   const profile = await requireProfile()
 
   if (profile.role === 'VIEWER') {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
   const id = readField(formData, 'id')
-  if (!id) return { error: 'Task not found.' }
+  if (!id) return { error: 'Task tidak ditemukan.' }
 
   const admin = createAdminClient()
   const { data: task } = await admin
@@ -634,15 +634,15 @@ export async function cancelTask(
       status: TaskStatus
     }>()
 
-  if (!task) return { error: 'Task not found.' }
+  if (!task) return { error: 'Task tidak ditemukan.' }
 
   if (!(await canActOnLoadedTask(profile, task))) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
-  if (task.status === 'CANCELLED') return { success: 'Task is already cancelled.' }
+  if (task.status === 'CANCELLED') return { success: 'Task sudah dibatalkan.' }
   if (task.status === 'DONE') {
-    return { error: 'Done tasks cannot be cancelled. Ask a PM or Admin to reopen it first.' }
+    return { error: 'Task yang sudah Done tidak dapat dibatalkan. Minta PM atau Admin untuk membukanya kembali terlebih dahulu.' }
   }
 
   const now = new Date().toISOString()
@@ -653,7 +653,7 @@ export async function cancelTask(
 
   if (error) {
     console.error('cancelTask failed:', error.message)
-    return { error: 'Unable to cancel task.' }
+    return { error: 'Tidak dapat membatalkan Task.' }
   }
 
   await emitTaskStatusChanged({
@@ -684,7 +684,7 @@ export async function cancelTask(
   revalidatePath(`/tasks/${id}`)
   revalidatePath('/projects')
   revalidatePath(`/projects/${task.project_id}`)
-  return { success: `Task ${task.code} cancelled.` }
+  return { success: `Task ${task.code} dibatalkan.` }
 }
 
 /**
@@ -858,11 +858,11 @@ export async function deleteTask(
   const profile = await requireManager()
 
   const id = readField(formData, 'id')
-  if (!id) return { error: 'Task not found.' }
+  if (!id) return { error: 'Task tidak ditemukan.' }
 
   const scope = await assertCanManageTask(id, profile)
   if (!scope.allowed) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
   // Soft delete: data tetap tersimpan, hilang dari list default.
@@ -875,7 +875,7 @@ export async function deleteTask(
 
   if (error || !deleted) {
     console.error('deleteTask failed:', error?.message)
-    return { error: 'Unable to delete task.' }
+    return { error: 'Tidak dapat menghapus Task.' }
   }
 
   await logActivity({
@@ -891,7 +891,7 @@ export async function deleteTask(
   revalidatePath('/tasks')
   revalidatePath(`/tasks/${id}`)
   revalidatePath('/projects')
-  return { success: 'Task deleted successfully.' }
+  return { success: 'Task berhasil dihapus.' }
 }
 
 /**
@@ -905,17 +905,17 @@ export async function submitEvidence(
   const profile = await requireProfile()
 
   if (profile.role === 'VIEWER') {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
   const id = readField(formData, 'id')
   const evidenceUrl = readField(formData, 'evidence_url')
 
-  if (!id) return { error: 'Task not found.' }
+  if (!id) return { error: 'Task tidak ditemukan.' }
   if (evidenceUrl && !/^https?:\/\/.+/i.test(evidenceUrl)) {
-    return { error: 'Evidence must be a valid link starting with http(s)://.' }
+    return { error: 'Evidence harus berupa Link valid yang diawali http(s)://.' }
   }
-  if (evidenceUrl.length > 2000) return { error: 'Evidence link is too long.' }
+  if (evidenceUrl.length > 2000) return { error: 'Link Evidence terlalu panjang.' }
 
   const admin = createAdminClient()
   const { data: task } = await admin
@@ -925,10 +925,10 @@ export async function submitEvidence(
     .eq('is_deleted', false)
     .single<{ id: string; code: string; title: string; assignee_id: string; project_id: string }>()
 
-  if (!task) return { error: 'Task not found.' }
+  if (!task) return { error: 'Task tidak ditemukan.' }
 
   if (!(await canActOnLoadedTask(profile, task))) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
   const { error } = await admin
@@ -938,7 +938,7 @@ export async function submitEvidence(
 
   if (error) {
     console.error('submitEvidence failed:', error.message)
-    return { error: 'Unable to save evidence.' }
+    return { error: 'Tidak dapat menyimpan Evidence.' }
   }
 
   await logActivity({
@@ -954,5 +954,5 @@ export async function submitEvidence(
   revalidatePath('/tasks')
   revalidatePath(`/tasks/${id}`)
   revalidatePath(`/projects/${task.project_id}`)
-  return { success: 'Evidence saved successfully.' }
+  return { success: 'Evidence berhasil disimpan.' }
 }

@@ -21,8 +21,8 @@ function projectAssignedEmail(
 ): { subject: string; html: string; category: 'task' } | null {
   if (!baseUrl) return null
   return {
-    subject: `[PM] Kamu ditambahkan ke project ${projectCode} ${projectName}`,
-    html: `<p>Halo,</p><p>Kamu ditambahkan sebagai Project Manager di project <strong>${h(projectCode)} ${h(projectName)}</strong>.</p><p>Lihat project:<br><a href="${baseUrl}/projects/${projectId}">${baseUrl}/projects/${projectId}</a></p>`,
+    subject: `[PM] Anda ditambahkan ke project ${projectCode} ${projectName}`,
+    html: `<p>Halo,</p><p>Anda ditambahkan sebagai Project Manager di project <strong>${h(projectCode)} ${h(projectName)}</strong>.</p><p>Lihat project:<br><a href="${baseUrl}/projects/${projectId}">${baseUrl}/projects/${projectId}</a></p>`,
     category: 'task',
   }
 }
@@ -96,17 +96,17 @@ export async function createProject(
   const endDate = readField(formData, 'end_date')
   const status = readField(formData, 'status') || 'PLANNING'
 
-  if (!name) return { error: 'Project name is required.' }
-  if (managerIds.length === 0) return { error: 'At least one project manager is required.' }
-  if (!isProjectStatus(status)) return { error: 'Please choose a valid status.' }
+  if (!name) return { error: 'Nama Project wajib diisi.' }
+  if (managerIds.length === 0) return { error: 'Minimal satu Project Manager wajib dipilih.' }
+  if (!isProjectStatus(status)) return { error: 'Pilih status yang valid.' }
   if (!validDate(startDate) || !validDate(endDate)) {
-    return { error: 'Please enter valid dates.' }
+    return { error: 'Masukkan tanggal yang valid.' }
   }
   if (startDate && endDate && endDate < startDate) {
-    return { error: 'Deadline must be after start date.' }
+    return { error: 'Deadline harus setelah tanggal mulai.' }
   }
   if (!(await assertActiveUsers(managerIds))) {
-    return { error: 'Project managers must be active Admins or Project Managers.' }
+    return { error: 'Project Manager harus berupa Admin atau Project Manager yang aktif.' }
   }
 
   const admin = createAdminClient()
@@ -125,14 +125,14 @@ export async function createProject(
 
   if (error || !project) {
     console.error('createProject failed:', error?.message)
-    return { error: 'Unable to create project. Please try again.' }
+    return { error: 'Tidak dapat membuat Project. Silakan coba lagi.' }
   }
 
   const managerError = await setProjectManagers(project.id, managerIds)
   if (managerError) {
     console.error('setProjectManagers failed:', managerError.message)
     await admin.from('projects').delete().eq('id', project.id)
-    return { error: 'Unable to assign project managers. Please try again.' }
+    return { error: 'Tidak dapat menetapkan Project Manager. Silakan coba lagi.' }
   }
 
   const { data: created } = await admin
@@ -157,8 +157,8 @@ export async function createProject(
     key: `project-assigned:${project.id}:created`,
     type: 'PROJECT_ASSIGNED',
     userIds: managerIds,
-    title: `You are assigned to project ${created?.code ?? ''}`,
-    message: `Kamu ditambahkan sebagai PM di project "${name}".`,
+    title: `Anda ditugaskan ke Project ${created?.code ?? ''}`,
+    message: `Anda ditambahkan sebagai PM di project "${name}".`,
     entityType: 'project',
     entityId: project.id,
     email: projectAssignedEmail(baseUrl, project.id, created?.code ?? '', name),
@@ -166,7 +166,7 @@ export async function createProject(
 
   revalidatePath('/projects')
   revalidatePath('/dashboard')
-  return { success: 'Project created successfully.' }
+  return { success: 'Project berhasil dibuat.' }
 }
 
 export async function updateProject(
@@ -184,21 +184,21 @@ export async function updateProject(
   const endDate = readField(formData, 'end_date')
   const status = readField(formData, 'status')
 
-  if (!id) return { error: 'Project not found.' }
-  if (!name) return { error: 'Project name is required.' }
-  if (managerIds.length === 0) return { error: 'At least one project manager is required.' }
-  if (!isProjectStatus(status)) return { error: 'Please choose a valid status.' }
+  if (!id) return { error: 'Project tidak ditemukan.' }
+  if (!name) return { error: 'Nama Project wajib diisi.' }
+  if (managerIds.length === 0) return { error: 'Minimal satu Project Manager wajib dipilih.' }
+  if (!isProjectStatus(status)) return { error: 'Pilih status yang valid.' }
   if (!validDate(startDate) || !validDate(endDate)) {
-    return { error: 'Please enter valid dates.' }
+    return { error: 'Masukkan tanggal yang valid.' }
   }
   if (startDate && endDate && endDate < startDate) {
-    return { error: 'Deadline must be after start date.' }
+    return { error: 'Deadline harus setelah tanggal mulai.' }
   }
   if (!(await canManageProjectFor(profile, id))) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
   if (!(await assertActiveUsers(managerIds))) {
-    return { error: 'Project managers must be active Admins or Project Managers.' }
+    return { error: 'Project Manager harus berupa Admin atau Project Manager yang aktif.' }
   }
 
   const admin = createAdminClient()
@@ -224,7 +224,7 @@ export async function updateProject(
     oldManagerIds.has(profile.id) &&
     !managerIds.includes(profile.id)
   ) {
-    return { error: 'You cannot remove yourself as project manager. Ask an Admin.' }
+    return { error: 'Anda tidak dapat menghapus diri sendiri sebagai Project Manager. Minta Admin.' }
   }
 
   const { data: updated, error } = await admin
@@ -243,13 +243,13 @@ export async function updateProject(
 
   if (error || !updated) {
     console.error('updateProject failed:', error?.message)
-    return { error: 'Unable to update project.' }
+    return { error: 'Tidak dapat memperbarui Project.' }
   }
 
   const managerError = await setProjectManagers(id, managerIds)
   if (managerError) {
     console.error('setProjectManagers failed:', managerError.message)
-    return { error: 'Project saved, but managers could not be updated.' }
+    return { error: 'Project tersimpan, tetapi Project Manager tidak dapat diperbarui.' }
   }
 
   // Event: status berubah → in-app ke semua PM (email Optional → skip).
@@ -276,8 +276,8 @@ export async function updateProject(
       key: `project-assigned:${id}:${newManagers.sort().join(',')}:${updated.updated_at}`,
       type: 'PROJECT_ASSIGNED',
       userIds: newManagers,
-      title: `You are assigned to project ${before?.code ?? ''}`,
-      message: `Kamu ditambahkan sebagai PM di project "${name}".`,
+      title: `Anda ditugaskan ke Project ${before?.code ?? ''}`,
+      message: `Anda ditambahkan sebagai PM di project "${name}".`,
       entityType: 'project',
       entityId: id,
       email: projectAssignedEmail(baseUrl, id, before?.code ?? '', name),
@@ -321,5 +321,5 @@ export async function updateProject(
   revalidatePath('/projects')
   revalidatePath(`/projects/${id}`)
   revalidatePath('/dashboard')
-  return { success: 'Project updated successfully.' }
+  return { success: 'Project berhasil diperbarui.' }
 }

@@ -73,12 +73,12 @@ export async function assertCanCreateInProject(
     .select('id')
     .eq('id', projectId)
     .maybeSingle<{ id: string }>()
-  if (!project) return 'Project not found.'
+  if (!project) return 'Project tidak ditemukan.'
 
   if (role === 'ADMIN') return null
   if (role === 'PROJECT_MANAGER') {
     if (await isProjectManager(projectId, userId)) return null
-    return 'You do not have permission to perform this action.'
+    return 'Anda tidak punya izin untuk melakukan aksi ini.'
   }
   // TEAM_MEMBER: project yang ia ikuti (punya task aktif di sana).
   const { data: task } = await admin
@@ -89,6 +89,6 @@ export async function assertCanCreateInProject(
     .eq('is_deleted', false)
     .limit(1)
     .maybeSingle<{ id: string }>()
-  if (!task) return 'You do not have access to this project.'
+  if (!task) return 'Anda tidak punya akses ke Project ini.'
   return null
 }

@@ -27,10 +27,10 @@ export async function createWorkstream(
   const name = readField(formData, 'name')
   const description = readField(formData, 'description')
 
-  if (!projectId) return { error: 'Project is required.' }
-  if (!name) return { error: 'Workstream name is required.' }
+  if (!projectId) return { error: 'Project wajib diisi.' }
+  if (!name) return { error: 'Nama Workstream wajib diisi.' }
   if (!(await canManageProjectFor(profile, projectId))) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
   const { data: created, error } = await createAdminClient()
@@ -45,7 +45,7 @@ export async function createWorkstream(
 
   if (error || !created) {
     console.error('createWorkstream failed:', error?.message)
-    return { error: 'Unable to create workstream. Please try again.' }
+    return { error: 'Tidak dapat membuat Workstream. Silakan coba lagi.' }
   }
 
   await logActivity({
@@ -60,7 +60,7 @@ export async function createWorkstream(
 
   revalidatePath('/projects')
   revalidatePath(`/projects/${projectId}`)
-  return { success: 'Workstream created successfully.' }
+  return { success: 'Workstream berhasil dibuat.' }
 }
 
 export async function updateWorkstream(
@@ -73,8 +73,8 @@ export async function updateWorkstream(
   const name = readField(formData, 'name')
   const description = readField(formData, 'description')
 
-  if (!id) return { error: 'Workstream not found.' }
-  if (!name) return { error: 'Workstream name is required.' }
+  if (!id) return { error: 'Workstream tidak ditemukan.' }
+  if (!name) return { error: 'Nama Workstream wajib diisi.' }
 
   const admin = createAdminClient()
   const { data: current } = await admin
@@ -83,9 +83,9 @@ export async function updateWorkstream(
     .eq('id', id)
     .single<{ project_id: string; code: string }>()
 
-  if (!current) return { error: 'Workstream not found.' }
+  if (!current) return { error: 'Workstream tidak ditemukan.' }
   if (!(await canManageProjectFor(profile, current.project_id))) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
   const { error } = await admin
@@ -95,7 +95,7 @@ export async function updateWorkstream(
 
   if (error) {
     console.error('updateWorkstream failed:', error.message)
-    return { error: 'Unable to update workstream.' }
+    return { error: 'Tidak dapat memperbarui Workstream.' }
   }
 
   await logActivity({
@@ -110,7 +110,7 @@ export async function updateWorkstream(
 
   revalidatePath('/projects')
   revalidatePath(`/projects/${current.project_id}`)
-  return { success: 'Workstream updated successfully.' }
+  return { success: 'Workstream berhasil diperbarui.' }
 }
 
 export async function deleteWorkstream(
@@ -120,7 +120,7 @@ export async function deleteWorkstream(
   const profile = await requireManager()
 
   const id = readField(formData, 'id')
-  if (!id) return { error: 'Workstream not found.' }
+  if (!id) return { error: 'Workstream tidak ditemukan.' }
 
   const admin = createAdminClient()
   const { data: current } = await admin
@@ -129,9 +129,9 @@ export async function deleteWorkstream(
     .eq('id', id)
     .single<{ project_id: string; code: string; name: string }>()
 
-  if (!current) return { error: 'Workstream not found.' }
+  if (!current) return { error: 'Workstream tidak ditemukan.' }
   if (!(await canManageProjectFor(profile, current.project_id))) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
   // Jangan hapus workstream yang sudah memiliki task (non-deleted).
@@ -143,7 +143,7 @@ export async function deleteWorkstream(
 
   if ((count ?? 0) > 0) {
     return {
-      error: 'Workstream already has tasks and cannot be deleted. Move the tasks first.',
+      error: 'Workstream ini masih memiliki task dan tidak dapat dihapus. Pindahkan task terlebih dahulu.',
     }
   }
 
@@ -151,7 +151,7 @@ export async function deleteWorkstream(
 
   if (error) {
     console.error('deleteWorkstream failed:', error.message)
-    return { error: 'Unable to delete workstream.' }
+    return { error: 'Tidak dapat menghapus Workstream.' }
   }
 
   await logActivity({
@@ -166,5 +166,5 @@ export async function deleteWorkstream(
 
   revalidatePath('/projects')
   revalidatePath(`/projects/${current.project_id}`)
-  return { success: 'Workstream deleted successfully.' }
+  return { success: 'Workstream berhasil dihapus.' }
 }

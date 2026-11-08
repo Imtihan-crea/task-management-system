@@ -14,7 +14,7 @@ export async function GET() {
   } = await supabase.auth.getUser()
 
   if (!user) {
-    return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 })
+    return NextResponse.json({ error: 'Tidak diizinkan.' }, { status: 401 })
   }
 
   const [{ count }, { data: recent }] = await Promise.all([

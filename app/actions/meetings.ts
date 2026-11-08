@@ -254,7 +254,7 @@ async function notifyContentChange(input: {
 }
 
 async function projectLabel(projectId: string | null): Promise<string> {
-  if (!projectId) return 'Global meeting (tanpa project)'
+  if (!projectId) return 'Meeting global (tanpa project)'
   const { data } = await createAdminClient()
     .from('projects')
     .select('code, name')
@@ -271,16 +271,16 @@ function validateMeetingFields(input: {
   startTime: string
   endTime: string
 }): string | null {
-  if (!input.title) return 'Meeting title is required.'
-  if (!isMeetingType(input.meetingType)) return 'Please choose a valid meeting type.'
+  if (!input.title) return 'Judul Meeting wajib diisi.'
+  if (!isMeetingType(input.meetingType)) return 'Pilih tipe Meeting yang valid.'
   if (!input.meetingDate || !validDate(input.meetingDate)) {
-    return 'Please enter a valid date.'
+    return 'Masukkan tanggal yang valid.'
   }
   if (!input.startTime || !validTime(input.startTime)) {
-    return 'Please enter a valid start time.'
+    return 'Masukkan jam mulai yang valid.'
   }
   if (!input.endTime || !validTime(input.endTime)) {
-    return 'Please enter a valid end time.'
+    return 'Masukkan jam selesai yang valid.'
   }
   // Bandingkan sebagai menit (format HH:MM tidak bisa dibandingkan string
   // kalau tanpa nol depan, mis. "9:00" > "10:00" secara string).
@@ -289,7 +289,7 @@ function validateMeetingFields(input: {
     return Number(m[1]) * 60 + Number(m[2])
   }
   if (toMin(input.endTime) <= toMin(input.startTime)) {
-    return 'End time must be after start time.'
+    return 'Jam selesai harus setelah jam mulai.'
   }
   return null
 }
@@ -305,7 +305,7 @@ export async function createMeeting(
   const profile = await requireProfile()
 
   if (!can(profile.role, 'meetings.create')) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
   const title = readField(formData, 'title')
@@ -331,7 +331,7 @@ export async function createMeeting(
   if (fieldError) return { error: fieldError }
 
   if (meetingLink && !/^https?:\/\/.+/i.test(meetingLink)) {
-    return { error: 'Meeting link must start with http(s)://.' }
+    return { error: 'Link Meeting harus diawali http(s)://.' }
   }
 
   // Project: kalau diisi (atau terkunci dari ?project=), validasi scope.
@@ -342,16 +342,16 @@ export async function createMeeting(
 
   // Organizer harus user aktif. Member biasa tidak bisa menunjuk orang lain.
   if (!(await assertActiveUser(organizerId))) {
-    return { error: 'Organizer must be an active user.' }
+    return { error: 'Organizer harus berupa user aktif.' }
   }
   if (profile.role === 'TEAM_MEMBER' && organizerId !== profile.id) {
-    return { error: 'You can only organize your own meeting.' }
+    return { error: 'Anda hanya dapat menjadi Organizer Meeting Anda sendiri.' }
   }
 
   // Peserta harus user aktif semua.
   for (const pid of participantIds) {
     if (!(await assertActiveUser(pid))) {
-      return { error: 'All participants must be active users.' }
+      return { error: 'Semua peserta harus berupa user aktif.' }
     }
   }
 
@@ -381,7 +381,7 @@ export async function createMeeting(
 
   if (error || !created) {
     console.error('createMeeting failed:', error?.message)
-    return { error: 'Unable to create meeting. Please try again.' }
+    return { error: 'Tidak dapat membuat Meeting. Silakan coba lagi.' }
   }
 
   // Organizer otomatis jadi peserta (is_organizer). Duplikat diabaikan.
@@ -417,7 +417,7 @@ export async function createMeeting(
 
   revalidateMeeting(created.id, projectId || null)
   return {
-    success: `Meeting ${created.code} created as draft. Schedule it to send invitations.`,
+    success: `Meeting ${created.code} dibuat sebagai DRAFT. Jadwalkan Meeting untuk mengirim undangan.`,
   }
 }
 
@@ -428,17 +428,17 @@ export async function updateMeeting(
   const profile = await requireProfile()
 
   const id = readField(formData, 'id')
-  if (!id) return { error: 'Meeting not found.' }
+  if (!id) return { error: 'Meeting tidak ditemukan.' }
 
   const access = await getMeetingAccess(id, profile.id, profile.role)
   if (!access.meeting || !canManageMeetingFull(access, profile.role)) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
   // COMPLETED/CANCELLED adalah historical record (§13): field inti dikunci.
   // Notes tetap bisa diubah lewat updateNotes.
   if (access.meeting.status === 'COMPLETED' || access.meeting.status === 'CANCELLED') {
-    return { error: 'Completed or cancelled meetings cannot be edited.' }
+    return { error: 'Meeting yang COMPLETED atau CANCELLED tidak dapat diubah.' }
   }
 
   const title = readField(formData, 'title')
@@ -462,7 +462,7 @@ export async function updateMeeting(
   if (fieldError) return { error: fieldError }
 
   if (meetingLink && !/^https?:\/\/.+/i.test(meetingLink)) {
-    return { error: 'Meeting link must start with http(s)://.' }
+    return { error: 'Link Meeting harus diawali http(s)://.' }
   }
 
   // Ganti organizer hanya boleh ADMIN/PM. Member tidak bisa mengalihkan
@@ -471,10 +471,10 @@ export async function updateMeeting(
   const wantOrganizer = readField(formData, 'organizer_id')
   if (wantOrganizer && wantOrganizer !== organizerId) {
     if (profile.role !== 'ADMIN' && profile.role !== 'PROJECT_MANAGER') {
-      return { error: 'You do not have permission to perform this action.' }
+      return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
     }
     if (!(await assertActiveUser(wantOrganizer))) {
-      return { error: 'Organizer must be an active user.' }
+      return { error: 'Organizer harus berupa user aktif.' }
     }
     organizerId = wantOrganizer
   }
@@ -499,7 +499,7 @@ export async function updateMeeting(
 
   if (error || !updated) {
     console.error('updateMeeting failed:', error?.message)
-    return { error: 'Unable to update meeting.' }
+    return { error: 'Tidak dapat memperbarui Meeting.' }
   }
 
   const label = await projectLabel(access.meeting.project_id)
@@ -512,8 +512,8 @@ export async function updateMeeting(
       code: updated.code,
       title,
       projectLabel: label,
-      headline: `Meeting ${updated.code} updated: ${title}`,
-      emailSubject: `[Meeting Updated] ${updated.code} ${title}`,
+      headline: `Meeting ${updated.code} diperbarui: ${title}`,
+      emailSubject: `[Meeting Diperbarui] ${updated.code} ${title}`,
       emailBody: 'Meeting berikut diperbarui:',
     })
   }
@@ -529,7 +529,7 @@ export async function updateMeeting(
   })
 
   revalidateMeeting(id, access.meeting.project_id)
-  return { success: 'Meeting updated successfully.' }
+  return { success: 'Meeting berhasil diperbarui.' }
 }
 
 /** DRAFT -> SCHEDULED (§13). */
@@ -540,14 +540,14 @@ export async function scheduleMeeting(
   const profile = await requireProfile()
 
   const id = readField(formData, 'id')
-  if (!id) return { error: 'Meeting not found.' }
+  if (!id) return { error: 'Meeting tidak ditemukan.' }
 
   const access = await getMeetingAccess(id, profile.id, profile.role)
   if (!access.meeting || !canManageMeetingFull(access, profile.role)) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
   if (access.meeting.status !== 'DRAFT') {
-    return { error: 'Only draft meetings can be scheduled.' }
+    return { error: 'Hanya Meeting DRAFT yang dapat dijadwalkan.' }
   }
 
   const { data: updated, error } = await createAdminClient()
@@ -560,7 +560,7 @@ export async function scheduleMeeting(
 
   if (error || !updated) {
     console.error('scheduleMeeting failed:', error?.message)
-    return { error: 'Unable to schedule meeting.' }
+    return { error: 'Tidak dapat menjadwalkan Meeting.' }
   }
 
   // Undangan ke semua peserta saat DRAFT -> SCHEDULED (audit B6).
@@ -571,8 +571,8 @@ export async function scheduleMeeting(
     code: updated.code,
     title: access.meeting.title,
     projectLabel: await projectLabel(access.meeting.project_id),
-    headline: `You are invited to ${updated.code}: ${access.meeting.title}`,
-    emailSubject: `[Meeting Invitation] ${updated.code} ${access.meeting.title}`,
+    headline: `Anda diundang ke ${updated.code}: ${access.meeting.title}`,
+    emailSubject: `[Undangan Meeting] ${updated.code} ${access.meeting.title}`,
     emailBody: 'Anda diundang ke meeting berikut:',
   })
 
@@ -587,7 +587,7 @@ export async function scheduleMeeting(
   })
 
   revalidateMeeting(id, access.meeting.project_id)
-  return { success: `Meeting ${updated.code} scheduled successfully.` }
+  return { success: `Meeting ${updated.code} berhasil dijadwalkan.` }
 }
 
 /** SCHEDULED -> COMPLETED (§41). Ringkasan post-meeting ditampilkan di UI. */
@@ -598,14 +598,14 @@ export async function completeMeeting(
   const profile = await requireProfile()
 
   const id = readField(formData, 'id')
-  if (!id) return { error: 'Meeting not found.' }
+  if (!id) return { error: 'Meeting tidak ditemukan.' }
 
   const access = await getMeetingAccess(id, profile.id, profile.role)
   if (!access.meeting || !canManageMeetingFull(access, profile.role)) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
   if (access.meeting.status !== 'SCHEDULED') {
-    return { error: 'Only scheduled meetings can be completed.' }
+    return { error: 'Hanya Meeting SCHEDULED yang dapat diselesaikan.' }
   }
 
   const { data: updated, error } = await createAdminClient()
@@ -618,7 +618,7 @@ export async function completeMeeting(
 
   if (error || !updated) {
     console.error('completeMeeting failed:', error?.message)
-    return { error: 'Unable to complete meeting.' }
+    return { error: 'Tidak dapat menyelesaikan Meeting.' }
   }
 
   const label = await projectLabel(access.meeting.project_id)
@@ -688,7 +688,7 @@ export async function completeMeeting(
     code: updated.code,
     title: access.meeting.title,
     projectLabel: label,
-    headline: `Meeting ${updated.code} completed: ${access.meeting.title}`,
+    headline: `Meeting ${updated.code} selesai: ${access.meeting.title}`,
     emailSubject: `[Meeting Completed] ${updated.code} ${access.meeting.title}`,
     emailBody: 'Meeting berikut telah selesai.',
     emailHtml: completionHtml,
@@ -705,7 +705,7 @@ export async function completeMeeting(
   })
 
   revalidateMeeting(id, access.meeting.project_id)
-  return { success: `Meeting ${updated.code} completed.` }
+  return { success: `Meeting ${updated.code} selesai.` }
 }
 
 /** DRAFT/SCHEDULED -> CANCELLED. COMPLETED tidak bisa dibatalkan. */
@@ -716,14 +716,14 @@ export async function cancelMeeting(
   const profile = await requireProfile()
 
   const id = readField(formData, 'id')
-  if (!id) return { error: 'Meeting not found.' }
+  if (!id) return { error: 'Meeting tidak ditemukan.' }
 
   const access = await getMeetingAccess(id, profile.id, profile.role)
   if (!access.meeting || !canManageMeetingFull(access, profile.role)) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
   if (access.meeting.status !== 'DRAFT' && access.meeting.status !== 'SCHEDULED') {
-    return { error: 'Only draft or scheduled meetings can be cancelled.' }
+    return { error: 'Hanya Meeting DRAFT atau SCHEDULED yang dapat dibatalkan.' }
   }
 
   const { data: updated, error } = await createAdminClient()
@@ -736,7 +736,7 @@ export async function cancelMeeting(
 
   if (error || !updated) {
     console.error('cancelMeeting failed:', error?.message)
-    return { error: 'Unable to cancel meeting.' }
+    return { error: 'Tidak dapat membatalkan Meeting.' }
   }
 
   const label = await projectLabel(access.meeting.project_id)
@@ -749,7 +749,7 @@ export async function cancelMeeting(
       code: updated.code,
       title: access.meeting.title,
       projectLabel: label,
-      headline: `Meeting ${updated.code} cancelled: ${access.meeting.title}`,
+      headline: `Meeting ${updated.code} dibatalkan: ${access.meeting.title}`,
       emailSubject: `[Meeting Cancelled] ${updated.code} ${access.meeting.title}`,
       emailBody: 'Meeting berikut dibatalkan:',
     })
@@ -769,7 +769,7 @@ export async function cancelMeeting(
   })
 
   revalidateMeeting(id, access.meeting.project_id)
-  return { success: `Meeting ${updated.code} cancelled.` }
+  return { success: `Meeting ${updated.code} dibatalkan.` }
 }
 
 /**
@@ -785,14 +785,14 @@ export async function updateMeetingNotes(
 
   const id = readField(formData, 'id')
   const notes = readField(formData, 'notes')
-  if (!id) return { error: 'Meeting not found.' }
+  if (!id) return { error: 'Meeting tidak ditemukan.' }
 
   const access = await getMeetingAccess(id, profile.id, profile.role)
   if (!access.meeting || !canManageMeetingContent(access, profile.role)) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
   if (access.meeting.status === 'CANCELLED') {
-    return { error: 'Cancelled meetings cannot be edited.' }
+    return { error: 'Meeting yang CANCELLED tidak dapat diubah.' }
   }
 
   const { error } = await createAdminClient()
@@ -802,7 +802,7 @@ export async function updateMeetingNotes(
 
   if (error) {
     console.error('updateMeetingNotes failed:', error.message)
-    return { error: 'Unable to save notes.' }
+    return { error: 'Tidak dapat menyimpan Notes.' }
   }
 
   await logActivity({
@@ -825,12 +825,12 @@ export async function updateMeetingNotes(
     code: access.meeting.code,
     title: access.meeting.title,
     projectId: access.meeting.project_id,
-    headline: `Notes updated in ${access.meeting.code}`,
+    headline: `Notes diperbarui di ${access.meeting.code}`,
     keySuffix: 'notes',
   })
 
   revalidateMeeting(id, access.meeting.project_id)
-  return { success: 'Notes saved successfully.' }
+  return { success: 'Notes berhasil disimpan.' }
 }
 
 /* ============================================================================
@@ -846,12 +846,12 @@ export async function createAgenda(
   const meetingId = readField(formData, 'meeting_id')
   const title = readField(formData, 'title')
   const notes = readField(formData, 'notes')
-  if (!meetingId) return { error: 'Meeting not found.' }
-  if (!title) return { error: 'Agenda title is required.' }
+  if (!meetingId) return { error: 'Meeting tidak ditemukan.' }
+  if (!title) return { error: 'Judul Agenda wajib diisi.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
   if (!access.meeting || !canManageMeetingContent(access, profile.role)) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
   const admin = createAdminClient()
@@ -872,7 +872,7 @@ export async function createAgenda(
 
   if (error) {
     console.error('createAgenda failed:', error.message)
-    return { error: 'Unable to add agenda.' }
+    return { error: 'Tidak dapat menambah Agenda.' }
   }
 
   await logActivity({
@@ -890,12 +890,12 @@ export async function createAgenda(
     code: access.meeting.code,
     title: access.meeting.title,
     projectId: access.meeting.project_id,
-    headline: `Agenda added in ${access.meeting.code}`,
+    headline: `Agenda ditambahkan di ${access.meeting.code}`,
     keySuffix: 'agenda-added',
   })
 
   revalidateMeeting(meetingId, access.meeting.project_id)
-  return { success: 'Agenda added successfully.' }
+  return { success: 'Agenda berhasil ditambahkan.' }
 }
 
 export async function updateAgenda(
@@ -908,12 +908,12 @@ export async function updateAgenda(
   const meetingId = readField(formData, 'meeting_id')
   const title = readField(formData, 'title')
   const notes = readField(formData, 'notes')
-  if (!id || !meetingId) return { error: 'Agenda not found.' }
-  if (!title) return { error: 'Agenda title is required.' }
+  if (!id || !meetingId) return { error: 'Agenda tidak ditemukan.' }
+  if (!title) return { error: 'Judul Agenda wajib diisi.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
   if (!access.meeting || !canManageMeetingContent(access, profile.role)) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
   const { error } = await createAdminClient()
@@ -924,7 +924,7 @@ export async function updateAgenda(
 
   if (error) {
     console.error('updateAgenda failed:', error.message)
-    return { error: 'Unable to update agenda.' }
+    return { error: 'Tidak dapat memperbarui Agenda.' }
   }
 
   await notifyContentChange({
@@ -932,12 +932,12 @@ export async function updateAgenda(
     code: access.meeting.code,
     title: access.meeting.title,
     projectId: access.meeting.project_id,
-    headline: `Agenda updated in ${access.meeting.code}`,
+    headline: `Agenda diperbarui di ${access.meeting.code}`,
     keySuffix: `agenda-${id}`,
   })
 
   revalidateMeeting(meetingId, access.meeting.project_id)
-  return { success: 'Agenda updated successfully.' }
+  return { success: 'Agenda berhasil diperbarui.' }
 }
 
 export async function deleteAgenda(
@@ -948,11 +948,11 @@ export async function deleteAgenda(
 
   const id = readField(formData, 'id')
   const meetingId = readField(formData, 'meeting_id')
-  if (!id || !meetingId) return { error: 'Agenda not found.' }
+  if (!id || !meetingId) return { error: 'Agenda tidak ditemukan.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
   if (!access.meeting || !canManageMeetingContent(access, profile.role)) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
   const { error } = await createAdminClient()
@@ -963,7 +963,7 @@ export async function deleteAgenda(
 
   if (error) {
     console.error('deleteAgenda failed:', error.message)
-    return { error: 'Unable to delete agenda.' }
+    return { error: 'Tidak dapat menghapus Agenda.' }
   }
 
   await notifyContentChange({
@@ -971,12 +971,12 @@ export async function deleteAgenda(
     code: access.meeting.code,
     title: access.meeting.title,
     projectId: access.meeting.project_id,
-    headline: `Agenda removed in ${access.meeting.code}`,
+    headline: `Agenda dihapus di ${access.meeting.code}`,
     keySuffix: `agenda-del-${id}`,
   })
 
   revalidateMeeting(meetingId, access.meeting.project_id)
-  return { success: 'Agenda deleted successfully.' }
+  return { success: 'Agenda berhasil dihapus.' }
 }
 
 /** Reorder: terima daftar id berurutan, tulis ulang position 0..n. */
@@ -988,11 +988,11 @@ export async function reorderAgendas(
 
   const meetingId = readField(formData, 'meeting_id')
   const orderedIds = readList(formData, 'ordered_ids')
-  if (!meetingId || orderedIds.length === 0) return { error: 'Nothing to reorder.' }
+  if (!meetingId || orderedIds.length === 0) return { error: 'Tidak ada yang perlu diurutkan ulang.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
   if (!access.meeting || !canManageMeetingContent(access, profile.role)) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
   const admin = createAdminClient()
@@ -1002,7 +1002,7 @@ export async function reorderAgendas(
     .eq('meeting_id', meetingId)
   const validIds = new Set(((rows ?? []) as { id: string }[]).map((r) => r.id))
   if (!orderedIds.every((v) => validIds.has(v)) || orderedIds.length !== validIds.size) {
-    return { error: 'Invalid agenda order.' }
+    return { error: 'Urutan Agenda tidak valid.' }
   }
 
   for (let i = 0; i < orderedIds.length; i++) {
@@ -1013,7 +1013,7 @@ export async function reorderAgendas(
       .eq('meeting_id', meetingId)
     if (error) {
       console.error('reorderAgendas failed:', error.message)
-      return { error: 'Unable to reorder agenda.' }
+      return { error: 'Tidak dapat mengurutkan ulang Agenda.' }
     }
   }
 
@@ -1022,12 +1022,12 @@ export async function reorderAgendas(
     code: access.meeting.code,
     title: access.meeting.title,
     projectId: access.meeting.project_id,
-    headline: `Agenda reordered in ${access.meeting.code}`,
+    headline: `Agenda diurutkan ulang di ${access.meeting.code}`,
     keySuffix: 'agenda-reorder',
   })
 
   revalidateMeeting(meetingId, access.meeting.project_id)
-  return { success: 'Agenda order saved successfully.' }
+  return { success: 'Urutan Agenda berhasil disimpan.' }
 }
 
 /* ============================================================================
@@ -1043,12 +1043,12 @@ export async function createDecision(
   const meetingId = readField(formData, 'meeting_id')
   const decision = readField(formData, 'decision')
   const rationale = readField(formData, 'rationale')
-  if (!meetingId) return { error: 'Meeting not found.' }
-  if (!decision) return { error: 'Decision is required.' }
+  if (!meetingId) return { error: 'Meeting tidak ditemukan.' }
+  if (!decision) return { error: 'Decision wajib diisi.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
   if (!access.meeting || !canManageMeetingContent(access, profile.role)) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
   const admin = createAdminClient()
@@ -1070,7 +1070,7 @@ export async function createDecision(
 
   if (error) {
     console.error('createDecision failed:', error.message)
-    return { error: 'Unable to add decision.' }
+    return { error: 'Tidak dapat menambah Decision.' }
   }
 
   await logActivity({
@@ -1088,12 +1088,12 @@ export async function createDecision(
     code: access.meeting.code,
     title: access.meeting.title,
     projectId: access.meeting.project_id,
-    headline: `Decision added in ${access.meeting.code}`,
+    headline: `Decision ditambahkan di ${access.meeting.code}`,
     keySuffix: 'decision-added',
   })
 
   revalidateMeeting(meetingId, access.meeting.project_id)
-  return { success: 'Decision added successfully.' }
+  return { success: 'Decision berhasil ditambahkan.' }
 }
 
 export async function updateDecision(
@@ -1106,12 +1106,12 @@ export async function updateDecision(
   const meetingId = readField(formData, 'meeting_id')
   const decision = readField(formData, 'decision')
   const rationale = readField(formData, 'rationale')
-  if (!id || !meetingId) return { error: 'Decision not found.' }
-  if (!decision) return { error: 'Decision is required.' }
+  if (!id || !meetingId) return { error: 'Decision tidak ditemukan.' }
+  if (!decision) return { error: 'Decision wajib diisi.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
   if (!access.meeting || !canManageMeetingContent(access, profile.role)) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
   const { error } = await createAdminClient()
@@ -1122,7 +1122,7 @@ export async function updateDecision(
 
   if (error) {
     console.error('updateDecision failed:', error.message)
-    return { error: 'Unable to update decision.' }
+    return { error: 'Tidak dapat memperbarui Decision.' }
   }
 
   await notifyContentChange({
@@ -1130,12 +1130,12 @@ export async function updateDecision(
     code: access.meeting.code,
     title: access.meeting.title,
     projectId: access.meeting.project_id,
-    headline: `Decision updated in ${access.meeting.code}`,
+    headline: `Decision diperbarui di ${access.meeting.code}`,
     keySuffix: `decision-${id}`,
   })
 
   revalidateMeeting(meetingId, access.meeting.project_id)
-  return { success: 'Decision updated successfully.' }
+  return { success: 'Decision berhasil diperbarui.' }
 }
 
 export async function deleteDecision(
@@ -1146,11 +1146,11 @@ export async function deleteDecision(
 
   const id = readField(formData, 'id')
   const meetingId = readField(formData, 'meeting_id')
-  if (!id || !meetingId) return { error: 'Decision not found.' }
+  if (!id || !meetingId) return { error: 'Decision tidak ditemukan.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
   if (!access.meeting || !canManageMeetingContent(access, profile.role)) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
   const { error } = await createAdminClient()
@@ -1161,7 +1161,7 @@ export async function deleteDecision(
 
   if (error) {
     console.error('deleteDecision failed:', error.message)
-    return { error: 'Unable to delete decision.' }
+    return { error: 'Tidak dapat menghapus Decision.' }
   }
 
   await notifyContentChange({
@@ -1169,12 +1169,12 @@ export async function deleteDecision(
     code: access.meeting.code,
     title: access.meeting.title,
     projectId: access.meeting.project_id,
-    headline: `Decision removed in ${access.meeting.code}`,
+    headline: `Decision dihapus di ${access.meeting.code}`,
     keySuffix: `decision-del-${id}`,
   })
 
   revalidateMeeting(meetingId, access.meeting.project_id)
-  return { success: 'Decision deleted successfully.' }
+  return { success: 'Decision berhasil dihapus.' }
 }
 
 /* ============================================================================
@@ -1193,20 +1193,20 @@ export async function createActionItem(
   const assigneeId = readField(formData, 'assignee_id')
   const deadline = readField(formData, 'deadline')
   const priority = readField(formData, 'priority') || 'MEDIUM'
-  if (!meetingId) return { error: 'Meeting not found.' }
-  if (!title) return { error: 'Action item title is required.' }
+  if (!meetingId) return { error: 'Meeting tidak ditemukan.' }
+  if (!title) return { error: 'Judul Action Item wajib diisi.' }
   if (priority !== '' && !isTaskPriority(priority)) {
-    return { error: 'Please choose a valid priority.' }
+    return { error: 'Pilih prioritas yang valid.' }
   }
-  if (deadline && !validDate(deadline)) return { error: 'Please enter a valid deadline.' }
+  if (deadline && !validDate(deadline)) return { error: 'Masukkan Deadline yang valid.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
   if (!access.meeting || !canManageMeetingContent(access, profile.role)) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
   if (assigneeId && !(await assertActiveUser(assigneeId))) {
-    return { error: 'Assignee must be an active user.' }
+    return { error: 'Assignee harus berupa user aktif.' }
   }
 
   const { error } = await createAdminClient().from('meeting_action_items').insert({
@@ -1222,7 +1222,7 @@ export async function createActionItem(
 
   if (error) {
     console.error('createActionItem failed:', error.message)
-    return { error: 'Unable to add action item.' }
+    return { error: 'Tidak dapat menambah Action Item.' }
   }
 
   await logActivity({
@@ -1240,12 +1240,12 @@ export async function createActionItem(
     code: access.meeting.code,
     title: access.meeting.title,
     projectId: access.meeting.project_id,
-    headline: `Action item added in ${access.meeting.code}`,
+    headline: `Action Item ditambahkan di ${access.meeting.code}`,
     keySuffix: 'action-added',
   })
 
   revalidateMeeting(meetingId, access.meeting.project_id)
-  return { success: 'Action item added successfully.' }
+  return { success: 'Action Item berhasil ditambahkan.' }
 }
 
 export async function updateActionItem(
@@ -1262,17 +1262,17 @@ export async function updateActionItem(
   const deadline = readField(formData, 'deadline')
   const priority = readField(formData, 'priority')
   const status = readField(formData, 'status')
-  if (!id || !meetingId) return { error: 'Action item not found.' }
-  if (!title) return { error: 'Action item title is required.' }
+  if (!id || !meetingId) return { error: 'Action Item tidak ditemukan.' }
+  if (!title) return { error: 'Judul Action Item wajib diisi.' }
   if (priority && !isTaskPriority(priority)) {
-    return { error: 'Please choose a valid priority.' }
+    return { error: 'Pilih prioritas yang valid.' }
   }
-  if (!isActionItemStatus(status)) return { error: 'Please choose a valid status.' }
-  if (deadline && !validDate(deadline)) return { error: 'Please enter a valid deadline.' }
+  if (!isActionItemStatus(status)) return { error: 'Pilih status yang valid.' }
+  if (deadline && !validDate(deadline)) return { error: 'Masukkan Deadline yang valid.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
   if (!access.meeting || !canManageMeetingContent(access, profile.role)) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
   // Assignee lama yang kini nonaktif boleh tetap (tidak diubah); hanya
@@ -1288,7 +1288,7 @@ export async function updateActionItem(
     assigneeId !== currentItem?.assignee_id &&
     !(await assertActiveUser(assigneeId))
   ) {
-    return { error: 'Assignee must be an active user.' }
+    return { error: 'Assignee harus berupa user aktif.' }
   }
 
   const { error } = await createAdminClient()
@@ -1306,7 +1306,7 @@ export async function updateActionItem(
 
   if (error) {
     console.error('updateActionItem failed:', error.message)
-    return { error: 'Unable to update action item.' }
+    return { error: 'Tidak dapat memperbarui Action Item.' }
   }
 
   await logActivity({
@@ -1328,12 +1328,12 @@ export async function updateActionItem(
     code: access.meeting.code,
     title: access.meeting.title,
     projectId: access.meeting.project_id,
-    headline: `Action item updated in ${access.meeting.code}`,
+    headline: `Action Item diperbarui di ${access.meeting.code}`,
     keySuffix: `action-${id}`,
   })
 
   revalidateMeeting(meetingId, access.meeting.project_id)
-  return { success: 'Action item updated successfully.' }
+  return { success: 'Action Item berhasil diperbarui.' }
 }
 
 export async function deleteActionItem(
@@ -1344,11 +1344,11 @@ export async function deleteActionItem(
 
   const id = readField(formData, 'id')
   const meetingId = readField(formData, 'meeting_id')
-  if (!id || !meetingId) return { error: 'Action item not found.' }
+  if (!id || !meetingId) return { error: 'Action Item tidak ditemukan.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
   if (!access.meeting || !canManageMeetingContent(access, profile.role)) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
   // Traceability (§21): action item yang sudah jadi task tidak boleh
@@ -1360,7 +1360,7 @@ export async function deleteActionItem(
     .eq('meeting_id', meetingId)
     .maybeSingle<{ id: string; task_id: string | null }>()
 
-  if (!current) return { error: 'Action item not found.' }
+  if (!current) return { error: 'Action Item tidak ditemukan.' }
   if (current.task_id) {
     // Task yang sudah dihapus tidak mengunci action item (audit B7).
     const { data: linked } = await createAdminClient()
@@ -1369,7 +1369,7 @@ export async function deleteActionItem(
       .eq('id', current.task_id)
       .maybeSingle<{ is_deleted: boolean }>()
     if (linked && !linked.is_deleted) {
-      return { error: 'This action item already has a task and cannot be deleted.' }
+      return { error: 'Action Item ini sudah memiliki task dan tidak dapat dihapus.' }
     }
   }
 
@@ -1386,7 +1386,7 @@ export async function deleteActionItem(
 
   if (error) {
     console.error('deleteActionItem failed:', error.message)
-    return { error: 'Unable to delete action item.' }
+    return { error: 'Tidak dapat menghapus Action Item.' }
   }
 
   await notifyContentChange({
@@ -1394,12 +1394,12 @@ export async function deleteActionItem(
     code: access.meeting.code,
     title: access.meeting.title,
     projectId: access.meeting.project_id,
-    headline: `Action item removed in ${access.meeting.code}`,
+    headline: `Action Item dihapus di ${access.meeting.code}`,
     keySuffix: `action-del-${id}`,
   })
 
   revalidateMeeting(meetingId, access.meeting.project_id)
-  return { success: 'Action item deleted successfully.' }
+  return { success: 'Action Item berhasil dihapus.' }
 }
 
 /* ============================================================================
@@ -1416,11 +1416,11 @@ export async function addParticipant(
   const userId = readField(formData, 'user_id')
   const externalName = readField(formData, 'external_name')
   const externalEmail = readField(formData, 'external_email')
-  if (!meetingId) return { error: 'Meeting not found.' }
+  if (!meetingId) return { error: 'Meeting tidak ditemukan.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
   if (!access.meeting || !canManageMeetingFull(access, profile.role)) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
   // Internal XOR eksternal (sama seperti CHECK di DB).
@@ -1429,23 +1429,23 @@ export async function addParticipant(
   if (hasInternal === hasExternal) {
     // Peserta eksternal sengaja tidak ada di UI (akses pihak luar dimatikan,
     // keputusan pemilik 8 Nov 2026); pesan tidak menyebutnya (audit C10).
-    return { error: 'Please choose a participant.' }
+    return { error: 'Pilih peserta.' }
   }
 
   const admin = createAdminClient()
 
   if (hasInternal) {
     if (!(await assertActiveUser(userId))) {
-      return { error: 'Participant must be an active user.' }
+      return { error: 'Peserta harus berupa user aktif.' }
     }
     const { error } = await admin.from('meeting_participants').insert({
       meeting_id: meetingId,
       user_id: userId,
     })
     if (error) {
-      if (error.code === '23505') return { error: 'User is already a participant.' }
+      if (error.code === '23505') return { error: 'User sudah menjadi peserta.' }
       console.error('addParticipant failed:', error.message)
-      return { error: 'Unable to add participant.' }
+      return { error: 'Tidak dapat menambah peserta.' }
     }
 
     const { data: added } = await admin
@@ -1472,14 +1472,14 @@ export async function addParticipant(
         key: `meeting-invitation:${meetingId}:${userId}:${Date.now()}`,
         type: 'MEETING_INVITATION',
         userIds: [userId],
-        title: `You are invited to ${access.meeting.code}: ${access.meeting.title}`,
+        title: `Anda diundang ke ${access.meeting.code}: ${access.meeting.title}`,
         message: `"${access.meeting.title}" (${access.meeting.code}) di ${label}.`,
         entityType: 'meeting',
         entityId: meetingId,
         email:
           !historical && baseUrl
             ? {
-                subject: `[Meeting Invitation] ${access.meeting.code} ${access.meeting.title}`,
+                subject: `[Undangan Meeting] ${access.meeting.code} ${access.meeting.title}`,
                 html: `<p>Halo,</p><p>Anda diundang ke meeting berikut:</p><ul><li><strong>${h(access.meeting.code)} ${h(access.meeting.title)}</strong></li><li><strong>Project:</strong> ${h(label)}</li></ul><p>Lihat detail:<br><a href="${baseUrl}/meetings/${meetingId}">${baseUrl}/meetings/${meetingId}</a></p>`,
                 category: 'meeting',
               }
@@ -1488,7 +1488,7 @@ export async function addParticipant(
     }
   } else {
     if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(externalEmail)) {
-      return { error: 'Please enter a valid external email.' }
+      return { error: 'Masukkan Email eksternal yang valid.' }
     }
     const { error } = await admin.from('meeting_participants').insert({
       meeting_id: meetingId,
@@ -1497,7 +1497,7 @@ export async function addParticipant(
     })
     if (error) {
       console.error('addParticipant (external) failed:', error.message)
-      return { error: 'Unable to add participant.' }
+      return { error: 'Tidak dapat menambah peserta.' }
     }
   }
 
@@ -1516,7 +1516,7 @@ export async function addParticipant(
   })
 
   revalidateMeeting(meetingId, access.meeting.project_id)
-  return { success: 'Participant added successfully.' }
+  return { success: 'Peserta berhasil ditambahkan.' }
 }
 
 export async function removeParticipant(
@@ -1527,11 +1527,11 @@ export async function removeParticipant(
 
   const meetingId = readField(formData, 'meeting_id')
   const participantId = readField(formData, 'participant_id')
-  if (!meetingId || !participantId) return { error: 'Participant not found.' }
+  if (!meetingId || !participantId) return { error: 'Peserta tidak ditemukan.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
   if (!access.meeting || !canManageMeetingFull(access, profile.role)) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
   const admin = createAdminClient()
@@ -1542,12 +1542,12 @@ export async function removeParticipant(
     .eq('meeting_id', meetingId)
     .maybeSingle<{ id: string; user_id: string | null }>()
 
-  if (!row) return { error: 'Participant not found.' }
+  if (!row) return { error: 'Peserta tidak ditemukan.' }
 
   // Organizer meeting tidak bisa dihapus dari daftar peserta — ganti dulu
   // organizer-nya lewat Edit Meeting kalau memang perlu.
   if (row.user_id && row.user_id === access.meeting.organizer_id) {
-    return { error: 'The organizer cannot be removed. Change the organizer first.' }
+    return { error: 'Organizer tidak dapat dihapus. Ubah Organizer terlebih dahulu.' }
   }
 
   const { error } = await admin
@@ -1558,7 +1558,7 @@ export async function removeParticipant(
 
   if (error) {
     console.error('removeParticipant failed:', error.message)
-    return { error: 'Unable to remove participant.' }
+    return { error: 'Tidak dapat menghapus peserta.' }
   }
 
   await logActivity({
@@ -1576,12 +1576,12 @@ export async function removeParticipant(
     code: access.meeting.code,
     title: access.meeting.title,
     projectId: access.meeting.project_id,
-    headline: `Participant removed in ${access.meeting.code}`,
+    headline: `Peserta dihapus di ${access.meeting.code}`,
     keySuffix: `participant-del-${participantId}`,
   })
 
   revalidateMeeting(meetingId, access.meeting.project_id)
-  return { success: 'Participant removed successfully.' }
+  return { success: 'Peserta berhasil dihapus.' }
 }
 
 /** Peserta mengubah kehadirannya sendiri; pengelola boleh mengubah siapa pun. */
@@ -1594,11 +1594,11 @@ export async function updateAttendance(
   const meetingId = readField(formData, 'meeting_id')
   const participantId = readField(formData, 'participant_id')
   const attendance = readField(formData, 'attendance')
-  if (!meetingId || !participantId) return { error: 'Participant not found.' }
-  if (!isAttendance(attendance)) return { error: 'Please choose a valid attendance.' }
+  if (!meetingId || !participantId) return { error: 'Peserta tidak ditemukan.' }
+  if (!isAttendance(attendance)) return { error: 'Pilih kehadiran yang valid.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
-  if (!access.meeting) return { error: 'Meeting not found.' }
+  if (!access.meeting) return { error: 'Meeting tidak ditemukan.' }
 
   const admin = createAdminClient()
   const { data: row } = await admin
@@ -1608,11 +1608,11 @@ export async function updateAttendance(
     .eq('meeting_id', meetingId)
     .maybeSingle<{ id: string; user_id: string | null }>()
 
-  if (!row) return { error: 'Participant not found.' }
+  if (!row) return { error: 'Peserta tidak ditemukan.' }
 
   const isOwn = row.user_id === profile.id
   if (!isOwn && !canManageMeetingFull(access, profile.role)) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
   const { error } = await admin
@@ -1623,7 +1623,7 @@ export async function updateAttendance(
 
   if (error) {
     console.error('updateAttendance failed:', error.message)
-    return { error: 'Unable to update attendance.' }
+    return { error: 'Tidak dapat memperbarui kehadiran.' }
   }
 
   await notifyContentChange({
@@ -1631,12 +1631,12 @@ export async function updateAttendance(
     code: access.meeting.code,
     title: access.meeting.title,
     projectId: access.meeting.project_id,
-    headline: `Attendance updated in ${access.meeting.code}`,
+    headline: `Kehadiran diperbarui di ${access.meeting.code}`,
     keySuffix: `attendance-${participantId}`,
   })
 
   revalidateMeeting(meetingId, access.meeting.project_id)
-  return { success: 'Attendance updated successfully.' }
+  return { success: 'Kehadiran berhasil diperbarui.' }
 }
 
 /* ============================================================================
@@ -1668,11 +1668,11 @@ export async function createTaskFromActionItem(
 
   const actionItemId = readField(formData, 'action_item_id')
   const meetingId = readField(formData, 'meeting_id')
-  if (!actionItemId || !meetingId) return { error: 'Action item not found.' }
+  if (!actionItemId || !meetingId) return { error: 'Action Item tidak ditemukan.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
   if (!access.meeting || !canCreateTaskFromMeeting(access, profile.role)) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
   const admin = createAdminClient()
@@ -1683,7 +1683,7 @@ export async function createTaskFromActionItem(
     .eq('meeting_id', meetingId)
     .maybeSingle<ActionItemFull>()
 
-  if (!action) return { error: 'Action item not found.' }
+  if (!action) return { error: 'Action Item tidak ditemukan.' }
 
   // §22 idempotency guard: task sudah ada -> jangan buat lagi. Task yang
   // sudah dihapus tidak dihitung (audit B7): action item boleh dibuatkan lagi.
@@ -1695,7 +1695,7 @@ export async function createTaskFromActionItem(
       .eq('id', action.task_id)
       .maybeSingle<{ code: string; is_deleted: boolean }>()
     if (existing && !existing.is_deleted) {
-      return { success: `Task already exists: ${existing.code}.` }
+      return { success: `Task sudah ada: ${existing.code}.` }
     }
   }
 
@@ -1703,7 +1703,7 @@ export async function createTaskFromActionItem(
   // project dipilih di form saat membuat task (audit A10).
   const projectId = access.meeting.project_id || readField(formData, 'project_id')
   if (!projectId) {
-    return { error: 'Please choose a project for this task.' }
+    return { error: 'Pilih Project untuk task ini.' }
   }
   if (!access.meeting.project_id) {
     const { data: chosen } = await admin
@@ -1711,12 +1711,12 @@ export async function createTaskFromActionItem(
       .select('id')
       .eq('id', projectId)
       .maybeSingle<{ id: string }>()
-    if (!chosen) return { error: 'Please choose a project for this task.' }
+    if (!chosen) return { error: 'Pilih Project untuk task ini.' }
   }
 
   // PM hanya boleh di project miliknya (aturan task yang existing, §47).
   if (profile.role === 'PROJECT_MANAGER' && !(await isProjectManager(projectId, profile.id))) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
   if (await isProjectClosed(projectId)) return { error: CLOSED_PROJECT_ERROR } // audit B14
 
@@ -1729,16 +1729,16 @@ export async function createTaskFromActionItem(
   // Deadline wajib (audit B11): tidak lagi diam-diam menjadi hari ini.
   const deadline = readField(formData, 'deadline') || action.deadline || ''
 
-  if (!title) return { error: 'Task title is required.' }
-  if (!isTaskPriority(priority)) return { error: 'Please choose a valid priority.' }
-  if (!deadline) return { error: 'Please set a deadline for this task.' }
-  if (!validDate(deadline)) return { error: 'Please enter a valid deadline.' }
-  if (!assigneeId) return { error: 'Please select an assignee to create this task.' }
+  if (!title) return { error: 'Judul Task wajib diisi.' }
+  if (!isTaskPriority(priority)) return { error: 'Pilih prioritas yang valid.' }
+  if (!deadline) return { error: 'Tetapkan Deadline untuk task ini.' }
+  if (!validDate(deadline)) return { error: 'Masukkan Deadline yang valid.' }
+  if (!assigneeId) return { error: 'Pilih Assignee untuk membuat task ini.' }
   if (!(await assertActiveUser(assigneeId))) {
-    return { error: 'Assignee must be an active user.' }
+    return { error: 'Assignee harus berupa user aktif.' }
   }
   if (workstreamId && !(await assertWorkstreamInProject(workstreamId, projectId))) {
-    return { error: 'Workstream does not belong to this project.' }
+    return { error: 'Workstream bukan milik Project ini.' }
   }
 
   const { data: task, error: taskError } = await admin
@@ -1763,7 +1763,7 @@ export async function createTaskFromActionItem(
 
   if (taskError || !task) {
     console.error('createTaskFromActionItem failed:', taskError?.message)
-    return { error: 'Unable to create task from action item.' }
+    return { error: 'Tidak dapat membuat Task dari Action Item.' }
   }
 
   // Klaim atomik: hanya baris yang task_id-nya masih sama (NULL, atau task
@@ -1794,7 +1794,7 @@ export async function createTaskFromActionItem(
         .maybeSingle<{ code: string }>()
       if (wt) winnerCode = wt.code
     }
-    return { success: `Task already exists: ${winnerCode}.` }
+    return { success: `Task sudah ada: ${winnerCode}.` }
   }
 
   // Notifikasi assignee — format key SAMA dengan tasks.ts supaya konsisten
@@ -1812,15 +1812,15 @@ export async function createTaskFromActionItem(
     key: `task-assigned:${task.id}:${assigneeId}:${task.updated_at}`,
     type: 'TASK_ASSIGNED',
     userIds: [assigneeId],
-    title: `Task ${task.code} assigned to you`,
-    message: `"${title}" di ${label} di-assign kepadamu (dari meeting ${access.meeting.code}).`,
+    title: `Task ${task.code} ditugaskan kepada Anda`,
+    message: `"${title}" di ${label} ditugaskan kepada Anda (dari meeting ${access.meeting.code}).`,
     entityType: 'task',
     entityId: task.id,
     email:
       !historical && baseUrl
         ? {
-            subject: `[Assigned] ${task.code} ${title}`,
-            html: `<p>Halo,</p><p>Task berikut di-assign kepadamu (dari meeting ${h(access.meeting.code)}):</p><ul><li><strong>${h(task.code)} ${h(title)}</strong></li><li><strong>Project:</strong> ${h(label)}</li></ul><p>Lihat detail:<br><a href="${baseUrl}/tasks/${task.id}">${baseUrl}/tasks/${task.id}</a></p>`,
+            subject: `[Ditugaskan] ${task.code} ${title}`,
+            html: `<p>Halo,</p><p>Task berikut ditugaskan kepada Anda (dari meeting ${h(access.meeting.code)}):</p><ul><li><strong>${h(task.code)} ${h(title)}</strong></li><li><strong>Project:</strong> ${h(label)}</li></ul><p>Lihat detail:<br><a href="${baseUrl}/tasks/${task.id}">${baseUrl}/tasks/${task.id}</a></p>`,
             category: 'task',
           }
         : null,
@@ -1832,7 +1832,7 @@ export async function createTaskFromActionItem(
     code: access.meeting.code,
     title: access.meeting.title,
     projectId,
-    headline: `Task ${task.code} created from action item in ${access.meeting.code}`,
+    headline: `Task ${task.code} dibuat dari Action Item di ${access.meeting.code}`,
     keySuffix: `task-${task.id}`,
   })
 
@@ -1870,5 +1870,5 @@ export async function createTaskFromActionItem(
   revalidateMeeting(meetingId, projectId)
   revalidatePath('/tasks')
   revalidatePath(`/tasks/${task.id}`)
-  return { success: `Task ${task.code} created from action item.` }
+  return { success: `Task ${task.code} dibuat dari Action Item.` }
 }

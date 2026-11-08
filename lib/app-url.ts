@@ -15,7 +15,7 @@ export function getAppBaseUrl(): string {
 
   if (!raw) {
     throw new Error(
-      'APP_URL is not configured. Set APP_URL in the deployment platform (Production AND Preview).'
+      'APP_URL belum dikonfigurasi. Atur APP_URL di platform deployment (Production DAN Preview).'
     )
   }
 

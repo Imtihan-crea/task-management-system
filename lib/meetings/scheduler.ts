@@ -47,7 +47,7 @@ type SchedulerMeeting = {
 }
 
 async function projectLabel(projectId: string | null): Promise<string> {
-  if (!projectId) return 'Global meeting (tanpa project)'
+  if (!projectId) return 'Meeting global (tanpa project)'
   const { data } = await createAdminClient()
     .from('projects')
     .select('code, name')
@@ -119,7 +119,7 @@ export async function runMeetingScheduler(now: Date = new Date()): Promise<{
         key: `meeting-reminder:${m.id}:${today}`,
         type: 'MEETING_REMINDER',
         userIds,
-        title: `Meeting ${m.code} starts soon`,
+        title: `Meeting ${m.code} segera dimulai`,
         message: `"${m.title}" mulai ${m.start_time.slice(0, 5)} hari ini di ${label}.`,
         entityType: 'meeting',
         entityId: m.id,
@@ -170,12 +170,12 @@ export async function runMeetingScheduler(now: Date = new Date()): Promise<{
         key: `meeting-notes:${m.id}`,
         type: 'MEETING_NOTES_PENDING',
         userIds,
-        title: `Meeting ${m.code} needs notes`,
+        title: `Meeting ${m.code} perlu Notes`,
         message: `"${m.title}" (${m.meeting_date}) sudah selesai dan belum ada notes.`,
         entityType: 'meeting',
         entityId: m.id,
         email: {
-          subject: `[Notes Needed] ${m.code} ${m.title}`,
+          subject: `[Perlu Notes] ${m.code} ${m.title}`,
           html: `<p>Halo,</p><p>Meeting berikut <strong>belum memiliki notes</strong>:</p><ul><li><strong>${h(m.code)} ${h(m.title)}</strong></li><li><strong>Tanggal:</strong> ${h(m.meeting_date)}</li><li><strong>Project:</strong> ${h(label)}</li></ul>${baseUrl ? `<p>Lengkapi di sini:<br><a href="${baseUrl}/meetings/${m.id}?tab=notes">${baseUrl}/meetings/${m.id}?tab=notes</a></p>` : ''}`,
           category: 'meeting',
         },

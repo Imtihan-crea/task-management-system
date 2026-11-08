@@ -49,7 +49,7 @@ export async function canManageProjectFor(
  * (audit B14 [keputusan default]). Project yang tidak ada dianggap tertutup.
  */
 export const CLOSED_PROJECT_ERROR =
-  'This project is completed or cancelled. Reopen it to add new tasks.'
+  'Project ini COMPLETED atau CANCELLED. Buka kembali untuk menambah task baru.'
 
 export async function isProjectClosed(projectId: string): Promise<boolean> {
   const { data } = await createAdminClient()

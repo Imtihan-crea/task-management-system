@@ -64,9 +64,9 @@ export async function saveNotificationPreferences(
 
   if (error) {
     console.error('saveNotificationPreferences failed:', error.message)
-    return { error: 'Unable to save preferences.' }
+    return { error: 'Tidak dapat menyimpan preferensi.' }
   }
 
   revalidatePath('/notifications')
-  return { success: 'Preferences saved successfully.' }
+  return { success: 'Preferensi berhasil disimpan.' }
 }

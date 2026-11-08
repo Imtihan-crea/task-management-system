@@ -51,8 +51,8 @@ cek('memuat judul + code', full.includes('M-003') && full.includes('Weekly Proje
 cek('memuat notes', full.includes('Warehouse layout approved.'), true)
 cek('memuat decision + rationale', full.includes('Layout approved') && full.includes('Vendor ready'), true)
 cek('memuat action item + assignee + deadline', full.includes('Update layout') && full.includes('Imtihan') && full.includes('2026-10-10'), true)
-cek('action belum ada task', full.includes('Task: Not created'), true)
-cek('open count di header', full.includes('Action Items (1 · 1 open)'), true)
+cek('action belum ada task', full.includes('Task: Belum dibuat'), true)
+cek('open count di header', full.includes('Action Items (1 · 1 terbuka)'), true)
 cek('memuat link meeting', full.includes('https://app/meetings/abc'), true)
 
 /* ---------- task code kalau sudah dibuat ---------- */

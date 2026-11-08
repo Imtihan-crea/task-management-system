@@ -15,9 +15,9 @@ export const MIN_SELF_PASSWORD_LENGTH = 8
 
 /** Password awal yang diketik admin. */
 export function validateAdminPassword(password: string): string | null {
-  if (!password) return 'Password is required.'
+  if (!password) return 'Password wajib diisi.'
   if (password.length < MIN_ADMIN_PASSWORD_LENGTH) {
-    return `Password must be at least ${MIN_ADMIN_PASSWORD_LENGTH} characters.`
+    return `Password minimal ${MIN_ADMIN_PASSWORD_LENGTH} karakter.`
   }
   return null
 }
@@ -27,11 +27,11 @@ export function validateSelfPassword(
   password: string,
   confirm: string
 ): string | null {
-  if (!password) return 'Password is required.'
+  if (!password) return 'Password wajib diisi.'
   if (password.length < MIN_SELF_PASSWORD_LENGTH) {
-    return `Password must be at least ${MIN_SELF_PASSWORD_LENGTH} characters.`
+    return `Password minimal ${MIN_SELF_PASSWORD_LENGTH} karakter.`
   }
-  if (password !== confirm) return 'Passwords do not match.'
+  if (password !== confirm) return 'Password tidak cocok.'
   return null
 }
 
@@ -42,20 +42,20 @@ export function validateSelfPassword(
  */
 export function friendlyPasswordError(raw: string, sessionExpiredMessage: string): string {
   if (/different from the old|same as/i.test(raw)) {
-    return 'The new password must be different from your current password.'
+    return 'Password baru harus berbeda dari Password Anda saat ini.'
   }
   if (/weak|pwned|known to be/i.test(raw)) {
-    return 'This password is too easy to guess. Please choose a stronger one.'
+    return 'Password ini terlalu mudah ditebak. Pilih Password yang lebih kuat.'
   }
   if (/contain at least one/i.test(raw)) {
-    return 'Password must mix upper- and lowercase letters, numbers, and symbols.'
+    return 'Password harus berisi huruf besar dan kecil, angka, dan simbol.'
   }
   if (/at least|characters/i.test(raw)) {
-    return `Password must be at least ${MIN_SELF_PASSWORD_LENGTH} characters.`
+    return `Password minimal ${MIN_SELF_PASSWORD_LENGTH} karakter.`
   }
   if (/rate|too many|security purposes/i.test(raw)) {
-    return 'Too many attempts. Please wait a minute and try again.'
+    return 'Terlalu banyak percobaan. Tunggu semenit lalu coba lagi.'
   }
   if (/session|token|jwt|auth/i.test(raw)) return sessionExpiredMessage
-  return 'Unable to change the password. Please try again.'
+  return 'Tidak dapat mengubah Password. Silakan coba lagi.'
 }

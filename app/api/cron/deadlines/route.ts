@@ -34,11 +34,11 @@ type DueTask = {
 export async function GET(request: Request) {
   const secret = process.env.CRON_SECRET
   if (!secret) {
-    return NextResponse.json({ error: 'Scheduler is not configured.' }, { status: 500 })
+    return NextResponse.json({ error: 'Scheduler belum dikonfigurasi.' }, { status: 500 })
   }
 
   if (!isCronAuthorized(request.headers.get('authorization'), secret)) {
-    return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 })
+    return NextResponse.json({ error: 'Tidak diizinkan.' }, { status: 401 })
   }
 
   const admin = createAdminClient()
@@ -55,7 +55,7 @@ export async function GET(request: Request) {
 
   if (error) {
     console.error('[cron] Failed to fetch due tasks:', error.message)
-    return NextResponse.json({ error: 'Failed to fetch tasks.' }, { status: 500 })
+    return NextResponse.json({ error: 'Gagal mengambil task.' }, { status: 500 })
   }
 
 
@@ -93,12 +93,12 @@ export async function GET(request: Request) {
       key: `task-due-today:${task.id}:${today}`,
       type: 'TASK_DEADLINE_APPROACHING',
       userIds: [task.assignee_id],
-      title: `Task ${task.code} due today`,
+      title: `Task ${task.code} jatuh tempo hari ini`,
       message: `"${task.title}" deadline hari ini (${task.deadline}).`,
       entityType: 'task',
       entityId: task.id,
       email: {
-        subject: `[Due Today] ${task.code} ${task.title}`,
+        subject: `[Jatuh Tempo Hari Ini] ${task.code} ${task.title}`,
         html: `<p>Halo,</p><p>Task berikut deadline <strong>hari ini</strong>:</p><ul><li><strong>${h(task.code)} ${h(task.title)}</strong></li><li><strong>Project:</strong> ${h(projectNames[task.project_id] ?? '-')}</li></ul>${baseUrl ? `<p>Lihat detail:<br><a href="${baseUrl}/tasks/${task.id}">${baseUrl}/tasks/${task.id}</a></p>` : ''}`,
         category: 'deadline',
       },
@@ -112,7 +112,7 @@ export async function GET(request: Request) {
       key: `task-overdue:${task.id}:${today}`,
       type: 'TASK_OVERDUE',
       userIds: [task.assignee_id],
-      title: `Task ${task.code} overdue`,
+      title: `Task ${task.code} Overdue`,
       message: `"${task.title}" melewati deadline (${task.deadline}).`,
       entityType: 'task',
       entityId: task.id,

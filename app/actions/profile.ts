@@ -28,9 +28,9 @@ export async function updateOwnName(
   const value = formData.get('full_name')
   const fullName = typeof value === 'string' ? value.trim() : ''
 
-  if (!fullName) return { error: 'Full name is required.' }
-  if (fullName.length > 120) return { error: 'Full name is too long.' }
-  if (fullName === profile.full_name) return { success: 'Profile updated successfully.' }
+  if (!fullName) return { error: 'Nama lengkap wajib diisi.' }
+  if (fullName.length > 120) return { error: 'Nama lengkap terlalu panjang.' }
+  if (fullName === profile.full_name) return { success: 'Profil berhasil diperbarui.' }
 
   const supabase = await createClient()
   const { error } = await supabase
@@ -40,10 +40,10 @@ export async function updateOwnName(
 
   if (error) {
     console.error('updateOwnName failed:', error.message)
-    return { error: 'Unable to update profile.' }
+    return { error: 'Tidak dapat memperbarui profil.' }
   }
 
   revalidatePath('/profile')
   revalidatePath('/dashboard')
-  return { success: 'Profile updated successfully.' }
+  return { success: 'Profil berhasil diperbarui.' }
 }

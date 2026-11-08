@@ -84,7 +84,7 @@ export async function createSuggestion(
   const profile = await requireProfile()
 
   if (!can(profile.role, 'suggestions.create')) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
   const title = readField(formData, 'title')
@@ -95,16 +95,16 @@ export async function createSuggestion(
   const priority = readField(formData, 'suggested_priority')
   const deadline = readField(formData, 'suggested_deadline')
 
-  if (!title) return { error: 'Task title is required.' }
-  if (!description) return { error: 'Description is required.' }
-  if (!projectId) return { error: 'Project is required.' }
+  if (!title) return { error: 'Judul Task wajib diisi.' }
+  if (!description) return { error: 'Deskripsi wajib diisi.' }
+  if (!projectId) return { error: 'Project wajib diisi.' }
   if (priority && !isTaskPriority(priority)) {
-    return { error: 'Please choose a valid priority.' }
+    return { error: 'Pilih prioritas yang valid.' }
   }
-  if (!validDate(deadline)) return { error: 'Please enter a valid deadline.' }
+  if (!validDate(deadline)) return { error: 'Masukkan Deadline yang valid.' }
 
   if (!(await assertCanSuggestProject(projectId, profile.id, profile.role))) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
   if (await isProjectClosed(projectId)) return { error: CLOSED_PROJECT_ERROR } // audit B14
 
@@ -117,11 +117,11 @@ export async function createSuggestion(
       .eq('id', workstreamId)
       .eq('project_id', projectId)
       .maybeSingle<{ id: string }>()
-    if (!ws) return { error: 'Workstream does not belong to this project.' }
+    if (!ws) return { error: 'Workstream bukan milik Project ini.' }
   }
 
   if (assigneeId && !(await assertActiveUser(assigneeId))) {
-    return { error: 'Suggested assignee must be an active user.' }
+    return { error: 'Assignee yang disarankan harus berupa user aktif.' }
   }
 
   const { data: created, error } = await admin
@@ -142,7 +142,7 @@ export async function createSuggestion(
 
   if (error || !created) {
     console.error('createSuggestion failed:', error?.message)
-    return { error: 'Unable to submit suggestion. Please try again.' }
+    return { error: 'Tidak dapat mengirim Suggestion. Silakan coba lagi.' }
   }
 
   // Event: SUGGESTION_CREATED → semua PM project (in-app + email).
@@ -169,7 +169,7 @@ export async function createSuggestion(
     metadata: { suggestion_code: created.code, suggestion_title: title },
   })
 
-  return { success: `Suggestion ${created.code} submitted successfully.` }
+  return { success: `Suggestion ${created.code} berhasil dikirim.` }
 }
 
 /** Notifikasi usulan baru / dikirim ulang ke semua PM project (in-app + email). */
@@ -196,8 +196,8 @@ async function notifySuggestionPms(input: {
     console.error('[notify] APP_URL missing, skipping suggestion email.')
   }
 
-  const projectText = project ? `${project.code} · ${project.name}` : 'a project'
-  const verb = input.resubmitted ? 'resubmitted a revised suggestion' : 'suggested a new task'
+  const projectText = project ? `${project.code} · ${project.name}` : 'sebuah Project'
+  const verb = input.resubmitted ? 'mengirim ulang Suggestion yang direvisi' : 'mengusulkan task baru'
   const intro = input.resubmitted
     ? 'Usulan task berikut sudah direvisi dan menunggu review Anda lagi:'
     : 'Ada usulan task baru yang menunggu review Anda:'
@@ -206,14 +206,14 @@ async function notifySuggestionPms(input: {
     key: input.key,
     type: 'SUGGESTION_CREATED',
     userIds: pmIds,
-    title: `${input.resubmitted ? 'Revised' : 'New'} suggestion ${input.code}: ${input.title}`,
-    message: `${input.actorName} ${verb} in ${projectText}.`,
+    title: `Suggestion ${input.resubmitted ? 'Revisi' : 'Baru'} ${input.code}: ${input.title}`,
+    message: `${input.actorName} ${verb} di ${projectText}.`,
     entityType: 'suggestion',
     entityId: input.id,
     email: baseUrl
       ? {
           subject: `[Suggestion ${input.code}] ${input.title}`,
-          html: `<p>Halo,</p><p>${intro}</p><ul><li><strong>${h(input.code)} ${h(input.title)}</strong></li><li><strong>Project:</strong> ${project ? `${h(project.code)} · ${h(project.name)}` : '-'}</li><li><strong>Suggested by:</strong> ${h(input.actorName)}</li></ul><p>Review di sini:<br><a href="${baseUrl}/task-suggestions/${input.id}">${baseUrl}/task-suggestions/${input.id}</a></p>`,
+          html: `<p>Halo,</p><p>${intro}</p><ul><li><strong>${h(input.code)} ${h(input.title)}</strong></li><li><strong>Project:</strong> ${project ? `${h(project.code)} · ${h(project.name)}` : '-'}</li><li><strong>Diusulkan oleh:</strong> ${h(input.actorName)}</li></ul><p>Review di sini:<br><a href="${baseUrl}/task-suggestions/${input.id}">${baseUrl}/task-suggestions/${input.id}</a></p>`,
           category: 'suggestion',
         }
       : null,
@@ -235,14 +235,14 @@ export async function resubmitSuggestion(
   const priority = readField(formData, 'suggested_priority')
   const deadline = readField(formData, 'suggested_deadline')
 
-  if (!id) return { error: 'Suggestion not found.' }
-  if (!title) return { error: 'Task title is required.' }
-  if (!description) return { error: 'Description is required.' }
+  if (!id) return { error: 'Suggestion tidak ditemukan.' }
+  if (!title) return { error: 'Judul Task wajib diisi.' }
+  if (!description) return { error: 'Deskripsi wajib diisi.' }
   // Validasi sama dengan createSuggestion (audit B9).
   if (priority && !isTaskPriority(priority)) {
-    return { error: 'Please choose a valid priority.' }
+    return { error: 'Pilih prioritas yang valid.' }
   }
-  if (!validDate(deadline)) return { error: 'Please enter a valid deadline.' }
+  if (!validDate(deadline)) return { error: 'Masukkan Deadline yang valid.' }
 
   const admin = createAdminClient()
   const { data: current } = await admin
@@ -251,12 +251,12 @@ export async function resubmitSuggestion(
     .eq('id', id)
     .single<TaskSuggestion>()
 
-  if (!current) return { error: 'Suggestion not found.' }
+  if (!current) return { error: 'Suggestion tidak ditemukan.' }
   if (current.suggested_by !== profile.id) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
   if (current.status !== 'REVISION_REQUESTED') {
-    return { error: 'Only suggestions requesting revision can be resubmitted.' }
+    return { error: 'Hanya Suggestion yang diminta revisi yang dapat dikirim ulang.' }
   }
 
   if (workstreamId) {
@@ -266,10 +266,10 @@ export async function resubmitSuggestion(
       .eq('id', workstreamId)
       .eq('project_id', current.project_id)
       .maybeSingle<{ id: string }>()
-    if (!ws) return { error: 'Workstream does not belong to this project.' }
+    if (!ws) return { error: 'Workstream bukan milik Project ini.' }
   }
   if (assigneeId && !(await assertActiveUser(assigneeId))) {
-    return { error: 'Suggested assignee must be an active user.' }
+    return { error: 'Assignee yang disarankan harus berupa user aktif.' }
   }
 
   const { data: resubmitted, error } = await admin
@@ -290,7 +290,7 @@ export async function resubmitSuggestion(
 
   if (error || !resubmitted) {
     console.error('resubmitSuggestion failed:', error?.message)
-    return { error: 'Unable to resubmit suggestion.' }
+    return { error: 'Tidak dapat mengirim ulang Suggestion.' }
   }
 
   // PM diberi tahu bahwa usulan menunggu review lagi (audit B9).
@@ -317,7 +317,7 @@ export async function resubmitSuggestion(
     metadata: { suggestion_code: current.code, suggestion_title: title },
   })
 
-  return { success: 'Suggestion resubmitted successfully.' }
+  return { success: 'Suggestion berhasil dikirim ulang.' }
 }
 
 export async function reviewSuggestion(
@@ -327,19 +327,19 @@ export async function reviewSuggestion(
   const profile = await requireProfile()
 
   if (!can(profile.role, 'suggestions.review')) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
   const id = readField(formData, 'id')
   const decision = readField(formData, 'decision') // approve | revise | reject
   const reviewNote = readField(formData, 'review_note')
 
-  if (!id) return { error: 'Suggestion not found.' }
+  if (!id) return { error: 'Suggestion tidak ditemukan.' }
   if (!['approve', 'revise', 'reject'].includes(decision)) {
-    return { error: 'Please choose a valid review decision.' }
+    return { error: 'Pilih keputusan review yang valid.' }
   }
   if ((decision === 'revise' || decision === 'reject') && !reviewNote) {
-    return { error: 'Review note is required for this decision.' }
+    return { error: 'Catatan review wajib diisi untuk keputusan ini.' }
   }
 
   const admin = createAdminClient()
@@ -349,21 +349,21 @@ export async function reviewSuggestion(
     .eq('id', id)
     .single<TaskSuggestion>()
 
-  if (!current) return { error: 'Suggestion not found.' }
+  if (!current) return { error: 'Suggestion tidak ditemukan.' }
   if (!(await assertCanReview(current, profile))) {
-    return { error: 'You do not have permission to perform this action.' }
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
   if (current.status !== 'PENDING') {
-    return { error: 'Only pending suggestions can be reviewed.' }
+    return { error: 'Hanya Suggestion PENDING yang dapat direview.' }
   }
 
   if (decision === 'approve') {
     // Audit B8: prioritas, deadline, dan catatan dari reviewer ikut dipakai.
     const priority = readField(formData, 'priority') || current.suggested_priority || 'MEDIUM'
     const deadline = readField(formData, 'deadline') || current.suggested_deadline || ''
-    if (!isTaskPriority(priority)) return { error: 'Please choose a valid priority.' }
-    if (!deadline) return { error: 'Please set a deadline to approve this suggestion.' }
-    if (!validDate(deadline)) return { error: 'Please enter a valid deadline.' }
+    if (!isTaskPriority(priority)) return { error: 'Pilih prioritas yang valid.' }
+    if (!deadline) return { error: 'Tetapkan Deadline untuk menyetujui Suggestion ini.' }
+    if (!validDate(deadline)) return { error: 'Masukkan Deadline yang valid.' }
     return approveSuggestionInternal(id, profile.id, readField(formData, 'assignee_id') || null, {
       priority,
       deadline,
@@ -385,7 +385,7 @@ export async function reviewSuggestion(
 
   if (error) {
     console.error('reviewSuggestion failed:', error.message)
-    return { error: 'Unable to save review.' }
+    return { error: 'Tidak dapat menyimpan review.' }
   }
 
   await emitReviewEvent(current, nextStatus, profile, reviewNote)
@@ -412,8 +412,8 @@ export async function reviewSuggestion(
   return {
     success:
       nextStatus === 'REJECTED'
-        ? 'Suggestion rejected.'
-        : 'Revision requested successfully.',
+        ? 'Suggestion ditolak.'
+        : 'Revisi berhasil diminta.',
   }
 }
 
@@ -436,24 +436,24 @@ async function approveSuggestionInternal(
     .eq('id', suggestionId)
     .single<TaskSuggestion>()
 
-  if (!current) return { error: 'Suggestion not found.' }
+  if (!current) return { error: 'Suggestion tidak ditemukan.' }
 
   // Idempotency guard: sudah pernah di-approve/convert.
   if (current.status === 'CONVERTED' || current.converted_task_id) {
-    return { success: 'Suggestion already converted to a task.' }
+    return { success: 'Suggestion sudah dikonversi menjadi task.' }
   }
   if (current.status !== 'PENDING') {
-    return { error: 'Only pending suggestions can be approved.' }
+    return { error: 'Hanya Suggestion PENDING yang dapat disetujui.' }
   }
 
   // Validasi ulang rule task (assignee bisa saja nonaktif setelah suggest).
   // Reviewer boleh memilih/mengganti assignee langsung di form review.
   const assigneeId = chosenAssigneeId || current.suggested_assignee_id
   if (!assigneeId) {
-    return { error: 'Please select an assignee to approve this suggestion.' }
+    return { error: 'Pilih Assignee untuk menyetujui Suggestion ini.' }
   }
   if (!(await assertActiveUser(assigneeId))) {
-    return { error: 'Selected assignee is not active. Please choose another.' }
+    return { error: 'Assignee yang dipilih tidak aktif. Pilih yang lain.' }
   }
   if (await isProjectClosed(current.project_id)) return { error: CLOSED_PROJECT_ERROR } // audit B14
 
@@ -480,7 +480,7 @@ async function approveSuggestionInternal(
 
   if (taskError || !task) {
     console.error('approveSuggestion create task failed:', taskError?.message)
-    return { error: 'Unable to create task from suggestion.' }
+    return { error: 'Tidak dapat membuat Task dari Suggestion.' }
   }
 
   // Tandai CONVERTED hanya jika masih PENDING — kalau ada approve paralel
@@ -501,7 +501,7 @@ async function approveSuggestionInternal(
   if (!updated || updated.length === 0) {
     // Kalah race: bersihkan task yang terlanjur dibuat.
     await admin.from('tasks').update({ is_deleted: true }).eq('id', task.id)
-    return { success: 'Suggestion already converted to a task.' }
+    return { success: 'Suggestion sudah dikonversi menjadi task.' }
   }
 
   await emitReviewEvent(current, 'APPROVED', { id: reviewerId }, review.reviewNote, task.id)
@@ -544,7 +544,7 @@ async function approveSuggestionInternal(
   revalidatePath(`/tasks/${task.id}`)
   revalidatePath('/dashboard')
 
-  return { success: `Approved. Task ${task.code} created successfully.` }
+  return { success: `Disetujui. Task ${task.code} berhasil dibuat.` }
 }
 
 async function emitReviewEvent(
@@ -577,21 +577,21 @@ async function emitReviewEvent(
   const config = {
     APPROVED: {
       type: 'SUGGESTION_APPROVED' as const,
-      title: `Suggestion ${suggestion.code} approved`,
-      message: `Your suggestion "${suggestion.title}" was approved and converted to an official task.`,
-      subject: `[Suggestion ${suggestion.code}] Approved`,
+      title: `Suggestion ${suggestion.code} disetujui`,
+      message: `Suggestion Anda "${suggestion.title}" disetujui dan dikonversi menjadi task resmi.`,
+      subject: `[Suggestion ${suggestion.code}] Disetujui`,
     },
     REVISION_REQUESTED: {
       type: 'SUGGESTION_REVISION_REQUESTED' as const,
-      title: `Suggestion ${suggestion.code} needs revision`,
-      message: `Reviewer requested revision: ${reviewNote}`,
-      subject: `[Suggestion ${suggestion.code}] Revision requested`,
+      title: `Suggestion ${suggestion.code} perlu revisi`,
+      message: `Reviewer meminta revisi: ${reviewNote}`,
+      subject: `[Suggestion ${suggestion.code}] Revisi diminta`,
     },
     REJECTED: {
       type: 'SUGGESTION_REJECTED' as const,
-      title: `Suggestion ${suggestion.code} rejected`,
-      message: `Your suggestion was rejected. Reason: ${reviewNote}`,
-      subject: `[Suggestion ${suggestion.code}] Rejected`,
+      title: `Suggestion ${suggestion.code} ditolak`,
+      message: `Suggestion Anda ditolak. Alasan: ${reviewNote}`,
+      subject: `[Suggestion ${suggestion.code}] Ditolak`,
     },
   }[outcome]
 
@@ -607,7 +607,7 @@ async function emitReviewEvent(
     email: baseUrl
       ? {
           subject: config.subject,
-          html: `<p>Halo,</p><p>${h(config.message)}</p><p><strong>Project:</strong> ${h(projectLabel)}</p>${reviewNote ? `<p><strong>Review note:</strong> ${h(reviewNote)}</p>` : ''}${convertedTaskId && baseUrl ? `<p>Lihat task:<br><a href="${baseUrl}/tasks/${convertedTaskId}">${baseUrl}/tasks/${convertedTaskId}</a></p>` : ''}<p>Detail suggestion:<br><a href="${suggestionUrl}">${suggestionUrl}</a></p>`,
+          html: `<p>Halo,</p><p>${h(config.message)}</p><p><strong>Project:</strong> ${h(projectLabel)}</p>${reviewNote ? `<p><strong>Catatan review:</strong> ${h(reviewNote)}</p>` : ''}${convertedTaskId && baseUrl ? `<p>Lihat task:<br><a href="${baseUrl}/tasks/${convertedTaskId}">${baseUrl}/tasks/${convertedTaskId}</a></p>` : ''}<p>Detail suggestion:<br><a href="${suggestionUrl}">${suggestionUrl}</a></p>`,
           category: 'suggestion',
         }
       : null,
@@ -626,8 +626,8 @@ async function emitReviewEvent(
       key: `task-from-suggestion:${convertedTaskId}`,
       type: 'TASK_CREATED_FROM_SUGGESTION',
       userIds: [suggestion.suggested_by, ...pmIds],
-      title: `New task from suggestion ${suggestion.code}`,
-      message: `Suggestion "${suggestion.title}" was approved and created as an official task.`,
+      title: `Task baru dari Suggestion ${suggestion.code}`,
+      message: `Suggestion "${suggestion.title}" disetujui dan dibuat sebagai task resmi.`,
       entityType: 'task',
       entityId: convertedTaskId,
       email: null, // email sudah dikirim lewat event APPROVED ke creator

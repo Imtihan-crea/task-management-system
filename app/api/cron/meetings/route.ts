@@ -21,11 +21,11 @@ export const dynamic = 'force-dynamic'
 async function handle(request: Request) {
   const secret = process.env.CRON_SECRET
   if (!secret) {
-    return NextResponse.json({ error: 'Scheduler is not configured.' }, { status: 500 })
+    return NextResponse.json({ error: 'Scheduler belum dikonfigurasi.' }, { status: 500 })
   }
 
   if (!isCronAuthorized(request.headers.get('authorization'), secret)) {
-    return NextResponse.json({ error: 'Unauthorized.' }, { status: 401 })
+    return NextResponse.json({ error: 'Tidak diizinkan.' }, { status: 401 })
   }
 
   const now = new Date()

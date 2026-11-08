@@ -66,9 +66,9 @@ export async function completePasswordChange(
 ): Promise<PasswordChangeResult> {
   const profile = await resolveActor(accessToken)
 
-  if (!profile) return { error: 'Your session has expired. Please log in again.' }
+  if (!profile) return { error: 'Sesi Anda telah berakhir. Silakan Login kembali.' }
   if (profile.status !== 'ACTIVE') {
-    return { error: 'Your account is inactive. Please contact an administrator.' }
+    return { error: 'Akun Anda nonaktif. Silakan hubungi administrator.' }
   }
 
   const admin = createAdminClient()
@@ -85,7 +85,7 @@ export async function completePasswordChange(
     )
   } else if (error) {
     console.error('[change-password] Failed to clear flag:', error.message)
-    return { error: 'Password changed, but we could not update your profile. Please try again.' }
+    return { error: 'Password berhasil diubah, tetapi profil Anda tidak dapat diperbarui. Silakan coba lagi.' }
   }
 
   await logActivity({

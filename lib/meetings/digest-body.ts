@@ -67,7 +67,7 @@ export function buildDigestBody(input: {
         (t) =>
           `<li><strong>${escapeEmailHtml(t.code)} ` +
           `${link(`${input.baseUrl}/tasks/${t.id}`, escapeEmailHtml(t.title))}</strong>` +
-          `<br><span>${t.overdue ? 'OVERDUE' : 'Due hari ini'} · Deadline: ${escapeEmailHtml(t.deadline)} · ${escapeEmailHtml(t.projectLabel)}</span></li>`
+          `<br><span>${t.overdue ? 'OVERDUE' : 'Jatuh tempo hari ini'} · Deadline: ${escapeEmailHtml(t.deadline)} · ${escapeEmailHtml(t.projectLabel)}</span></li>`
       )
       .join('')
     parts.push(`<h3>Task Perhatian (${urgent.length})</h3><ul>${items}</ul>`)

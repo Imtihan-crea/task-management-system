@@ -49,7 +49,7 @@ const full = buildDigestBody({
 cek('sapa user + tanggal', full.includes('Imtihan') && full.includes('06 Okt 2026'), true)
 cek('meeting + jam', full.includes('M-010') && full.includes('09:00'), true)
 cek('overdue ditandai', full.includes('OVERDUE'), true)
-cek('due hari ini ditandai', full.includes('Due hari ini'), true)
+cek('due hari ini ditandai', full.includes('Jatuh tempo hari ini'), true)
 cek('overdue di atas due (urgent dulu)', full.indexOf('T-03') < full.indexOf('T-05'), true)
 
 /* ---------- hanya meeting ---------- */
