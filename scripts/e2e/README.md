@@ -9,7 +9,7 @@ Database lokal (`.env.local`) adalah **database PRODUKSI**. Skrip ini membuat da
 1. Skrip menolak jalan kecuali `E2E_CONFIRM_PRODUCTION=ya` di-set.
 2. `BASE` harus `http://localhost:<port>` (default `http://localhost:3100`).
 3. Server **harus** dimulai dengan email mati. Skrip membaca environment proses server dan menolak jalan bila `BREVO_API_KEY` tidak kosong.
-4. Semua data uji berawalan `UJI-E2E` (user: `uji-e2e-...@example.com`). `write-flow.mjs` memanggil pembersihan di `finally`; `cleanup.mjs` bisa dijalankan manual dan harus melaporkan `sisa` semua 0.
+4. Semua data uji berawalan `UJI-E2E` (user: `uji-e2e-...@example.com`). `write-flow.mjs` dan `rbac.mjs` memanggil pembersihan di `finally`; `cleanup.mjs` bisa dijalankan manual dan harus melaporkan `sisa` semua 0.
 5. RAM laptop terbatas: jangan `next dev`; satu `next start` saja di port 3100.
 6. Sesi admin dibuat dari link recovery sekali pakai (`auth.admin.generateLink`), password admin **tidak diubah**. Email admin dibaca dari `private/akun-admin.md` (di-gitignore). Rahasia tidak pernah dicetak.
 
@@ -28,6 +28,7 @@ BREVO_API_KEY="" BREVO_SENDER_EMAIL="" ./node_modules/.bin/next start -p 3100 &
 export E2E_CONFIRM_PRODUCTION=ya
 npm run e2e:smoke     # baca-saja: buka semua halaman admin
 npm run e2e:write     # 14 langkah alur tulis (project -> task -> usulan -> meeting -> nonaktifkan user)
+npm run e2e:rbac      # matriks hak akses per role (hasil: tabel di konsol + ~/.cache/taskmgmt-smoke/rbac-result.json)
 npm run e2e:cleanup   # hapus sisa data UJI-E2E (jika run terputus)
 ```
 
