@@ -22,10 +22,12 @@ function FormFields({
   managers,
   initial,
   pending,
+  staleManagers,
 }: {
   managers: UserOption[]
   initial: ProjectFormValues
   pending: boolean
+  staleManagers?: string[]
 }) {
   return (
     <>
@@ -94,6 +96,13 @@ function FormFields({
             </option>
           ))}
         </select>
+        {/* Audit A12: PM lama yang nonaktif/turun role tidak bisa dipilih;
+            beri tahu bahwa ia akan dilepas saat disimpan. */}
+        {staleManagers && staleManagers.length > 0 && (
+          <p role="alert" className="mt-1 text-xs font-medium text-amber-700 dark:text-amber-400">
+            No longer active Admin/PM, will be removed on save: {staleManagers.join(', ')}
+          </p>
+        )}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -156,10 +165,12 @@ export function ProjectForm({
   mode,
   managers,
   initial,
+  staleManagers,
 }: {
   mode: 'create' | 'edit'
   managers: UserOption[]
   initial?: ProjectFormValues
+  staleManagers?: string[]
 }) {
   const action = mode === 'create' ? createProject : updateProject
   const [state, formAction, pending] = useActionState(action, INITIAL)
@@ -174,7 +185,7 @@ export function ProjectForm({
       <form action={formAction} className="mt-4 flex flex-col gap-4">
         {values.id && <input type="hidden" name="id" value={values.id} />}
 
-        <FormFields managers={managers} initial={values} pending={pending} />
+        <FormFields managers={managers} initial={values} pending={pending} staleManagers={staleManagers} />
 
         {state?.error && (
           <p role="alert" className="text-sm font-medium text-red-600">

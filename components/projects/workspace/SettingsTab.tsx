@@ -24,11 +24,21 @@ export async function SettingsTab({ projectId }: { projectId: string }) {
   }
   const pmIds = ((pmLinks ?? []) as { user_id: string }[]).map((l) => l.user_id)
 
+  // PM tercatat yang tidak lagi Admin/PM aktif (audit A12).
+  const staleIds = pmIds.filter((uid) => !managers.some((m) => m.id === uid))
+  const { data: staleRows } = staleIds.length
+    ? await admin.from('profiles').select('full_name, email').in('id', staleIds)
+    : { data: [] }
+  const staleManagers = ((staleRows ?? []) as { full_name: string | null; email: string }[]).map(
+    (r) => r.full_name || r.email
+  )
+
   return (
     <section>
       <ProjectForm
         mode="edit"
         managers={managers}
+        staleManagers={staleManagers}
         initial={{
           id: p.id,
           name: p.name,

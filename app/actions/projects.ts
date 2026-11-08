@@ -215,6 +215,16 @@ export async function updateProject(
     ((oldManagers ?? []) as { user_id: string }[]).map((m) => m.user_id)
   )
 
+  // Audit A12: PM tidak boleh melepas dirinya sendiri (langsung kehilangan
+  // akses ke project). Admin yang boleh mengatur ulang.
+  if (
+    profile.role === 'PROJECT_MANAGER' &&
+    oldManagerIds.has(profile.id) &&
+    !managerIds.includes(profile.id)
+  ) {
+    return { error: 'You cannot remove yourself as project manager. Ask an Admin.' }
+  }
+
   const { data: updated, error } = await admin
     .from('projects')
     .update({
