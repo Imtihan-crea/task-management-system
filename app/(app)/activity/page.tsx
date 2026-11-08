@@ -240,7 +240,7 @@ export default async function ActivityPage({
         {fEntity && <input type="hidden" name="entity" value={fEntity} />}
         <div>
           <label htmlFor="f-entity" className="mb-1 block text-sm font-medium">Entitas</label>
-          <select id="f-entity" name="entity" defaultValue={fEntity} className="min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800">
+          <select id="f-entity" name="entity" defaultValue={fEntity} className="w-full min-w-0 sm:w-auto min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800">
             {ENTITY_OPTIONS.map((e) => (
               <option key={e} value={e}>{e === '' ? 'Semua' : e}</option>
             ))}
@@ -248,7 +248,7 @@ export default async function ActivityPage({
         </div>
         <div>
           <label htmlFor="f-action" className="mb-1 block text-sm font-medium">Aksi</label>
-          <select id="f-action" name="action" defaultValue={fAction} className="min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800">
+          <select id="f-action" name="action" defaultValue={fAction} className="w-full min-w-0 sm:w-auto min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800">
             {ACTION_OPTIONS.map((a) => (
               <option key={a} value={a}>{a === '' ? 'Semua' : a.replace(/_/g, ' ')}</option>
             ))}
@@ -261,16 +261,16 @@ export default async function ActivityPage({
             name="actor"
             defaultValue={fActor}
             placeholder="Nama user"
-            className="min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
+            className="w-full min-w-0 sm:w-auto min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
           />
         </div>
         <div>
           <label htmlFor="f-from" className="mb-1 block text-sm font-medium">Dari</label>
-          <input id="f-from" name="from" type="date" defaultValue={fFrom} className="min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800" />
+          <input id="f-from" name="from" type="date" defaultValue={fFrom} className="w-full min-w-0 sm:w-auto min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800" />
         </div>
         <div>
           <label htmlFor="f-to" className="mb-1 block text-sm font-medium">Sampai</label>
-          <input id="f-to" name="to" type="date" defaultValue={fTo} className="min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800" />
+          <input id="f-to" name="to" type="date" defaultValue={fTo} className="w-full min-w-0 sm:w-auto min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800" />
         </div>
         <button type="submit" className="min-h-[44px] rounded-lg bg-kasuat-gold px-5 py-2 font-semibold text-kasuat-black">
           Terapkan

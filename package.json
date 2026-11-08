@@ -31,6 +31,7 @@
     "e2e:cleanup": "node scripts/e2e/cleanup.mjs",
     "e2e:rbac": "node scripts/e2e/rbac.mjs",
     "e2e:a11y": "node scripts/e2e/a11y.mjs",
+    "e2e:mobile": "node scripts/e2e/mobile.mjs",
     "e2e:a3": "node scripts/e2e/a3-password.mjs",
     "test:user-status": "tsx tests/user-status.check.ts",
     "check:secrets": "node scripts/check-secrets.mjs",

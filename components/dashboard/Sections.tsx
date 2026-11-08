@@ -171,7 +171,7 @@ function MiniList({
         <li key={t.id}>
           <Link
             href={`/tasks/${t.id}`}
-            className="flex items-center justify-between gap-2 rounded-xl border p-3 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+            className="flex flex-wrap items-center justify-between gap-2 rounded-xl border p-3 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
           >
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">

@@ -99,7 +99,7 @@ export function ActivityTimeline({
             className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-[#BE9B5C]"
           />
           <div className="min-w-0">
-            <p className="text-sm font-semibold text-[#221F1F] dark:text-zinc-100">
+            <p className="break-words text-sm font-semibold text-[#221F1F] dark:text-zinc-100">
               {describeActivity(entry)}
             </p>
             <p className="truncate text-sm text-zinc-600 dark:text-zinc-400">

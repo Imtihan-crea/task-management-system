@@ -219,7 +219,7 @@ export default async function ProjectsPage({
           Belum ada Project. {canCreate ? 'Buat Project pertama Anda di bawah.' : ''}
         </p>
       ) : (
-        <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+        <ul className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {visibleProjects.map((project) => {
             const progress = progressMap[project.id] ?? {
               total: 0, completed: 0, inProgress: 0, blocked: 0, todo: 0, percent: 0,
