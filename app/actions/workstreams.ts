@@ -12,20 +12,15 @@ export type WorkstreamFormState = {
   success?: string
 } | undefined
 
-// Batas panjang di server (audit B12), lihat lib/forms/limits.ts.
-function readField(formData: FormData, name: string): string {
-  return readLimitedField(formData, name)
-}
-
 export async function createWorkstream(
   _prev: WorkstreamFormState,
   formData: FormData
 ): Promise<WorkstreamFormState> {
   const profile = await requireManager()
 
-  const projectId = readField(formData, 'project_id')
-  const name = readField(formData, 'name')
-  const description = readField(formData, 'description')
+  const projectId = readLimitedField(formData, 'project_id')
+  const name = readLimitedField(formData, 'name')
+  const description = readLimitedField(formData, 'description')
 
   if (!projectId) return { error: 'Project wajib diisi.' }
   if (!name) return { error: 'Nama Workstream wajib diisi.' }
@@ -69,9 +64,9 @@ export async function updateWorkstream(
 ): Promise<WorkstreamFormState> {
   const profile = await requireManager()
 
-  const id = readField(formData, 'id')
-  const name = readField(formData, 'name')
-  const description = readField(formData, 'description')
+  const id = readLimitedField(formData, 'id')
+  const name = readLimitedField(formData, 'name')
+  const description = readLimitedField(formData, 'description')
 
   if (!id) return { error: 'Workstream tidak ditemukan.' }
   if (!name) return { error: 'Nama Workstream wajib diisi.' }
@@ -119,7 +114,7 @@ export async function deleteWorkstream(
 ): Promise<WorkstreamFormState> {
   const profile = await requireManager()
 
-  const id = readField(formData, 'id')
+  const id = readLimitedField(formData, 'id')
   if (!id) return { error: 'Workstream tidak ditemukan.' }
 
   const admin = createAdminClient()

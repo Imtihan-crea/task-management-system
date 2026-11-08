@@ -196,11 +196,6 @@ function displayTime(value: string | null | undefined): string {
   return `${String(h).padStart(2, '0')}.${String(m).padStart(2, '0')}`
 }
 
-/** "09.00" — format Indonesia, dipakai untuk tampil. */
-export function formatMeetingTime(value: string | null | undefined): string {
-  return displayTime(value)
-}
-
 /** "09.00–10.30" */
 export function formatTimeRange(
   start: string | null | undefined,

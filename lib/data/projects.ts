@@ -59,20 +59,3 @@ export async function isProjectClosed(projectId: string): Promise<boolean> {
     .maybeSingle<{ status: string }>()
   return !data || data.status === 'COMPLETED' || data.status === 'CANCELLED'
 }
-
-/** Nama semua PM sebuah project (untuk tampilan). */
-export async function getProjectManagerNames(
-  projectId: string
-): Promise<string[]> {
-  const ids = await getProjectManagerIds(projectId)
-  if (ids.length === 0) return []
-
-  const { data } = await createAdminClient()
-    .from('profiles')
-    .select('id, full_name, email')
-    .in('id', ids)
-
-  return ((data ?? []) as { id: string; full_name: string | null; email: string }[]).map(
-    (u) => u.full_name || u.email
-  )
-}

@@ -30,7 +30,8 @@ import {
   isHistoricalMeetingStatus,
 } from '@/lib/meetings/rules'
 import type { TaskPriority } from '@/types/task'
-import { readLimitedField } from '@/lib/forms/limits'
+import { assertActiveUser, assertWorkstreamInProject } from '@/lib/data/assertions'
+import { readLimitedField, readMulti } from '@/lib/forms/limits'
 import { isValidDateInput } from '@/lib/forms/dates'
 import { meetingNoticeBody, meetingInvitationBody, taskAssignedBody } from '@/lib/email/templates'
 
@@ -42,23 +43,6 @@ export type MeetingFormState = {
 /* ============================================================================
  * Helper baca form + validasi dasar
  * ========================================================================== */
-
-// Batas panjang di server (audit B12), lihat lib/forms/limits.ts.
-function readField(formData: FormData, name: string): string {
-  return readLimitedField(formData, name)
-}
-
-function readList(formData: FormData, name: string): string[] {
-  return formData
-    .getAll(name)
-    .map((v) => (typeof v === 'string' ? v.trim() : ''))
-    .filter(Boolean)
-}
-
-// Tanggal kalender yang benar-benar ada (audit C1).
-function validDate(value: string): boolean {
-  return isValidDateInput(value)
-}
 
 function validTime(value: string): boolean {
   if (!value) return true
@@ -86,32 +70,7 @@ function isTaskPriority(value: string): value is TaskPriority {
   return value === 'LOW' || value === 'MEDIUM' || value === 'HIGH'
 }
 
-async function assertActiveUser(userId: string): Promise<boolean> {
-  const { data } = await createAdminClient()
-    .from('profiles')
-    .select('id')
-    .eq('id', userId)
-    .eq('status', 'ACTIVE')
-    .maybeSingle<{ id: string }>()
-
-  return Boolean(data)
-}
-
 /** Pastikan workstream (kalau diisi) memang milik project tersebut. */
-async function assertWorkstreamInProject(
-  workstreamId: string,
-  projectId: string
-): Promise<boolean> {
-  const { data } = await createAdminClient()
-    .from('workstreams')
-    .select('id')
-    .eq('id', workstreamId)
-    .eq('project_id', projectId)
-    .maybeSingle<{ id: string }>()
-
-  return Boolean(data)
-}
-
 /* ============================================================================
  * Akses meeting — satu tempat untuk semua cek otorisasi (§37)
  * ============================================================================
@@ -273,7 +232,7 @@ function validateMeetingFields(input: {
 }): string | null {
   if (!input.title) return 'Judul Meeting wajib diisi.'
   if (!isMeetingType(input.meetingType)) return 'Pilih tipe Meeting yang valid.'
-  if (!input.meetingDate || !validDate(input.meetingDate)) {
+  if (!input.meetingDate || !isValidDateInput(input.meetingDate)) {
     return 'Masukkan tanggal yang valid.'
   }
   if (!input.startTime || !validTime(input.startTime)) {
@@ -308,18 +267,18 @@ export async function createMeeting(
     return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
-  const title = readField(formData, 'title')
-  const projectId = readField(formData, 'project_id')
-  const meetingType = readField(formData, 'meeting_type') || 'INTERNAL_MEETING'
-  const meetingDate = readField(formData, 'meeting_date')
-  const startTime = readField(formData, 'start_time')
-  const endTime = readField(formData, 'end_time')
-  const location = readField(formData, 'location')
-  const meetingLink = readField(formData, 'meeting_link')
-  const description = readField(formData, 'description')
-  const organizerId = readField(formData, 'organizer_id') || profile.id
+  const title = readLimitedField(formData, 'title')
+  const projectId = readLimitedField(formData, 'project_id')
+  const meetingType = readLimitedField(formData, 'meeting_type') || 'INTERNAL_MEETING'
+  const meetingDate = readLimitedField(formData, 'meeting_date')
+  const startTime = readLimitedField(formData, 'start_time')
+  const endTime = readLimitedField(formData, 'end_time')
+  const location = readLimitedField(formData, 'location')
+  const meetingLink = readLimitedField(formData, 'meeting_link')
+  const description = readLimitedField(formData, 'description')
+  const organizerId = readLimitedField(formData, 'organizer_id') || profile.id
   const addToCalendar = formData.get('add_to_calendar') === 'on'
-  const participantIds = [...new Set(readList(formData, 'participant_ids'))]
+  const participantIds = [...new Set(readMulti(formData, 'participant_ids'))]
 
   const fieldError = validateMeetingFields({
     title,
@@ -427,7 +386,7 @@ export async function updateMeeting(
 ): Promise<MeetingFormState> {
   const profile = await requireProfile()
 
-  const id = readField(formData, 'id')
+  const id = readLimitedField(formData, 'id')
   if (!id) return { error: 'Meeting tidak ditemukan.' }
 
   const access = await getMeetingAccess(id, profile.id, profile.role)
@@ -441,14 +400,14 @@ export async function updateMeeting(
     return { error: 'Meeting yang COMPLETED atau CANCELLED tidak dapat diubah.' }
   }
 
-  const title = readField(formData, 'title')
-  const meetingType = readField(formData, 'meeting_type')
-  const meetingDate = readField(formData, 'meeting_date')
-  const startTime = readField(formData, 'start_time')
-  const endTime = readField(formData, 'end_time')
-  const location = readField(formData, 'location')
-  const meetingLink = readField(formData, 'meeting_link')
-  const description = readField(formData, 'description')
+  const title = readLimitedField(formData, 'title')
+  const meetingType = readLimitedField(formData, 'meeting_type')
+  const meetingDate = readLimitedField(formData, 'meeting_date')
+  const startTime = readLimitedField(formData, 'start_time')
+  const endTime = readLimitedField(formData, 'end_time')
+  const location = readLimitedField(formData, 'location')
+  const meetingLink = readLimitedField(formData, 'meeting_link')
+  const description = readLimitedField(formData, 'description')
   // Project TIDAK bisa diubah setelah create (konteks first-class, §3):
   // pindah project akan merusak scope + traceability task.
 
@@ -468,7 +427,7 @@ export async function updateMeeting(
   // Ganti organizer hanya boleh ADMIN/PM. Member tidak bisa mengalihkan
   // meeting miliknya ke orang lain.
   let organizerId = access.meeting.organizer_id
-  const wantOrganizer = readField(formData, 'organizer_id')
+  const wantOrganizer = readLimitedField(formData, 'organizer_id')
   if (wantOrganizer && wantOrganizer !== organizerId) {
     if (profile.role !== 'ADMIN' && profile.role !== 'PROJECT_MANAGER') {
       return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
@@ -539,7 +498,7 @@ export async function scheduleMeeting(
 ): Promise<MeetingFormState> {
   const profile = await requireProfile()
 
-  const id = readField(formData, 'id')
+  const id = readLimitedField(formData, 'id')
   if (!id) return { error: 'Meeting tidak ditemukan.' }
 
   const access = await getMeetingAccess(id, profile.id, profile.role)
@@ -597,7 +556,7 @@ export async function completeMeeting(
 ): Promise<MeetingFormState> {
   const profile = await requireProfile()
 
-  const id = readField(formData, 'id')
+  const id = readLimitedField(formData, 'id')
   if (!id) return { error: 'Meeting tidak ditemukan.' }
 
   const access = await getMeetingAccess(id, profile.id, profile.role)
@@ -715,7 +674,7 @@ export async function cancelMeeting(
 ): Promise<MeetingFormState> {
   const profile = await requireProfile()
 
-  const id = readField(formData, 'id')
+  const id = readLimitedField(formData, 'id')
   if (!id) return { error: 'Meeting tidak ditemukan.' }
 
   const access = await getMeetingAccess(id, profile.id, profile.role)
@@ -783,8 +742,8 @@ export async function updateMeetingNotes(
 ): Promise<MeetingFormState> {
   const profile = await requireProfile()
 
-  const id = readField(formData, 'id')
-  const notes = readField(formData, 'notes')
+  const id = readLimitedField(formData, 'id')
+  const notes = readLimitedField(formData, 'notes')
   if (!id) return { error: 'Meeting tidak ditemukan.' }
 
   const access = await getMeetingAccess(id, profile.id, profile.role)
@@ -843,9 +802,9 @@ export async function createAgenda(
 ): Promise<MeetingFormState> {
   const profile = await requireProfile()
 
-  const meetingId = readField(formData, 'meeting_id')
-  const title = readField(formData, 'title')
-  const notes = readField(formData, 'notes')
+  const meetingId = readLimitedField(formData, 'meeting_id')
+  const title = readLimitedField(formData, 'title')
+  const notes = readLimitedField(formData, 'notes')
   if (!meetingId) return { error: 'Meeting tidak ditemukan.' }
   if (!title) return { error: 'Judul Agenda wajib diisi.' }
 
@@ -904,10 +863,10 @@ export async function updateAgenda(
 ): Promise<MeetingFormState> {
   const profile = await requireProfile()
 
-  const id = readField(formData, 'id')
-  const meetingId = readField(formData, 'meeting_id')
-  const title = readField(formData, 'title')
-  const notes = readField(formData, 'notes')
+  const id = readLimitedField(formData, 'id')
+  const meetingId = readLimitedField(formData, 'meeting_id')
+  const title = readLimitedField(formData, 'title')
+  const notes = readLimitedField(formData, 'notes')
   if (!id || !meetingId) return { error: 'Agenda tidak ditemukan.' }
   if (!title) return { error: 'Judul Agenda wajib diisi.' }
 
@@ -946,8 +905,8 @@ export async function deleteAgenda(
 ): Promise<MeetingFormState> {
   const profile = await requireProfile()
 
-  const id = readField(formData, 'id')
-  const meetingId = readField(formData, 'meeting_id')
+  const id = readLimitedField(formData, 'id')
+  const meetingId = readLimitedField(formData, 'meeting_id')
   if (!id || !meetingId) return { error: 'Agenda tidak ditemukan.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
@@ -986,8 +945,8 @@ export async function reorderAgendas(
 ): Promise<MeetingFormState> {
   const profile = await requireProfile()
 
-  const meetingId = readField(formData, 'meeting_id')
-  const orderedIds = readList(formData, 'ordered_ids')
+  const meetingId = readLimitedField(formData, 'meeting_id')
+  const orderedIds = readMulti(formData, 'ordered_ids')
   if (!meetingId || orderedIds.length === 0) return { error: 'Tidak ada yang perlu diurutkan ulang.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
@@ -1040,9 +999,9 @@ export async function createDecision(
 ): Promise<MeetingFormState> {
   const profile = await requireProfile()
 
-  const meetingId = readField(formData, 'meeting_id')
-  const decision = readField(formData, 'decision')
-  const rationale = readField(formData, 'rationale')
+  const meetingId = readLimitedField(formData, 'meeting_id')
+  const decision = readLimitedField(formData, 'decision')
+  const rationale = readLimitedField(formData, 'rationale')
   if (!meetingId) return { error: 'Meeting tidak ditemukan.' }
   if (!decision) return { error: 'Decision wajib diisi.' }
 
@@ -1102,10 +1061,10 @@ export async function updateDecision(
 ): Promise<MeetingFormState> {
   const profile = await requireProfile()
 
-  const id = readField(formData, 'id')
-  const meetingId = readField(formData, 'meeting_id')
-  const decision = readField(formData, 'decision')
-  const rationale = readField(formData, 'rationale')
+  const id = readLimitedField(formData, 'id')
+  const meetingId = readLimitedField(formData, 'meeting_id')
+  const decision = readLimitedField(formData, 'decision')
+  const rationale = readLimitedField(formData, 'rationale')
   if (!id || !meetingId) return { error: 'Decision tidak ditemukan.' }
   if (!decision) return { error: 'Decision wajib diisi.' }
 
@@ -1144,8 +1103,8 @@ export async function deleteDecision(
 ): Promise<MeetingFormState> {
   const profile = await requireProfile()
 
-  const id = readField(formData, 'id')
-  const meetingId = readField(formData, 'meeting_id')
+  const id = readLimitedField(formData, 'id')
+  const meetingId = readLimitedField(formData, 'meeting_id')
   if (!id || !meetingId) return { error: 'Decision tidak ditemukan.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
@@ -1187,18 +1146,18 @@ export async function createActionItem(
 ): Promise<MeetingFormState> {
   const profile = await requireProfile()
 
-  const meetingId = readField(formData, 'meeting_id')
-  const title = readField(formData, 'title')
-  const description = readField(formData, 'description')
-  const assigneeId = readField(formData, 'assignee_id')
-  const deadline = readField(formData, 'deadline')
-  const priority = readField(formData, 'priority') || 'MEDIUM'
+  const meetingId = readLimitedField(formData, 'meeting_id')
+  const title = readLimitedField(formData, 'title')
+  const description = readLimitedField(formData, 'description')
+  const assigneeId = readLimitedField(formData, 'assignee_id')
+  const deadline = readLimitedField(formData, 'deadline')
+  const priority = readLimitedField(formData, 'priority') || 'MEDIUM'
   if (!meetingId) return { error: 'Meeting tidak ditemukan.' }
   if (!title) return { error: 'Judul Action Item wajib diisi.' }
   if (priority !== '' && !isTaskPriority(priority)) {
     return { error: 'Pilih prioritas yang valid.' }
   }
-  if (deadline && !validDate(deadline)) return { error: 'Masukkan Deadline yang valid.' }
+  if (deadline && !isValidDateInput(deadline)) return { error: 'Masukkan Deadline yang valid.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
   if (!access.meeting || !canManageMeetingContent(access, profile.role)) {
@@ -1254,21 +1213,21 @@ export async function updateActionItem(
 ): Promise<MeetingFormState> {
   const profile = await requireProfile()
 
-  const id = readField(formData, 'id')
-  const meetingId = readField(formData, 'meeting_id')
-  const title = readField(formData, 'title')
-  const description = readField(formData, 'description')
-  const assigneeId = readField(formData, 'assignee_id')
-  const deadline = readField(formData, 'deadline')
-  const priority = readField(formData, 'priority')
-  const status = readField(formData, 'status')
+  const id = readLimitedField(formData, 'id')
+  const meetingId = readLimitedField(formData, 'meeting_id')
+  const title = readLimitedField(formData, 'title')
+  const description = readLimitedField(formData, 'description')
+  const assigneeId = readLimitedField(formData, 'assignee_id')
+  const deadline = readLimitedField(formData, 'deadline')
+  const priority = readLimitedField(formData, 'priority')
+  const status = readLimitedField(formData, 'status')
   if (!id || !meetingId) return { error: 'Action Item tidak ditemukan.' }
   if (!title) return { error: 'Judul Action Item wajib diisi.' }
   if (priority && !isTaskPriority(priority)) {
     return { error: 'Pilih prioritas yang valid.' }
   }
   if (!isActionItemStatus(status)) return { error: 'Pilih status yang valid.' }
-  if (deadline && !validDate(deadline)) return { error: 'Masukkan Deadline yang valid.' }
+  if (deadline && !isValidDateInput(deadline)) return { error: 'Masukkan Deadline yang valid.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
   if (!access.meeting || !canManageMeetingContent(access, profile.role)) {
@@ -1342,8 +1301,8 @@ export async function deleteActionItem(
 ): Promise<MeetingFormState> {
   const profile = await requireProfile()
 
-  const id = readField(formData, 'id')
-  const meetingId = readField(formData, 'meeting_id')
+  const id = readLimitedField(formData, 'id')
+  const meetingId = readLimitedField(formData, 'meeting_id')
   if (!id || !meetingId) return { error: 'Action Item tidak ditemukan.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
@@ -1412,10 +1371,10 @@ export async function addParticipant(
 ): Promise<MeetingFormState> {
   const profile = await requireProfile()
 
-  const meetingId = readField(formData, 'meeting_id')
-  const userId = readField(formData, 'user_id')
-  const externalName = readField(formData, 'external_name')
-  const externalEmail = readField(formData, 'external_email')
+  const meetingId = readLimitedField(formData, 'meeting_id')
+  const userId = readLimitedField(formData, 'user_id')
+  const externalName = readLimitedField(formData, 'external_name')
+  const externalEmail = readLimitedField(formData, 'external_email')
   if (!meetingId) return { error: 'Meeting tidak ditemukan.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
@@ -1525,8 +1484,8 @@ export async function removeParticipant(
 ): Promise<MeetingFormState> {
   const profile = await requireProfile()
 
-  const meetingId = readField(formData, 'meeting_id')
-  const participantId = readField(formData, 'participant_id')
+  const meetingId = readLimitedField(formData, 'meeting_id')
+  const participantId = readLimitedField(formData, 'participant_id')
   if (!meetingId || !participantId) return { error: 'Peserta tidak ditemukan.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
@@ -1591,9 +1550,9 @@ export async function updateAttendance(
 ): Promise<MeetingFormState> {
   const profile = await requireProfile()
 
-  const meetingId = readField(formData, 'meeting_id')
-  const participantId = readField(formData, 'participant_id')
-  const attendance = readField(formData, 'attendance')
+  const meetingId = readLimitedField(formData, 'meeting_id')
+  const participantId = readLimitedField(formData, 'participant_id')
+  const attendance = readLimitedField(formData, 'attendance')
   if (!meetingId || !participantId) return { error: 'Peserta tidak ditemukan.' }
   if (!isAttendance(attendance)) return { error: 'Pilih kehadiran yang valid.' }
 
@@ -1666,8 +1625,8 @@ export async function createTaskFromActionItem(
 ): Promise<MeetingFormState> {
   const profile = await requireProfile()
 
-  const actionItemId = readField(formData, 'action_item_id')
-  const meetingId = readField(formData, 'meeting_id')
+  const actionItemId = readLimitedField(formData, 'action_item_id')
+  const meetingId = readLimitedField(formData, 'meeting_id')
   if (!actionItemId || !meetingId) return { error: 'Action Item tidak ditemukan.' }
 
   const access = await getMeetingAccess(meetingId, profile.id, profile.role)
@@ -1701,7 +1660,7 @@ export async function createTaskFromActionItem(
 
   // Task wajib punya project (§20 mapping). Meeting global tanpa project:
   // project dipilih di form saat membuat task (audit A10).
-  const projectId = access.meeting.project_id || readField(formData, 'project_id')
+  const projectId = access.meeting.project_id || readLimitedField(formData, 'project_id')
   if (!projectId) {
     return { error: 'Pilih Project untuk task ini.' }
   }
@@ -1721,18 +1680,18 @@ export async function createTaskFromActionItem(
   if (await isProjectClosed(projectId)) return { error: CLOSED_PROJECT_ERROR } // audit B14
 
   // Metadata warisan (§20). Form boleh menimpa, default dari action item.
-  const title = readField(formData, 'title') || action.title
-  const description = readField(formData, 'description') || action.description || ''
-  const assigneeId = readField(formData, 'assignee_id') || action.assignee_id || ''
-  const workstreamId = readField(formData, 'workstream_id')
-  const priority = readField(formData, 'priority') || action.priority || 'MEDIUM'
+  const title = readLimitedField(formData, 'title') || action.title
+  const description = readLimitedField(formData, 'description') || action.description || ''
+  const assigneeId = readLimitedField(formData, 'assignee_id') || action.assignee_id || ''
+  const workstreamId = readLimitedField(formData, 'workstream_id')
+  const priority = readLimitedField(formData, 'priority') || action.priority || 'MEDIUM'
   // Deadline wajib (audit B11): tidak lagi diam-diam menjadi hari ini.
-  const deadline = readField(formData, 'deadline') || action.deadline || ''
+  const deadline = readLimitedField(formData, 'deadline') || action.deadline || ''
 
   if (!title) return { error: 'Judul Task wajib diisi.' }
   if (!isTaskPriority(priority)) return { error: 'Pilih prioritas yang valid.' }
   if (!deadline) return { error: 'Tetapkan Deadline untuk task ini.' }
-  if (!validDate(deadline)) return { error: 'Masukkan Deadline yang valid.' }
+  if (!isValidDateInput(deadline)) return { error: 'Masukkan Deadline yang valid.' }
   if (!assigneeId) return { error: 'Pilih Assignee untuk membuat task ini.' }
   if (!(await assertActiveUser(assigneeId))) {
     return { error: 'Assignee harus berupa user aktif.' }

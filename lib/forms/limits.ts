@@ -51,3 +51,11 @@ export function readLimitedField(formData: FormData, name: string): string {
   if (trimmed.length > fieldMax(name)) throw new FieldTooLongError(name)
   return trimmed
 }
+
+/** Semua nilai string dari field berulang (mis. multi-select), di-trim, tanpa yang kosong. */
+export function readMulti(formData: FormData, name: string): string[] {
+  return formData
+    .getAll(name)
+    .map((v) => (typeof v === 'string' ? v.trim() : ''))
+    .filter(Boolean)
+}

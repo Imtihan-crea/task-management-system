@@ -18,6 +18,7 @@ import { logActivity } from '@/lib/activity-log/service'
 import { can } from '@/lib/auth/permissions'
 import type { SuggestionStatus, TaskSuggestion } from '@/types/suggestion'
 import type { TaskPriority } from '@/types/task'
+import { assertActiveUser } from '@/lib/data/assertions'
 import { readLimitedField } from '@/lib/forms/limits'
 import { isValidDateInput } from '@/lib/forms/dates'
 import { suggestionNewBody, suggestionReviewBody } from '@/lib/email/templates'
@@ -26,27 +27,6 @@ export type SuggestionFormState = {
   error?: string
   success?: string
 } | undefined
-
-// Batas panjang di server (audit B12), lihat lib/forms/limits.ts.
-function readField(formData: FormData, name: string): string {
-  return readLimitedField(formData, name)
-}
-
-// Tanggal kalender yang benar-benar ada (audit C1).
-function validDate(value: string): boolean {
-  return isValidDateInput(value)
-}
-
-async function assertActiveUser(userId: string): Promise<boolean> {
-  const { data } = await createAdminClient()
-    .from('profiles')
-    .select('id')
-    .eq('id', userId)
-    .eq('status', 'ACTIVE')
-    .maybeSingle<{ id: string }>()
-
-  return Boolean(data)
-}
 
 
 async function assertCanSuggestProject(
@@ -87,13 +67,13 @@ export async function createSuggestion(
     return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
-  const title = readField(formData, 'title')
-  const description = readField(formData, 'description')
-  const projectId = readField(formData, 'project_id')
-  const workstreamId = readField(formData, 'workstream_id')
-  const assigneeId = readField(formData, 'suggested_assignee_id')
-  const priority = readField(formData, 'suggested_priority')
-  const deadline = readField(formData, 'suggested_deadline')
+  const title = readLimitedField(formData, 'title')
+  const description = readLimitedField(formData, 'description')
+  const projectId = readLimitedField(formData, 'project_id')
+  const workstreamId = readLimitedField(formData, 'workstream_id')
+  const assigneeId = readLimitedField(formData, 'suggested_assignee_id')
+  const priority = readLimitedField(formData, 'suggested_priority')
+  const deadline = readLimitedField(formData, 'suggested_deadline')
 
   if (!title) return { error: 'Judul Task wajib diisi.' }
   if (!description) return { error: 'Deskripsi wajib diisi.' }
@@ -101,7 +81,7 @@ export async function createSuggestion(
   if (priority && !isTaskPriority(priority)) {
     return { error: 'Pilih prioritas yang valid.' }
   }
-  if (!validDate(deadline)) return { error: 'Masukkan Deadline yang valid.' }
+  if (!isValidDateInput(deadline)) return { error: 'Masukkan Deadline yang valid.' }
 
   if (!(await assertCanSuggestProject(projectId, profile.id, profile.role))) {
     return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
@@ -224,13 +204,13 @@ export async function resubmitSuggestion(
 ): Promise<SuggestionFormState> {
   const profile = await requireProfile()
 
-  const id = readField(formData, 'id')
-  const title = readField(formData, 'title')
-  const description = readField(formData, 'description')
-  const workstreamId = readField(formData, 'workstream_id')
-  const assigneeId = readField(formData, 'suggested_assignee_id')
-  const priority = readField(formData, 'suggested_priority')
-  const deadline = readField(formData, 'suggested_deadline')
+  const id = readLimitedField(formData, 'id')
+  const title = readLimitedField(formData, 'title')
+  const description = readLimitedField(formData, 'description')
+  const workstreamId = readLimitedField(formData, 'workstream_id')
+  const assigneeId = readLimitedField(formData, 'suggested_assignee_id')
+  const priority = readLimitedField(formData, 'suggested_priority')
+  const deadline = readLimitedField(formData, 'suggested_deadline')
 
   if (!id) return { error: 'Suggestion tidak ditemukan.' }
   if (!title) return { error: 'Judul Task wajib diisi.' }
@@ -239,7 +219,7 @@ export async function resubmitSuggestion(
   if (priority && !isTaskPriority(priority)) {
     return { error: 'Pilih prioritas yang valid.' }
   }
-  if (!validDate(deadline)) return { error: 'Masukkan Deadline yang valid.' }
+  if (!isValidDateInput(deadline)) return { error: 'Masukkan Deadline yang valid.' }
 
   const admin = createAdminClient()
   const { data: current } = await admin
@@ -327,9 +307,9 @@ export async function reviewSuggestion(
     return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
-  const id = readField(formData, 'id')
-  const decision = readField(formData, 'decision') // approve | revise | reject
-  const reviewNote = readField(formData, 'review_note')
+  const id = readLimitedField(formData, 'id')
+  const decision = readLimitedField(formData, 'decision') // approve | revise | reject
+  const reviewNote = readLimitedField(formData, 'review_note')
 
   if (!id) return { error: 'Suggestion tidak ditemukan.' }
   if (!['approve', 'revise', 'reject'].includes(decision)) {
@@ -356,12 +336,12 @@ export async function reviewSuggestion(
 
   if (decision === 'approve') {
     // Audit B8: prioritas, deadline, dan catatan dari reviewer ikut dipakai.
-    const priority = readField(formData, 'priority') || current.suggested_priority || 'MEDIUM'
-    const deadline = readField(formData, 'deadline') || current.suggested_deadline || ''
+    const priority = readLimitedField(formData, 'priority') || current.suggested_priority || 'MEDIUM'
+    const deadline = readLimitedField(formData, 'deadline') || current.suggested_deadline || ''
     if (!isTaskPriority(priority)) return { error: 'Pilih prioritas yang valid.' }
     if (!deadline) return { error: 'Tetapkan Deadline untuk menyetujui Suggestion ini.' }
-    if (!validDate(deadline)) return { error: 'Masukkan Deadline yang valid.' }
-    return approveSuggestionInternal(id, profile.id, readField(formData, 'assignee_id') || null, {
+    if (!isValidDateInput(deadline)) return { error: 'Masukkan Deadline yang valid.' }
+    return approveSuggestionInternal(id, profile.id, readLimitedField(formData, 'assignee_id') || null, {
       priority,
       deadline,
       reviewNote,

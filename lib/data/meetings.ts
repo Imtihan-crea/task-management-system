@@ -350,65 +350,6 @@ export const fetchMeetingById = cache(
   }
 )
 
-/**
- * Meeting + konteks yang dibutuhkan header detail (PRD §14).
- * Satu fetch paralel, bukan berantai.
- */
-export const fetchMeetingHeaderContext = cache(
-  async (
-    meetingId: string
-  ): Promise<{
-    project: { id: string; code: string; name: string } | null
-    organizer: { id: string; name: string } | null
-    participantCount: number
-    actionItemCount: number
-    openActionItemCount: number
-  }> => {
-    const admin = createAdminClient()
-
-    const { data: meeting } = await admin
-      .from('meetings')
-      .select('project_id, organizer_id')
-      .eq('id', meetingId)
-      .maybeSingle<{ project_id: string | null; organizer_id: string | null }>()
-
-    const [projectRes, organizerRes, participantsRes, actionsRes] = await Promise.all([
-      meeting?.project_id
-        ? admin
-            .from('projects')
-            .select('id, code, name')
-            .eq('id', meeting.project_id)
-            .maybeSingle<{ id: string; code: string; name: string }>()
-        : Promise.resolve({ data: null as { id: string; code: string; name: string } | null }),
-      meeting?.organizer_id
-        ? admin
-            .from('profiles')
-            .select('id, full_name, email')
-            .eq('id', meeting.organizer_id)
-            .maybeSingle<{ id: string; full_name: string | null; email: string }>()
-        : Promise.resolve({ data: null as { id: string; full_name: string | null; email: string } | null }),
-      admin.from('meeting_participants').select('id').eq('meeting_id', meetingId),
-      admin.from('meeting_action_items').select('id, status').eq('meeting_id', meetingId),
-    ])
-
-    const actions = (actionsRes.data ?? []) as { id: string; status: string }[]
-
-    return {
-      project: projectRes.data ?? null,
-      organizer: organizerRes.data
-        ? {
-            id: organizerRes.data.id,
-            name: organizerRes.data.full_name || organizerRes.data.email,
-          }
-        : null,
-      participantCount: (participantsRes.data ?? []).length,
-      actionItemCount: actions.length,
-      openActionItemCount: actions.filter((a) => a.status === 'OPEN' || a.status === 'IN_PROGRESS')
-        .length,
-    }
-  }
-)
-
 /* ============================================================================
  * ISI WORKSPACE (PRD §16, §17, §18, §19)
  * ========================================================================== */

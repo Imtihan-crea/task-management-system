@@ -27,11 +27,6 @@ export type UserFormState = {
 /* Validation helpers (tanpa dependency tambahan)                     */
 /* ------------------------------------------------------------------ */
 
-// Batas panjang di server (audit B12), lihat lib/forms/limits.ts.
-function readField(formData: FormData, name: string): string {
-  return readLimitedField(formData, name)
-}
-
 /**
  * Password TIDAK boleh di-trim: spasi di awal/akhir adalah bagian dari
  * password yang diketik admin (3 Nov 2026).
@@ -127,9 +122,9 @@ export async function inviteUser(
 ): Promise<UserFormState> {
   const actor = await requireAdmin()
 
-  const fullName = readField(formData, 'full_name')
-  const email = readField(formData, 'email').toLowerCase()
-  const role = readField(formData, 'role')
+  const fullName = readLimitedField(formData, 'full_name')
+  const email = readLimitedField(formData, 'email').toLowerCase()
+  const role = readLimitedField(formData, 'role')
 
   if (!fullName) return { error: 'Nama lengkap wajib diisi.' }
   if (!validEmail(email)) return { error: 'Masukkan alamat Email yang valid.' }
@@ -345,10 +340,10 @@ export async function createUserWithPassword(
 ): Promise<UserFormState> {
   const actor = await requireAdmin()
 
-  const fullName = readField(formData, 'full_name')
-  const email = readField(formData, 'email').toLowerCase()
+  const fullName = readLimitedField(formData, 'full_name')
+  const email = readLimitedField(formData, 'email').toLowerCase()
   const password = readRawField(formData, 'password')
-  const role = readField(formData, 'role')
+  const role = readLimitedField(formData, 'role')
   const requireChange = formData.get('require_change') === 'on'
 
   if (!fullName) return { error: 'Nama lengkap wajib diisi.' }
@@ -495,10 +490,10 @@ export async function updateUser(
 ): Promise<UserFormState> {
   const adminProfile = await requireAdmin()
 
-  const targetId = readField(formData, 'id')
-  const fullName = readField(formData, 'full_name')
-  const role = readField(formData, 'role')
-  const status = readField(formData, 'status')
+  const targetId = readLimitedField(formData, 'id')
+  const fullName = readLimitedField(formData, 'full_name')
+  const role = readLimitedField(formData, 'role')
+  const status = readLimitedField(formData, 'status')
 
   if (!targetId) return { error: 'User tidak ditemukan.' }
   if (!fullName) return { error: 'Nama lengkap wajib diisi.' }
@@ -592,8 +587,8 @@ export async function setUserStatus(
 ): Promise<UserFormState> {
   const adminProfile = await requireAdmin()
 
-  const targetId = readField(formData, 'id')
-  const status = readField(formData, 'status')
+  const targetId = readLimitedField(formData, 'id')
+  const status = readLimitedField(formData, 'status')
 
   if (!targetId) return { error: 'User tidak ditemukan.' }
   if (!isUserStatus(status)) return { error: 'Pilih status yang valid.' }
@@ -668,7 +663,7 @@ export async function generateAccessLink(
   formData: FormData
 ): Promise<UserFormState> {
   const actor = await requireAdmin()
-  const targetId = readField(formData, 'id')
+  const targetId = readLimitedField(formData, 'id')
 
   const admin = createAdminClient()
   const { data: target } = await admin

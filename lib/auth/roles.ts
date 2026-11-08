@@ -91,7 +91,3 @@ export const SUGGESTION_STATUS_LABELS: Record<SuggestionStatus, string> = {
   REJECTED: 'REJECTED',
   CONVERTED: 'CONVERTED',
 }
-
-export function isSuggestionStatus(value: string): value is SuggestionStatus {
-  return (SUGGESTION_STATUSES as string[]).includes(value)
-}

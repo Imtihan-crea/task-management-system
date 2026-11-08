@@ -17,6 +17,7 @@ import { emitTaskAssigned } from '@/lib/notifications/task-assigned'
 import { logActivity } from '@/lib/activity-log/service'
 import type { TaskPriority, TaskStatus } from '@/types/task'
 import type { UserRole } from '@/types/profile'
+import { assertActiveUser, assertWorkstreamInProject } from '@/lib/data/assertions'
 import { readLimitedField } from '@/lib/forms/limits'
 import { isValidDateInput } from '@/lib/forms/dates'
 import { taskBlockedBody, taskDoneBody } from '@/lib/email/templates'
@@ -26,42 +27,7 @@ export type TaskFormState = {
   success?: string
 } | undefined
 
-// Batas panjang di server (audit B12), lihat lib/forms/limits.ts.
-function readField(formData: FormData, name: string): string {
-  return readLimitedField(formData, name)
-}
-
-// Tanggal kalender yang benar-benar ada (audit C1).
-function validDate(value: string): boolean {
-  return isValidDateInput(value)
-}
-
-async function assertActiveUser(userId: string): Promise<boolean> {
-  const { data } = await createAdminClient()
-    .from('profiles')
-    .select('id')
-    .eq('id', userId)
-    .eq('status', 'ACTIVE')
-    .maybeSingle<{ id: string }>()
-
-  return Boolean(data)
-}
-
 /** Pastikan workstream (kalau diisi) memang milik project tersebut. */
-async function assertWorkstreamInProject(
-  workstreamId: string,
-  projectId: string
-): Promise<boolean> {
-  const { data } = await createAdminClient()
-    .from('workstreams')
-    .select('id')
-    .eq('id', workstreamId)
-    .eq('project_id', projectId)
-    .maybeSingle<{ id: string }>()
-
-  return Boolean(data)
-}
-
 async function assertCanManageTask(taskId: string, profile: { id: string; role: string }) {
   // ADMIN juga memuat task: task terhapus ditolak (audit C15) dan projectId
   // asli dipakai pemanggil (cek pindah project / project tertutup).
@@ -109,7 +75,7 @@ function validateTaskFields(input: {
   if (!isTaskPriority(input.priority)) return 'Pilih prioritas yang valid.'
   if (!isTaskStatus(input.status)) return 'Pilih status yang valid.'
   if (!input.deadline) return 'Deadline wajib diisi.'
-  if (!validDate(input.startDate) || !validDate(input.deadline)) {
+  if (!isValidDateInput(input.startDate) || !isValidDateInput(input.deadline)) {
     return 'Masukkan tanggal yang valid.'
   }
   if (input.startDate && input.deadline < input.startDate) {
@@ -124,15 +90,15 @@ export async function createTask(
 ): Promise<TaskFormState> {
   const profile = await requireManager()
 
-  const title = readField(formData, 'title')
-  const description = readField(formData, 'description')
-  const projectId = readField(formData, 'project_id')
-  const workstreamId = readField(formData, 'workstream_id')
-  const assigneeId = readField(formData, 'assignee_id')
-  const priority = readField(formData, 'priority') || 'MEDIUM'
-  const status = readField(formData, 'status') || 'TODO'
-  const startDate = readField(formData, 'start_date')
-  const deadline = readField(formData, 'deadline')
+  const title = readLimitedField(formData, 'title')
+  const description = readLimitedField(formData, 'description')
+  const projectId = readLimitedField(formData, 'project_id')
+  const workstreamId = readLimitedField(formData, 'workstream_id')
+  const assigneeId = readLimitedField(formData, 'assignee_id')
+  const priority = readLimitedField(formData, 'priority') || 'MEDIUM'
+  const status = readLimitedField(formData, 'status') || 'TODO'
+  const startDate = readLimitedField(formData, 'start_date')
+  const deadline = readLimitedField(formData, 'deadline')
 
   const fieldError = validateTaskFields({
     title,
@@ -224,16 +190,16 @@ export async function updateTask(
 ): Promise<TaskFormState> {
   const profile = await requireManager()
 
-  const id = readField(formData, 'id')
-  const title = readField(formData, 'title')
-  const description = readField(formData, 'description')
-  const projectId = readField(formData, 'project_id')
-  const workstreamId = readField(formData, 'workstream_id')
-  const assigneeId = readField(formData, 'assignee_id')
-  const priority = readField(formData, 'priority')
-  const status = readField(formData, 'status')
-  const startDate = readField(formData, 'start_date')
-  const deadline = readField(formData, 'deadline')
+  const id = readLimitedField(formData, 'id')
+  const title = readLimitedField(formData, 'title')
+  const description = readLimitedField(formData, 'description')
+  const projectId = readLimitedField(formData, 'project_id')
+  const workstreamId = readLimitedField(formData, 'workstream_id')
+  const assigneeId = readLimitedField(formData, 'assignee_id')
+  const priority = readLimitedField(formData, 'priority')
+  const status = readLimitedField(formData, 'status')
+  const startDate = readLimitedField(formData, 'start_date')
+  const deadline = readLimitedField(formData, 'deadline')
 
   if (!id) return { error: 'Task tidak ditemukan.' }
 
@@ -436,8 +402,8 @@ export async function changeTaskStatus(
     return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
-  const id = readField(formData, 'id')
-  const status = readField(formData, 'status')
+  const id = readLimitedField(formData, 'id')
+  const status = readLimitedField(formData, 'status')
 
   if (!id) return { error: 'Task tidak ditemukan.' }
   if (!isTaskStatus(status)) return { error: 'Pilih status yang valid.' }
@@ -538,7 +504,7 @@ export async function submitTask(
     return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
-  const id = readField(formData, 'id')
+  const id = readLimitedField(formData, 'id')
   if (!id) return { error: 'Task tidak ditemukan.' }
 
   const admin = createAdminClient()
@@ -616,7 +582,7 @@ export async function cancelTask(
     return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
-  const id = readField(formData, 'id')
+  const id = readLimitedField(formData, 'id')
   if (!id) return { error: 'Task tidak ditemukan.' }
 
   const admin = createAdminClient()
@@ -843,7 +809,7 @@ export async function deleteTask(
 ): Promise<TaskFormState> {
   const profile = await requireManager()
 
-  const id = readField(formData, 'id')
+  const id = readLimitedField(formData, 'id')
   if (!id) return { error: 'Task tidak ditemukan.' }
 
   const scope = await assertCanManageTask(id, profile)
@@ -894,8 +860,8 @@ export async function submitEvidence(
     return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
-  const id = readField(formData, 'id')
-  const evidenceUrl = readField(formData, 'evidence_url')
+  const id = readLimitedField(formData, 'id')
+  const evidenceUrl = readLimitedField(formData, 'evidence_url')
 
   if (!id) return { error: 'Task tidak ditemukan.' }
   if (evidenceUrl && !/^https?:\/\/.+/i.test(evidenceUrl)) {

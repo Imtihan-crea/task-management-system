@@ -9,7 +9,7 @@ import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
 import { logActivity } from '@/lib/activity-log/service'
 import type { ProjectStatus } from '@/types/project'
-import { readLimitedField } from '@/lib/forms/limits'
+import { readLimitedField, readMulti } from '@/lib/forms/limits'
 import { isValidDateInput } from '@/lib/forms/dates'
 import { projectAssignedBody } from '@/lib/email/templates'
 
@@ -41,24 +41,6 @@ export type ProjectFormState = {
   success?: string
 } | undefined
 
-// Batas panjang di server (audit B12), lihat lib/forms/limits.ts.
-function readField(formData: FormData, name: string): string {
-  return readLimitedField(formData, name)
-}
-
-function readMulti(formData: FormData, name: string): string[] {
-  return formData
-    .getAll(name)
-    .filter((v): v is string => typeof v === 'string')
-    .map((v) => v.trim())
-    .filter(Boolean)
-}
-
-// Tanggal kalender yang benar-benar ada (audit C1).
-function validDate(value: string): boolean {
-  return isValidDateInput(value)
-}
-
 // Calon PM harus aktif DAN ber-role ADMIN/PROJECT_MANAGER (sama dengan pilihan di UI).
 async function assertActiveUsers(userIds: string[]): Promise<boolean> {
   if (userIds.length === 0) return false
@@ -88,18 +70,18 @@ export async function createProject(
 ): Promise<ProjectFormState> {
   const actor = await requireManager()
 
-  const name = readField(formData, 'name')
-  const client = readField(formData, 'client')
-  const description = readField(formData, 'description')
+  const name = readLimitedField(formData, 'name')
+  const client = readLimitedField(formData, 'client')
+  const description = readLimitedField(formData, 'description')
   const managerIds = [...new Set(readMulti(formData, 'project_manager_ids'))]
-  const startDate = readField(formData, 'start_date')
-  const endDate = readField(formData, 'end_date')
-  const status = readField(formData, 'status') || 'PLANNING'
+  const startDate = readLimitedField(formData, 'start_date')
+  const endDate = readLimitedField(formData, 'end_date')
+  const status = readLimitedField(formData, 'status') || 'PLANNING'
 
   if (!name) return { error: 'Nama Project wajib diisi.' }
   if (managerIds.length === 0) return { error: 'Minimal satu Project Manager wajib dipilih.' }
   if (!isProjectStatus(status)) return { error: 'Pilih status yang valid.' }
-  if (!validDate(startDate) || !validDate(endDate)) {
+  if (!isValidDateInput(startDate) || !isValidDateInput(endDate)) {
     return { error: 'Masukkan tanggal yang valid.' }
   }
   if (startDate && endDate && endDate < startDate) {
@@ -175,20 +157,20 @@ export async function updateProject(
 ): Promise<ProjectFormState> {
   const profile = await requireManager()
 
-  const id = readField(formData, 'id')
-  const name = readField(formData, 'name')
-  const client = readField(formData, 'client')
-  const description = readField(formData, 'description')
+  const id = readLimitedField(formData, 'id')
+  const name = readLimitedField(formData, 'name')
+  const client = readLimitedField(formData, 'client')
+  const description = readLimitedField(formData, 'description')
   const managerIds = [...new Set(readMulti(formData, 'project_manager_ids'))]
-  const startDate = readField(formData, 'start_date')
-  const endDate = readField(formData, 'end_date')
-  const status = readField(formData, 'status')
+  const startDate = readLimitedField(formData, 'start_date')
+  const endDate = readLimitedField(formData, 'end_date')
+  const status = readLimitedField(formData, 'status')
 
   if (!id) return { error: 'Project tidak ditemukan.' }
   if (!name) return { error: 'Nama Project wajib diisi.' }
   if (managerIds.length === 0) return { error: 'Minimal satu Project Manager wajib dipilih.' }
   if (!isProjectStatus(status)) return { error: 'Pilih status yang valid.' }
-  if (!validDate(startDate) || !validDate(endDate)) {
+  if (!isValidDateInput(startDate) || !isValidDateInput(endDate)) {
     return { error: 'Masukkan tanggal yang valid.' }
   }
   if (startDate && endDate && endDate < startDate) {
