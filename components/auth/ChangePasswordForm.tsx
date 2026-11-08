@@ -24,6 +24,9 @@ export function ChangePasswordForm({ email }: { email: string }) {
   const [show, setShow] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  // Password sudah tersimpan tapi flag belum bersih: coba ulang tanpa
+  // updateUser lagi (Supabase menolak password yang sama).
+  const [passwordSaved, setPasswordSaved] = useState(false)
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
@@ -40,11 +43,14 @@ export function ChangePasswordForm({ email }: { email: string }) {
     try {
       const supabase = createClient()
 
-      const { error: updateError } = await supabase.auth.updateUser({ password })
+      if (!passwordSaved) {
+        const { error: updateError } = await supabase.auth.updateUser({ password })
 
-      if (updateError) {
-        setError(updateError.message)
-        return
+        if (updateError) {
+          setError(updateError.message)
+          return
+        }
+        setPasswordSaved(true)
       }
 
       // Password minimal tersimpan di Supabase. Jangan panggil
@@ -54,7 +60,11 @@ export function ChangePasswordForm({ email }: { email: string }) {
       const { data: sessionData } = await supabase.auth.getSession()
       const result = await completePasswordChange(sessionData.session?.access_token)
       if (result.error) {
+        // Audit B18: jangan redirect (halaman akan kembali ke sini tanpa
+        // penjelasan); tampilkan pesannya.
         console.error('[change-password] completePasswordChange:', result.error)
+        setError(result.error)
+        return
       }
 
       router.push('/dashboard')
