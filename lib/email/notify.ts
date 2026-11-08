@@ -38,7 +38,13 @@ export async function sendEmail(input: {
       },
       body: JSON.stringify({
         sender: { name: senderName, email: senderEmail },
-        to: input.to,
+        // Audit B15: penerima tidak boleh saling melihat alamat. Lebih dari
+        // satu penerima -> messageVersions (satu email terpisah per penerima,
+        // tetap satu request; jatah Brevo dihitung per penerima seperti
+        // sebelumnya).
+        ...(input.to.length === 1
+          ? { to: input.to }
+          : { messageVersions: input.to.map((recipient) => ({ to: [recipient] })) }),
         subject: input.subject,
         htmlContent: brandEmailHtml({ title: input.subject, bodyHtml: input.html }),
       }),
