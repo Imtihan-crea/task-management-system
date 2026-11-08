@@ -1424,7 +1424,15 @@ export async function deleteActionItem(
 
   if (!current) return { error: 'Action item not found.' }
   if (current.task_id) {
-    return { error: 'This action item already has a task and cannot be deleted.' }
+    // Task yang sudah dihapus tidak mengunci action item (audit B7).
+    const { data: linked } = await createAdminClient()
+      .from('tasks')
+      .select('is_deleted')
+      .eq('id', current.task_id)
+      .maybeSingle<{ is_deleted: boolean }>()
+    if (linked && !linked.is_deleted) {
+      return { error: 'This action item already has a task and cannot be deleted.' }
+    }
   }
 
   const { error } = await createAdminClient()
@@ -1732,15 +1740,17 @@ export async function createTaskFromActionItem(
 
   if (!action) return { error: 'Action item not found.' }
 
-  // §22 idempotency guard: task sudah ada -> jangan buat lagi.
+  // §22 idempotency guard: task sudah ada -> jangan buat lagi. Task yang
+  // sudah dihapus tidak dihitung (audit B7): action item boleh dibuatkan lagi.
+  const staleTaskId = action.task_id
   if (action.task_id) {
     const { data: existing } = await admin
       .from('tasks')
-      .select('code')
+      .select('code, is_deleted')
       .eq('id', action.task_id)
-      .maybeSingle<{ code: string }>()
-    return {
-      success: `Task already exists: ${existing?.code ?? action.task_id}.`,
+      .maybeSingle<{ code: string; is_deleted: boolean }>()
+    if (existing && !existing.is_deleted) {
+      return { success: `Task already exists: ${existing.code}.` }
     }
   }
 
@@ -1811,14 +1821,16 @@ export async function createTaskFromActionItem(
     return { error: 'Unable to create task from action item.' }
   }
 
-  // Klaim atomik: hanya baris yang task_id-nya masih NULL yang menang.
-  // Kalau 0 baris = ada request paralel yang menang duluan.
-  const { data: claimed } = await admin
+  // Klaim atomik: hanya baris yang task_id-nya masih sama (NULL, atau task
+  // lama yang sudah dihapus) yang menang. 0 baris = request paralel menang.
+  const claimQuery = admin
     .from('meeting_action_items')
     .update({ task_id: task.id })
     .eq('id', actionItemId)
-    .is('task_id', null)
-    .select('id')
+  const { data: claimed } = await (staleTaskId
+    ? claimQuery.eq('task_id', staleTaskId)
+    : claimQuery.is('task_id', null)
+  ).select('id')
 
   if (!claimed || claimed.length === 0) {
     // Kalah race: bersihkan task duplikat (pola yang sama seperti suggestions).

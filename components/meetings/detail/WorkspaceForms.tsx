@@ -414,14 +414,14 @@ export function ActionItemCard({
 
       {/* Task link / Create Task (§20, §21, §22) */}
       <div className="mt-2 border-t pt-2 dark:border-zinc-700">
-        {item.task_id ? (
+        {item.task_id && taskCode ? (
           <p className="text-sm">
             ✓ Task:{' '}
             <Link
               href={`/tasks/${item.task_id}`}
               className="font-mono font-semibold text-kasuat-deep-gold hover:underline"
             >
-              {taskCode ?? item.task_id}
+              {taskCode}
             </Link>
           </p>
         ) : canCreateTask ? (
@@ -463,7 +463,7 @@ export function ActionItemCard({
         )}
       </div>
 
-      {!item.task_id && (
+      {!(item.task_id && taskCode) && (
         <form {...delAction} className="mt-2">
           <input type="hidden" name="id" value={item.id} />
           <input type="hidden" name="meeting_id" value={meetingId} />

@@ -298,6 +298,7 @@ export async function ActionsSection({
       .from('tasks')
       .select('id, code')
       .in('id', taskIds)
+      .eq('is_deleted', false) // task terhapus = belum ada task (audit B7)
     taskCodes = Object.fromEntries(
       ((data ?? []) as { id: string; code: string }[]).map((t) => [t.id, t.code])
     )
@@ -333,7 +334,7 @@ export async function ActionsSection({
                 {a.description && <p className="mt-1 text-sm text-zinc-500">{a.description}</p>}
                 <p className="mt-1 text-xs text-zinc-500">
                   {a.status.replace('_', ' ')}
-                  {a.task_id && (
+                  {a.task_id && taskCodes[a.task_id] && (
                     <>
                       {' '}· Task:{' '}
                       <Link
