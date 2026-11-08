@@ -119,7 +119,8 @@ export async function OverviewSection({
                   meetingId={meeting.id}
                   participant={p}
                   displayName={p.name}
-                  canRemove={canFull}
+                  // Organizer tidak bisa dihapus; server menolak (audit C4).
+                  canRemove={canFull && !(p.user_id && p.user_id === meeting.organizer_id)}
                   isSelf={p.user_id === selfId}
                 />
               ))}
