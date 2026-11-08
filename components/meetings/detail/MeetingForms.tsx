@@ -179,6 +179,15 @@ export function MeetingEditForm({
             defaultValue={meeting.organizer_id ?? ''}
             className={inputCls}
           >
+            {/* Audit A11: organizer lama nonaktif/kosong tidak ada di daftar
+                user aktif; tanpa opsi ini browser memilih user pertama dan
+                setiap simpan diam-diam mengganti organizer. Server
+                mempertahankan organizer bila nilainya sama atau kosong. */}
+            {!users.some((u) => u.id === meeting.organizer_id) && (
+              <option value={meeting.organizer_id ?? ''}>
+                {meeting.organizer_id ? 'Current organizer (inactive)' : 'No organizer'}
+              </option>
+            )}
             {users.map((u) => (
               <option key={u.id} value={u.id}>
                 {u.full_name || u.email}
