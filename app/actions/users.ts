@@ -176,7 +176,7 @@ export async function inviteUser(
    *
    * `generateLink` tidak memakai kuota email, jadi selalu berhasil.
    */
-  async function createUserWithoutEmail(): Promise<string | null> {
+  async function createUserWithoutEmail(): Promise<{ userCreated: boolean; link: string | null }> {
     const { data: created, error: createError } = await admin.auth.admin.createUser({
       email,
       email_confirm: false,
@@ -185,7 +185,7 @@ export async function inviteUser(
 
     if (createError || !created?.user) {
       console.error('[invite] createUser failed:', createError?.message)
-      return null
+      return { userCreated: false, link: null }
     }
 
     const userId = created.user.id
@@ -222,15 +222,15 @@ export async function inviteUser(
     })
 
     const actionLink = linkData?.properties?.action_link
-    if (!actionLink) return null
+    if (!actionLink) return { userCreated: true, link: null }
 
     // Link Supabase biasanya lewat server verify-nya sendiri
     // (verify?token=...&redirect_to=...). Kita ambil tokennya lalu arahkan
     // LANGSUNG ke /accept-invite, supaya tidak bergantung Redirect URL.
     const token = new URL(actionLink).searchParams.get('token')
-    if (!token) return null
+    if (!token) return { userCreated: true, link: null }
 
-    return `${baseUrl}/accept-invite#token_hash=${token}&type=invite`
+    return { userCreated: true, link: `${baseUrl}/accept-invite#token_hash=${token}&type=invite` }
   }
 
   if (error) {
@@ -247,7 +247,7 @@ export async function inviteUser(
     const isEmailProblem = /smtp|mail/i.test(error.message)
 
     if (isRateLimit || isEmailProblem) {
-      const directLink = await createUserWithoutEmail()
+      const { userCreated, link: directLink } = await createUserWithoutEmail()
 
       if (directLink) {
         revalidatePath('/users')
@@ -259,9 +259,13 @@ export async function inviteUser(
         }
       }
 
+      // Audit B19: bedakan user gagal dibuat vs link gagal dibuat.
+      if (!userCreated) {
+        return { error: 'Unable to create the user. Please try again.' }
+      }
       return {
         error:
-          'User created, but the invitation link could not be generated. Ask your developer to check the Vercel logs.',
+          'User created, but the invitation link could not be generated. Open the user and use "New invitation link".',
       }
     }
 
@@ -297,15 +301,6 @@ export async function inviteUser(
       })
     }
 
-    await logActivity({
-      actorUserId: actor.id,
-      action: 'USER_CREATED',
-      entityType: 'user',
-      entityId: userId,
-      entityCode: email,
-      projectId: null,
-      metadata: { email, full_name: fullName, role, via: 'fallback-link' },
-    })
   }
 
   revalidatePath('/users')
