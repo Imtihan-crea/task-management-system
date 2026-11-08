@@ -172,7 +172,7 @@ export async function ProjectGantt({
   return (
     <div>
       <div className="mb-3 flex flex-wrap items-center gap-2">
-        <div className="flex gap-1" role="tablist" aria-label="Gantt view">
+        <div className="flex gap-1" role="tablist" aria-label="Tampilan Gantt">
           {(['month', 'week'] as const).map((v) => (
             <Link
               key={v}
@@ -192,7 +192,7 @@ export async function ProjectGantt({
         <div className="ml-auto flex items-center gap-1">
           <Link
             href={baseParams(offset - 1, view)}
-            aria-label="Previous period"
+            aria-label="Periode sebelumnya"
             className="inline-flex min-h-[36px] min-w-[36px] items-center justify-center rounded-lg border border-zinc-300 dark:border-zinc-700"
           >
             ‹
@@ -205,7 +205,7 @@ export async function ProjectGantt({
           </Link>
           <Link
             href={baseParams(offset + 1, view)}
-            aria-label="Next period"
+            aria-label="Periode berikutnya"
             className="inline-flex min-h-[36px] min-w-[36px] items-center justify-center rounded-lg border border-zinc-300 dark:border-zinc-700"
           >
             ›
@@ -216,7 +216,7 @@ export async function ProjectGantt({
       <p className="mb-2 text-center text-sm font-semibold">{monthLabel(cols[0].start)}</p>
 
       {visible.length === 0 ? (
-        <p className="text-sm text-zinc-500">No projects with dates in this period.</p>
+        <p className="text-sm text-zinc-500">Tidak ada Project bertanggal pada periode ini.</p>
       ) : (
         <div className="overflow-x-auto">
           <div className="min-w-[560px]">
@@ -353,7 +353,7 @@ async function ProjectTaskGantt({
             kembali ke global
           </Link>
         </p>
-        <p className="text-sm text-zinc-500">No tasks in this project.</p>
+        <p className="text-sm text-zinc-500">Tidak ada task di Project ini.</p>
       </div>
     )
   }

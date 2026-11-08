@@ -38,7 +38,7 @@ async function RecentActivity() {
 
   return (
     <section className="mt-6 rounded-2xl bg-white p-4 shadow dark:bg-zinc-900">
-      <h2 className="mb-3 text-lg font-bold">Recent Activity</h2>
+      <h2 className="mb-3 text-lg font-bold">Activity Terbaru</h2>
       <ActivityTimeline entries={entries} actorNames={actorNames} />
     </section>
   )
@@ -74,7 +74,7 @@ export default async function DashboardPage({
     <AppShell>
       {denied && (
         <p role="alert" className="mb-4 rounded-lg bg-red-50 p-3 text-sm font-medium text-red-700 dark:bg-red-950 dark:text-red-300">
-          You do not have permission to perform this action.
+          Anda tidak punya izin untuk melakukan aksi ini.
         </p>
       )}
 
@@ -140,7 +140,7 @@ export default async function DashboardPage({
         <Link href="/projects" className="inline-flex min-h-[40px] items-center rounded-lg border px-4 py-2 text-sm font-semibold">Projects</Link>
         <Link href="/tasks" className="inline-flex min-h-[40px] items-center rounded-lg border px-4 py-2 text-sm font-semibold">Tasks</Link>
         <Link href="/tasks?view=mine" className="inline-flex min-h-[40px] items-center rounded-lg border px-4 py-2 text-sm font-semibold">
-          My Tasks
+          Task Saya
         </Link>
       </div>
     </AppShell>

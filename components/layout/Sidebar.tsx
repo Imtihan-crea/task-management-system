@@ -37,7 +37,7 @@ const GROUPS: { title: string | null; items: Omit<NavItem, 'icon'>[] }[] = [
     items: [{ href: '/dashboard', label: 'Dashboard', permission: null }],
   },
   {
-    title: 'PROJECT MANAGEMENT',
+    title: 'MANAJEMEN PROJECT',
     items: [
       { href: '/projects', label: 'Projects', permission: 'projects.view' },
       { href: '/workstreams', label: 'Workstreams', permission: 'projects.view' },
@@ -45,21 +45,21 @@ const GROUPS: { title: string | null; items: Omit<NavItem, 'icon'>[] }[] = [
     ],
   },
   {
-    title: 'COLLABORATION',
+    title: 'KOLABORASI',
     items: [
       { href: '/meetings', label: 'Meetings', permission: 'meetings.view' },
       { href: '/task-suggestions', label: 'Task Suggestions', permission: 'suggestions.create' },
     ],
   },
   {
-    title: 'MONITORING',
+    title: 'PEMANTAUAN',
     items: [{ href: '/activity', label: 'Activity Log', permission: null }],
   },
   {
-    title: 'SYSTEM',
+    title: 'SISTEM',
     items: [
       { href: '/users', label: 'Users', permission: 'users.view' },
-      { href: '/settings', label: 'Settings', permission: null },
+      { href: '/settings', label: 'Pengaturan', permission: null },
     ],
   },
 ]
@@ -88,7 +88,7 @@ export function Sidebar({
   const pathname = usePathname()
 
   return (
-    <nav aria-label="Main navigation" className="flex h-full flex-col gap-1 overflow-y-auto p-3">
+    <nav aria-label="Navigasi utama" className="flex h-full flex-col gap-1 overflow-y-auto p-3">
       {GROUPS.map((group) => {
         const visible = group.items.filter(
           (item) => item.permission === null || can(role, item.permission as never)

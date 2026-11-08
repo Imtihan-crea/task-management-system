@@ -15,7 +15,7 @@ export function NotificationList({ items }: { items: NotificationItem[] }) {
   if (items.length === 0) {
     return (
       <p className="rounded-2xl bg-white p-8 text-center text-sm text-zinc-500 shadow dark:bg-zinc-900">
-        No notifications yet.
+        Belum ada Notifications.
       </p>
     )
   }
@@ -45,7 +45,7 @@ export function NotificationList({ items }: { items: NotificationItem[] }) {
                   type="submit"
                   className="inline-flex min-h-[44px] items-center rounded-lg border px-3 py-1 text-sm font-medium"
                 >
-                  Mark read
+                  Tandai dibaca
                 </button>
               </form>
             )}
@@ -64,19 +64,19 @@ export function MarkAllReadButton({ disabled }: { disabled: boolean }) {
         disabled={disabled}
         className="inline-flex min-h-[44px] items-center rounded-lg border px-4 py-2 text-sm font-semibold disabled:opacity-50"
       >
-        Mark all as read
+        Tandai semua dibaca
       </button>
     </form>
   )
 }
 
 const PREF_FIELDS = [
-  { name: 'email_enabled', label: 'Email Notifications (master switch)' },
-  { name: 'email_task_updates', label: 'Task Assignment & Done' },
-  { name: 'email_suggestion_updates', label: 'Suggestion Updates' },
-  { name: 'email_deadline_alerts', label: 'Deadline Alerts' },
-  { name: 'email_meeting_updates', label: 'Meeting Invitation, Update & Reminder' },
-  { name: 'email_digest_daily', label: 'Daily Morning Digest' },
+  { name: 'email_enabled', label: 'Notifications Email (sakelar utama)' },
+  { name: 'email_task_updates', label: 'Penugasan Task & Done' },
+  { name: 'email_suggestion_updates', label: 'Pembaruan Suggestion' },
+  { name: 'email_deadline_alerts', label: 'Pengingat Deadline' },
+  { name: 'email_meeting_updates', label: 'Undangan, Pembaruan & Pengingat Meeting' },
+  { name: 'email_digest_daily', label: 'Ringkasan Pagi Harian' },
 ] as const
 
 export function PreferencesForm({ initial }: { initial: NotificationPreferences }) {
@@ -115,7 +115,7 @@ export function PreferencesForm({ initial }: { initial: NotificationPreferences 
         disabled={pending}
         className="min-h-[44px] w-full rounded-lg bg-kasuat-gold px-4 py-2 font-semibold text-kasuat-black disabled:opacity-50 sm:w-auto"
       >
-        {pending ? 'Saving...' : 'Save Preferences'}
+        {pending ? 'Menyimpan...' : 'Simpan Preferensi'}
       </button>
     </form>
   )

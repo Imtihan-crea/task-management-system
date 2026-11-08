@@ -139,7 +139,7 @@ async function ActivityResults({ filters }: { filters: ActivityFilters }) {
   if (error) {
     return (
       <p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm font-medium text-red-700 dark:bg-red-950 dark:text-red-300">
-        Something went wrong. Please try again.
+        Terjadi kesalahan. Silakan coba lagi.
       </p>
     )
   }
@@ -147,22 +147,22 @@ async function ActivityResults({ filters }: { filters: ActivityFilters }) {
   return (
     <>
       <div className="mt-4 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
-        <ActivityTimeline entries={entries} actorNames={actorNames} emptyText="No activity found." />
+        <ActivityTimeline entries={entries} actorNames={actorNames} emptyText="Activity tidak ditemukan." />
       </div>
 
       <div className="mt-4 flex items-center justify-between">
         <p className="text-sm text-zinc-500">
-          Page {page} of {totalPages} ({total} entries)
+          Halaman {page} dari {totalPages} ({total} entri)
         </p>
         <div className="flex gap-2">
           {page > 1 && (
             <a href={qs(page - 1)} className="inline-flex min-h-[44px] items-center rounded-lg border px-4 py-2 text-sm font-semibold">
-              Prev
+              Sebelumnya
             </a>
           )}
           {page < totalPages && (
             <a href={qs(page + 1)} className="inline-flex min-h-[44px] items-center rounded-lg border px-4 py-2 text-sm font-semibold">
-              Next
+              Berikutnya
             </a>
           )}
         </div>
@@ -207,9 +207,9 @@ export default async function ActivityPage({
 
       <div className="mt-4">
         <Tabs
-          label="Activity entity"
+          label="Entitas Activity"
           items={[
-            { key: 'all', label: 'All' },
+            { key: 'all', label: 'Semua' },
             { key: 'task', label: 'Tasks' },
             { key: 'project', label: 'Projects' },
             { key: 'workstream', label: 'Workstreams' },
@@ -239,23 +239,23 @@ export default async function ActivityPage({
       >
         {fEntity && <input type="hidden" name="entity" value={fEntity} />}
         <div>
-          <label htmlFor="f-entity" className="mb-1 block text-sm font-medium">Entity</label>
+          <label htmlFor="f-entity" className="mb-1 block text-sm font-medium">Entitas</label>
           <select id="f-entity" name="entity" defaultValue={fEntity} className="min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800">
             {ENTITY_OPTIONS.map((e) => (
-              <option key={e} value={e}>{e === '' ? 'All' : e}</option>
+              <option key={e} value={e}>{e === '' ? 'Semua' : e}</option>
             ))}
           </select>
         </div>
         <div>
-          <label htmlFor="f-action" className="mb-1 block text-sm font-medium">Action</label>
+          <label htmlFor="f-action" className="mb-1 block text-sm font-medium">Aksi</label>
           <select id="f-action" name="action" defaultValue={fAction} className="min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800">
             {ACTION_OPTIONS.map((a) => (
-              <option key={a} value={a}>{a === '' ? 'All' : a.replace(/_/g, ' ')}</option>
+              <option key={a} value={a}>{a === '' ? 'Semua' : a.replace(/_/g, ' ')}</option>
             ))}
           </select>
         </div>
         <div>
-          <label htmlFor="f-actor" className="mb-1 block text-sm font-medium">Actor</label>
+          <label htmlFor="f-actor" className="mb-1 block text-sm font-medium">Pelaku</label>
           <input
             id="f-actor"
             name="actor"
@@ -265,15 +265,15 @@ export default async function ActivityPage({
           />
         </div>
         <div>
-          <label htmlFor="f-from" className="mb-1 block text-sm font-medium">From</label>
+          <label htmlFor="f-from" className="mb-1 block text-sm font-medium">Dari</label>
           <input id="f-from" name="from" type="date" defaultValue={fFrom} className="min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800" />
         </div>
         <div>
-          <label htmlFor="f-to" className="mb-1 block text-sm font-medium">To</label>
+          <label htmlFor="f-to" className="mb-1 block text-sm font-medium">Sampai</label>
           <input id="f-to" name="to" type="date" defaultValue={fTo} className="min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800" />
         </div>
         <button type="submit" className="min-h-[44px] rounded-lg bg-kasuat-gold px-5 py-2 font-semibold text-kasuat-black">
-          Apply
+          Terapkan
         </button>
       </form>
 

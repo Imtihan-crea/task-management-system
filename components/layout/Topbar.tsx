@@ -73,14 +73,14 @@ export function BellPopover() {
       <div className="flex items-center justify-between border-b border-zinc-200 px-4 py-3 dark:border-zinc-800">
         <p className="font-heading text-sm font-bold">Notifications</p>
         <Link href="/notifications" onClick={() => setOpen(false)} className="text-xs font-semibold text-kasuat-deep-gold hover:underline">
-          View All
+          Lihat Semua
         </Link>
       </div>
       <ul className="max-h-80 overflow-y-auto">
         {!summary ? (
           <li className="px-4 py-6 text-center text-sm text-zinc-500">Memuat...</li>
         ) : summary.recent.length === 0 ? (
-          <li className="px-4 py-6 text-center text-sm text-zinc-500">No notifications yet.</li>
+          <li className="px-4 py-6 text-center text-sm text-zinc-500">Belum ada Notifications.</li>
         ) : (
           summary.recent.map((n) => (
             <li key={n.id} className="border-b border-zinc-100 last:border-0 dark:border-zinc-800">
@@ -106,7 +106,7 @@ export function BellPopover() {
           disabled={marking || !summary || summary.unread === 0}
           className="min-h-[44px] w-full rounded-lg text-sm font-semibold text-kasuat-deep-gold disabled:opacity-50"
         >
-          {marking ? 'Saving...' : 'Mark all as read'}
+          {marking ? 'Menyimpan...' : 'Tandai semua dibaca'}
         </button>
       </div>
     </Popover>
@@ -148,7 +148,7 @@ export function ProfileMenu({
 
   return (
     <Popover
-      label="Profile menu"
+      label="Menu profil"
       button={
         <span className="flex items-center gap-2">
           <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-full bg-kasuat-gold text-xs font-bold text-kasuat-black">

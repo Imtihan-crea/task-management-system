@@ -66,9 +66,9 @@ export function Shell({
             <button
               type="button"
               onClick={toggleDesktop}
-              aria-label={collapsed ? 'Expand navigation' : 'Collapse navigation'}
+              aria-label={collapsed ? 'Perluas navigasi' : 'Ciutkan navigasi'}
               aria-expanded={!collapsed}
-              title={collapsed ? 'Expand navigation' : 'Collapse navigation'}
+              title={collapsed ? 'Perluas navigasi' : 'Ciutkan navigasi'}
               className="hidden min-h-[40px] min-w-[40px] items-center justify-center rounded-lg border border-zinc-300 text-lg lg:inline-flex dark:border-zinc-700"
             >
               <span aria-hidden="true">☰</span>
@@ -76,7 +76,7 @@ export function Shell({
             <button
               type="button"
               onClick={() => setDrawer(true)}
-              aria-label="Open navigation"
+              aria-label="Buka navigasi"
               className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg border border-zinc-300 text-lg lg:hidden dark:border-zinc-700"
             >
               <span aria-hidden="true">☰</span>
@@ -100,10 +100,10 @@ export function Shell({
 
       {/* Drawer mobile */}
       {drawer && (
-        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-label="Navigation">
+        <div className="fixed inset-0 z-50 lg:hidden" role="dialog" aria-label="Navigasi">
           <button
             type="button"
-            aria-label="Close navigation"
+            aria-label="Tutup navigasi"
             onClick={() => setDrawer(false)}
             className="absolute inset-0 bg-black/50"
           />
@@ -113,7 +113,7 @@ export function Shell({
               <button
                 type="button"
                 onClick={() => setDrawer(false)}
-                aria-label="Close navigation"
+                aria-label="Tutup navigasi"
                 className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg text-zinc-200"
               >
                 <span aria-hidden="true">✕</span>

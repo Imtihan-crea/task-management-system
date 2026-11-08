@@ -73,7 +73,7 @@ export async function KpiSection({ userId, role, filters }: Ctx & { filters: Das
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
         <KpiLink label="Total Project" value={projects.length} href="/projects" />
         <KpiLink label="Total Task" value={tasks.length} href="/tasks" />
-        <KpiLink label="Task On Going" value={ongoing.length} href="/tasks?view=ongoing" />
+        <KpiLink label="Task Berjalan" value={ongoing.length} href="/tasks?view=ongoing" />
         <KpiLink label="Task Overdue" value={overdue.length} href="/tasks?view=overdue" />
       </div>
       <div className="mt-3 grid grid-cols-2 gap-3 text-xs text-zinc-500 sm:grid-cols-4">
@@ -108,10 +108,10 @@ async function AdminUserKpis() {
   ])
   return (
     <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <KpiLink label="TOTAL USERS" value={invited + active + inactive} href="/users" />
+      <KpiLink label="TOTAL USER" value={invited + active + inactive} href="/users" />
       <KpiLink label="INVITED" value={invited} href="/users" />
       <KpiLink label="INACTIVE" value={inactive} href="/users" />
-      <KpiLink label="PENDING SUGGESTIONS" value={pendingSuggestions ?? 0} href="/task-suggestions?status=PENDING" />
+      <KpiLink label="SUGGESTION PENDING" value={pendingSuggestions ?? 0} href="/task-suggestions?status=PENDING" />
     </div>
   )
 }
@@ -123,7 +123,7 @@ export async function ChartsSection({ userId, role, filters }: Ctx & { filters: 
 
   const donutSegments = (
     [
-      { status: 'IN_PROGRESS', label: 'On Going' },
+      { status: 'IN_PROGRESS', label: 'Berjalan' },
       { status: 'DONE', label: 'Done' },
       { status: 'BLOCKED', label: 'Blocked' },
       { status: 'TODO', label: 'To Do' },
@@ -252,9 +252,9 @@ export async function WorkloadSection({ userId, role, filters }: Ctx & { filters
 
   return (
     <section className="mt-6 rounded-2xl bg-white p-4 shadow dark:bg-zinc-900">
-      <h2 className="mb-3 text-lg font-bold">Workload (open tasks per assignee)</h2>
+      <h2 className="mb-3 text-lg font-bold">Workload (task terbuka per Assignee)</h2>
       {workload.length === 0 ? (
-        <p className="text-sm text-zinc-500">No open tasks.</p>
+        <p className="text-sm text-zinc-500">Tidak ada task terbuka.</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {workload.map((w) => (
@@ -288,7 +288,7 @@ export async function FilterSection({ filters }: { filters: DashboardFilters }) 
       <div>
         <label htmlFor="f-project" className="mb-1 block text-sm font-medium">Project</label>
         <select id="f-project" name="project" defaultValue={filters.project} className="min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800">
-          <option value="">All</option>
+          <option value="">Semua</option>
           {projects.map((p) => (
             <option key={p.id} value={p.id}>{p.code} · {p.name}</option>
           ))}
@@ -297,7 +297,7 @@ export async function FilterSection({ filters }: { filters: DashboardFilters }) 
       <div>
         <label htmlFor="f-assignee" className="mb-1 block text-sm font-medium">Assignee</label>
         <select id="f-assignee" name="assignee" defaultValue={filters.assignee} className="min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800">
-          <option value="">All</option>
+          <option value="">Semua</option>
           {users.map((u) => (
             <option key={u.id} value={u.id}>{u.full_name || u.email}</option>
           ))}
@@ -306,7 +306,7 @@ export async function FilterSection({ filters }: { filters: DashboardFilters }) 
       <div>
         <label htmlFor="f-status" className="mb-1 block text-sm font-medium">Status</label>
         <select id="f-status" name="status" defaultValue={filters.status} className="min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800">
-          <option value="">All</option>
+          <option value="">Semua</option>
           {(['TODO', 'IN_PROGRESS', 'REVIEW', 'BLOCKED', 'DONE', 'CANCELLED'] as const).map((s) => (
             <option key={s} value={s}>{s.replace('_', ' ')}</option>
           ))}
@@ -315,14 +315,14 @@ export async function FilterSection({ filters }: { filters: DashboardFilters }) 
       <div>
         <label htmlFor="f-priority" className="mb-1 block text-sm font-medium">Priority</label>
         <select id="f-priority" name="priority" defaultValue={filters.priority} className="min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800">
-          <option value="">All</option>
+          <option value="">Semua</option>
           {(['HIGH', 'MEDIUM', 'LOW'] as const).map((p) => (
             <option key={p} value={p}>{p}</option>
           ))}
         </select>
       </div>
       <button type="submit" className="min-h-[44px] rounded-lg bg-kasuat-gold px-5 py-2 font-semibold text-kasuat-black">
-        Apply
+        Terapkan
       </button>
     </form>
   )
@@ -365,7 +365,7 @@ export async function SuggestionsSection({
     <section className="mt-6 rounded-2xl bg-white p-4 shadow dark:bg-zinc-900">
       <h2 className="mb-3 text-lg font-bold">Pending Suggestions ({items.length})</h2>
       {items.length === 0 ? (
-        <p className="text-sm text-zinc-500">No pending suggestions.</p>
+        <p className="text-sm text-zinc-500">Tidak ada Suggestion PENDING.</p>
       ) : (
         <ul className="flex flex-col gap-2">
           {items.map((s) => (

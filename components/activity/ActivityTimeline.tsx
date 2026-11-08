@@ -21,57 +21,57 @@ export function describeActivity(entry: Pick<ActivityEntry, 'action' | 'metadata
 
   switch (entry.action) {
     case 'TASK_STATUS_CHANGED':
-      return `Status changed ${str(m.old_status).replace('_', ' ')} → ${str(m.new_status).replace('_', ' ')}`
+      return `Status diubah ${str(m.old_status).replace('_', ' ')} → ${str(m.new_status).replace('_', ' ')}`
     case 'TASK_ASSIGNED':
-      return 'Task assigned'
+      return 'Task ditugaskan'
     case 'TASK_PRIORITY_CHANGED':
-      return `Priority changed ${str(m.old_priority)} → ${str(m.new_priority)}`
+      return `Prioritas diubah ${str(m.old_priority)} → ${str(m.new_priority)}`
     case 'TASK_DEADLINE_CHANGED':
-      return `Deadline changed ${str(m.old_deadline)} → ${str(m.new_deadline)}`
+      return `Deadline diubah ${str(m.old_deadline)} → ${str(m.new_deadline)}`
     case 'TASK_EVIDENCE_UPDATED':
-      return 'Evidence updated'
+      return 'Evidence diperbarui'
     case 'TASK_CREATED':
-      return 'Task created'
+      return 'Task dibuat'
     case 'TASK_UPDATED':
-      return 'Task updated'
+      return 'Task diperbarui'
     case 'TASK_DELETED':
-      return 'Task deleted'
+      return 'Task dihapus'
     case 'PROJECT_CREATED':
-      return 'Project created'
+      return 'Project dibuat'
     case 'PROJECT_UPDATED':
-      return 'Project updated'
+      return 'Project diperbarui'
     case 'PROJECT_PM_ADDED':
-      return 'Project manager added'
+      return 'Project Manager ditambahkan'
     case 'PROJECT_PM_REMOVED':
-      return 'Project manager removed'
+      return 'Project Manager dihapus'
     case 'WORKSTREAM_CREATED':
-      return 'Workstream created'
+      return 'Workstream dibuat'
     case 'WORKSTREAM_UPDATED':
-      return 'Workstream updated'
+      return 'Workstream diperbarui'
     case 'WORKSTREAM_DELETED':
-      return 'Workstream deleted'
+      return 'Workstream dihapus'
     case 'SUGGESTION_CREATED':
-      return 'Suggestion submitted'
+      return 'Suggestion dikirim'
     case 'SUGGESTION_UPDATED':
-      return 'Suggestion updated'
+      return 'Suggestion diperbarui'
     case 'SUGGESTION_APPROVED':
-      return 'Suggestion approved'
+      return 'Suggestion disetujui'
     case 'SUGGESTION_REVISION_REQUESTED':
-      return 'Revision requested'
+      return 'Revisi diminta'
     case 'SUGGESTION_REJECTED':
-      return 'Suggestion rejected'
+      return 'Suggestion ditolak'
     case 'SUGGESTION_CONVERTED':
-      return `Converted to task ${str(m.converted_task_code)}`
+      return `Dikonversi menjadi task ${str(m.converted_task_code)}`
     case 'USER_CREATED':
-      return `User invited (${str(m.email)})`
+      return `User diundang (${str(m.email)})`
     case 'USER_UPDATED':
-      return 'User updated'
+      return 'User diperbarui'
     case 'USER_ACTIVATED':
-      return 'User activated'
+      return 'User diaktifkan'
     case 'USER_DEACTIVATED':
-      return 'User deactivated'
+      return 'User dinonaktifkan'
     case 'ROLE_CHANGED':
-      return `Role changed ${str(m.old_role)} → ${str(m.new_role)}`
+      return `Role diubah ${str(m.old_role)} → ${str(m.new_role)}`
     default:
       return entry.action.replace(/_/g, ' ')
   }
@@ -80,7 +80,7 @@ export function describeActivity(entry: Pick<ActivityEntry, 'action' | 'metadata
 export function ActivityTimeline({
   entries,
   actorNames,
-  emptyText = 'No activity yet.',
+  emptyText = 'Belum ada Activity.',
 }: {
   entries: ActivityEntry[]
   actorNames: Record<string, string>
@@ -104,8 +104,8 @@ export function ActivityTimeline({
             </p>
             <p className="truncate text-sm text-zinc-500">
               {entry.actor_user_id
-                ? (actorNames[entry.actor_user_id] ?? 'Unknown user')
-                : 'System'}
+                ? (actorNames[entry.actor_user_id] ?? 'User tidak dikenal')
+                : 'Sistem'}
               {entry.entity_code ? ` · ${entry.entity_code}` : ''}
             </p>
             <p className="text-xs text-[#A6A6A6]">{formatDate(entry.created_at)}</p>

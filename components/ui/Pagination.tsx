@@ -9,7 +9,7 @@ export function Pagination({
   page,
   totalPages,
   total,
-  label = 'entries',
+  label = 'data',
 }: {
   basePath: string
   params: Record<string, string>
@@ -26,7 +26,7 @@ export function Pagination({
   return (
     <div className="mt-4 flex items-center justify-between">
       <p className="text-sm text-zinc-500">
-        Page {page} of {totalPages} ({total} {label})
+        Halaman {page} dari {totalPages} ({total} {label})
       </p>
       <div className="flex gap-2">
         {page > 1 && (
@@ -34,7 +34,7 @@ export function Pagination({
             href={href(page - 1)}
             className="inline-flex min-h-[44px] items-center rounded-lg border px-4 py-2 text-sm font-semibold"
           >
-            Prev
+            Sebelumnya
           </Link>
         )}
         {page < totalPages && (
@@ -42,7 +42,7 @@ export function Pagination({
             href={href(page + 1)}
             className="inline-flex min-h-[44px] items-center rounded-lg border px-4 py-2 text-sm font-semibold"
           >
-            Next
+            Berikutnya
           </Link>
         )}
       </div>

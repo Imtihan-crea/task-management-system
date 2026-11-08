@@ -54,7 +54,7 @@ export default async function NotificationsPage({
         <div>
           <h1 className="text-2xl font-bold">Notifications</h1>
           <p className="mt-1 text-sm text-zinc-500">
-            {unreadCount > 0 ? `${unreadCount} unread` : 'All caught up.'}
+            {unreadCount > 0 ? `${unreadCount} belum dibaca` : 'Semua sudah dibaca.'}
           </p>
         </div>
         <MarkAllReadButton disabled={unreadCount === 0} />
@@ -68,14 +68,14 @@ export default async function NotificationsPage({
           page={safePage}
           totalPages={totalPages}
           total={notifications.length}
-          label="notifications"
+          label="notifikasi"
         />
       </div>
 
       <section id="preferences" className="mt-6 rounded-2xl bg-white p-5 shadow scroll-mt-20 dark:bg-zinc-900">
-        <h2 className="mb-2 text-lg font-bold">Email Preferences</h2>
+        <h2 className="mb-2 text-lg font-bold">Preferensi Email</h2>
         <p className="mb-4 text-sm text-zinc-500">
-          In-app notifications always appear. Email can be turned off here.
+          Notifications di dalam aplikasi selalu muncul. Email dapat dimatikan di sini.
         </p>
         <PreferencesForm
           initial={{ user_id: profile.id, ...(prefs ?? DEFAULT_PREFS) }}
