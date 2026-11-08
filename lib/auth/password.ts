@@ -47,6 +47,9 @@ export function friendlyPasswordError(raw: string, sessionExpiredMessage: string
   if (/weak|pwned|known to be/i.test(raw)) {
     return 'This password is too easy to guess. Please choose a stronger one.'
   }
+  if (/contain at least one/i.test(raw)) {
+    return 'Password must mix upper- and lowercase letters, numbers, and symbols.'
+  }
   if (/at least|characters/i.test(raw)) {
     return `Password must be at least ${MIN_SELF_PASSWORD_LENGTH} characters.`
   }

@@ -151,6 +151,15 @@ export async function runMeetingScheduler(now: Date = new Date()): Promise<{
     const needy = ((completed ?? []) as SchedulerMeeting[]).filter((m) => needsNotes(m))
 
     for (const m of needy) {
+      // Meeting yang sudah diingatkan dengan key lama (per tanggal) tidak
+      // dikirim ulang saat key berubah (tanpa ini: banjir sekali saat deploy).
+      const { data: oldEvent } = await admin
+        .from('notification_events')
+        .select('event_key')
+        .like('event_key', `meeting-notes:${m.id}:%`)
+        .limit(1)
+      if (oldEvent && oldEvent.length > 0) continue
+
       const userIds = await participantUserIds(m.id)
       if (userIds.length === 0) continue
 

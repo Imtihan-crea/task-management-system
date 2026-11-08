@@ -50,6 +50,7 @@ const EXP = 'expired'
 cek('sama dengan lama', friendlyPasswordError('New password should be different from the old password.', EXP), 'The new password must be different from your current password.')
 cek('sesi habis', friendlyPasswordError('Auth session missing!', EXP), EXP)
 cek('rate limit', friendlyPasswordError('For security purposes, you can only request this after 30 seconds.', EXP), 'Too many attempts. Please wait a minute and try again.')
+cek('jenis karakter', friendlyPasswordError('Password should contain at least one character of each: abc', EXP), 'Password must mix upper- and lowercase letters, numbers, and symbols.')
 cek('tak dikenal -> generik', friendlyPasswordError('xyz', EXP), 'Unable to change the password. Please try again.')
 
 console.log(`LULUS: ${ok}`)

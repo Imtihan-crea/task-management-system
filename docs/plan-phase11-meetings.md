@@ -481,7 +481,7 @@ yang terulang antar-widget.
 | Job | Kapan | `event_key` |
 | --- | --- | --- |
 | Meeting Reminder | 15 menit sebelum mulai | `meeting-reminder:<id>:<YYYY-MM-DD>` |
-| Notes Reminder | 24 jam setelah `COMPLETED` + notes kosong | `meeting-notes:<id>:<YYYY-MM-DD>` |
+| Notes Reminder | 24 jam setelah `COMPLETED` + notes kosong | `meeting-notes:<id>` (sekali per meeting, sejak audit C16; key lama per tanggal tetap dihormati) |
 | Calendar Sync | periodik (kalau Google terhubung) | `meeting-sync:<id>:<updated_at>` |
 
 Idempotency dijamin mekanisme existing: `notification_events.event_key` PRIMARY KEY
