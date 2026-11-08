@@ -20,6 +20,7 @@ import type { SuggestionStatus, TaskSuggestion } from '@/types/suggestion'
 import type { TaskPriority } from '@/types/task'
 import { escapeEmailHtml as h } from '@/lib/email/layout'
 import { readLimitedField } from '@/lib/forms/limits'
+import { isValidDateInput } from '@/lib/forms/dates'
 
 export type SuggestionFormState = {
   error?: string
@@ -31,9 +32,9 @@ function readField(formData: FormData, name: string): string {
   return readLimitedField(formData, name)
 }
 
+// Tanggal kalender yang benar-benar ada (audit C1).
 function validDate(value: string): boolean {
-  if (!value) return true
-  return !Number.isNaN(Date.parse(value))
+  return isValidDateInput(value)
 }
 
 async function assertActiveUser(userId: string): Promise<boolean> {

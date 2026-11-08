@@ -34,6 +34,7 @@ import type { TaskPriority } from '@/types/task'
 import type { UserRole } from '@/types/profile'
 import { escapeEmailHtml as h } from '@/lib/email/layout'
 import { readLimitedField } from '@/lib/forms/limits'
+import { isValidDateInput } from '@/lib/forms/dates'
 
 export type MeetingFormState = {
   error?: string
@@ -56,9 +57,9 @@ function readList(formData: FormData, name: string): string[] {
     .filter(Boolean)
 }
 
+// Tanggal kalender yang benar-benar ada (audit C1).
 function validDate(value: string): boolean {
-  if (!value) return true
-  return /^\d{4}-\d{2}-\d{2}$/.test(value) && !Number.isNaN(Date.parse(value))
+  return isValidDateInput(value)
 }
 
 function validTime(value: string): boolean {

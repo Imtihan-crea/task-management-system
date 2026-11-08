@@ -11,6 +11,7 @@ import { logActivity } from '@/lib/activity-log/service'
 import type { ProjectStatus } from '@/types/project'
 import { escapeEmailHtml as h } from '@/lib/email/layout'
 import { readLimitedField } from '@/lib/forms/limits'
+import { isValidDateInput } from '@/lib/forms/dates'
 
 function projectAssignedEmail(
   baseUrl: string,
@@ -53,9 +54,9 @@ function readMulti(formData: FormData, name: string): string[] {
     .filter(Boolean)
 }
 
+// Tanggal kalender yang benar-benar ada (audit C1).
 function validDate(value: string): boolean {
-  if (!value) return true
-  return !Number.isNaN(Date.parse(value))
+  return isValidDateInput(value)
 }
 
 // Calon PM harus aktif DAN ber-role ADMIN/PROJECT_MANAGER (sama dengan pilihan di UI).
