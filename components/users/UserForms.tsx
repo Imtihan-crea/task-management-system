@@ -58,7 +58,7 @@ export function StatusToggleForm({ user }: { user: EditableUser }) {
 }
 
 /** Form edit: Full Name + Role + Status. Email read-only (PRD section 18). */
-export function EditUserForm({ user }: { user: EditableUser }) {
+export function EditUserForm({ user, isSelf }: { user: EditableUser; isSelf: boolean }) {
   const [state, formAction, pending] = useActionState(updateUser, INITIAL)
 
   return (
@@ -121,14 +121,21 @@ export function EditUserForm({ user }: { user: EditableUser }) {
           id="edit_status"
           name="status"
           defaultValue={user.status}
+          disabled={isSelf}
           className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base outline-none focus:border-black dark:border-zinc-700 dark:bg-zinc-800"
         >
-          {USER_STATUSES.map((status) => (
+          {/* INVITED hanya hasil kirim undangan, tidak dipilih manual. */}
+          {USER_STATUSES.filter((s) => s !== 'INVITED' || user.status === 'INVITED').map((status) => (
             <option key={status} value={status}>
               {STATUS_LABELS[status]}
             </option>
           ))}
         </select>
+        {/* select disabled tidak ikut terkirim, jadi kirim status lama. */}
+        {isSelf && <input type="hidden" name="status" value={user.status} />}
+        {isSelf && (
+          <p className="mt-1 text-xs text-zinc-500">You cannot change your own status.</p>
+        )}
       </div>
 
       {state?.error && (

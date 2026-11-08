@@ -41,7 +41,7 @@ export default async function UserDetailPage({
 }: {
   params: Promise<{ id: string }>
 }) {
-  await requireAdmin()
+  const viewer = await requireAdmin()
 
   const { id } = await params
   const admin = createAdminClient()
@@ -96,7 +96,7 @@ export default async function UserDetailPage({
 
         <section className="flex-1 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
           <h2 className="mb-4 text-lg font-bold">Edit User</h2>
-          <EditUserForm user={profile} />
+          <EditUserForm user={profile} isSelf={viewer.id === profile.id} />
         </section>
       </div>
     </AppShell>

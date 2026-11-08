@@ -73,7 +73,9 @@ export async function requireProfile(): Promise<CurrentProfile> {
   const profile = await getCurrentProfile()
 
   // INVITED belum boleh masuk halaman internal: dia harus menyelesaikan
-  // pengaturan password dulu di /accept-invite.
+  // pengaturan password dulu di /accept-invite. Jangan ke /login: proxy
+  // mengembalikan user ber-sesi dari /login ke /dashboard -> loop.
+  if (profile?.status === 'INVITED') redirect('/accept-invite')
   if (!profile || profile.status !== 'ACTIVE') {
     redirect('/login')
   }
@@ -95,6 +97,7 @@ export async function requireProfile(): Promise<CurrentProfile> {
 export async function requireProfileForPasswordChange(): Promise<CurrentProfile> {
   const profile = await getCurrentProfile()
 
+  if (profile?.status === 'INVITED') redirect('/accept-invite')
   if (!profile || profile.status !== 'ACTIVE') {
     redirect('/login')
   }

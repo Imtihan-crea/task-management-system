@@ -23,7 +23,7 @@ const kasus: [UserRole, boolean, boolean, boolean][] = [
   ['ADMIN', true, true, true],
   ['PROJECT_MANAGER', false, true, true],
   ['PROJECT_MANAGER', false, false, false],
-  ['PROJECT_MANAGER', true, false, false], // assignee tapi bukan PM project-nya
+  ['PROJECT_MANAGER', true, false, true], // assignee di project PM lain (A4)
   ['TEAM_MEMBER', true, false, true],
   ['TEAM_MEMBER', false, false, false],
   ['TEAM_MEMBER', false, true, false], // managesProject tidak berlaku untuk TM

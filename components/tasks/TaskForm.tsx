@@ -167,7 +167,12 @@ export function TaskForm({
             defaultValue={values.status ?? 'TODO'}
             className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
           >
-            {/* DONE/CANCELLED hanya lewat tombol submit (ada tanggalnya). */}
+            {/* DONE/CANCELLED hanya lewat tombol submit (ada tanggalnya).
+                Task yang sudah selesai: status lama jadi pilihan default,
+                memilih status terbuka berarti membuka ulang (reopen). */}
+            {(values.status === 'DONE' || values.status === 'CANCELLED') && (
+              <option value={values.status}>{values.status} (unchanged)</option>
+            )}
             {OPEN_TASK_STATUSES.map((s) => (
               <option key={s} value={s}>
                 {s.replace('_', ' ')}

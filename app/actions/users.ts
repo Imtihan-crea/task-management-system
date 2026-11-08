@@ -487,9 +487,15 @@ export async function updateUser(
 
   if (readError || !current) return { error: 'User not found.' }
 
-  // Rule 05: user tidak boleh menonaktifkan dirinya sendiri
-  if (targetId === adminProfile.id && current.status === 'ACTIVE' && status === 'INACTIVE') {
-    return { error: 'You cannot deactivate your own account.' }
+  // Rule 05: admin tidak boleh mengubah status dirinya sendiri (INACTIVE
+  // maupun INVITED sama-sama mengunci dia keluar).
+  if (targetId === adminProfile.id && status !== current.status) {
+    return { error: 'You cannot change your own status.' }
+  }
+
+  // INVITED hanya hasil kirim undangan; status lain tidak boleh kembali ke sana.
+  if (status === 'INVITED' && current.status !== 'INVITED') {
+    return { error: 'Please choose a valid status.' }
   }
 
   // Rule 06: sisakan minimal satu active Admin

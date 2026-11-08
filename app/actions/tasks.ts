@@ -240,10 +240,9 @@ export async function updateTask(
   if (fieldError) return { error: fieldError }
 
   // DONE/CANCELLED hanya lewat tombol submit (submitTask/cancelTask) supaya
-  // tanggalnya selalu tercatat. Dropdown edit terbatas ke status terbuka.
-  if (status === 'DONE' || status === 'CANCELLED') {
-    return { error: 'Use the Submit / Cancel buttons below to close a task.' }
-  }
+  // tanggalnya selalu tercatat. Dropdown edit: status terbuka, plus status
+  // terminal lama bila task sudah selesai (audit A1: edit tanpa reopen).
+  const isTerminal = status === 'DONE' || status === 'CANCELLED'
 
   const scope = await assertCanManageTask(id, profile)
   if (!scope.allowed) {
@@ -276,6 +275,10 @@ export async function updateTask(
       project_id: string
     }>()
 
+  if (isTerminal && before?.status !== status) {
+    return { error: 'Use the Submit / Cancel buttons below to close a task.' }
+  }
+
   const { data: updated, error } = await adminClient
     .from('tasks')
     .update({
@@ -285,13 +288,13 @@ export async function updateTask(
       workstream_id: workstreamId || null,
       assignee_id: assigneeId,
       priority: priority as TaskPriority,
-      status: status as TaskStatus,
       start_date: startDate || null,
       deadline,
-      // Status baru dijamin terbuka (guard di atas): tanggal submit
-      // dibersihkan kalau task dibuka ulang (reopen oleh PM/Admin).
-      completed_at: null,
-      cancelled_at: null,
+      // Status terminal yang tidak diubah: biarkan status dan tanggalnya.
+      // Status terbuka: tanggal submit dibersihkan (reopen oleh PM/Admin).
+      ...(isTerminal
+        ? {}
+        : { status: status as TaskStatus, completed_at: null, cancelled_at: null }),
     })
     .eq('id', id)
     .select('id, code, updated_at')

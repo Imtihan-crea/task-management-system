@@ -16,6 +16,7 @@ import {
 import { getActiveUsers } from '@/lib/data/users'
 import { isProjectManager } from '@/lib/data/projects'
 import { can } from '@/lib/auth/permissions'
+import { canActOnTask } from '@/lib/auth/task-access'
 import type { Task, TaskStatus } from '@/types/task'
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -49,24 +50,26 @@ export default async function TaskDetailPage({
   const isAdmin = profile.role === 'ADMIN'
   const isPM = profile.role === 'PROJECT_MANAGER'
 
-  // Scope baca: member hanya task miliknya; PM hanya project miliknya.
+  // Scope baca: member hanya task miliknya; PM project miliknya ATAU task
+  // yang di-assign ke dirinya (audit A4: link email TASK_ASSIGNED tidak 404).
   if (profile.role === 'TEAM_MEMBER' && !isOwner) {
     notFound()
   }
   let pmOwnsProject = false
   if (isPM) {
     pmOwnsProject = await isProjectManager(task.project_id, profile.id)
-    if (!pmOwnsProject) {
+    if (!pmOwnsProject && !isOwner) {
       notFound()
     }
   }
   const canFullEdit = isAdmin || (isPM && pmOwnsProject)
-  const canChangeStatus =
-    isAdmin || (isPM && pmOwnsProject) || (profile.role === 'TEAM_MEMBER' && isOwner)
+  // Sama dengan canActOnTask di server action.
+  const canChangeStatus = canActOnTask(profile.role, {
+    isAssignee: isOwner,
+    managesProject: pmOwnsProject,
+  })
   const canDelete = isAdmin || (isPM && pmOwnsProject)
-  const canSubmitEvidence =
-    can(profile.role, 'tasks.submitEvidenceOwn') &&
-    (isAdmin || (isPM && pmOwnsProject) || (profile.role === 'TEAM_MEMBER' && isOwner))
+  const canSubmitEvidence = can(profile.role, 'tasks.submitEvidenceOwn') && canChangeStatus
 
   const [{ data: project }, { data: workstream }, { data: assignee }, { data: creator }] =
     await Promise.all([
