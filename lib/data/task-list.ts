@@ -75,6 +75,18 @@ export const fetchTaskRows = cache(async (scope: TaskScope): Promise<TaskRow[]> 
     .limit(500)
 
   if (scope.role === 'TEAM_MEMBER') query = query.eq('assignee_id', scope.userId)
+  // PM: task project miliknya + task yang di-assign kepadanya, sama dengan
+  // aturan baca /tasks/[id] (lanjutan audit B1/A4) [keputusan default].
+  if (scope.role === 'PROJECT_MANAGER') {
+    const { data: links } = await admin
+      .from('project_managers')
+      .select('project_id')
+      .eq('user_id', scope.userId)
+    const ids = ((links ?? []) as { project_id: string }[]).map((l) => l.project_id)
+    query = ids.length
+      ? query.or(`project_id.in.(${ids.join(',')}),assignee_id.eq.${scope.userId}`)
+      : query.eq('assignee_id', scope.userId)
+  }
   if (scope.project) query = query.eq('project_id', scope.project)
   if (scope.workstream) query = query.eq('workstream_id', scope.workstream)
   if (scope.priority) query = query.eq('priority', scope.priority)
