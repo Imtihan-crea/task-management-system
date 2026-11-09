@@ -30,6 +30,7 @@
     "e2e:smoke": "node scripts/e2e/smoke.mjs",
     "e2e:write": "node scripts/e2e/write-flow.mjs",
     "e2e:cleanup": "node scripts/e2e/cleanup.mjs",
+    "e2e:ws-delete": "node scripts/e2e/ws-delete.mjs",
     "e2e:c20": "node scripts/e2e/c20-cancel.mjs",
     "e2e:rbac": "node scripts/e2e/rbac.mjs",
     "e2e:a11y": "node scripts/e2e/a11y.mjs",
