@@ -6,6 +6,7 @@ import { ROLE_LABELS, STATUS_LABELS } from '@/lib/auth/roles'
 import { AppShell } from '@/components/layout/AppShell'
 import { AccessLinkForm, EditUserForm, StatusToggleForm } from '@/components/users/UserForms'
 import type { UserRole, UserStatus } from '@/types/profile'
+import { formatDateTime } from '@/lib/utils/dates'
 
 type ProfileRow = {
   id: string
@@ -15,16 +16,6 @@ type ProfileRow = {
   status: UserStatus
   created_at: string
   updated_at: string
-}
-
-function formatDate(value: string): string {
-  return new Date(value).toLocaleString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
 }
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -82,10 +73,10 @@ export default async function UserDetailPage({
             <Row label="Email" value={profile.email} />
             <Row label="Role" value={ROLE_LABELS[profile.role]} />
             <Row label="Status" value={STATUS_LABELS[profile.status]} />
-            <Row label="Tanggal Dibuat" value={formatDate(profile.created_at)} />
+            <Row label="Tanggal Dibuat" value={formatDateTime(profile.created_at)} />
             <Row
               label="Login Terakhir"
-              value={lastLogin ? formatDate(lastLogin) : 'Belum pernah Login'}
+              value={lastLogin ? formatDateTime(lastLogin) : 'Belum pernah Login'}
             />
           </dl>
 

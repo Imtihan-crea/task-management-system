@@ -249,6 +249,7 @@ Perbaikan hasil review ikut dicatat sebagai commit terpisah (mis. password baru 
 | 6. RLS | Disiapkan sebagai migrasi, belum dijalankan | `database/migrations/016_rls_scoped_reads.sql` + `down/016_rls_scoped_reads.down.sql`; `rls.check.sql` ditambah 8 cek (total 34) |
 | 7. Cakupan baca RBAC | Dibiarkan terbuka | VIEWER dan PM tetap bisa membuka project lain; migrasi 016 mengikuti keputusan ini |
 | 8. Supabase CLI | Menunggu pemilik login ulang | - |
+| 9. C14 lanjutan | Sisa tanggal UTC menjadi WIB (Fase B) | Dikerjakan: KPI "dari bulan lalu" di dashboard (awal bulan dan tanggal dibuat dalam WIB, `appDateOf`); `formatDate`/`formatDateTime` memakai `timeZone` Asia/Jakarta (server Vercel berzona UTC, timestamp dekat tengah malam sebelumnya salah hari/jam); halaman Profil, daftar User, dan detail User memakai helper yang sama. Dicek dan dibiarkan: filter tanggal Activity (sudah `+07:00`), Gantt (`todayISO` WIB, hitungan UTC murni atas tanggal polos), `error-alert.ts` (+7 jam manual, benar), `lib/forms/dates.ts` dan `shiftDate` (aritmetika kalender UTC), email (menerima string tanggal polos atau WIB dari pemanggil), `toISOString()` untuk `reviewed_at`/`read_at`/`completed_at` (instant UTC, memang disimpan UTC); tes `npm run test:dates` |
 
 **Cara menerapkan migrasi 016** (setelah Supabase CLI login ulang):
 

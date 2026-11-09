@@ -2,27 +2,14 @@
  * Waktu lokal untuk Meeting (Phase 11).
  *
  * ==============================================================
- * KENAPA FILE INI ADA — DAN KENAPA dates.ts TIDAK DISENTUH
+ * KENAPA FILE INI ADA
  * ==============================================================
- * `lib/utils/dates.ts` memakai UTC:
- *     todayISO() = new Date().toISOString().slice(0, 10)
+ * Sumber tunggal waktu WIB (Asia/Jakarta, UTC+7). Keputusan pemilik
+ * (9 Nov 2026): task, meeting, digest, dan tampilan tanggal memakai WIB.
+ * `lib/utils/dates.ts` (`todayISO`, `formatDate`) memanggil file ini.
  *
- * Itu WAJIB untuk task: deadline task sudah berjalan di production
- * memakai definisi UTC itu (PRD Fase 3–9). Mengubahnya akan ikut
- * mengubah kapan task dianggap overdue — itu regresi yang dilarang
- * PRD §47.
- *
- * Meeting berbeda: user Human membayangkan "jam 9 pagi" dalam
- * waktu lokal (Asia/Jakarta = UTC+7), dan reminder "15 menit
- * sebelum" hanya benar kalau dibandingkan dalam waktu lokal.
- * Kalau dibandingkan dalam UTC, reminder meeting jam 09:00 WIB
- * akan meletus 2 jam lebih awal (00:00 UTC).
- *
- * Jadi: `dates.ts` untuk task (UTC, tidak berubah),
- *       file ini untuk meeting (Asia/Jakarta).
- *
- * Pembaruan 9 Nov 2026 (keputusan pemilik C14): task kini juga memakai
- * WIB; `todayISO()` di `dates.ts` memanggil `todayInAppTime()` di sini.
+ * Reminder meeting jam 09:00 WIB harus dibandingkan dalam waktu lokal;
+ * dalam UTC ia akan meletus 2 jam lebih awal (00:00 UTC).
  *
  * ==============================================================
  * KENAPA TIDAK PAKAI Math/Date UNTUK PERBANDINGAN

@@ -6,6 +6,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { ButtonLink, PageHeader } from '@/components/ui/primitives'
 import { StatusToggleForm } from '@/components/users/UserForms'
 import type { ProfileListItem } from '@/types/profile'
+import { formatDate } from '@/lib/utils/dates'
 
 type SortKey = 'created_at' | 'full_name' | 'status' | 'role'
 
@@ -29,14 +30,6 @@ function parseSort(value: string | undefined): { key: SortKey; ascending: boolea
 /** Bersihkan input search supaya aman untuk sintaks or() PostgREST. */
 function sanitizeSearch(value: string | undefined): string {
   return (value ?? '').replace(/[,()*%]/g, ' ').trim().slice(0, 60)
-}
-
-function formatDate(value: string): string {
-  return new Date(value).toLocaleDateString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
 }
 
 export default async function UsersPage({

@@ -13,6 +13,7 @@
     "test:rls": "node scripts/test-rls.mjs",
     "db:backup": "bash scripts/db-backup.sh",
     "test:time": "tsx tests/meeting-time.check.ts",
+    "test:dates": "tsx tests/dates.check.ts",
     "test:rules": "tsx tests/meetings-rules.check.ts",
     "test:limits": "tsx tests/form-limits.check.ts",
     "test:email": "tsx tests/completion-email.check.ts",
@@ -41,7 +42,7 @@
     "test:user-status": "tsx tests/user-status.check.ts",
     "check:secrets": "node scripts/check-secrets.mjs",
     "test:db": "tsx tests/postgrest-or.check.ts",
-    "test:logic": "npm run test:time && npm run test:rules && npm run test:email && npm run test:layout && npm run test:digest && npm run test:task && npm run test:auth && npm run test:canonical && npm run test:cron && npm run test:permissions && npm run test:alert && npm run test:task-access && npm run test:project-access && npm run test:user-status && npm run test:limits && npm run test:paginate && npm run check:secrets"
+    "test:logic": "npm run test:time && npm run test:dates && npm run test:rules && npm run test:email && npm run test:layout && npm run test:digest && npm run test:task && npm run test:auth && npm run test:canonical && npm run test:cron && npm run test:permissions && npm run test:alert && npm run test:task-access && npm run test:project-access && npm run test:user-status && npm run test:limits && npm run test:paginate && npm run check:secrets"
   },
   "dependencies": {
     "@sentry/nextjs": "11.11.0",

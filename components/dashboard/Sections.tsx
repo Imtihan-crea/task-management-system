@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { daysFromTodayISO, isOverdue, todayISO } from '@/lib/utils/dates'
+import { appDateOf, daysFromTodayISO, isOverdue, todayISO } from '@/lib/utils/dates'
 import { PriorityBadge, TaskStatusBadge, OverdueBadge } from '@/components/ui/Badges'
 import { KpiCard } from '@/components/ui/primitives'
 import { PriorityBars, StatusDonut } from '@/components/dashboard/Charts'
@@ -63,10 +63,9 @@ export async function KpiSection({ userId, role, filters }: Ctx & { filters: Das
   const overdue = tasks.filter((t) => isOverdue(t.deadline, t.status))
   const ongoing = tasks.filter((t) => t.status === 'IN_PROGRESS')
 
-  const now = new Date()
-  const firstThisMonth = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-01`
-  const newProjects = projects.filter((p) => p.created_at.slice(0, 10) >= firstThisMonth).length
-  const newTasks = tasks.filter((t) => t.created_at.slice(0, 10) >= firstThisMonth).length
+  const firstThisMonth = `${todayISO().slice(0, 7)}-01`
+  const newProjects = projects.filter((p) => appDateOf(p.created_at) >= firstThisMonth).length
+  const newTasks = tasks.filter((t) => appDateOf(t.created_at) >= firstThisMonth).length
 
   return (
     <>

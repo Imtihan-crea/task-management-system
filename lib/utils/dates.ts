@@ -1,8 +1,11 @@
-import { todayInAppTime } from './meeting-time'
+import { APP_TIMEZONE, todayInAppTime } from './meeting-time'
 
+// Server Vercel berzona UTC: tanpa timeZone, timestamp dekat tengah malam salah hari.
+// Tanggal polos 'YYYY-MM-DD' (UTC 00:00 = 07:00 WIB) tetap hari yang sama.
 export function formatDate(value: string | null): string {
   if (!value) return '-'
   return new Date(value).toLocaleDateString('id-ID', {
+    timeZone: APP_TIMEZONE,
     day: '2-digit',
     month: 'short',
     year: 'numeric',
@@ -15,11 +18,13 @@ export function formatDateTime(value: string | null): string {
   const d = new Date(value)
   if (Number.isNaN(d.getTime())) return '-'
   const date = d.toLocaleDateString('id-ID', {
+    timeZone: APP_TIMEZONE,
     day: '2-digit',
     month: 'short',
     year: 'numeric',
   })
   const time = d.toLocaleTimeString('id-ID', {
+    timeZone: APP_TIMEZONE,
     hour: '2-digit',
     minute: '2-digit',
   })
@@ -41,7 +46,7 @@ export function daysFromTodayISO(days: number): string {
 }
 
 /** Tanggal WIB dari timestamp (submit/cancel), '' bila kosong atau tidak valid. */
-function appDateOf(ts: string | null): string {
+export function appDateOf(ts: string | null): string {
   if (!ts) return ''
   const d = new Date(ts)
   return Number.isNaN(d.getTime()) ? '' : todayInAppTime(d)

@@ -3,14 +3,7 @@ import { createClient } from '@/lib/supabase/server'
 import { ROLE_LABELS, STATUS_LABELS } from '@/lib/auth/roles'
 import { AppShell } from '@/components/layout/AppShell'
 import { EditOwnNameForm } from '@/components/profile/EditOwnNameForm'
-
-function formatDate(value: string): string {
-  return new Date(value).toLocaleDateString('id-ID', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-  })
-}
+import { formatDate } from '@/lib/utils/dates'
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
