@@ -464,14 +464,18 @@ export async function updateMeeting(
 
   // Organizer baru jadi peserta (is_organizer); organizer lama tetap peserta biasa.
   if (organizerId !== access.meeting.organizer_id) {
-    const { error: demoteErr } = await adminDb
-      .from('meeting_participants')
-      .update({ is_organizer: false })
-      .eq('meeting_id', id)
-      .eq('is_organizer', true)
+    // Promosikan dulu, baru turunkan yang lain: bila salah satu gagal, tetap ada organizer.
     const { error: promoteErr } = await adminDb
       .from('meeting_participants')
       .upsert({ meeting_id: id, user_id: organizerId, is_organizer: true }, { onConflict: 'meeting_id,user_id' })
+    const { error: demoteErr } = promoteErr
+      ? { error: null }
+      : await adminDb
+          .from('meeting_participants')
+          .update({ is_organizer: false })
+          .eq('meeting_id', id)
+          .eq('is_organizer', true)
+          .neq('user_id', organizerId)
     if (demoteErr || promoteErr) {
       console.error('updateMeeting organizer participants failed:', (demoteErr ?? promoteErr)?.message)
     }

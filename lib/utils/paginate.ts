@@ -9,7 +9,7 @@ export async function allRows<T>(
   const out: T[] = []
   for (let from = 0; ; from += 1000) {
     const { data, error } = await page(from, from + 999)
-    if (error) throw new Error(`[cron:meetings] query gagal: ${error.message}`)
+    if (error) throw new Error(`[allRows] query gagal: ${error.message}`)
     const rows = (data ?? []) as T[]
     out.push(...rows)
     if (rows.length < 1000) return out

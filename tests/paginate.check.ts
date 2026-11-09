@@ -44,7 +44,7 @@ async function main() {
   const e = sumber(2500, 1)
   let pesan = ''
   await allRows(e.page).catch((x: Error) => { pesan = x.message })
-  cek('error dilempar dengan pesan', pesan, '[cron:meetings] query gagal: boom')
+  cek('error dilempar dengan pesan', pesan, '[allRows] query gagal: boom')
   cek('berhenti di halaman error', e.calls.length, 2)
 
   const nul = await allRows<number>(async () => ({ data: null, error: null }))

@@ -143,12 +143,17 @@ export async function deleteWorkstream(
   }
 
   // Jangan hapus workstream yang sudah memiliki task (non-deleted).
-  const { count } = await admin
+  const { count, error: countErr } = await admin
     .from('tasks')
     .select('id', { count: 'exact', head: true })
     .eq('workstream_id', id)
     .eq('is_deleted', false)
 
+  // Pengaman gagal-tertutup: hitungan gagal = jangan hapus.
+  if (countErr) {
+    console.error('deleteWorkstream count failed:', countErr.message)
+    return { error: 'Tidak dapat menghapus Workstream.' }
+  }
   if ((count ?? 0) > 0) {
     return {
       error: 'Workstream ini masih memiliki task dan tidak dapat dihapus. Pindahkan task terlebih dahulu.',
@@ -156,10 +161,18 @@ export async function deleteWorkstream(
   }
 
   // FK on delete set null: task yang di-soft-delete & saran PENDING akan kehilangan Workstream-nya.
-  const [{ count: softDeleted }, { count: pending }] = await Promise.all([
+  const [{ count: softDeleted, error: softErr }, { count: pending, error: pendErr }] = await Promise.all([
     admin.from('tasks').select('id', { count: 'exact', head: true }).eq('workstream_id', id).eq('is_deleted', true),
-    admin.from('task_suggestions').select('id', { count: 'exact', head: true }).eq('workstream_id', id).eq('status', 'PENDING'),
+    admin
+      .from('task_suggestions')
+      .select('id', { count: 'exact', head: true })
+      .eq('workstream_id', id)
+      .in('status', ['PENDING', 'REVISION_REQUESTED']),
   ])
+  if (softErr || pendErr) {
+    console.error('deleteWorkstream count failed:', (softErr ?? pendErr)?.message)
+    return { error: 'Tidak dapat menghapus Workstream.' }
+  }
   if ((pending ?? 0) > 0) {
     return { error: 'Workstream ini masih dipakai saran task yang menunggu keputusan. Setujui atau tolak saran tersebut terlebih dahulu.' }
   }

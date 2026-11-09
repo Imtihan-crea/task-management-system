@@ -9,8 +9,6 @@ import { isCronAuthorized } from '@/lib/auth/cron'
 import { deadlineTodayBody, taskOverdueBody } from '@/lib/email/templates'
 
 export const dynamic = 'force-dynamic'
-// Batas fungsi Vercel Hobby = 60 dtk; loop notifikasi bisa panjang.
-export const maxDuration = 60
 
 type DueTask = {
   id: string

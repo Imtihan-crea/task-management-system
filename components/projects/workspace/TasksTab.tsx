@@ -40,6 +40,8 @@ export async function TasksTab({
     .eq('is_deleted', false)
   // TEAM_MEMBER hanya task miliknya (sama dengan /tasks).
   if (viewer.role === 'TEAM_MEMBER') taskQuery = taskQuery.eq('assignee_id', viewer.id)
+  // Urutan dipasang sekali: builder PostgREST mutable, .order di dalam callback menumpuk per halaman.
+  const orderedTasks = taskQuery.order('deadline', { ascending: true }).order('id')
   // PM project lain hanya bisa membuka task yang di-assign kepadanya.
   const rowCls =
     'flex flex-col gap-1 rounded-xl border p-3 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-700'
@@ -52,9 +54,7 @@ export async function TasksTab({
       .select('id, code, name')
       .eq('project_id', projectId)
       .order('created_at', { ascending: true }),
-    allRows<TaskRow>((from, to) =>
-      taskQuery.order('deadline', { ascending: true }).order('id').range(from, to)
-    ),
+    allRows<TaskRow>((from, to) => orderedTasks.range(from, to)),
   ])
 
   const wsList = (workstreams ?? []) as { id: string; code: string; name: string }[]

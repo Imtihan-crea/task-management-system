@@ -457,6 +457,8 @@ export async function changeTaskStatus(
     return { error: 'Tidak dapat memperbarui status Task.' }
   }
   if (!changed || changed.length === 0) {
+    // Klik ganda: permintaan lain sudah menulis status yang sama -> anggap sukses.
+    if ((await currentTaskStatus(id)) === status) return { success: 'Status Task diperbarui.' }
     return { error: 'Status Task sudah berubah oleh pengguna lain. Muat ulang halaman lalu coba lagi.' }
   }
 
@@ -555,6 +557,8 @@ export async function submitTask(
     return { error: 'Tidak dapat men-submit Task.' }
   }
   if (!changed || changed.length === 0) {
+    // Klik ganda: permintaan lain sudah menutup task dengan status yang sama -> anggap sukses.
+    if ((await currentTaskStatus(id)) === 'DONE') return { success: 'Task sudah di-submit.' }
     return { error: 'Status Task sudah berubah oleh pengguna lain. Muat ulang halaman lalu coba lagi.' }
   }
 
@@ -642,6 +646,8 @@ export async function cancelTask(
     return { error: 'Tidak dapat membatalkan Task.' }
   }
   if (!changed || changed.length === 0) {
+    // Klik ganda: permintaan lain sudah menutup task dengan status yang sama -> anggap sukses.
+    if ((await currentTaskStatus(id)) === 'CANCELLED') return { success: 'Task sudah dibatalkan.' }
     return { error: 'Status Task sudah berubah oleh pengguna lain. Muat ulang halaman lalu coba lagi.' }
   }
 
@@ -680,6 +686,15 @@ export async function cancelTask(
  * Helper notifikasi task (dipakai create/update/status).
  * Semua lewat unified service — tidak ada email ad-hoc di sini.
  */
+async function currentTaskStatus(taskId: string): Promise<string | null> {
+  const { data } = await createAdminClient()
+    .from('tasks')
+    .select('status')
+    .eq('id', taskId)
+    .maybeSingle<{ status: string }>()
+  return data?.status ?? null
+}
+
 async function getTaskContext(taskId: string) {
   const admin = createAdminClient()
   const { data: task } = await admin
