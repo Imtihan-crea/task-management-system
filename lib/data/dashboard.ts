@@ -4,6 +4,7 @@ import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { TaskRow } from '@/lib/data/task-list'
 import { allRows } from '@/lib/utils/paginate'
+import { hasImpossibleFilter } from '@/lib/data/filter-values'
 
 /** Sama seperti fetchTaskRows: assignee di-embed, tanpa query profiles terpisah. */
 const DASHBOARD_TASK_SELECT =
@@ -97,6 +98,7 @@ export const getDashboardTasks = cache(
     role: string,
     f: DashboardFilters
   ): Promise<TaskRow[]> => {
+    if (hasImpossibleFilter({ ids: [f.project, f.assignee], status: f.status, priority: f.priority })) return []
     const admin = createAdminClient()
     const scope = await getDashboardScope(userId, role)
 

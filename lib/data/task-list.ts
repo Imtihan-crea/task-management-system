@@ -3,6 +3,7 @@ import 'server-only'
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { allRows } from '@/lib/utils/paginate'
+import { hasImpossibleFilter } from '@/lib/data/filter-values'
 import { daysFromTodayISO, todayISO } from '@/lib/utils/dates'
 import type { TaskPriority, TaskStatus } from '@/types/task'
 // Bentuk baris DITURUNKAN dari skema Drizzle (single source of truth),
@@ -68,6 +69,7 @@ export function assigneeName(a: TaskAssignee | null | undefined): string {
  */
 export const fetchTaskRows = cache(async (scope: TaskScope): Promise<TaskRow[]> => {
   const admin = createAdminClient()
+  if (hasImpossibleFilter({ ids: [scope.project, scope.workstream], priority: scope.priority })) return []
 
   let query = admin
     .from('tasks')
