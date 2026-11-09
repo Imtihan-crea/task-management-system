@@ -3,11 +3,14 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
 import { runMorningDigest } from '@/lib/meetings/digest'
+import { allRows } from '@/lib/utils/paginate'
 import { todayISO } from '@/lib/utils/dates'
 import { isCronAuthorized } from '@/lib/auth/cron'
 import { deadlineTodayBody, taskOverdueBody } from '@/lib/email/templates'
 
 export const dynamic = 'force-dynamic'
+// Batas fungsi Vercel Hobby = 60 dtk; loop notifikasi bisa panjang.
+export const maxDuration = 60
 
 type DueTask = {
   id: string
@@ -44,20 +47,26 @@ export async function GET(request: Request) {
   const admin = createAdminClient()
   const today = todayISO()
 
-  const { data: tasks, error } = await admin
-    .from('tasks')
-    .select('id, code, title, project_id, assignee_id, deadline')
-    .eq('is_deleted', false)
-    .neq('status', 'DONE')
-    .neq('status', 'CANCELLED')
-    .lte('deadline', today)
-    .limit(1000)
+  // Digest pagi lebih dulu & terpisah: tidak ikut gagal/terpotong bila loop reminder panjang.
+  const digest = await morningDigestSummary()
 
-  if (error) {
-    console.error('[cron] Failed to fetch due tasks:', error.message)
-    return NextResponse.json({ error: 'Gagal mengambil task.' }, { status: 500 })
+  let tasks: DueTask[]
+  try {
+    tasks = await allRows<DueTask>((from, to) =>
+      admin
+        .from('tasks')
+        .select('id, code, title, project_id, assignee_id, deadline')
+        .eq('is_deleted', false)
+        .neq('status', 'DONE')
+        .neq('status', 'CANCELLED')
+        .lte('deadline', today)
+        .order('id')
+        .range(from, to)
+    )
+  } catch (error) {
+    console.error('[cron] Failed to fetch due tasks:', (error as Error).message)
+    return NextResponse.json({ error: 'Gagal mengambil task.', ...digest }, { status: 500 })
   }
-
 
   let baseUrl = ''
   try {
@@ -67,7 +76,7 @@ export async function GET(request: Request) {
   }
 
   // Nama project sekali jalan.
-  const projectIds = [...new Set(((tasks ?? []) as DueTask[]).map((t) => t.project_id))]
+  const projectIds = [...new Set(tasks.map((t) => t.project_id))]
   let projectNames: Record<string, string> = {}
   let closedProjects = new Set<string>()
   if (projectIds.length > 0) {
@@ -83,7 +92,7 @@ export async function GET(request: Request) {
   }
 
   // Project COMPLETED/CANCELLED tidak lagi mengirim reminder (audit B14).
-  const open = ((tasks ?? []) as DueTask[]).filter((t) => !closedProjects.has(t.project_id))
+  const open = tasks.filter((t) => !closedProjects.has(t.project_id))
   const dueToday = open.filter((t) => t.deadline === today)
   const overdue = open.filter((t) => t.deadline < today)
 
@@ -130,7 +139,7 @@ export async function GET(request: Request) {
     date: today,
     dueToday: dueTodaySent,
     overdue: overdueSent,
-    ...(await morningDigestSummary()),
+    ...digest,
   })
 }
 
