@@ -155,6 +155,18 @@ export async function deleteWorkstream(
     }
   }
 
+  // FK on delete set null: task yang di-soft-delete & saran PENDING akan kehilangan Workstream-nya.
+  const [{ count: softDeleted }, { count: pending }] = await Promise.all([
+    admin.from('tasks').select('id', { count: 'exact', head: true }).eq('workstream_id', id).eq('is_deleted', true),
+    admin.from('task_suggestions').select('id', { count: 'exact', head: true }).eq('workstream_id', id).eq('status', 'PENDING'),
+  ])
+  if ((pending ?? 0) > 0) {
+    return { error: 'Workstream ini masih dipakai saran task yang menunggu keputusan. Setujui atau tolak saran tersebut terlebih dahulu.' }
+  }
+  if ((softDeleted ?? 0) > 0) {
+    return { error: 'Workstream ini masih tercatat pada task yang sudah dihapus (riwayat). Penghapusan diblokir agar riwayat tidak hilang.' }
+  }
+
   const { error } = await admin.from('workstreams').delete().eq('id', id)
 
   if (error) {
