@@ -259,6 +259,8 @@ Perbaikan hasil review ikut dicatat sebagai commit terpisah (mis. password baru 
 
 ### Temuan baru
 
+**DARURAT (9 Nov 2026): Task baru gagal dibuat.** Default kode `'T-' || lpad(nextval('task_code_seq')::text, 2, '0')` memotong angka 3 digit (`lpad('123', 2, '0') = '12'`). Setelah urutan melewati 99 (task uji dibuat lalu dihapus), nomor 100–159 menjadi T-10 sampai T-15 yang sudah dipakai, sehingga hampir setiap insert gagal `duplicate key ... tasks_code_unique`. Dibuktikan 9 Nov dengan 3 insert service role berturut-turut (semua gagal). Perbaikan: `database/migrations/017_code_no_truncate.sql` (fungsi `next_code` tanpa pemotongan untuk Task, Suggestion, Meeting, Project; `task_code_seq` kembali ke nomor Task terbesar). Pemilik menjalankannya di SQL Editor; tidak bergantung pada 016.
+
 **Urutan kode `meeting_code_seq` tertinggal dari data.** Saat e2e, satu putaran gagal dengan `duplicate key ... meetings_code_unique`. Kode Meeting tertinggi di produksi adalah `M-012`, tetapi `meeting_code_seq` masih di bawahnya. Percobaan yang gagal itu memakai satu nilai, sehingga urutan kini melewati `M-012`. Sebab tertinggalnya urutan belum diketahui [INFERENCE: data Meeting pernah dimasukkan atau diubah tanpa lewat default kolom]. Dampaknya bila terulang: membuat Meeting baru bisa gagal dengan "Tidak dapat membuat Meeting. Silakan coba lagi." sampai urutan melewati kode terbesar.
 
 Rekomendasi: pemilik menjalankan lewat SQL editor Supabase (belum dijalankan oleh siapa pun; pemeriksaan bisa dijalankan lebih dulu).
