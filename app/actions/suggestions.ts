@@ -349,7 +349,7 @@ export async function reviewSuggestion(
   }
 
   const nextStatus = decision === 'revise' ? 'REVISION_REQUESTED' : 'REJECTED'
-  const { error } = await admin
+  const { data: reviewed, error } = await admin
     .from('task_suggestions')
     .update({
       status: nextStatus as SuggestionStatus,
@@ -359,10 +359,14 @@ export async function reviewSuggestion(
     })
     .eq('id', id)
     .eq('status', 'PENDING') // guard race: hanya dari PENDING
+    .select('id')
 
   if (error) {
     console.error('reviewSuggestion failed:', error.message)
     return { error: 'Tidak dapat menyimpan review.' }
+  }
+  if (!reviewed || reviewed.length === 0) {
+    return { error: 'Suggestion ini sudah diproses oleh reviewer lain. Muat ulang halaman.' }
   }
 
   await emitReviewEvent(current, nextStatus, profile, reviewNote)
