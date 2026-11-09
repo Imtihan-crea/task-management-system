@@ -63,6 +63,8 @@ Nama variabel di `.env.local` (nilainya jangan pernah di-commit; `.env.example` 
 | `npm run test:<nama>` | satu tes saja (mis. `test:permissions`, `test:rules`, `test:task-access`) |
 | `npm run check:secrets` | memindai file ter-track git untuk secret dan email asli; wajib bersih sebelum commit |
 | `npm run test:rls` | uji kebijakan RLS terhadap database |
+| `npm run db:dry-run -- 016` (atau `017`, `016,017`) | coba migrasi dalam satu transaksi yang selalu di-rollback, plus cek hasilnya (butuh login Supabase CLI) |
+| `npm run db:check-seq` | baca-saja: urutan kode Task/Suggestion/Meeting/Project vs kode terbesar dan default lpad yang memotong; exit 1 bila ada tanda |
 | `npm run test:db` | tes pembentuk filter PostgREST |
 | `npm run emails:render` | merender 18 template email dengan data palsu dan memeriksa escape/tautan (tidak mengirim email) |
 | `npm run e2e:smoke` / `e2e:write` / `e2e:rbac` / `e2e:a3` / `e2e:a11y` / `e2e:mobile` / `e2e:perf` / `e2e:cleanup` | uji browser Playwright (lihat di bawah) |

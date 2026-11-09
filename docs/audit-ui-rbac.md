@@ -258,6 +258,17 @@ Perbaikan hasil review ikut dicatat sebagai commit terpisah (mis. password baru 
 3. `npm run e2e:rbac` (server lokal, email mati) harus 0 ketidaksesuaian.
 4. Bila ada yang gagal, jalankan `down/016_rls_scoped_reads.down.sql`.
 
+**Urutan menerapkan migrasi 016 dan 017** (017 dulu karena darurat; keduanya independen):
+
+1. Login ulang Supabase CLI ke akun pemilik project (`supabase login`).
+2. `npm run db:check-seq` (baca saja): menunjukkan urutan kode, kode terbesar, dan tanda bila default lpad akan memotong atau urutan tertinggal.
+3. `npm run db:dry-run -- 017` (lalu `-- 016`, atau `-- 016,017`): menjalankan migrasi dalam transaksi yang di-rollback dan memeriksa hasilnya. Semua dibatalkan; `setval` milik 017 sengaja tidak ikut karena sequence tidak bisa di-rollback.
+4. Terapkan file `017_code_no_truncate.sql` (lalu `016_...`) di SQL Editor Supabase.
+5. `npm run db:status` (harus SINKRON), lalu `npm run test:rls` (34 cek) dan `npm run e2e:rbac` untuk 016.
+6. Bila gagal, jalankan file di `database/migrations/down/`.
+
+Catatan: perintah ini belum pernah dijalankan terhadap database (CLI belum login ke akun pemilik; mengembalikan 403). Logika 017 diuji pada Postgres lokal sementara.
+
 ### Temuan baru
 
 **DARURAT (9 Nov 2026): Task baru gagal dibuat.** Default kode `'T-' || lpad(nextval('task_code_seq')::text, 2, '0')` memotong angka 3 digit (`lpad('123', 2, '0') = '12'`). Setelah urutan melewati 99 (task uji dibuat lalu dihapus), nomor 100–159 menjadi T-10 sampai T-15 yang sudah dipakai, sehingga hampir setiap insert gagal `duplicate key ... tasks_code_unique`. Dibuktikan 9 Nov dengan 3 insert service role berturut-turut (semua gagal). Perbaikan: `database/migrations/017_code_no_truncate.sql` (fungsi `next_code` tanpa pemotongan untuk Task, Suggestion, Meeting, Project; `task_code_seq` kembali ke nomor Task terbesar). Pemilik menjalankannya di SQL Editor; tidak bergantung pada 016.
