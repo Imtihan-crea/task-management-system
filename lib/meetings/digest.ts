@@ -3,6 +3,7 @@ import 'server-only'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
+import { allRows } from '@/lib/utils/paginate'
 import { formatMeetingDate, todayInAppTime } from '@/lib/utils/meeting-time'
 import {
   buildDigestBody,
@@ -76,35 +77,39 @@ export async function runMorningDigest(now: Date = new Date()): Promise<{
     created_by: string | null
   }[]
 
-  const { data: parts } = meetingRows.length > 0
-    ? await admin
-        .from('meeting_participants')
-        .select('meeting_id, user_id')
-        .in(
-          'meeting_id',
-          meetingRows.map((m) => m.id)
-        )
-    : { data: [] as { meeting_id: string; user_id: string | null }[] }
+  const parts = meetingRows.length > 0
+    ? await allRows<{ meeting_id: string; user_id: string | null }>((from, to) =>
+        admin
+          .from('meeting_participants')
+          .select('meeting_id, user_id')
+          .in('meeting_id', meetingRows.map((m) => m.id))
+          .order('id')
+          .range(from, to)
+      )
+    : []
 
   const participantMap = new Map<string, Set<string>>()
-  for (const p of (parts ?? []) as { meeting_id: string; user_id: string | null }[]) {
+  for (const p of parts) {
     if (!p.user_id) continue
     if (!participantMap.has(p.meeting_id)) participantMap.set(p.meeting_id, new Set())
     participantMap.get(p.meeting_id)!.add(p.user_id)
   }
 
   // 3. Task due hari ini + overdue (1 query).
-  const { data: tasks } = await admin
-    .from('tasks')
-    .select('id, code, title, project_id, assignee_id, deadline')
-    .eq('is_deleted', false)
-    .neq('status', 'DONE')
-    .neq('status', 'CANCELLED')
-    .in('assignee_id', userIds)
-    .lte('deadline', today)
-    .limit(2000)
+  const tasks = await allRows<unknown>((from, to) =>
+    admin
+      .from('tasks')
+      .select('id, code, title, project_id, assignee_id, deadline')
+      .eq('is_deleted', false)
+      .neq('status', 'DONE')
+      .neq('status', 'CANCELLED')
+      .in('assignee_id', userIds)
+      .lte('deadline', today)
+      .order('id')
+      .range(from, to)
+  )
 
-  const taskRows = (tasks ?? []) as {
+  let taskRows = tasks as {
     id: string
     code: string
     title: string
@@ -124,8 +129,15 @@ export async function runMorningDigest(now: Date = new Date()): Promise<{
   if (projectIds.length > 0) {
     const { data: projects } = await admin
       .from('projects')
-      .select('id, code, name')
+      .select('id, code, name, status')
       .in('id', projectIds)
+    // Project COMPLETED/CANCELLED tidak lagi mengirim reminder (audit B14).
+    const closed = new Set(
+      ((projects ?? []) as { id: string; status: string }[])
+        .filter((p) => p.status === 'COMPLETED' || p.status === 'CANCELLED')
+        .map((p) => p.id)
+    )
+    taskRows = taskRows.filter((t) => !closed.has(t.project_id))
     projectLabels = Object.fromEntries(
       ((projects ?? []) as { id: string; code: string; name: string }[]).map((p) => [
         p.id,
