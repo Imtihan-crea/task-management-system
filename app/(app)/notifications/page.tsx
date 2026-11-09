@@ -27,13 +27,19 @@ export default async function NotificationsPage({
   const params = await searchParams
   const admin = createAdminClient()
 
-  const [{ data: items }, { data: prefs }] = await Promise.all([
+  const [{ data: items }, { count: unreadTotal }, { data: prefs }] = await Promise.all([
     admin
       .from('notifications')
       .select('*')
       .eq('user_id', profile.id)
       .order('created_at', { ascending: false })
       .limit(100),
+    // Hitungan belum-dibaca eksak, tidak terbatas 100 terbaru.
+    admin
+      .from('notifications')
+      .select('id', { count: 'exact', head: true })
+      .eq('user_id', profile.id)
+      .eq('is_read', false),
     admin
       .from('notification_preferences')
       .select('*')
@@ -42,7 +48,7 @@ export default async function NotificationsPage({
   ])
 
   const notifications = (items ?? []) as NotificationItem[]
-  const unreadCount = notifications.filter((n) => !n.is_read).length
+  const unreadCount = unreadTotal ?? notifications.filter((n) => !n.is_read).length
 
   const page = parsePage(params.page)
   const { pageItems, totalPages } = paginate(notifications, page, 25)
