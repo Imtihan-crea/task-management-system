@@ -1,7 +1,7 @@
 -- Tes RLS + hak akses database (npm run test:rls).
 -- SELALU dibatalkan: blok akhir melempar exception, jadi seluruh transaksi
 -- (termasuk perubahan status / user uji) di-rollback. Aman di produksi.
--- Butuh minimal: 1 user ACTIVE TEAM_MEMBER, 1 user lain, 1 project.
+-- Butuh minimal: 1 user ACTIVE TEAM_MEMBER yang punya task, 1 user lain, 1 project.
 begin;
 
 create temp table hasil (nama text, lulus boolean, detail text);
@@ -21,8 +21,12 @@ declare
     'notification_events', 'notification_preferences', 'notifications',
     'project_managers', 'projects', 'task_suggestions', 'tasks', 'workstreams'];
 begin
-  select id into tm from public.profiles where status = 'ACTIVE' and role = 'TEAM_MEMBER' limit 1;
-  if tm is null then raise exception 'butuh 1 user ACTIVE TEAM_MEMBER'; end if;
+  -- TEAM_MEMBER yang punya task: cek 1 dan cek scope 016 butuh project yang terbaca.
+  select p.id into tm from public.profiles p
+  where p.status = 'ACTIVE' and p.role = 'TEAM_MEMBER'
+    and exists (select 1 from public.tasks t where t.assignee_id = p.id and t.is_deleted = false)
+  limit 1;
+  if tm is null then raise exception 'butuh 1 user ACTIVE TEAM_MEMBER yang punya task'; end if;
   perform set_config('request.jwt.claims', json_build_object('sub', tm, 'role', 'authenticated')::text, true);
 
   -- 1. user ACTIVE bisa baca project
@@ -46,6 +50,16 @@ begin
   exception when others then
     insert into hasil values ('tolak insert task langsung', true, sqlstate);
   end;
+  -- 4b. scope baca (migrasi 016): TEAM_MEMBER hanya task miliknya,
+  --     project tempat ia punya task, dan workstream project itu.
+  select count(*) into n from public.tasks where assignee_id <> tm;
+  insert into hasil values ('016: TEAM_MEMBER tidak melihat task orang lain', n = 0, n || ' baris');
+  select count(*) into n from public.projects p
+  where not exists (select 1 from public.tasks t where t.project_id = p.id and t.assignee_id = tm);
+  insert into hasil values ('016: TEAM_MEMBER hanya project yang ia ikuti', n = 0, n || ' baris');
+  select count(*) into n from public.workstreams w
+  where not exists (select 1 from public.tasks t where t.project_id = w.project_id and t.assignee_id = tm);
+  insert into hasil values ('016: TEAM_MEMBER hanya workstream project yang ia ikuti', n = 0, n || ' baris');
   execute 'reset role';
 
   -- 5. INACTIVE: 0 baris di semua tabel, profil sendiri tetap 1
@@ -82,6 +96,16 @@ begin
     not has_function_privilege('authenticated', 'public.set_project_managers(uuid, uuid[])', 'execute'), null);
   insert into hasil values ('set_project_managers: anon ditolak',
     not has_function_privilege('anon', 'public.set_project_managers(uuid, uuid[])', 'execute'), null);
+  insert into hasil values ('016: count_active_admins anon ditolak',
+    not has_function_privilege('anon', 'public.count_active_admins(uuid)', 'execute'), null);
+  insert into hasil values ('016: count_active_admins authenticated ditolak',
+    not has_function_privilege('authenticated', 'public.count_active_admins(uuid)', 'execute'), null);
+  insert into hasil values ('016: is_admin anon ditolak',
+    not has_function_privilege('anon', 'public.is_admin()', 'execute'), null);
+  insert into hasil values ('016: authenticated tanpa TRUNCATE tasks',
+    not has_table_privilege('authenticated', 'public.tasks', 'truncate'), null);
+  insert into hasil values ('016: authenticated tanpa DELETE profiles',
+    not has_table_privilege('authenticated', 'public.profiles', 'delete'), null);
   insert into hasil values ('app_migrations: authenticated tanpa akses',
     not has_table_privilege('authenticated', 'public.app_migrations', 'select'), null);
 

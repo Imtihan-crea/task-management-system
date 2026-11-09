@@ -13,7 +13,7 @@ const run = spawnSync(
 )
 const text = `${run.stdout}\n${run.stderr}`
 // Jumlah cek di database/tests/rls.check.sql; ubah bila menambah/mengurangi cek.
-const EXPECTED_TOTAL = 26
+const EXPECTED_TOTAL = 34
 
 const match = text.match(/HASIL_RLS total=(\d+) gagal=(\d+) :: (.*?)(?:\\n|\n|")/)
 if (!match) {
