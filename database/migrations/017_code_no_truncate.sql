@@ -46,8 +46,9 @@ alter table public.projects
   alter column code set default public.next_code('', 'public.project_code_seq', 3);
 
 select setval('public.task_code_seq',
-  greatest(coalesce((select max(substring(code from 3)::integer) from public.tasks), 0), 1),
-  (select count(*) > 0 from public.tasks));
+  -- Hanya kode T-<angka>: kode lain (mis. sisa data uji) tidak boleh membatalkan migrasi.
+  greatest(coalesce((select max(substring(code from 3)::integer) from public.tasks where code ~ '^T-[0-9]+$'), 0), 1),
+  (select count(*) > 0 from public.tasks where code ~ '^T-[0-9]+$'));
 
 insert into public.app_migrations (version, name, note)
 values ('017', '017_code_no_truncate', 'kode tidak lagi terpotong lpad; task_code_seq ke nomor terbesar')
