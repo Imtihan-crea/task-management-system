@@ -17,7 +17,7 @@ import {
 import { getActiveUsers } from '@/lib/data/users'
 import { isProjectManager } from '@/lib/data/projects'
 import { can } from '@/lib/auth/permissions'
-import { canActOnTask } from '@/lib/auth/task-access'
+import { canActOnTask, canCancelTask } from '@/lib/auth/task-access'
 import type { Task, TaskStatus } from '@/types/task'
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -70,6 +70,7 @@ export default async function TaskDetailPage({
     managesProject: pmOwnsProject,
   })
   const canDelete = isAdmin || (isPM && pmOwnsProject)
+  const canCancel = canCancelTask(profile.role, { managesProject: pmOwnsProject })
   const canSubmitEvidence = can(profile.role, 'tasks.submitEvidenceOwn') && canChangeStatus
 
   const [{ data: project }, { data: workstream }, { data: assignee }, { data: creator }] =
@@ -228,9 +229,11 @@ export default async function TaskDetailPage({
                 <div className="flex-1">
                   <SubmitTaskForm id={task.id} />
                 </div>
-                <div className="flex-1">
-                  <CancelTaskForm id={task.id} />
-                </div>
+                {canCancel && (
+                  <div className="flex-1">
+                    <CancelTaskForm id={task.id} />
+                  </div>
+                )}
               </div>
             )}
 

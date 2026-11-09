@@ -51,7 +51,7 @@ function intended(key) {
       const m = only(['ADMIN', 'PM_A', 'MEMBER', 'VIEWER'])
       m.ADMIN.actions = ['cancel-task', 'delete', 'edit', 'status', 'submit']
       m.PM_A.actions = ['cancel-task', 'delete', 'edit', 'status', 'submit']
-      m.MEMBER.actions = ['cancel-task', 'status', 'submit']
+      m.MEMBER.actions = ['status', 'submit'] // C20: Cancel hanya PM/Admin
       return m
     }
     case 'tasks/new': return only(['ADMIN', 'PM_A', 'PM_B'], ['add'])

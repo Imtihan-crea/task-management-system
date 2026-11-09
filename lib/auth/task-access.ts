@@ -16,3 +16,13 @@ export function canActOnTask(
   if (role === 'TEAM_MEMBER') return scope.isAssignee
   return false
 }
+
+/**
+ * Siapa boleh membatalkan (Cancel) task: hanya ADMIN, atau PM yang mengelola
+ * project task itu. Keputusan pemilik C20 (9 Nov 2026): Team Member dan PM
+ * yang hanya menjadi assignee tidak boleh, karena Cancel mengunci task.
+ */
+export function canCancelTask(role: UserRole, scope: { managesProject: boolean }): boolean {
+  if (role === 'ADMIN') return true
+  return role === 'PROJECT_MANAGER' && scope.managesProject
+}

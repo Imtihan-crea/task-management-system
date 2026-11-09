@@ -2,7 +2,7 @@
  * Uji lib/auth/task-access.ts — siapa boleh ubah status/submit/cancel/evidence task.
  * Jalankan: npm run test:task-access
  */
-import { canActOnTask } from '../lib/auth/task-access'
+import { canActOnTask, canCancelTask } from '../lib/auth/task-access'
 import type { UserRole } from '../types/profile'
 
 let ok = 0
@@ -32,6 +32,19 @@ const kasus: [UserRole, boolean, boolean, boolean][] = [
 ]
 for (const [role, isAssignee, managesProject, harap] of kasus) {
   cek(`${role} assignee=${isAssignee} pm=${managesProject}`, canActOnTask(role, { isAssignee, managesProject }), harap)
+}
+
+// C20: Cancel hanya ADMIN atau PM pengelola project. [role, managesProject, boleh?]
+const cancelKasus: [UserRole, boolean, boolean][] = [
+  ['ADMIN', false, true],
+  ['PROJECT_MANAGER', true, true],
+  ['PROJECT_MANAGER', false, false], // PM yang hanya assignee di project PM lain
+  ['TEAM_MEMBER', false, false],
+  ['TEAM_MEMBER', true, false],
+  ['VIEWER', true, false],
+]
+for (const [role, managesProject, harap] of cancelKasus) {
+  cek(`cancel ${role} pm=${managesProject}`, canCancelTask(role, { managesProject }), harap)
 }
 
 console.log(`LULUS: ${ok}`)

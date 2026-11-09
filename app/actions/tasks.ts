@@ -10,7 +10,7 @@ import {
   isProjectClosed,
   isProjectManager,
 } from '@/lib/data/projects'
-import { canActOnTask } from '@/lib/auth/task-access'
+import { canActOnTask, canCancelTask } from '@/lib/auth/task-access'
 import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
 import { emitTaskAssigned } from '@/lib/notifications/task-assigned'
@@ -602,8 +602,10 @@ export async function cancelTask(
 
   if (!task) return { error: 'Task tidak ditemukan.' }
 
-  if (!(await canActOnLoadedTask(profile, task))) {
-    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
+  const managesProject =
+    profile.role === 'PROJECT_MANAGER' && (await isProjectManager(task.project_id, profile.id))
+  if (!canCancelTask(profile.role, { managesProject })) {
+    return { error: 'Hanya PM project atau Admin yang dapat membatalkan task.' }
   }
 
   if (task.status === 'CANCELLED') return { success: 'Task sudah dibatalkan.' }
