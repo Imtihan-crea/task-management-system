@@ -443,14 +443,21 @@ export async function changeTaskStatus(
     return { error: 'Task ini terkunci. Minta PM atau Admin untuk membukanya kembali.' }
   }
 
-  const { error } = await admin
+  // Guard status: kalau status sudah berubah (balapan), jangan timpa & jangan kirim notifikasi.
+  const { data: changed, error } = await admin
     .from('tasks')
     .update({ status: status as TaskStatus })
     .eq('id', id)
+    .eq('is_deleted', false)
+    .eq('status', before.status)
+    .select('id')
 
   if (error) {
     console.error('changeTaskStatus failed:', error.message)
     return { error: 'Tidak dapat memperbarui status Task.' }
+  }
+  if (!changed || changed.length === 0) {
+    return { error: 'Status Task sudah berubah oleh pengguna lain. Muat ulang halaman lalu coba lagi.' }
   }
 
   // DONE hanya lewat submitTask (ada email + tanggalnya); jalur ini
@@ -534,14 +541,21 @@ export async function submitTask(
   }
 
   const now = new Date().toISOString()
-  const { error } = await admin
+  // Guard status: kalau status sudah berubah (balapan), jangan timpa & jangan kirim notifikasi.
+  const { data: changed, error } = await admin
     .from('tasks')
     .update({ status: 'DONE', completed_at: now })
     .eq('id', id)
+    .eq('is_deleted', false)
+    .eq('status', task.status)
+    .select('id')
 
   if (error) {
     console.error('submitTask failed:', error.message)
     return { error: 'Tidak dapat men-submit Task.' }
+  }
+  if (!changed || changed.length === 0) {
+    return { error: 'Status Task sudah berubah oleh pengguna lain. Muat ulang halaman lalu coba lagi.' }
   }
 
   await sendDoneEmail(id)
@@ -614,14 +628,21 @@ export async function cancelTask(
   }
 
   const now = new Date().toISOString()
-  const { error } = await admin
+  // Guard status: kalau status sudah berubah (balapan), jangan timpa & jangan kirim notifikasi.
+  const { data: changed, error } = await admin
     .from('tasks')
     .update({ status: 'CANCELLED', cancelled_at: now })
     .eq('id', id)
+    .eq('is_deleted', false)
+    .eq('status', task.status)
+    .select('id')
 
   if (error) {
     console.error('cancelTask failed:', error.message)
     return { error: 'Tidak dapat membatalkan Task.' }
+  }
+  if (!changed || changed.length === 0) {
+    return { error: 'Status Task sudah berubah oleh pengguna lain. Muat ulang halaman lalu coba lagi.' }
   }
 
   await emitTaskStatusChanged({
