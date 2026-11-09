@@ -123,16 +123,11 @@ export function EditWorkstreamForm({
 }
 
 export function DeleteWorkstreamForm({ id }: { id: string }) {
-  const [state, formAction, pending] = useFormAction(deleteWorkstream, INITIAL)
+  const [state, formAction, pending] = useFormAction(deleteWorkstream, INITIAL, () => 'Hapus workstream ini? Tindakan ini tidak dapat dibatalkan.')
 
   return (
     <form
       {...formAction}
-      onSubmit={(e) => {
-        if (!window.confirm('Hapus workstream ini? Tindakan ini tidak dapat dibatalkan.')) {
-          e.preventDefault()
-        }
-      }}
       className="flex flex-col gap-1"
     >
       <input type="hidden" name="id" value={id} />
