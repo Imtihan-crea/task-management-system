@@ -11,6 +11,8 @@
     "db:check": "drizzle-kit check",
     "db:status": "node scripts/db-status.mjs",
     "test:rls": "node scripts/test-rls.mjs",
+    "db:dry-run": "node scripts/db-dry-run.mjs",
+    "db:check-seq": "node scripts/db-check-seq.mjs",
     "db:backup": "bash scripts/db-backup.sh",
     "test:time": "tsx tests/meeting-time.check.ts",
     "test:dates": "tsx tests/dates.check.ts",
