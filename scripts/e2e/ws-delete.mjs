@@ -6,6 +6,7 @@ const db = serviceClient()
 const browser = await loadPlaywright().chromium.launch({ headless: true })
 const page = await browser.newPage()
 let ok = false
+let okBaru = false
 try {
   await loginAdmin(db, page)
   const { data: p, error: pe } = await db.from('projects').insert({ name: `${PREFIX} ws-del`, status: 'ACTIVE' }).select('id').single()
@@ -20,10 +21,24 @@ try {
     const { data } = await db.from('workstreams').select('id').eq('id', w.id)
     ok = (data ?? []).length === 0
   }
+  // Kode tidak bentrok setelah hapus Workstream non-terakhir: tambah B, C (kode A sudah dihapus di atas),
+  // hapus B, lalu buat lewat UI -> harus sukses (trigger lama count+1 akan bentrok dengan C).
+  const mk = (n) => db.from('workstreams').insert({ project_id: p.id, name: `${PREFIX} ws ${n}` }).select('id').single()
+  const { data: b } = await mk('b'); await mk('c')
+  await db.from('workstreams').delete().eq('id', b.id)
+  await page.goto(`${BASE}/workstreams/new?project=${p.id}`, { waitUntil: 'networkidle' })
+  await page.locator('input[name="name"]').fill(`${PREFIX} ws baru`)
+  await page.getByRole('button', { name: 'Buat Workstream' }).click()
+  for (let i = 0; i < 20 && !okBaru; i++) {
+    await page.waitForTimeout(500)
+    const { data } = await db.from('workstreams').select('id').eq('project_id', p.id).eq('name', `${PREFIX} ws baru`)
+    okBaru = (data ?? []).length === 1
+  }
 } finally {
   await browser.close()
   const c = await runCleanup(db)
   console.log(c.lines.at(-1))
 }
 console.log('hapus workstream lewat klik:', ok ? 'LULUS' : 'GAGAL')
-process.exit(ok ? 0 : 1)
+console.log('buat workstream setelah hapus non-terakhir:', okBaru ? 'LULUS' : 'GAGAL')
+process.exit(ok && okBaru ? 0 : 1)

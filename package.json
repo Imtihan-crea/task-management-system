@@ -41,10 +41,11 @@
     "e2e:a3": "node scripts/e2e/a3-password.mjs",
     "e2e:perf": "node scripts/e2e/perf.mjs",
     "test:paginate": "tsx tests/paginate.check.ts",
+    "test:ws-code": "tsx tests/workstream-code.check.ts",
     "test:user-status": "tsx tests/user-status.check.ts",
     "check:secrets": "node scripts/check-secrets.mjs",
     "test:db": "tsx tests/postgrest-or.check.ts",
-    "test:logic": "npm run test:time && npm run test:dates && npm run test:rules && npm run test:email && npm run test:layout && npm run test:digest && npm run test:task && npm run test:auth && npm run test:canonical && npm run test:cron && npm run test:permissions && npm run test:alert && npm run test:task-access && npm run test:project-access && npm run test:user-status && npm run test:limits && npm run test:paginate && npm run check:secrets"
+    "test:logic": "npm run test:time && npm run test:dates && npm run test:rules && npm run test:email && npm run test:layout && npm run test:digest && npm run test:task && npm run test:auth && npm run test:canonical && npm run test:cron && npm run test:permissions && npm run test:alert && npm run test:task-access && npm run test:project-access && npm run test:user-status && npm run test:limits && npm run test:paginate && npm run test:ws-code && npm run check:secrets"
   },
   "dependencies": {
     "@sentry/nextjs": "11.11.0",

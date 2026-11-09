@@ -6,6 +6,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { canManageProjectFor } from '@/lib/data/projects'
 import { logActivity } from '@/lib/activity-log/service'
 import { readLimitedField } from '@/lib/forms/limits'
+import { nextWorkstreamCode } from '@/lib/workstreams/code'
 
 export type WorkstreamFormState = {
   error?: string
@@ -28,15 +29,27 @@ export async function createWorkstream(
     return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
-  const { data: created, error } = await createAdminClient()
-    .from('workstreams')
-    .insert({
-      project_id: projectId,
-      name,
-      description: description || null,
-    })
-    .select('id, code')
-    .single<{ id: string; code: string }>()
+  // Kode dihitung di sini (maks+1): trigger count+1 bentrok setelah ada Workstream yang dihapus.
+  // Ulangi bila bentrok unik (23505) karena pembuatan bersamaan.
+  const admin = createAdminClient()
+  let created: { id: string; code: string } | null = null
+  let error: { message: string; code?: string } | null = null
+  for (let i = 0; i < 3 && !created; i++) {
+    const { data: rows } = await admin.from('workstreams').select('code').eq('project_id', projectId)
+    const res = await admin
+      .from('workstreams')
+      .insert({
+        project_id: projectId,
+        code: nextWorkstreamCode((rows ?? []).map((r: { code: string }) => r.code)),
+        name,
+        description: description || null,
+      })
+      .select('id, code')
+      .single<{ id: string; code: string }>()
+    created = res.data
+    error = res.error
+    if (error?.code !== '23505') break
+  }
 
   if (error || !created) {
     console.error('createWorkstream failed:', error?.message)
