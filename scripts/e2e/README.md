@@ -16,7 +16,7 @@ Database lokal (`.env.local`) adalah **database PRODUKSI**. Skrip ini membuat da
 ## Prasyarat
 
 - `.env.local` terisi.
-- Playwright **tidak** ada di `package.json`. Skrip mencarinya di `PLAYWRIGHT_MODULE_DIR` (folder `node_modules` yang berisi `playwright`); bawaan: `~/.npm/_npx/e41f203b7505f1fb/node_modules`. Chromium headless harus sudah terpasang untuk Playwright itu.
+- Playwright 1.65.0 ada di `devDependencies` (`npm ci`). Browser TIDAK diunduh otomatis: butuh `chromium_headless_shell-1254` di `~/.cache/ms-playwright` (bila belum ada: `npx playwright install chromium-headless-shell`). Untuk memakai Playwright lain, set `PLAYWRIGHT_MODULE_DIR` (folder `node_modules` yang berisi `playwright`).
 - Hasil ditulis ke `~/.cache/taskmgmt-smoke/` (bukan `/tmp`).
 
 ## Cara menjalankan
@@ -29,6 +29,7 @@ export E2E_CONFIRM_PRODUCTION=ya
 npm run e2e:smoke     # baca-saja: buka semua halaman admin
 npm run e2e:write     # 14 langkah alur tulis (project -> task -> usulan -> meeting -> nonaktifkan user)
 npm run e2e:rbac      # matriks hak akses per role (hasil: tabel di konsol + ~/.cache/taskmgmt-smoke/rbac-result.json)
+npm run e2e:c20       # Team Member tidak bisa membatalkan task (UI + server action); PM bisa
 npm run e2e:a3       # ganti password paksa + link reset (audit A3)
 npm run e2e:cleanup   # hapus sisa data UJI-E2E (jika run terputus)
 ```

@@ -13,12 +13,12 @@ export const BASE = process.env.BASE ?? 'http://localhost:3100'
 export const PREFIX = 'UJI-E2E'
 export const EMAIL_LIKE = 'uji-e2e-%@example.com'
 export const OUT_DIR = path.join(os.homedir(), '.cache', 'taskmgmt-smoke')
-const NPX_PLAYWRIGHT = path.join(os.homedir(), '.npm/_npx/e41f203b7505f1fb/node_modules')
 
 export const day = (n) => new Date(Date.now() + 7 * 3600e3 + n * 86400e3).toISOString().slice(0, 10)
 
 export function loadPlaywright() {
-  const dir = process.env.PLAYWRIGHT_MODULE_DIR ?? NPX_PLAYWRIGHT
+  // Utama: playwright milik repo (devDependency). PLAYWRIGHT_MODULE_DIR hanya untuk menimpa.
+  const dir = process.env.PLAYWRIGHT_MODULE_DIR ?? path.join(REPO, 'node_modules')
   return createRequire(dir.replace(/\/?$/, '/'))('playwright')
 }
 
