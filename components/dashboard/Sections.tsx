@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { isOverdue, todayISO } from '@/lib/utils/dates'
+import { daysFromTodayISO, isOverdue, todayISO } from '@/lib/utils/dates'
 import { PriorityBadge, TaskStatusBadge, OverdueBadge } from '@/components/ui/Badges'
 import { KpiCard } from '@/components/ui/primitives'
 import { PriorityBars, StatusDonut } from '@/components/dashboard/Charts'
@@ -202,9 +202,7 @@ export async function UpcomingSection({ userId, role, filters }: Ctx & { filters
   const { projectNames, assigneeNames } = await namesFor(tasks)
   const today = todayISO()
 
-  const weekEnd = new Date()
-  weekEnd.setDate(weekEnd.getDate() + 7)
-  const weekEndISO = weekEnd.toISOString().slice(0, 10)
+  const weekEndISO = daysFromTodayISO(7)
   const upcoming = tasks
     .filter(
       (t) => t.status !== 'DONE' && t.status !== 'CANCELLED' && t.deadline >= today && t.deadline <= weekEndISO

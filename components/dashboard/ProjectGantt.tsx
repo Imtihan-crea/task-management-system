@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getDashboardScope } from '@/lib/data/dashboard'
+import { todayISO } from '@/lib/utils/dates'
 
 type GanttProject = {
   id: string
@@ -122,7 +123,7 @@ export async function ProjectGantt({
   })
 
   // Window waktu.
-  const today = toDay(new Date().toISOString().slice(0, 10))
+  const today = toDay(todayISO())
   let winStart = today
   let cols: { key: string; label: string; start: number; end: number }[]
   if (view === 'week') {
@@ -336,7 +337,7 @@ async function ProjectTaskGantt({
     ])
   )
 
-  const today = toDay(new Date().toISOString().slice(0, 10))
+  const today = toDay(todayISO())
 
   const clearParams = (o: number, v: 'month' | 'week') =>
     `/dashboard?gantt=${v}&goffset=${o}`

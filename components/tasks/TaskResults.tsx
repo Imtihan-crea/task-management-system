@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { formatDate, isOverdue, showsOverdueBadge, todayISO } from '@/lib/utils/dates'
+import { daysFromTodayISO, formatDate, isOverdue, showsOverdueBadge, todayISO } from '@/lib/utils/dates'
 import { PriorityBadge, TaskStatusBadge, OverdueBadge } from '@/components/ui/Badges'
 import { Pagination, paginate } from '@/components/ui/Pagination'
 import { applyTaskTab, type TaskTabKey } from '@/components/tasks/TaskTabs'
@@ -76,9 +76,7 @@ export async function TaskResults({ filters }: { filters: TaskFilters }) {
   if (filters.deadline === 'overdue') {
     tasks = tasks.filter((t) => isOverdue(t.deadline, t.status))
   } else if (filters.deadline === 'week') {
-    const week = new Date()
-    week.setDate(week.getDate() + 7)
-    const weekISO = week.toISOString().slice(0, 10)
+    const weekISO = daysFromTodayISO(7)
     tasks = tasks.filter(
       (t) =>
         t.deadline >= todayISO() &&

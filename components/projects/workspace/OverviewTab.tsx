@@ -1,5 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { formatDate } from '@/lib/utils/dates'
+import { formatDate, todayISO } from '@/lib/utils/dates'
 import { ProjectStatusBadge } from '@/components/ui/Badges'
 import type { Project, ProjectProgress } from '@/types/project'
 
@@ -55,7 +55,7 @@ export async function OverviewTab({ projectId }: { projectId: string }) {
         .join(', ') || '-'
   }
 
-  const today = new Date().toISOString().slice(0, 10)
+  const today = todayISO()
   const upcoming = taskList.filter(
     (t) => t.status !== 'DONE' && t.status !== 'CANCELLED' && t.deadline >= today
   ).length

@@ -2,6 +2,7 @@ import 'server-only'
 
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { daysFromTodayISO, todayISO } from '@/lib/utils/dates'
 import type { TaskPriority, TaskStatus } from '@/types/task'
 // Bentuk baris DITURUNKAN dari skema Drizzle (single source of truth),
 // bukan ditulis manual. Kalau nama kolom di database berubah atau dihapus,
@@ -92,15 +93,13 @@ export const fetchTaskRows = cache(async (scope: TaskScope): Promise<TaskRow[]> 
   if (scope.priority) query = query.eq('priority', scope.priority)
   if (scope.deadline === 'overdue') {
     query = query
-      .lt('deadline', new Date().toISOString().slice(0, 10))
+      .lt('deadline', todayISO())
       .neq('status', 'DONE')
       .neq('status', 'CANCELLED')
   } else if (scope.deadline === 'week') {
-    const week = new Date()
-    week.setDate(week.getDate() + 7)
     query = query
-      .gte('deadline', new Date().toISOString().slice(0, 10))
-      .lte('deadline', week.toISOString().slice(0, 10))
+      .gte('deadline', todayISO())
+      .lte('deadline', daysFromTodayISO(7))
       .neq('status', 'DONE')
       .neq('status', 'CANCELLED')
   }

@@ -1,3 +1,5 @@
+import { todayInAppTime } from './meeting-time'
+
 export function formatDate(value: string | null): string {
   if (!value) return '-'
   return new Date(value).toLocaleDateString('id-ID', {
@@ -24,9 +26,25 @@ export function formatDateTime(value: string | null): string {
   return `${date}, ${time}`
 }
 
-/** Hari ini dalam format YYYY-MM-DD untuk perbandingan deadline. */
+/**
+ * Hari ini (WIB) dalam format YYYY-MM-DD untuk perbandingan deadline.
+ * Keputusan pemilik C14 (9 Nov 2026): overdue dihitung WIB, bukan UTC,
+ * sama dengan digest dan meeting.
+ */
 export function todayISO(): string {
-  return new Date().toISOString().slice(0, 10)
+  return todayInAppTime()
+}
+
+/** Tanggal WIB `days` hari dari sekarang (mis. batas "7 hari ke depan"). */
+export function daysFromTodayISO(days: number): string {
+  return todayInAppTime(new Date(Date.now() + days * 86_400_000))
+}
+
+/** Tanggal WIB dari timestamp (submit/cancel), '' bila kosong atau tidak valid. */
+function appDateOf(ts: string | null): string {
+  if (!ts) return ''
+  const d = new Date(ts)
+  return Number.isNaN(d.getTime()) ? '' : todayInAppTime(d)
 }
 
 /**
@@ -54,11 +72,11 @@ export function showsOverdueBadge(
 ): boolean {
   if (!deadline) return false
   if (status === 'DONE') {
-    const ref = (completedAt ?? '').slice(0, 10) || todayISO()
+    const ref = appDateOf(completedAt) || todayISO()
     return deadline < ref
   }
   if (status === 'CANCELLED') {
-    const ref = (cancelledAt ?? '').slice(0, 10) || todayISO()
+    const ref = appDateOf(cancelledAt) || todayISO()
     return deadline < ref
   }
   return deadline < todayISO()

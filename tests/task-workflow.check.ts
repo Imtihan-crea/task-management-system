@@ -3,7 +3,8 @@
  * CANCELLED + tanggal submit + label overdue historis.
  * Jalankan: npm run test:task
  */
-import { formatDateTime, isOverdue, showsOverdueBadge } from '../lib/utils/dates'
+import { daysFromTodayISO, formatDateTime, isOverdue, showsOverdueBadge, todayISO } from '../lib/utils/dates'
+import { todayInAppTime } from '../lib/utils/meeting-time'
 
 let ok = 0
 let gagal = 0
@@ -69,6 +70,23 @@ cek(
   true
 )
 cek('deadline null = tanpa label', showsOverdueBadge(null, 'DONE', '2026-10-05T10:00:00+00:00', null), false)
+
+/* ---------- C14: tanggal WIB, bukan UTC ---------- */
+cek('todayISO = tanggal WIB', todayISO(), todayInAppTime())
+cek('daysFromTodayISO(0) = hari ini', daysFromTodayISO(0), todayISO())
+cek('daysFromTodayISO(7) > hari ini', daysFromTodayISO(7) > todayISO(), true)
+// 1 Okt 18:00 UTC = 2 Okt 01:00 WIB: submit sesudah hari deadline -> label
+cek(
+  'DONE submit lewat tengah malam WIB = label',
+  showsOverdueBadge('2026-10-01', 'DONE', '2026-10-01T18:00:00+00:00', null),
+  true
+)
+// 1 Okt 16:00 UTC = 1 Okt 23:00 WIB: masih hari deadline -> tanpa label
+cek(
+  'DONE submit 23:00 WIB hari deadline = tanpa label',
+  showsOverdueBadge('2026-10-01', 'DONE', '2026-10-01T16:00:00+00:00', null),
+  false
+)
 
 /* ---------- formatDateTime ---------- */
 cek('format null', formatDateTime(null), '-')

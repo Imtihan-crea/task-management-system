@@ -21,6 +21,9 @@
  * Jadi: `dates.ts` untuk task (UTC, tidak berubah),
  *       file ini untuk meeting (Asia/Jakarta).
  *
+ * Pembaruan 9 Nov 2026 (keputusan pemilik C14): task kini juga memakai
+ * WIB; `todayISO()` di `dates.ts` memanggil `todayInAppTime()` di sini.
+ *
  * ==============================================================
  * KENAPA TIDAK PAKAI Math/Date UNTUK PERBANDINGAN
  * ==============================================================
