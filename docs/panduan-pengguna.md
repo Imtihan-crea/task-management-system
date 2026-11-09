@@ -27,7 +27,8 @@ Setiap akun punya satu role yang diatur Admin. Tabel di bawah meringkas aturan d
 | Membuat Project | ya | ya | tidak | tidak |
 | Mengubah Project dan Workstream | semua | hanya Project yang ia kelola | tidak | tidak |
 | Membuat, mengubah, menghapus Task | semua | hanya di Project yang ia kelola | tidak | tidak |
-| Mengubah status, Submit, Batalkan Task, mengisi Evidence | semua Task | Task di Project yang ia kelola, dan Task yang ditugaskan kepadanya | hanya Task miliknya | tidak |
+| Mengubah status, Submit, mengisi Evidence | semua Task | Task di Project yang ia kelola, dan Task yang ditugaskan kepadanya | hanya Task miliknya | tidak |
+| Batalkan Task | semua Task | Task di Project yang ia kelola | tidak | tidak |
 | Membuka kembali Task yang DONE atau CANCELLED | ya | ya (Project yang ia kelola) | tidak | tidak |
 | Mengusulkan Task (Suggestion) | semua Project | Project yang ia kelola | Project yang ia punya Task di dalamnya | tidak |
 | Meninjau Suggestion (Setujui, Minta Revisi, Tolak) | semua | Project yang ia kelola | tidak | tidak |
@@ -111,13 +112,13 @@ Task terbuka mana pun -> CANCELLED (tombol Batalkan Task)
 
 - **Mengubah status terbuka**: di halaman detail Task, pilih status lalu klik **Perbarui**. Dropdown hanya berisi status terbuka. Task baru tidak bisa dibuat langsung DONE atau CANCELLED.
 - **Menyelesaikan**: klik **Submit sebagai Done**. Waktu submit tercatat ("Tanggal Submit") dan email pemberitahuan DONE dikirim. Mengklik Submit dua kali tidak mengirim email dua kali.
-- **Membatalkan**: klik **Batalkan Task**, lalu konfirmasi. Waktunya tercatat ("Tanggal Dibatalkan"). Task DONE tidak bisa dibatalkan langsung; buka kembali dulu.
+- **Membatalkan**: hanya PM Project atau Admin. Klik **Batalkan Task**, lalu konfirmasi. Team Member yang ingin membatalkan task meminta PM-nya. Waktunya tercatat ("Tanggal Dibatalkan"). Task DONE tidak bisa dibatalkan langsung; buka kembali dulu.
 - **Task terkunci**: Task DONE atau CANCELLED tidak bisa diubah statusnya oleh Assignee. Tampil "Task ini terkunci. Minta PM atau Admin untuk mengubahnya."
 - **Membuka kembali (reopen)**: PM Project atau Admin membuka formulir **Ubah Task** dan memilih status terbuka (mis. TODO), lalu **Simpan Perubahan**. Tanggal submit/batal dihapus. Untuk task DONE atau CANCELLED, pilihan awal dropdown bertuliskan "(tidak diubah)"; selama itu yang terpilih, menyimpan hanya mengubah isian lain dan task tetap tertutup. Hati-hati: memilih status terbuka berarti membuka ulang task.
 - **Evidence**: bagian "Evidence" di detail Task menyimpan satu Link bukti pekerjaan (harus diawali `http://` atau `https://`). Ketuk **Simpan**. Evidence boleh diubah juga setelah Task DONE oleh orang yang berhak bertindak atas task itu. Pesan bila salah: "Evidence harus berupa Link valid yang diawali http(s)://."
 - **Hapus Task** (**Hapus Task**, Admin dan PM Project): task disembunyikan dari daftar.
 
-**Overdue.** Task disebut **Overdue** bila Deadline sudah lewat dan statusnya belum DONE atau CANCELLED. Task tertutup tidak pernah dihitung Overdue di daftar dan KPI. Badge Overdue pada task DONE hanya tampil bila Deadline lebih awal daripada tanggal submit. Penting: pergantian hari dihitung dalam **UTC**, bukan WIB. Task dengan Deadline 10 Nov baru berstatus Overdue mulai 11 Nov pukul **07.00 WIB** (tengah malam UTC), bukan pukul 00.00 WIB. Pengingat email "deadline hari ini" dan "Overdue" juga dikirim sekali sehari sekitar pukul 07.00 WIB.
+**Overdue.** Task disebut **Overdue** bila Deadline sudah lewat dan statusnya belum DONE atau CANCELLED. Task tertutup tidak pernah dihitung Overdue di daftar dan KPI. Badge Overdue pada task DONE hanya tampil bila Deadline lebih awal daripada tanggal submit. Pergantian hari dihitung dalam **WIB**: Task dengan Deadline 10 Nov berstatus Overdue mulai 11 Nov pukul 00.00 WIB. Pengingat email "deadline hari ini" dan "Overdue" dikirim sekali sehari sekitar pukul 07.00 WIB.
 
 **Daftar Task.** Tab: Semua, Task Saya, Berjalan, To Do, Blocked, Done, Cancelled, Overdue. Admin dan PM juga punya filter Project, Assignee, Status, Prioritas, dan "Jatuh tempo minggu ini", plus urutan (Deadline, Prioritas, Dibuat, Diperbarui).
 
@@ -186,7 +187,7 @@ Menu **Activity Log** mencatat kejadian penting (membuat dan mengubah Task, Proj
 | Sesi Anda telah berakhir. Silakan Login kembali. | Login ulang. |
 | Terjadi kesalahan. Silakan coba lagi. | Gangguan sementara. Coba lagi; bila berulang, kabari Admin dengan waktu kejadian dan halaman yang dibuka. |
 | Email tidak masuk | Periksa folder spam dan Preferensi Email. Email undangan dari sistem bisa tertahan batas kuota; Admin dapat memakai Link. Notifikasi dalam aplikasi tetap muncul. |
-| Task saya tiba-tiba Overdue di pagi hari | Pergantian hari dihitung pada pukul 07.00 WIB (bagian 6). |
+| Task saya Overdue padahal baru lewat tengah malam | Overdue dimulai pukul 00.00 WIB sehari setelah Deadline (bagian 6). |
 | Tidak bisa Login padahal password benar | Akun mungkin INACTIVE atau INVITED; hubungi Admin. |
 
 Untuk keperluan yang tidak ada di sini, hubungi Admin aplikasi.

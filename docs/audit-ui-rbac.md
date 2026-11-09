@@ -151,10 +151,10 @@ commit saja). Satu commit per temuan supaya bisa di-revert satu-satu.
 | # | Status |
 | --- | --- |
 | C1–C13, C15, C16, C18 | DIPERBAIKI |
-| C14 | SEBAGIAN: filter tanggal Activity kini WIB. Overdue task **tidak** diubah: `lib/utils/dates.ts` sengaja UTC atas dasar PRD §47 (lihat `lib/utils/meeting-time.ts`); perlu keputusan pemilik. |
+| C14 | DIPERBAIKI (9 Nov 2026, keputusan pemilik): overdue, filter "minggu ini", Gantt, dan badge historis kini memakai tanggal WIB (`todayISO()` memanggil `todayInAppTime()`). Filter tanggal Activity sudah WIB sebelumnya. |
 | C17 | DILEWATI (opsional; overdue ke PM menambah pemakaian jatah email) |
 | C19 | DILEWATI (opsional) |
-| C20 | TIDAK DIUBAH (default: TEAM_MEMBER tetap boleh membatalkan task miliknya) |
+| C20 | DIPERBAIKI (9 Nov 2026, keputusan pemilik): Cancel task hanya ADMIN atau PM pengelola project (`canCancelTask`); tombol disembunyikan dan server menolak untuk role lain. |
 | Lanjutan B1 | `/tasks` untuk PM: hanya task project miliknya + task yang di-assign kepadanya [keputusan default] |
 
 **Keputusan default yang perlu dikonfirmasi pemilik** (commit bertanda
@@ -236,6 +236,26 @@ Perbaikan hasil review ikut dicatat sebagai commit terpisah (mis. password baru 
 6. **Pengetatan RLS.** Usulan SQL ada di `review-rls.md` (policy scoped untuk `tasks`, `projects`, `workstreams`; cabut EXECUTE fungsi `SECURITY DEFINER`; cabut grant berlebih). Aplikasi tidak membaca tabel itu lewat client user, jadi perilaku seharusnya tidak berubah. Uji dulu dalam transaksi yang di-rollback, lalu `npm run test:rls` dan `npm run e2e:rbac`.
 7. **Dua catatan cakupan RBAC** (`rbac-matrix-hasil.md`): (a) VIEWER dan PM lain bisa membuka halaman Project orang lain (nama, workstream, anggota); (b) VIEWER melihat seluruh daftar task dan detail task siapa pun. Pilih: dibiarkan atau dibatasi di `projects/[id]` dan `tasks/[id]`.
 8. **Login ulang Supabase CLI.** Timer cadangan hari Senin gagal selama CLI masuk ke akun Supabase lain. Pemilik perlu login ulang ke akun yang memiliki project ini (`docs/backup.md`).
+
+### Keputusan pemilik (9 Nov 2026)
+
+| # | Keputusan | Status |
+| --- | --- | --- |
+| 1. C14 | Overdue memakai WIB | Dikerjakan: `lib/utils/dates.ts` (`todayISO`, `daysFromTodayISO`, tanggal submit/batal dalam WIB), `lib/data/task-list.ts`, dashboard, Gantt, tab Overview; tes `npm run test:task` |
+| 2. C20 | Cancel hanya PM/Admin | Dikerjakan: `lib/auth/task-access.ts` `canCancelTask`, `cancelTask`, halaman detail task; tes `npm run test:task-access`, `e2e:rbac` |
+| 3. Lupa password | Tetap lewat Admin | Tidak ada perubahan |
+| 4. B15 | Ditunda | Kirim nyata belum diuji |
+| 5. Project `001` | Disiapkan untuk pemilik | Dicek 9 Nov 2026: 4 task, 3 DONE dan 1 CANCELLED, tidak ada task aktif; PM satu-satunya INACTIVE. Pilihan: tambah PM aktif di tab Pengaturan, atau ubah status project ke COMPLETED |
+| 6. RLS | Disiapkan sebagai migrasi, belum dijalankan | `database/migrations/016_rls_scoped_reads.sql` + `down/016_rls_scoped_reads.down.sql`; `rls.check.sql` ditambah 8 cek (total 34) |
+| 7. Cakupan baca RBAC | Dibiarkan terbuka | VIEWER dan PM tetap bisa membuka project lain; migrasi 016 mengikuti keputusan ini |
+| 8. Supabase CLI | Menunggu pemilik login ulang | - |
+
+**Cara menerapkan migrasi 016** (setelah Supabase CLI login ulang):
+
+1. Jalankan isi `016_rls_scoped_reads.sql` di SQL Editor Supabase.
+2. `npm run test:rls` harus menunjukkan 34 cek lulus. Sebelum 016 diterapkan, 8 cek baru memang gagal.
+3. `npm run e2e:rbac` (server lokal, email mati) harus 0 ketidaksesuaian.
+4. Bila ada yang gagal, jalankan `down/016_rls_scoped_reads.down.sql`.
 
 ### Temuan baru
 
