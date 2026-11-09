@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { allRows } from '@/lib/utils/paginate'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { PriorityBadge, TaskStatusBadge, OverdueBadge } from '@/components/ui/Badges'
 import { showsOverdueBadge } from '@/lib/utils/dates'
@@ -45,19 +46,21 @@ export async function TasksTab({
   const canOpen = (t: TaskRow) =>
     viewer.role !== 'PROJECT_MANAGER' || viewer.managesProject || t.assignee_id === viewer.id
 
-  const [{ data: workstreams }, { data: tasks }] = await Promise.all([
+  const [{ data: workstreams }, tasks] = await Promise.all([
     admin
       .from('workstreams')
       .select('id, code, name')
       .eq('project_id', projectId)
       .order('created_at', { ascending: true }),
-    taskQuery.order('deadline', { ascending: true }).limit(500),
+    allRows<TaskRow>((from, to) =>
+      taskQuery.order('deadline', { ascending: true }).order('id').range(from, to)
+    ),
   ])
 
   const wsList = (workstreams ?? []) as { id: string; code: string; name: string }[]
   const wsNames = Object.fromEntries(wsList.map((w) => [w.id, `${w.code} · ${w.name}`]))
 
-  const assigneeIds = [...new Set(((tasks ?? []) as TaskRow[]).map((t) => t.assignee_id))]
+  const assigneeIds = [...new Set(tasks.map((t) => t.assignee_id))]
   let assigneeNames: Record<string, string> = {}
   if (assigneeIds.length > 0) {
     const { data: users } = await admin
@@ -72,7 +75,7 @@ export async function TasksTab({
     )
   }
 
-  const visibleTasks = ((tasks ?? []) as TaskRow[])
+  const visibleTasks = tasks
     .filter(
       (t) =>
         (!filters.ws || t.workstream_id === filters.ws) &&

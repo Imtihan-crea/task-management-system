@@ -2,6 +2,7 @@ import 'server-only'
 
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { allRows } from '@/lib/utils/paginate'
 import { daysFromTodayISO, todayISO } from '@/lib/utils/dates'
 import type { TaskPriority, TaskStatus } from '@/types/task'
 // Bentuk baris DITURUNKAN dari skema Drizzle (single source of truth),
@@ -73,7 +74,7 @@ export const fetchTaskRows = cache(async (scope: TaskScope): Promise<TaskRow[]> 
     .select(TASK_SELECT)
     .eq('is_deleted', false)
     .order('deadline', { ascending: true })
-    .limit(500)
+    .order('id')
 
   if (scope.role === 'TEAM_MEMBER') query = query.eq('assignee_id', scope.userId)
   // PM: task project miliknya + task yang di-assign kepadanya, sama dengan
@@ -104,10 +105,11 @@ export const fetchTaskRows = cache(async (scope: TaskScope): Promise<TaskRow[]> 
       .neq('status', 'CANCELLED')
   }
 
-  const { data } = await query
   // Select string berisi embed PostgREST, jadi tipenya tidak bisa
   // di-infer otomatis oleh supabase-js -> cast lewat unknown.
-  return (data ?? []) as unknown as TaskRow[]
+  // Semua halaman diambil (tanpa batas 500 diam-diam); filter status/q/tab tetap di JS
+  // karena hitungan tab memakai himpunan yang sama (cache bersama TaskTabs).
+  return (await allRows<unknown>((from, to) => query.range(from, to))) as TaskRow[]
 })
 
 export type { TaskRow as TaskListRow }
