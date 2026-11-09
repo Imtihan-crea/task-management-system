@@ -8,6 +8,7 @@ import { ProjectStatusBadge } from '@/components/ui/Badges'
 import { formatDate } from '@/lib/utils/dates'
 import { ButtonLink, PageHeader } from '@/components/ui/primitives'
 import type { Project, ProjectProgress, ProjectStatus } from '@/types/project'
+import { allRows } from '@/lib/utils/paginate'
 
 function sanitize(value: string | undefined): string {
   return (value ?? '').replace(/[,()*%]/g, ' ').trim().slice(0, 60)
@@ -19,14 +20,15 @@ async function getProgressMap(projectIds: string[]): Promise<Record<string, Proj
   if (projectIds.length === 0) return {}
 
   const admin = createAdminClient()
-  const { data } = await admin
-    .from('tasks')
-    .select('project_id, status')
-    .in('project_id', projectIds)
-    .eq('is_deleted', false)
-    .limit(5000)
-
-  const rows = (data ?? []) as TaskCount[]
+  const rows = await allRows<TaskCount>((from, to) =>
+    admin
+      .from('tasks')
+      .select('project_id, status')
+      .in('project_id', projectIds)
+      .eq('is_deleted', false)
+      .order('id')
+      .range(from, to)
+  )
   const map: Record<string, ProjectProgress> = {}
 
   for (const id of projectIds) {

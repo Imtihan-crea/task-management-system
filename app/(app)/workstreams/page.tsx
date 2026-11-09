@@ -3,6 +3,7 @@ import { requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { AppShell } from '@/components/layout/AppShell'
 import { PageHeader, EmptyState } from '@/components/ui/primitives'
+import { allRows } from '@/lib/utils/paginate'
 
 function sanitize(value: string | undefined): string {
   return (value ?? '').replace(/[,()*%]/g, ' ').trim().slice(0, 60)
@@ -78,13 +79,16 @@ export default async function WorkstreamsPage({
   const wsIds = workstreams.map((w) => w.id)
   const taskCounts: Record<string, number> = {}
   if (wsIds.length > 0) {
-    const { data: tasks } = await admin
-      .from('tasks')
-      .select('workstream_id')
-      .in('workstream_id', wsIds)
-      .eq('is_deleted', false)
-      .limit(2000)
-    for (const t of (tasks ?? []) as { workstream_id: string | null }[]) {
+    const tasks = await allRows<{ workstream_id: string | null }>((from, to) =>
+      admin
+        .from('tasks')
+        .select('workstream_id')
+        .in('workstream_id', wsIds)
+        .eq('is_deleted', false)
+        .order('id')
+        .range(from, to)
+    )
+    for (const t of tasks) {
       if (t.workstream_id) taskCounts[t.workstream_id] = (taskCounts[t.workstream_id] ?? 0) + 1
     }
   }

@@ -3,6 +3,7 @@ import { requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getDashboardScope } from '@/lib/data/dashboard'
 import { todayISO } from '@/lib/utils/dates'
+import { allRows } from '@/lib/utils/paginate'
 
 type GanttProject = {
   id: string
@@ -63,21 +64,21 @@ export async function ProjectGantt({
   }
 
   // Opsi dropdown project (scope yang sama).
-  const [{ data: projectsData }, { data: tasksData }] = await Promise.all([
+  const [{ data: projectsData }, tasksData] = await Promise.all([
     projectsQuery,
     (async () => {
       let q = admin
         .from('tasks')
         .select('project_id, status')
         .eq('is_deleted', false)
-        .limit(3000)
+        .order('id')
       if (projectIds !== null) {
         q =
           projectIds.length > 0
             ? q.in('project_id', projectIds)
             : q.eq('project_id', '00000000-0000-0000-0000-000000000000')
       }
-      return q
+      return allRows<{ project_id: string; status: string }>((from, to) => q.range(from, to))
     })(),
   ])
 
@@ -111,7 +112,7 @@ export async function ProjectGantt({
     end_date: string | null
   })[]).filter((p) => p.start_date && p.end_date)
 
-  const tasks = (tasksData ?? []) as { project_id: string; status: string }[]
+  const tasks = tasksData
   const withProgress: GanttProject[] = projects.map((p) => {
     // CANCELLED keluar dari progress (di luar scope).
     const pt = tasks.filter((t) => t.project_id === p.id && t.status !== 'CANCELLED')

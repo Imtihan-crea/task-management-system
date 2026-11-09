@@ -3,6 +3,7 @@ import 'server-only'
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { TaskRow } from '@/lib/data/task-list'
+import { allRows } from '@/lib/utils/paginate'
 
 /** Sama seperti fetchTaskRows: assignee di-embed, tanpa query profiles terpisah. */
 const DASHBOARD_TASK_SELECT =
@@ -104,7 +105,7 @@ export const getDashboardTasks = cache(
       .select(DASHBOARD_TASK_SELECT)
       .eq('is_deleted', false)
       .order('deadline', { ascending: true })
-      .limit(2000)
+      .order('id')
 
     if (scope.projectIds !== null) {
       q =
@@ -118,9 +119,8 @@ export const getDashboardTasks = cache(
     if (f.status) q = q.eq('status', f.status)
     if (f.priority) q = q.eq('priority', f.priority)
 
-    const { data } = await q
     // Sama seperti fetchTaskRows: cast lewat unknown karena select string
     // berisi embed PostgREST yang tidak bisa di-infer.
-    return (data ?? []) as unknown as TaskRow[]
+    return (await allRows<unknown>((from, to) => q.range(from, to))) as TaskRow[]
   }
 )

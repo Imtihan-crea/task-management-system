@@ -15,6 +15,7 @@ import {
   type MeetingType,
   type ParticipantRow,
 } from '@/types/meeting'
+import { allRows } from '@/lib/utils/paginate'
 
 export type { MeetingScope } from '@/lib/data/meetings-types'
 export { matchesMeetingSearch, matchesMeetingTab, scopeFilter } from '@/lib/meetings/rules'
@@ -49,23 +50,29 @@ export const getMeetingScope = cache(
     const admin = createAdminClient()
 
     // Meeting yang dibuat / diorganize user ini.
-    const { data: owned } = await admin
-      .from('meetings')
-      .select('id')
-      .or(`organizer_id.eq.${userId},created_by.eq.${userId}`)
-      .limit(2000)
+    const owned = await allRows<{ id: string }>((from, to) =>
+      admin
+        .from('meetings')
+        .select('id')
+        .or(`organizer_id.eq.${userId},created_by.eq.${userId}`)
+        .order('id')
+        .range(from, to)
+    )
 
     // Meeting yang user ini peserta.
-    const { data: asParticipant } = await admin
-      .from('meeting_participants')
-      .select('meeting_id')
-      .eq('user_id', userId)
-      .limit(2000)
+    const asParticipant = await allRows<{ meeting_id: string }>((from, to) =>
+      admin
+        .from('meeting_participants')
+        .select('meeting_id')
+        .eq('user_id', userId)
+        .order('id')
+        .range(from, to)
+    )
 
     const involvedMeetingIds = [
       ...new Set([
-        ...((owned ?? []) as { id: string }[]).map((m) => m.id),
-        ...((asParticipant ?? []) as { meeting_id: string }[]).map((p) => p.meeting_id),
+        ...owned.map((m) => m.id),
+        ...asParticipant.map((p) => p.meeting_id),
       ]),
     ]
 
