@@ -304,3 +304,23 @@ select setval('public.project_code_seq',    (select max(code::int) from public.p
 ```
 
 Catatan: `setval` menurunkan urutan bila angka yang diberikan lebih kecil dari `last_value` saat ini, jadi jalankan hanya bila pemeriksaan menunjukkan urutan tertinggal. Tabel yang masih kosong membuat `max` bernilai NULL dan `setval` gagal; lewati urutan itu. Kode Workstream (A, B, C, ...) dibuat trigger per project, bukan urutan, sehingga tidak ikut diperiksa. Nama urutan diambil dari `database/migrations/005`, `006`, dan `008`.
+
+### Fase D: perbaikan temuan audit (9 Nov 2026)
+
+Cabang `afk3/faseD-perbaikan` (bertumpuk di atas `afk3/faseC-siap`; belum di-merge dan belum di-push). Tidak ada SQL yang dijalankan di database.
+
+| # | Temuan | Status | Commit |
+| --- | --- | --- | --- |
+| 1 | Kode Workstream bentrok setelah hapus (trigger `count+1`) | DIPERBAIKI di aplikasi: kode dihitung maks+1 di `createWorkstream`, dikirim eksplisit, ulang 3x pada 23505; tes `test:ws-code` + skenario `e2e:ws-delete`. Migrasi 018 (trigger) TIDAK dibuat: sisi aplikasi sudah cukup, trigger lama hanya jadi cadangan | `923fd45` |
+| 2 | Daftar `/tasks` terpotong 500 baris | DIPERBAIKI sebagian: batas diam-diam dihapus (`allRows`, order `deadline,id`) di `/tasks` dan tab Tasks project. Filter status/q/tab sengaja TETAP di JS agar hitungan tab dan cache bersama `TaskTabs` identik; memindahkannya ke SQL mengubah perilaku tab | `d34b560` |
+| 3 | `.limit(>1000)` terpotong PostgREST | DIPERBAIKI: `allRows` + order stabil di dashboard, projects, gantt, workstreams, meetings (digest ada di #8) | `333ed99` |
+| 4 | Ganti organizer meeting tidak memperbarui peserta | DIPERBAIKI: organizer baru di-upsert `is_organizer=true`, lama jadi `false` (tetap peserta) | `f6748f5` |
+| 5 | Hitungan belum dibaca dari 100 terbaru | DIPERBAIKI: count eksak (`head: true`). Daftar tetap 100 terbaru | `b822790` |
+| 6 | Transisi status task tanpa guard | DIPERBAIKI: `.eq('status', status-terbaca)` + `.select('id')`; 0 baris = pesan ramah, tanpa email/notifikasi/log | `3d776cc` |
+| 7 | Revise/reject suggestion tanpa cek baris | DIPERBAIKI: `.select('id')` + cek sebelum log/email | `da94303` |
+| 8 | Digest memasukkan task project selesai/batal | DIPERBAIKI (audit B14); peserta meeting digest juga lewat `allRows` | `6570d98` |
+| 9 | Cron deadlines `limit(1000)`, digest bergantung loop | DIPERBAIKI: `allRows`, digest dijalankan lebih dulu, `maxDuration = 60` | `6fc395b` |
+| 10 | Hapus Workstream tanpa cek saran PENDING / task terhapus | DIPERBAIKI: diblokir dengan pesan jelas (riwayat tidak hilang) | `6cefc8d` |
+| 11 | Pengukuran performa | dicatat di `performa-hasil.md` | - |
+
+Catatan uji: `e2e:write` gagal pada langkah yang membuat Task lewat aplikasi (S6, S12, dan langkah turunannya S7, S8, S9, S14) karena `tasks_code_unique` (migrasi 017 belum diterapkan); `e2e:rbac` dan `e2e:c20` kini menyisipkan kode `T-UJI-xxxxxx` eksplisit pada insert service role agar bisa jalan.

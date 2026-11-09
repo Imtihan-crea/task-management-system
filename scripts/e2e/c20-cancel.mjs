@@ -38,7 +38,7 @@ try {
   if (me) throw new Error('pm: ' + me.message)
   const mk = async (title, deadline) => {
     const { data, error } = await db.from('tasks').insert({
-      title: `${P} ${title}`, project_id: proj.id, assignee_id: mem.id, created_by: pm.id,
+      code: `T-UJI-${Math.random().toString(36).slice(2, 8).toUpperCase()}`, title: `${P} ${title}`, project_id: proj.id, assignee_id: mem.id, created_by: pm.id,
       priority: 'MEDIUM', status: 'TODO', deadline,
     }).select('id').single()
     if (error) throw new Error(title + ': ' + error.message)

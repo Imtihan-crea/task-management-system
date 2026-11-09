@@ -45,3 +45,16 @@ Pengukuran akhir pada build terakhir (setelah `loading.tsx`, refactor helper, da
 Median seluruh halaman: TTFB 448 -> 346 ms; muat 681 -> 580 ms
 
 Catatan: selisih di bawah sekitar 30 ms termasuk derau (satu sesi, jaringan nyata ke Supabase). Sebelum fase 14, pengukuran terpisah setelah perubahan autentikasi memberi median TTFB 344 ms; `/settings`, `/profile`, `/notifications` saat itu masih sekitar 450 ms karena belum punya `loading.tsx`.
+
+## Pengukuran 9 Nov 2026 (Fase D, sesudah perbaikan allRows)
+
+`npm run e2e:perf`, `next start` lokal, admin uji, median 3 kali. Hanya catatan kondisi saat ini (tanpa pembanding sebelum/sesudah). Data uji dihapus (sisa 0).
+
+| Halaman | TTFB (ms) | Muat (ms) |
+| --- | --- | --- |
+| `/tasks` | 353 | 484 |
+| `/dashboard` | 340 | 582 |
+| `/projects` | 344 | 796 |
+| `/notifications` | 350 | 481 |
+
+Median 27 halaman: TTFB 346 ms, muat 582 ms (sama dengan hasil fase 12). Data produksi masih kecil (di bawah 1000 baris per query), jadi paginasi `allRows` hanya menambah satu round trip per tabel; biaya baru terasa bila data melewati 1000 baris.

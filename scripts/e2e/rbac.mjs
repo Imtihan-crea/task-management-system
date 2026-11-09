@@ -136,8 +136,8 @@ try {
   const must = async (q) => { const { error } = await q; if (error) throw new Error(error.message) }
   await must(db.from('project_managers').insert([{ project_id: pa, user_id: users.PM_A.id }, { project_id: pb, user_id: users.PM_B.id }]))
   await one(db.from('workstreams').insert({ project_id: pa, name: `${P} WS A` }))
-  const task = await one(db.from('tasks').insert({ project_id: pa, title: `${P} Task A1`, assignee_id: users.MEMBER.id, created_by: adminProf.id, deadline: day(7) }))
-  await one(db.from('tasks').insert({ project_id: pb, title: `${P} Task B1`, assignee_id: users.PM_B.id, created_by: adminProf.id, deadline: day(7) }))
+  const task = await one(db.from('tasks').insert({ code: `T-UJI-${Math.random().toString(36).slice(2, 8).toUpperCase()}`, project_id: pa, title: `${P} Task A1`, assignee_id: users.MEMBER.id, created_by: adminProf.id, deadline: day(7) }))
+  await one(db.from('tasks').insert({ code: `T-UJI-${Math.random().toString(36).slice(2, 8).toUpperCase()}`, project_id: pb, title: `${P} Task B1`, assignee_id: users.PM_B.id, created_by: adminProf.id, deadline: day(7) }))
   const sug = await one(db.from('task_suggestions').insert({ project_id: pa, title: `${P} Usulan`, description: 'uji rbac', suggested_by: users.MEMBER.id }))
   const meet = await one(db.from('meetings').insert({ title: `${P} Meeting A`, project_id: pa, status: 'SCHEDULED', meeting_date: day(1), start_time: '10:00', end_time: '11:00', organizer_id: users.PM_A.id, created_by: users.PM_A.id }))
   await must(db.from('meeting_participants').insert([{ meeting_id: meet, user_id: users.PM_A.id, is_organizer: true }, { meeting_id: meet, user_id: users.MEMBER.id, is_organizer: false }]))
