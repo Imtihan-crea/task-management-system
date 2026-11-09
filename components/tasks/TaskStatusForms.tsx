@@ -104,16 +104,11 @@ export function SubmitTaskForm({ id }: { id: string }) {
 }
 
 export function CancelTaskForm({ id }: { id: string }) {
-  const [state, formAction, pending] = useFormAction(cancelTask, INITIAL)
+  const [state, formAction, pending] = useFormAction(cancelTask, INITIAL, () => 'Batalkan task ini? Task akan terkunci seperti task yang sudah Done.')
 
   return (
     <form
       {...formAction}
-      onSubmit={(e) => {
-        if (!window.confirm('Batalkan task ini? Task akan terkunci seperti task yang sudah Done.')) {
-          e.preventDefault()
-        }
-      }}
       className="flex flex-col gap-2"
     >
       <input type="hidden" name="id" value={id} />
@@ -130,16 +125,11 @@ export function CancelTaskForm({ id }: { id: string }) {
 }
 
 export function DeleteTaskForm({ id }: { id: string }) {
-  const [state, formAction, pending] = useFormAction(deleteTask, INITIAL)
+  const [state, formAction, pending] = useFormAction(deleteTask, INITIAL, () => 'Hapus task ini? Task akan disembunyikan dari daftar.')
 
   return (
     <form
       {...formAction}
-      onSubmit={(e) => {
-        if (!window.confirm('Hapus task ini? Task akan disembunyikan dari daftar.')) {
-          e.preventDefault()
-        }
-      }}
       className="flex flex-col gap-1"
     >
       <input type="hidden" name="id" value={id} />
