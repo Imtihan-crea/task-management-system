@@ -14,6 +14,17 @@ export type UpdateLogEntry = {
 
 export const UPDATE_LOG: UpdateLogEntry[] = [
   {
+    date: '2026-11-10',
+    version: '621e387',
+    added: [
+      'Membuat task baru bekerja lagi. Nomor kode task tidak lagi terpotong, sehingga tidak bentrok dengan task lama (task berikutnya T-16).',
+      'Halaman Update Log ini.',
+    ],
+    removed: [
+      'Akses langsung ke database dibatasi per peran: Team Member hanya bisa membaca task miliknya dan project tempat ia punya task; PM membaca task di project yang ia kelola. Tampilan aplikasi tidak berubah.',
+    ],
+  },
+  {
     date: '2026-11-09',
     version: '645695b',
     added: [
@@ -26,7 +37,6 @@ export const UPDATE_LOG: UpdateLogEntry[] = [
       'Workstream baru bisa dibuat walau Workstream lain di project itu pernah dihapus.',
       'Hapus Workstream ditolak bila masih dipakai Suggestion yang menunggu keputusan atau revisi, atau oleh task yang sudah dihapus.',
       'Klik ganda Submit atau Batalkan tidak mengirim email ganda.',
-      'Halaman Update Log ini.',
     ],
     removed: [
       'Team Member tidak bisa lagi membatalkan task. Batalkan hanya untuk PM project dan Admin.',
