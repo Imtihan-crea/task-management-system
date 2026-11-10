@@ -21,8 +21,10 @@
 -- Tidak ada data yang diubah.
 -- Rollback: database/migrations/down/016_rls_scoped_reads.down.sql
 --
--- Status: BELUM dijalankan. Cara uji: jalankan file ini di SQL Editor, lalu
--- npm run test:rls (34 cek) dan npm run e2e:rbac. Bila gagal, jalankan file down.
+-- Status: SUDAH dijalankan di produksi 10 Nov 2026 (satu transaksi). Sesudah
+-- apply: npm run test:rls 34/34 lulus, db:status SINKRON (17/17), e2e:rbac 145
+-- kombinasi 0 ketidaksesuaian, e2e:c20 8/8, e2e:write 25/25. Bila perlu batal,
+-- jalankan file down.
 
 create or replace function public.current_role_active()
 returns text
