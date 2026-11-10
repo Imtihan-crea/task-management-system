@@ -177,7 +177,7 @@ export async function appPages(page) {
     const hrefs = await page.locator('a[href]').evaluateAll((as) => as.map((a) => a.getAttribute('href')))
     return hrefs.find((h) => re.test(h ?? ''))
   }
-  const paths = ['/dashboard', '/tasks', '/tasks?view=overdue', '/projects', '/meetings', '/task-suggestions', '/activity', '/users', '/notifications', '/profile', '/settings', '/tasks/new', '/projects/new', '/meetings/new', '/task-suggestions/new', '/users/new']
+  const paths = ['/dashboard', '/tasks', '/tasks?view=overdue', '/projects', '/meetings', '/task-suggestions', '/activity', '/users', '/notifications', '/profile', '/settings', '/update-log', '/tasks/new', '/projects/new', '/meetings/new', '/task-suggestions/new', '/users/new']
   const proj = await first('/projects', new RegExp(`^/projects/${UUID}$`))
   if (proj) {
     for (const t of ['', '?tab=tasks', '?tab=workstreams', '?tab=meetings', '?tab=activity', '?tab=members', '?tab=settings']) paths.push(proj + t)

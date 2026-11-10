@@ -31,7 +31,7 @@ try {
   out.login = rel()
   if (!out.login.includes('dashboard')) throw new Error('login admin gagal: ' + out.login)
 
-  for (const p of ['/dashboard', '/tasks', '/tasks?view=overdue', '/projects', '/meetings', '/task-suggestions', '/activity', '/activity?entity=meeting&actor=a', '/users', '/notifications', '/profile', '/tasks/new', '/meetings/new', '/task-suggestions/new']) await visit(p)
+  for (const p of ['/dashboard', '/tasks', '/tasks?view=overdue', '/projects', '/meetings', '/task-suggestions', '/activity', '/activity?entity=meeting&actor=a', '/users', '/notifications', '/profile', '/update-log', '/tasks/new', '/meetings/new', '/task-suggestions/new']) await visit(p)
   const proj = await firstHref('/projects', new RegExp(`^/projects/${UUID}$`))
   if (proj) {
     for (const t of ['', '?tab=tasks', '?tab=workstreams', '?tab=meetings', '?tab=activity', '?tab=members', '?tab=settings']) await visit(proj + t)

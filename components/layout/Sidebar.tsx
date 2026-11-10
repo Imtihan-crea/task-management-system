@@ -60,11 +60,13 @@ const GROUPS: { title: string | null; items: Omit<NavItem, 'icon'>[] }[] = [
     items: [
       { href: '/users', label: 'Users', permission: 'users.view' },
       { href: '/settings', label: 'Pengaturan', permission: null },
+      { href: '/update-log', label: 'Update Log', permission: null },
     ],
   },
 ]
 
 const ICONS: Record<string, string> = {
+  '/update-log': 'M12 8v4l3 2M3 12a9 9 0 1018 0 9 9 0 00-18 0z',
   '/dashboard': 'M3 12l9-9 9 9M5 10v10h5v-6h4v6h5V10',
   '/projects': 'M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z',
   '/workstreams': 'M4 6h16M4 12h16M4 18h16',
