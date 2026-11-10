@@ -161,7 +161,7 @@ commit saja). Satu commit per temuan supaya bisa di-revert satu-satu.
 | C1–C13, C15, C16, C18 | DIPERBAIKI |
 | C14 | DIPERBAIKI (9 Nov 2026, keputusan pemilik): overdue, filter "minggu ini", Gantt, dan badge historis kini memakai tanggal WIB (`todayISO()` memanggil `todayInAppTime()`). Filter tanggal Activity sudah WIB sebelumnya. |
 | C17 | DILEWATI (opsional; overdue ke PM menambah pemakaian jatah email) |
-| C19 | DILEWATI (opsional) |
+| C19 | DIPERBAIKI (10 Nov 2026): tombol "Tandai dibaca" dan "Tandai semua dibaca" terkunci dan menampilkan "Memproses..." selama aksi berjalan; uji klik lokal lulus |
 | C20 | DIPERBAIKI (9 Nov 2026, keputusan pemilik): Cancel task hanya ADMIN atau PM pengelola project (`canCancelTask`); tombol disembunyikan dan server menolak untuk role lain. |
 | Lanjutan B1 | `/tasks` untuk PM: hanya task project miliknya + task yang di-assign kepadanya [keputusan default] |
 

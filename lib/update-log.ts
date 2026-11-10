@@ -19,6 +19,7 @@ export const UPDATE_LOG: UpdateLogEntry[] = [
     added: [
       'Membuat task baru bekerja lagi. Nomor kode task tidak lagi terpotong, sehingga tidak bentrok dengan task lama (task berikutnya T-16).',
       'Halaman Update Log ini.',
+      'Tombol Tandai dibaca di Notifications terkunci sebentar saat diproses, jadi tidak terklik berulang.',
     ],
     removed: [
       'Akses langsung ke database dibatasi per peran: Team Member hanya bisa membaca task miliknya dan project tempat ia punya task; PM membaca task di project yang ia kelola. Tampilan aplikasi tidak berubah.',
