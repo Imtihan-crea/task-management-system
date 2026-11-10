@@ -165,8 +165,8 @@ commit saja). Satu commit per temuan supaya bisa di-revert satu-satu.
 | C20 | DIPERBAIKI (9 Nov 2026, keputusan pemilik): Cancel task hanya ADMIN atau PM pengelola project (`canCancelTask`); tombol disembunyikan dan server menolak untuk role lain. |
 | Lanjutan B1 | `/tasks` untuk PM: hanya task project miliknya + task yang di-assign kepadanya [keputusan default] |
 
-**Keputusan default yang perlu dikonfirmasi pemilik** (commit bertanda
-`[keputusan default]`):
+**Keputusan default** (commit bertanda `[keputusan default]`). DIKONFIRMASI
+pemilik 10 Nov 2026: kelima aturan di bawah dipakai apa adanya.
 
 - B6: undangan meeting dikirim saat **Schedule**, bukan saat DRAFT dibuat;
   edit/peserta baru/batal pada DRAFT tidak dinotifikasi.
