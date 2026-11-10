@@ -32,6 +32,7 @@ npm run e2e:rbac      # matriks hak akses per role (hasil: tabel di konsol + ~/.
 npm run e2e:c20       # Team Member tidak bisa membatalkan task (UI + server action); PM bisa
 npm run e2e:a3       # ganti password paksa + link reset (audit A3)
 npm run e2e:manual-f # uji manual audit bagian F (A2, A4, A5, A6, A8, A12) + PM tidak bisa memindah task ke project lain
+npm run e2e:roles    # klik nyata 31 aksi x 6 role (Admin, PM, PM lain, assignee, member lain, Viewer): berhak -> DB berubah; tidak berhak -> tombol tidak ada + server action diputar ulang ditolak
 npm run e2e:cleanup   # hapus sisa data UJI-E2E (jika run terputus)
 ```
 

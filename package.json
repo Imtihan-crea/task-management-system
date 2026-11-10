@@ -37,6 +37,7 @@
     "e2e:c20": "node scripts/e2e/c20-cancel.mjs",
     "e2e:manual-f": "node scripts/e2e/manual-f.mjs",
     "e2e:rbac": "node scripts/e2e/rbac.mjs",
+    "e2e:roles": "node scripts/e2e/roles-click.mjs",
     "e2e:a11y": "node scripts/e2e/a11y.mjs",
     "e2e:mobile": "node scripts/e2e/mobile.mjs",
     "e2e:a3": "node scripts/e2e/a3-password.mjs",
