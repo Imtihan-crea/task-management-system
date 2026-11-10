@@ -1,6 +1,6 @@
 # Task Management System
 
-Aplikasi internal untuk mengelola Project, Workstream, Task, Suggestion, Meeting, user, dan role, lengkap dengan Notifications, email pengingat, dan Activity Log. Dipakai staf kantor KASUAT. Panduan untuk pengguna: [`docs/panduan-pengguna.md`](docs/panduan-pengguna.md).
+Aplikasi internal untuk mengelola Project, Workstream, Task, Suggestion, Meeting, user, dan role, lengkap dengan Notifications, email pengingat, dan Activity Log. Dipakai staf kantor KASUAT. Panduan untuk pengguna: [`docs/panduan-pengguna.md`](docs/panduan-pengguna.md). Fitur yang ditambah atau dikurangi per versi: [`CHANGELOG.md`](CHANGELOG.md).
 
 ## Production
 
