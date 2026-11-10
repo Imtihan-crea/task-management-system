@@ -141,6 +141,14 @@ pengguna internal) dan kumpulkan teks di satu modul. Butuh keputusan pemilik.
 7. Form create task dengan deadline < start -> pesan error, isian tidak hilang (A13).
 8. Settings project dengan PM nonaktif -> PM lama tampil bertanda, tidak hilang diam-diam (A12).
 
+Hasil (10 Nov 2026): semua butir diuji otomatis di browser headless terhadap
+build lokal + database produksi, data uji dihapus sesudahnya. Butir 1 lewat
+`e2e:write` (S5), butir 3 lewat `e2e:a3`, butir 7 lewat `e2e:smoke`; butir 2,
+4, 5, 6, 8 plus tombol A8 dan "PM tidak bisa memindah task ke project yang
+tidak ia kelola" (UI + server action diputar ulang) lewat `e2e:manual-f`:
+22/22 lulus. Butir 2 menguji perilaku yang berlaku: A2 diterima sesuai desain,
+jadi PM peserta memang boleh mengelola meeting; Team Member peserta tidak.
+
 ## H. Hasil kerja AFK (8 Nov 2026 malam)
 
 Cabang `afk/audit-b-c` (belum di-merge/push, sesuai permintaan pemilik:

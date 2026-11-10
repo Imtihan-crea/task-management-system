@@ -35,6 +35,7 @@
     "e2e:cleanup": "node scripts/e2e/cleanup.mjs",
     "e2e:ws-delete": "node scripts/e2e/ws-delete.mjs",
     "e2e:c20": "node scripts/e2e/c20-cancel.mjs",
+    "e2e:manual-f": "node scripts/e2e/manual-f.mjs",
     "e2e:rbac": "node scripts/e2e/rbac.mjs",
     "e2e:a11y": "node scripts/e2e/a11y.mjs",
     "e2e:mobile": "node scripts/e2e/mobile.mjs",

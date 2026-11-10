@@ -31,6 +31,7 @@ npm run e2e:write     # 14 langkah alur tulis (project -> task -> usulan -> meet
 npm run e2e:rbac      # matriks hak akses per role (hasil: tabel di konsol + ~/.cache/taskmgmt-smoke/rbac-result.json)
 npm run e2e:c20       # Team Member tidak bisa membatalkan task (UI + server action); PM bisa
 npm run e2e:a3       # ganti password paksa + link reset (audit A3)
+npm run e2e:manual-f # uji manual audit bagian F (A2, A4, A5, A6, A8, A12) + PM tidak bisa memindah task ke project lain
 npm run e2e:cleanup   # hapus sisa data UJI-E2E (jika run terputus)
 ```
 
