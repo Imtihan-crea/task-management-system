@@ -19,9 +19,10 @@
 -- Tidak ada baris data yang diubah.
 -- Rollback: database/migrations/down/017_code_no_truncate.down.sql
 --
--- Status: BELUM dijalankan. Jalankan seluruh file di SQL Editor Supabase
--- (tidak bergantung pada 016). Cek: buat satu Task lewat aplikasi; kodenya
--- harus nomor berikutnya setelah Task terbesar (mis. T-16).
+-- Status: SUDAH dijalankan di produksi 10 Nov 2026 ±14:20 WIB (satu transaksi,
+-- sesudah backup private/backups/2026-11-10_1416). Sesudah apply: task_code_seq
+-- = 15, default tasks.code = next_code(...); npm run e2e:write 25/25 lulus
+-- (termasuk membuat Task lewat aplikasi), data uji bersih.
 
 create or replace function public.next_code(prefix text, seq regclass, width int)
 returns text
