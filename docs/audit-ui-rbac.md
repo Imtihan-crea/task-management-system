@@ -76,7 +76,7 @@ task terbuka milik user nonaktif, tidak ada task terbuka di project tertutup.
 | B12 | Form | semua action | Batas panjang hanya `maxLength` di UI (sebagian textarea tanpa batas); server tidak membatasi (kecuali evidence 2000, nama 120). | Helper `readField(fd, name, max)` sama di UI & server. | DIPERBAIKI (AFK) |
 | B13 | User | `app/actions/users.ts:594` | Menonaktifkan user tidak memperingatkan task terbuka / jabatan PM; cron tetap menotifikasi; PM nonaktif tetap dapat notifikasi PM. | Tampilkan jumlah task & PM-ship + opsi reassign. | DIPERBAIKI (AFK) [keputusan default] |
 | B14 | Project | `app/actions/tasks.ts:146`, `app/api/cron/deadlines/route.ts:51` | Status project CANCELLED/COMPLETED hanya label: task baru tetap bisa dibuat, reminder overdue tetap dikirim. | Blok create + reminder untuk project tertutup. | DIPERBAIKI (AFK) [keputusan default] |
-| B15 | Notifikasi | `lib/notifications/service.ts:113` | Satu email ke banyak penerima lewat `to`: semua penerima saling melihat alamat email. | Kirim per penerima. | DIPERBAIKI (AFK), kirim nyata belum diuji |
+| B15 | Notifikasi | `lib/notifications/service.ts:113` | Satu email ke banyak penerima lewat `to`: semua penerima saling melihat alamat email. | Kirim per penerima. | DIPERBAIKI (AFK), kirim nyata lulus 13 Nov 2026 |
 | B16 | Notifikasi | `lib/notifications/service.ts:62-88` | Event diklaim sebelum notifikasi ditulis; bila insert gagal, event hilang permanen. | Klaim + tulis dalam satu transaksi / lepas klaim bila gagal. | DIPERBAIKI (AFK) |
 | B17 | Activity | `app/(app)/activity/page.tsx:88-95` | Filter actor diterapkan setelah paginasi: hasil bisa kosong di halaman 1 padahal ada di halaman 3. | Filter di query. | DIPERBAIKI (AFK) |
 | B18 | Form | `components/auth/ChangePasswordForm.tsx:56-60` | Bila hapus flag gagal, error hanya ke console lalu redirect -> bisa kembali ke `/change-password` tanpa penjelasan. | Tampilkan error, jangan redirect. | DIPERBAIKI (AFK) |
@@ -232,7 +232,7 @@ Perbaikan hasil review ikut dicatat sebagai commit terpisah (mis. password baru 
 | # | Status |
 | --- | --- |
 | A3 | **DIPERBAIKI**: `setOwnPassword` mengganti password dan membersihkan flag `must_change_password` di server; diuji `npm run e2e:a3`. |
-| B15 | tetap: kode memisah penerima per email, **kirim nyata belum diuji** (menunggu keputusan penerima uji, lihat di bawah). |
+| B15 | **kirim nyata lulus 13 Nov 2026**: `sendEmail` asli ke 2 alias plus alamat pengirim, payload `messageVersions` 2 versi x 1 penerima, Brevo 201 dengan 2 messageId terpisah, kedua penerima `delivered`. |
 
 ### Keputusan pemilik yang masih terbuka
 
@@ -252,7 +252,7 @@ Perbaikan hasil review ikut dicatat sebagai commit terpisah (mis. password baru 
 | 1. C14 | Overdue memakai WIB | Dikerjakan: `lib/utils/dates.ts` (`todayISO`, `daysFromTodayISO`, tanggal submit/batal dalam WIB), `lib/data/task-list.ts`, dashboard, Gantt, tab Overview; tes `npm run test:task` |
 | 2. C20 | Cancel hanya PM/Admin | Dikerjakan: `lib/auth/task-access.ts` `canCancelTask`, `cancelTask`, halaman detail task; tes `npm run test:task-access`, `e2e:rbac` |
 | 3. Lupa password | Tetap lewat Admin | Tidak ada perubahan |
-| 4. B15 | Ditunda | Kirim nyata belum diuji |
+| 4. B15 | Ditunda, lalu diuji 13 Nov 2026 | Kirim nyata lulus (2 penerima, 2 pesan terpisah, keduanya delivered) |
 | 5. Project `001` | Disiapkan untuk pemilik | Dicek 9 Nov 2026: 4 task, 3 DONE dan 1 CANCELLED, tidak ada task aktif; PM satu-satunya INACTIVE. Pilihan: tambah PM aktif di tab Pengaturan, atau ubah status project ke COMPLETED |
 | 6. RLS | Disiapkan sebagai migrasi, belum dijalankan | `database/migrations/016_rls_scoped_reads.sql` + `down/016_rls_scoped_reads.down.sql`; `rls.check.sql` ditambah 8 cek (total 34) |
 | 7. Cakupan baca RBAC | Dibiarkan terbuka | VIEWER dan PM tetap bisa membuka project lain; migrasi 016 mengikuti keputusan ini |
