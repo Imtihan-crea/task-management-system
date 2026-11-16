@@ -2,7 +2,7 @@
  * Uji lib/hr/reminder.ts — pengingat Daily Tracker.
  * Jalankan: npm run test:hr-reminder
  */
-import { reminderEnabled, usersToRemind, type ReminderUser } from '../lib/hr/reminder'
+import { pilotUsers, reminderEnabled, usersToRemind, type ReminderUser } from '../lib/hr/reminder'
 
 let ok = 0
 let gagal = 0
@@ -20,6 +20,12 @@ const users = [u('a'), u('b'), u('dev', { is_developer: true }), u('off', { stat
 cek('hari kerja: yang belum isi', usersToRemind(users, new Set(['b']), true), ['a'])
 cek('hari libur: tidak ada', usersToRemind(users, new Set(), false), [])
 cek('semua sudah isi', usersToRemind(users, new Set(['a', 'b']), true), [])
+const A = '11111111-1111-1111-1111-111111111111'
+const mix = [u(A), u('b')]
+cek('mode uji: hanya akun ditunjuk', usersToRemind(mix, new Set(), true, pilotUsers(` ${A} , bukan-uuid`)), [A])
+cek('mode uji kosong = semua', usersToRemind(mix, new Set(), true, pilotUsers('  ')), [A, 'b'])
+cek('mode uji tanpa id sah = tidak ada', usersToRemind(mix, new Set(), true, pilotUsers('salah')), [])
+cek('mode uji: akun ditunjuk sudah isi = tidak', usersToRemind(mix, new Set([A]), true, pilotUsers(A)), [])
 cek('saklar mati bawaan', reminderEnabled(undefined), false)
 cek('saklar "1" tetap mati', reminderEnabled('1'), false)
 cek('saklar true', reminderEnabled('true'), true)

@@ -7,7 +7,7 @@ import { allRows } from '@/lib/utils/paginate'
 import { todayISO } from '@/lib/utils/dates'
 import { loadCalendar } from '@/lib/hr/data'
 import { workingDays } from '@/lib/hr/tracker'
-import { reminderEnabled, usersToRemind, type ReminderUser } from '@/lib/hr/reminder'
+import { pilotUsers, reminderEnabled, usersToRemind, type ReminderUser } from '@/lib/hr/reminder'
 import { trackerReminderBody } from '@/lib/email/templates'
 
 export const dynamic = 'force-dynamic'
@@ -17,6 +17,7 @@ export const dynamic = 'force-dynamic'
  * aktivitas di hari kerja ini mendapat notifikasi in-app + email.
  * Auth: `Authorization: Bearer <CRON_SECRET>`. GET (manual) dan POST (pg_net).
  * Saklar: TRACKER_REMINDER_ENABLED=true; mati = tidak mengirim apa pun.
+ * Mode uji: TRACKER_REMINDER_ONLY=<id user,...> = hanya akun itu.
  * Idempotent: event_key per user per hari.
  * Jadwal (pg_cron, sekitar 17:00 WIB) dipasang terpisah setelah uji nyata.
  */
@@ -59,7 +60,7 @@ async function handle(request: Request) {
   }
 
   let sent = 0
-  for (const userId of usersToRemind(users, new Set(logged.map((l) => l.user_id)), true)) {
+  for (const userId of usersToRemind(users, new Set(logged.map((l) => l.user_id)), true, pilotUsers(process.env.TRACKER_REMINDER_ONLY))) {
     const result = await emitNotification({
       key: `tracker-reminder:${userId}:${today}`,
       type: 'TRACKER_REMINDER',
@@ -72,7 +73,7 @@ async function handle(request: Request) {
     })
     if (result.emitted) sent += 1
   }
-  return NextResponse.json({ ok: true, date: today, reminded: sent })
+  return NextResponse.json({ ok: true, date: today, reminded: sent, pilot: Boolean(pilotUsers(process.env.TRACKER_REMINDER_ONLY)) })
 }
 
 export const GET = handle

@@ -8,11 +8,27 @@ export type ReminderUser = { id: string; status: string; is_developer: boolean |
  * (bukan akun kerja harian) dan akun terhapus dilewati.
  * shortcut: cuti/izin/sakit belum dikecualikan; tambahkan saat Tahap 2 (leave_requests).
  */
-export function usersToRemind(users: ReminderUser[], loggedUserIds: Set<string>, isWorkday: boolean): string[] {
+export function usersToRemind(
+  users: ReminderUser[],
+  loggedUserIds: Set<string>,
+  isWorkday: boolean,
+  only: Set<string> | null = null
+): string[] {
   if (!isWorkday) return []
   return users
     .filter((u) => u.status === 'ACTIVE' && !u.is_developer && !u.deleted_at && !loggedUserIds.has(u.id))
+    .filter((u) => !only || only.has(u.id))
     .map((u) => u.id)
+}
+
+/**
+ * Mode uji: env TRACKER_REMINDER_ONLY = daftar id user (dipisah koma). Terisi =
+ * hanya user itu yang diingatkan; kosong = semua. Id yang bukan UUID diabaikan;
+ * bila terisi tetapi tidak ada id sah, tidak ada yang diingatkan (aman).
+ */
+export function pilotUsers(value: string | undefined): Set<string> | null {
+  if (!value?.trim()) return null
+  return new Set(value.split(',').map((v) => v.trim()).filter((v) => /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(v)))
 }
 
 /** Saklar fitur: mati kecuali env TRACKER_REMINDER_ENABLED = 'true' (aturan uji nyata dulu). */
