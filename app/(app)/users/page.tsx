@@ -54,7 +54,7 @@ export default async function UsersPage({
   const admin = createAdminClient()
   let query = admin
     .from('profiles')
-    .select('id, full_name, email, role, status, created_at, is_super_admin')
+    .select('id, full_name, email, role, status, created_at, is_super_admin, is_developer')
     .order(sortKey, { ascending })
     .limit(200)
 
@@ -63,7 +63,7 @@ export default async function UsersPage({
   if (statusFilter) query = query.eq('status', statusFilter)
 
   const { data, error } = await query
-  const users = (data ?? []) as (ProfileListItem & { is_super_admin: boolean })[]
+  const users = (data ?? []) as (ProfileListItem & { is_super_admin: boolean; is_developer: boolean })[]
 
   return (
     <AppShell>
@@ -190,7 +190,7 @@ export default async function UsersPage({
                       {user.full_name || '-'}
                     </td>
                     <td className="px-4 py-3">{user.email}</td>
-                    <td className="px-4 py-3">{user.is_super_admin ? 'Super Admin' : ROLE_LABELS[user.role]}</td>
+                    <td className="px-4 py-3">{user.is_super_admin ? 'Super Admin' : user.is_developer ? 'Developer' : ROLE_LABELS[user.role]}</td>
                     <td className="px-4 py-3">{STATUS_LABELS[user.status]}</td>
                     <td className="px-4 py-3">{formatDate(user.created_at)}</td>
                     <td className="px-4 py-3">
@@ -232,7 +232,7 @@ export default async function UsersPage({
                 <p className="break-all text-sm text-zinc-600 dark:text-zinc-400">{user.email}</p>
                 <div className="mt-2 flex flex-wrap gap-2 text-xs">
                   <span className="rounded-full border px-2 py-1">
-                    {user.is_super_admin ? 'Super Admin' : ROLE_LABELS[user.role]}
+                    {user.is_super_admin ? 'Super Admin' : user.is_developer ? 'Developer' : ROLE_LABELS[user.role]}
                   </span>
                   <span className="rounded-full border px-2 py-1">
                     {STATUS_LABELS[user.status]}

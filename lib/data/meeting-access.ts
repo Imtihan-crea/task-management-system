@@ -42,7 +42,7 @@ export async function getMeetingAccess(
 
   const isOwner = meeting.organizer_id === userId || meeting.created_by === userId
 
-  const [{ data: part }, isProjectPM, hasManageGrant] = await Promise.all([
+  const [{ data: part }, isProjectPM, hasManageGrant, canCreateTask] = await Promise.all([
     admin
       .from('meeting_participants')
       .select('id')
@@ -56,6 +56,7 @@ export async function getMeetingAccess(
     meeting.project_id
       ? hasPermission(userId, 'meetings.edit', meeting.project_id)
       : permissionProjects(userId, 'meetings.edit').then((s) => s.all),
+    hasPermission(userId, 'tasks.create', meeting.project_id),
   ])
 
   return {
@@ -64,6 +65,7 @@ export async function getMeetingAccess(
     isParticipant: Boolean(part),
     isProjectPM,
     hasManageGrant,
+    canCreateTask,
   }
 }
 
@@ -81,6 +83,8 @@ export async function assertCanCreateInProject(
     .maybeSingle<{ id: string }>()
   if (!project) return 'Project tidak ditemukan.'
 
+  // Pemegang meetings.edit di project ini (Admin, PM project, atau diberi per akun).
+  if (await hasPermission(userId, 'meetings.edit', projectId)) return null
   if (role === 'ADMIN') return null
   if (role === 'PROJECT_MANAGER') {
     if (await isProjectManager(projectId, userId)) return null

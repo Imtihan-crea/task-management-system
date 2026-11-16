@@ -27,7 +27,15 @@ export function superAdminError(
   return null
 }
 
-/** User baru (undang / buat dengan password): role ADMIN hanya oleh Super Admin. */
-export function newUserRoleError(actorIsSuper: boolean, role: UserRole): string | null {
-  return role === 'ADMIN' && !actorIsSuper ? MSG_SUPER_ONLY_PROMOTE : null
+export const MSG_ROLE_NEEDS_CHANGE_ROLE = 'Tanpa izin ubah role, user baru hanya bisa Team Member atau Viewer.'
+
+/**
+ * User baru (undang / buat dengan password): ADMIN hanya oleh Super Admin;
+ * PM hanya oleh pemegang users.changeRole (tanpa itu, users.invite bisa dipakai
+ * membuat akun PM sendiri = naik peran lewat jalan samping; review 16 Nov 2026).
+ */
+export function newUserRoleError(actorIsSuper: boolean, role: UserRole, canChangeRole: boolean): string | null {
+  if (role === 'ADMIN' && !actorIsSuper) return MSG_SUPER_ONLY_PROMOTE
+  if (role !== 'TEAM_MEMBER' && role !== 'VIEWER' && !canChangeRole) return MSG_ROLE_NEEDS_CHANGE_ROLE
+  return null
 }

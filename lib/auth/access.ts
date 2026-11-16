@@ -125,3 +125,13 @@ export function decide(ctx: AccessContext, permission: Permission, projectId?: s
   if (projectId) return s.all ? !s.exclude.includes(projectId) : s.include.includes(projectId)
   return s.all || s.include.length > 0
 }
+
+/** Saring query project (kolom id) sesuai cakupan izin. */
+export function applyProjectScope<Q extends { in: (c: string, v: string[]) => Q; not: (c: string, op: string, v: string) => Q }>(
+  query: Q,
+  scope: ProjectScope,
+  column = 'id'
+): Q {
+  if (scope.all) return scope.exclude.length ? query.not(column, 'in', `(${scope.exclude.join(',')})`) : query
+  return query.in(column, scope.include.length ? scope.include : ['00000000-0000-0000-0000-000000000000'])
+}

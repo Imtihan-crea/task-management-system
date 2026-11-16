@@ -93,6 +93,8 @@ export type MeetingAccess = {
    * lib/auth/access.ts). Kosong = dihitung dari peran (ADMIN, atau PM project).
    */
   hasManageGrant?: boolean
+  /** Punya tasks.create di project meeting (tanpa project: di project mana pun). Kosong = dari peran. */
+  canCreateTask?: boolean
 }
 
 const manageGrant = (access: MeetingAccess, role: string) =>
@@ -134,11 +136,15 @@ export function canManageMeetingContent(access: MeetingAccess, role: string): bo
 /** Buat task dari action item: butuh tasks.create + akses baca meeting. */
 export function canCreateTaskFromMeeting(access: MeetingAccess, role: UserRole): boolean {
   if (!access.meeting) return false
-  if (!can(role, 'tasks.create')) return false
   if (access.meeting.status === 'CANCELLED') return false // audit B5
-  // Audit B4: PM hanya di project miliknya (sama dengan server action).
-  // Meeting tanpa project: project dipilih di form dari project miliknya.
-  if (role === 'PROJECT_MANAGER' && access.meeting.project_id && !access.isProjectPM) return false
+  if (access.canCreateTask !== undefined) {
+    if (!access.canCreateTask) return false
+  } else {
+    if (!can(role, 'tasks.create')) return false
+    // Audit B4: PM hanya di project miliknya (sama dengan server action).
+    // Meeting tanpa project: project dipilih di form dari project miliknya.
+    if (role === 'PROJECT_MANAGER' && access.meeting.project_id && !access.isProjectPM) return false
+  }
   return canViewMeeting(access, role)
 }
 

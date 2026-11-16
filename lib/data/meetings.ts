@@ -2,6 +2,7 @@ import 'server-only'
 
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { permissionProjects } from '@/lib/auth/current-access'
 import { scopeFilter } from '@/lib/meetings/rules'
 import type { MeetingScope } from '@/lib/data/meetings-types'
 import { isMeetingToday, isMeetingUpcoming, nowInAppTime } from '@/lib/utils/meeting-time'
@@ -79,14 +80,11 @@ export const getMeetingScope = cache(
     // PENTING: null HANYA untuk ADMIN (artinya "tanpa filter").
     // Untuk role lain mulai dari [] supaya scopeFilter tidak salah
     // mengira "tidak perlu pembatasan" dan membocorkan semua meeting.
-    let managedProjectIds: string[] | null = []
-    if (role === 'PROJECT_MANAGER') {
-      const { data: links } = await admin
-        .from('project_managers')
-        .select('project_id')
-        .eq('user_id', userId)
-      managedProjectIds = ((links ?? []) as { project_id: string }[]).map((l) => l.project_id)
-    }
+    // Project tempat ia boleh kelola meeting (meetings.edit): PM project kelolaan,
+    // atau diberi per akun (lib/auth/access.ts). Diberi di semua project = semua.
+    const manage = await permissionProjects(userId, 'meetings.edit')
+    if (manage.all) return { userId, role, managedProjectIds: null, involvedMeetingIds }
+    const managedProjectIds: string[] | null = manage.include
 
     return { userId, role, managedProjectIds, involvedMeetingIds }
   }

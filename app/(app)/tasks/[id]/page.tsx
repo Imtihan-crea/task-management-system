@@ -63,7 +63,8 @@ export default async function TaskDetailPage({
   }
   // Sama dengan canActOnLoadedTask di server action.
   const canChangeStatus =
-    canFullEdit || canActOnTask(profile.role, { isAssignee: isOwner, managesProject: false })
+    canFullEdit ||
+    (profile.role === 'ADMIN' ? isOwner : canActOnTask(profile.role, { isAssignee: isOwner, managesProject: false }))
   const canSubmitEvidence = can(profile.role, 'tasks.submitEvidenceOwn') && canChangeStatus
 
   const [{ data: project }, { data: workstream }, { data: assignee }, { data: creator }] =

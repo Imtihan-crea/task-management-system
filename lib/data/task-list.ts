@@ -83,9 +83,12 @@ export const fetchTaskRows = cache(async (scope: TaskScope): Promise<TaskRow[]> 
   // boleh mengelola task (tasks.edit: PM project, atau diberi per akun), sama
   // dengan aturan baca /tasks/[id] (lanjutan audit B1/A4). Admin/Viewer semua.
   if (scope.role === 'TEAM_MEMBER' || scope.role === 'PROJECT_MANAGER') {
-    const manage = await permissionProjects(scope.userId, 'tasks.edit')
-    if (!manage.all) {
-      const ids = manage.include
+    // Sama dengan aturan buka /tasks/[id]: edit, batal, atau hapus di project itu.
+    const scopes = await Promise.all(
+      (['tasks.edit', 'tasks.cancel', 'tasks.delete'] as const).map((p) => permissionProjects(scope.userId, p))
+    )
+    if (!scopes.some((s) => s.all)) {
+      const ids = [...new Set(scopes.flatMap((s) => s.include))]
       query = ids.length
         ? query.or(`project_id.in.(${ids.join(',')}),assignee_id.eq.${scope.userId}`)
         : query.eq('assignee_id', scope.userId)

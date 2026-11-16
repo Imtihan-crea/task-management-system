@@ -5,6 +5,8 @@ import { redirect } from 'next/navigation'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { requireProfile } from '@/lib/auth/session'
 import { decide, projectScope, type AccessContext, type ProjectScope } from '@/lib/auth/access'
+
+export { applyProjectScope } from '@/lib/auth/access'
 import type { Permission } from '@/lib/auth/permissions'
 import type { UserRole } from '@/types/profile'
 
@@ -59,16 +61,6 @@ export async function requirePermission(permission: Permission) {
   const profile = await requireProfile()
   if (!(await hasPermission(profile.id, permission))) redirect('/dashboard?denied=1')
   return profile
-}
-
-/** Saring query project (kolom id) sesuai cakupan izin. */
-export function applyProjectScope<Q extends { in: (c: string, v: string[]) => Q; not: (c: string, op: string, v: string) => Q }>(
-  query: Q,
-  scope: ProjectScope,
-  column = 'id'
-): Q {
-  if (scope.all) return scope.exclude.length ? query.not(column, 'in', `(${scope.exclude.join(',')})`) : query
-  return query.in(column, scope.include.length ? scope.include : ['00000000-0000-0000-0000-000000000000'])
 }
 
 const MANAGE_PERMISSIONS: Permission[] = ['projects.edit', 'workstreams.create', 'tasks.create', 'tasks.edit', 'suggestions.review', 'meetings.edit']

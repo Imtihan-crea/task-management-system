@@ -2,7 +2,7 @@
  * Uji lib/auth/access.ts — wewenang efektif per akun.
  * Jalankan: npm run test:access
  */
-import { decide, isGrantable, projectScope, PERMISSION_SCOPE, type AccessContext } from '../lib/auth/access'
+import { applyProjectScope, decide, isGrantable, projectScope, PERMISSION_SCOPE, type AccessContext } from '../lib/auth/access'
 import { can, type Permission } from '../lib/auth/permissions'
 import { canManageProject } from '../lib/auth/project-access'
 import { canCancelTask } from '../lib/auth/task-access'
@@ -74,6 +74,22 @@ cek('permissions.manage terkunci', isGrantable('permissions.manage'), false)
 cek('tasks.view ikut peran', isGrantable('tasks.view'), false)
 cek('tasks.edit bisa diberi', isGrantable('tasks.edit'), true)
 cek('locked tetap false walau ada baris', decide(ctx('TEAM_MEMBER', { overrides: [{ permission: 'permissions.manage', projectId: null, granted: true }] }), 'permissions.manage'), false)
+
+// 5. applyProjectScope (filter query): catat panggilan builder palsu.
+type Call = [string, string, unknown, unknown?]
+const fakeQuery = () => {
+  const calls: Call[] = []
+  const q = {
+    calls,
+    in(c: string, v: string[]) { calls.push(['in', c, v]); return q },
+    not(c: string, op: string, v: string) { calls.push(['not', c, op, v]); return q },
+  }
+  return q
+}
+cek('scope semua = tanpa filter', applyProjectScope(fakeQuery(), { all: true, include: [], exclude: [] }).calls, [])
+cek('scope semua kecuali', applyProjectScope(fakeQuery(), { all: true, include: [], exclude: ['P3'] }).calls, [['not', 'id', 'in', '(P3)']])
+cek('scope include', applyProjectScope(fakeQuery(), { all: false, include: ['P1', 'P2'], exclude: [] }, 'project_id').calls, [['in', 'project_id', ['P1', 'P2']]])
+cek('scope kosong = tidak ada hasil', applyProjectScope(fakeQuery(), { all: false, include: [], exclude: [] }).calls, [['in', 'id', ['00000000-0000-0000-0000-000000000000']]])
 
 console.log(`LULUS: ${ok}`)
 console.log(`GAGAL: ${gagal}`)

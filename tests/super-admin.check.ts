@@ -6,6 +6,7 @@ import {
   MSG_SUPER_LOCKED,
   MSG_SUPER_ONLY_ADMIN,
   MSG_SUPER_ONLY_PROMOTE,
+  MSG_ROLE_NEEDS_CHANGE_ROLE,
   newUserRoleError,
   superAdminError,
 } from '../lib/auth/super-admin'
@@ -37,9 +38,13 @@ cek('admin ubah member', superAdminError(adminA, memberT, { role: 'PROJECT_MANAG
 cek('super turunkan diri', superAdminError(superA, superT, { role: 'TEAM_MEMBER' }), MSG_SUPER_LOCKED)
 cek('super nonaktif', superAdminError(superA, superT, { status: 'INACTIVE' }), MSG_SUPER_LOCKED)
 cek('super ubah nama sendiri', superAdminError(superA, superT, { role: 'ADMIN', status: 'ACTIVE' }), null)
-cek('user baru admin oleh admin', newUserRoleError(false, 'ADMIN'), MSG_SUPER_ONLY_PROMOTE)
-cek('user baru admin oleh super', newUserRoleError(true, 'ADMIN'), null)
-cek('user baru member oleh admin', newUserRoleError(false, 'TEAM_MEMBER'), null)
+cek('user baru admin oleh admin', newUserRoleError(false, 'ADMIN', true), MSG_SUPER_ONLY_PROMOTE)
+cek('user baru admin oleh super', newUserRoleError(true, 'ADMIN', true), null)
+cek('user baru member oleh admin', newUserRoleError(false, 'TEAM_MEMBER', true), null)
+// Regresi review 16 Nov: users.invite tanpa users.changeRole tidak boleh membuat PM.
+cek('PM baru tanpa izin ubah role', newUserRoleError(false, 'PROJECT_MANAGER', false), MSG_ROLE_NEEDS_CHANGE_ROLE)
+cek('PM baru dengan izin ubah role', newUserRoleError(false, 'PROJECT_MANAGER', true), null)
+cek('Viewer baru tanpa izin ubah role', newUserRoleError(false, 'VIEWER', false), null)
 
 console.log(`LULUS: ${ok}`)
 console.log(`GAGAL: ${gagal}`)

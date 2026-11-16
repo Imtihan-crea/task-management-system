@@ -55,6 +55,8 @@ async function canActOnLoadedTask(
 ): Promise<boolean> {
   // Pemegang tasks.edit di project ini (Admin, PM project, atau diberi per akun) selalu boleh.
   if (await hasPermission(profile.id, 'tasks.edit', task.project_id)) return true
+  // Admin tanpa tasks.edit (dicabut per akun) tinggal hak assignee.
+  if (profile.role === 'ADMIN') return task.assignee_id === profile.id
   return canActOnTask(profile.role, { isAssignee: task.assignee_id === profile.id, managesProject: false })
 }
 

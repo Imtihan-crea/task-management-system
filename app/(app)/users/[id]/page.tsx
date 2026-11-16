@@ -1,6 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { requirePermission } from '@/lib/auth/current-access'
+import { hasPermission, requirePermission } from '@/lib/auth/current-access'
+import { PermissionsSection } from '@/components/users/PermissionsSection'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ROLE_LABELS, STATUS_LABELS } from '@/lib/auth/roles'
 import { AppShell } from '@/components/layout/AppShell'
@@ -17,6 +18,7 @@ type ProfileRow = {
   created_at: string
   updated_at: string
   is_super_admin: boolean
+  is_developer: boolean
 }
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -34,13 +36,14 @@ export default async function UserDetailPage({
   params: Promise<{ id: string }>
 }) {
   const viewer = await requirePermission('users.view')
+  const canManagePermissions = await hasPermission(viewer.id, 'permissions.manage')
 
   const { id } = await params
   const admin = createAdminClient()
 
   const { data: profile } = await admin
     .from('profiles')
-    .select('id, full_name, email, role, status, created_at, updated_at, is_super_admin')
+    .select('id, full_name, email, role, status, created_at, updated_at, is_super_admin, is_developer')
     .eq('id', id)
     .single<ProfileRow>()
 
@@ -72,7 +75,7 @@ export default async function UserDetailPage({
           <dl>
             <Row label="Nama Lengkap" value={profile.full_name || '-'} />
             <Row label="Email" value={profile.email} />
-            <Row label="Role" value={profile.is_super_admin ? 'Super Admin' : ROLE_LABELS[profile.role]} />
+            <Row label="Role" value={profile.is_super_admin ? 'Super Admin' : profile.is_developer ? 'Developer' : ROLE_LABELS[profile.role]} />
             <Row label="Status" value={STATUS_LABELS[profile.status]} />
             <Row label="Tanggal Dibuat" value={formatDateTime(profile.created_at)} />
             <Row
@@ -94,6 +97,12 @@ export default async function UserDetailPage({
           <EditUserForm user={profile} isSelf={viewer.id === profile.id} />
         </section>
       </div>
+
+      {canManagePermissions && (
+        <div className="mt-6">
+          <PermissionsSection user={profile} />
+        </div>
+      )}
     </AppShell>
   )
 }

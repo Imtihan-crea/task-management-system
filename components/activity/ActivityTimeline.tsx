@@ -72,6 +72,8 @@ export function describeActivity(entry: Pick<ActivityEntry, 'action' | 'metadata
       return 'User dinonaktifkan'
     case 'ROLE_CHANGED':
       return `Role diubah ${str(m.old_role)} → ${str(m.new_role)}`
+    case 'PERMISSION_CHANGED':
+      return m.scope === 'project' ? `Wewenang project ${str(m.project_code)} diubah` : 'Wewenang user diubah'
     default:
       return entry.action.replace(/_/g, ' ')
   }

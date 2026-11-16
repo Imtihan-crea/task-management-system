@@ -121,7 +121,16 @@ async function isSuperAdmin(userId: string): Promise<boolean> {
     .select('is_super_admin, is_developer')
     .eq('id', userId)
     .maybeSingle<{ is_super_admin: boolean; is_developer: boolean }>()
-  if (error) console.warn('[super-admin] read failed:', error.message)
+  if (error) {
+    // Migrasi 019 belum jalan: baca kolom 018 saja supaya Super Admin tidak terkunci.
+    console.warn('[super-admin] read failed:', error.message)
+    const { data: legacy } = await createAdminClient()
+      .from('profiles')
+      .select('is_super_admin')
+      .eq('id', userId)
+      .maybeSingle<{ is_super_admin: boolean }>()
+    return legacy?.is_super_admin === true
+  }
   // Developer setara Super Admin untuk aturan ini (migrasi 019).
   return data?.is_super_admin === true || data?.is_developer === true
 }
@@ -153,7 +162,11 @@ export async function inviteUser(
   if (!fullName) return { error: 'Nama lengkap wajib diisi.' }
   if (!validEmail(email)) return { error: 'Masukkan alamat Email yang valid.' }
   if (!isUserRole(role)) return { error: 'Pilih role yang valid.' }
-  const roleError = newUserRoleError(await isSuperAdmin(actor.id), role)
+  const roleError = newUserRoleError(
+    await isSuperAdmin(actor.id),
+    role,
+    await hasPermission(actor.id, 'users.changeRole')
+  )
   if (roleError) return { error: roleError }
 
   const admin = createAdminClient()
@@ -375,7 +388,11 @@ export async function createUserWithPassword(
   if (!fullName) return { error: 'Nama lengkap wajib diisi.' }
   if (!validEmail(email)) return { error: 'Masukkan alamat Email yang valid.' }
   if (!isUserRole(role)) return { error: 'Pilih role yang valid.' }
-  const roleError = newUserRoleError(await isSuperAdmin(actor.id), role)
+  const roleError = newUserRoleError(
+    await isSuperAdmin(actor.id),
+    role,
+    await hasPermission(actor.id, 'users.changeRole')
+  )
   if (roleError) return { error: roleError }
 
   const passwordError = validateAdminPassword(password)
@@ -585,6 +602,18 @@ export async function updateUser(
     projectId: null,
     metadata: { full_name: fullName },
   })
+  // Role baru = paket baru: aturan per akun lama dihapus supaya izin tambahan
+  // tidak terbawa saat user diturunkan (review 16 Nov 2026).
+  let clearedRules = 0
+  if (roleChanged) {
+    const { data: cleared, error: clearError } = await admin
+      .from('user_permissions')
+      .delete()
+      .eq('user_id', targetId)
+      .select('id')
+    if (clearError) console.error('updateUser clear permissions failed:', clearError.message)
+    clearedRules = cleared?.length ?? 0
+  }
   if (roleChanged) {
     await logActivity({
       actorUserId: adminProfile.id,
@@ -593,7 +622,7 @@ export async function updateUser(
       entityId: targetId,
       entityCode: '',
       projectId: null,
-      metadata: { old_role: current.role, new_role: role },
+      metadata: { old_role: current.role, new_role: role, cleared_permission_rules: clearedRules },
     })
   }
   if (statusChanged) {
@@ -610,7 +639,10 @@ export async function updateUser(
 
   const note = statusChanged && status === 'INACTIVE' ? await deactivationNote(targetId) : ''
   return {
-    success: (roleChanged ? 'Role user berhasil diperbarui.' : 'User berhasil diperbarui.') + note,
+    success:
+      (roleChanged ? 'Role user berhasil diperbarui.' : 'User berhasil diperbarui.') +
+      (clearedRules ? ` ${clearedRules} aturan wewenang per akun dihapus karena role berubah.` : '') +
+      note,
   }
 }
 
@@ -629,6 +661,10 @@ export async function setUserStatus(
 
   if (!targetId) return { error: 'User tidak ditemukan.' }
   if (!isUserStatus(status)) return { error: 'Pilih status yang valid.' }
+  // Cek izin sebelum membaca target, supaya pesan error tidak membocorkan data user.
+  if (!(await hasPermission(adminProfile.id, status === 'ACTIVE' ? 'users.activate' : 'users.deactivate'))) {
+    return { error: 'Anda tidak punya izin mengubah status user.' }
+  }
   const targetError = quickStatusTargetError(status)
   if (targetError) return { error: targetError }
 
@@ -644,9 +680,6 @@ export async function setUserStatus(
 
   const superError = await superGuard(adminProfile.id, { id: targetId, role: current.role }, { status })
   if (superError) return { error: superError }
-  if (!(await hasPermission(adminProfile.id, status === 'ACTIVE' ? 'users.activate' : 'users.deactivate'))) {
-    return { error: 'Anda tidak punya izin mengubah status user.' }
-  }
 
   const changeError = quickStatusChangeError({
     actorId: adminProfile.id,
