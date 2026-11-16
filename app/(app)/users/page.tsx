@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { requireAdmin } from '@/lib/auth/session'
+import { requirePermission } from '@/lib/auth/current-access'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isUserRole, isUserStatus, ROLE_LABELS, STATUS_LABELS, USER_ROLES, USER_STATUSES } from '@/lib/auth/roles'
 import { AppShell } from '@/components/layout/AppShell'
@@ -37,7 +37,7 @@ export default async function UsersPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
-  const viewer = await requireAdmin()
+  const viewer = await requirePermission('users.view')
 
   const params = await searchParams
   const q = sanitizeSearch(

@@ -14,11 +14,13 @@ const STORAGE_KEY = 'kasuat.sidebar.collapsed'
  */
 export function Shell({
   role,
+  allowed,
   email,
   name,
   children,
 }: {
   role: UserRole
+  allowed: string[]
   email: string
   name: string
   children: React.ReactNode
@@ -55,7 +57,7 @@ export function Shell({
       >
         <SidebarBrand collapsed={collapsed} />
         <div className="min-h-0 flex-1">
-          <Sidebar role={role} collapsed={collapsed} />
+          <Sidebar allowed={allowed} collapsed={collapsed} />
         </div>
       </aside>
 
@@ -120,7 +122,7 @@ export function Shell({
               </button>
             </div>
             <div className="min-h-0 flex-1">
-              <Sidebar role={role} collapsed={false} onNavigate={() => setDrawer(false)} />
+              <Sidebar allowed={allowed} collapsed={false} onNavigate={() => setDrawer(false)} />
             </div>
           </div>
         </div>

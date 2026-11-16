@@ -2,6 +2,7 @@ import 'server-only'
 
 import { cache } from 'react'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { permissionProjects } from '@/lib/auth/current-access'
 import { allRows } from '@/lib/utils/paginate'
 import { hasImpossibleFilter } from '@/lib/data/filter-values'
 import { daysFromTodayISO, todayISO } from '@/lib/utils/dates'
@@ -78,18 +79,17 @@ export const fetchTaskRows = cache(async (scope: TaskScope): Promise<TaskRow[]> 
     .order('deadline', { ascending: true })
     .order('id')
 
-  if (scope.role === 'TEAM_MEMBER') query = query.eq('assignee_id', scope.userId)
-  // PM: task project miliknya + task yang di-assign kepadanya, sama dengan
-  // aturan baca /tasks/[id] (lanjutan audit B1/A4) [keputusan default].
-  if (scope.role === 'PROJECT_MANAGER') {
-    const { data: links } = await admin
-      .from('project_managers')
-      .select('project_id')
-      .eq('user_id', scope.userId)
-    const ids = ((links ?? []) as { project_id: string }[]).map((l) => l.project_id)
-    query = ids.length
-      ? query.or(`project_id.in.(${ids.join(',')}),assignee_id.eq.${scope.userId}`)
-      : query.eq('assignee_id', scope.userId)
+  // PM / Team Member: task yang di-assign kepadanya + task di project tempat ia
+  // boleh mengelola task (tasks.edit: PM project, atau diberi per akun), sama
+  // dengan aturan baca /tasks/[id] (lanjutan audit B1/A4). Admin/Viewer semua.
+  if (scope.role === 'TEAM_MEMBER' || scope.role === 'PROJECT_MANAGER') {
+    const manage = await permissionProjects(scope.userId, 'tasks.edit')
+    if (!manage.all) {
+      const ids = manage.include
+      query = ids.length
+        ? query.or(`project_id.in.(${ids.join(',')}),assignee_id.eq.${scope.userId}`)
+        : query.eq('assignee_id', scope.userId)
+    }
   }
   if (scope.project) query = query.eq('project_id', scope.project)
   if (scope.workstream) query = query.eq('workstream_id', scope.workstream)

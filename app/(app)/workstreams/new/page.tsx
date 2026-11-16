@@ -1,8 +1,7 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { requireManager } from '@/lib/auth/session'
+import { hasPermission, requirePermission } from '@/lib/auth/current-access'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { isProjectManager } from '@/lib/data/projects'
 import { AppShell } from '@/components/layout/AppShell'
 import { CreateWorkstreamForm } from '@/components/projects/WorkstreamForms'
 
@@ -11,7 +10,7 @@ export default async function NewWorkstreamPage({
 }: {
   searchParams: Promise<{ project?: string }>
 }) {
-  const profile = await requireManager()
+  const profile = await requirePermission('workstreams.create')
   const params = await searchParams
   const projectId = typeof params.project === 'string' ? params.project : ''
 
@@ -29,11 +28,8 @@ export default async function NewWorkstreamPage({
 
   if (!project) notFound()
 
-  // PM hanya boleh buat workstream di project miliknya.
-  if (
-    profile.role === 'PROJECT_MANAGER' &&
-    !(await isProjectManager(project.id, profile.id))
-  ) {
+  // Hanya di project tempat ia boleh membuat workstream.
+  if (!(await hasPermission(profile.id, 'workstreams.create', project.id))) {
     notFound()
   }
 

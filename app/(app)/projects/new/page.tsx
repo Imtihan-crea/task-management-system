@@ -1,11 +1,11 @@
 import Link from 'next/link'
-import { requireManager } from '@/lib/auth/session'
+import { requirePermission } from '@/lib/auth/current-access'
 import { AppShell } from '@/components/layout/AppShell'
 import { ProjectForm } from '@/components/projects/ProjectForm'
 import { getActiveUsers } from '@/lib/data/users'
 
 export default async function NewProjectPage() {
-  await requireManager()
+  await requirePermission('projects.create')
   const managers = await getActiveUsers(['ADMIN', 'PROJECT_MANAGER'])
 
   return (

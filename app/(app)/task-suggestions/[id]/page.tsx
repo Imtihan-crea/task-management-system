@@ -2,7 +2,6 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { can } from '@/lib/auth/permissions'
 import { SUGGESTION_STATUS_LABELS } from '@/lib/auth/roles'
 import { AppShell } from '@/components/layout/AppShell'
 import { formatDate } from '@/lib/utils/dates'
@@ -13,7 +12,7 @@ import {
   type ActivityEntry,
 } from '@/components/activity/ActivityTimeline'
 import { getActiveUsers } from '@/lib/data/users'
-import { isProjectManager } from '@/lib/data/projects'
+import { hasPermission } from '@/lib/auth/current-access'
 import type { TaskSuggestion } from '@/types/suggestion'
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -43,19 +42,15 @@ export default async function SuggestionDetailPage({
   if (!suggestion) notFound()
 
   const isCreator = suggestion.suggested_by === profile.id
-  const isAdmin = profile.role === 'ADMIN'
-  const isPM = profile.role === 'PROJECT_MANAGER'
-  const pmInScope = isPM && (await isProjectManager(suggestion.project_id, profile.id))
+  // Reviewer = pemegang suggestions.review di project ini (Admin, PM project, atau diberi per akun).
+  const reviewerHere = await hasPermission(profile.id, 'suggestions.review', suggestion.project_id)
 
-  // Scope baca: creator, PM dalam scope, admin. Member lain tidak boleh.
-  if (!isCreator && !isAdmin && !pmInScope) {
+  // Scope baca: creator atau reviewer project ini. Member lain tidak boleh.
+  if (!isCreator && !reviewerHere) {
     notFound()
   }
 
-  const canReview =
-    can(profile.role, 'suggestions.review') &&
-    (isAdmin || pmInScope) &&
-    suggestion.status === 'PENDING'
+  const canReview = reviewerHere && suggestion.status === 'PENDING'
   const canResubmit = isCreator && suggestion.status === 'REVISION_REQUESTED'
 
   const [{ data: project }, { data: workstream }, { data: creator }, { data: reviewer }, { data: reviewerAssignee }] =

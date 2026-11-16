@@ -15,9 +15,9 @@ import {
   type ActivityEntry,
 } from '@/components/activity/ActivityTimeline'
 import { getActiveUsers } from '@/lib/data/users'
-import { isProjectManager } from '@/lib/data/projects'
+import { applyProjectScope, hasPermission, permissionProjects } from '@/lib/auth/current-access'
 import { can } from '@/lib/auth/permissions'
-import { canActOnTask, canCancelTask } from '@/lib/auth/task-access'
+import { canActOnTask } from '@/lib/auth/task-access'
 import type { Task, TaskStatus } from '@/types/task'
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -48,29 +48,22 @@ export default async function TaskDetailPage({
   if (!task) notFound()
 
   const isOwner = task.assignee_id === profile.id
-  const isAdmin = profile.role === 'ADMIN'
-  const isPM = profile.role === 'PROJECT_MANAGER'
+  // Izin di project task ini: peran + aturan per akun (lib/auth/access.ts).
+  const [canFullEdit, canDelete, canCancel] = await Promise.all([
+    hasPermission(profile.id, 'tasks.edit', task.project_id),
+    hasPermission(profile.id, 'tasks.delete', task.project_id),
+    hasPermission(profile.id, 'tasks.cancel', task.project_id),
+  ])
 
-  // Scope baca: member hanya task miliknya; PM project miliknya ATAU task
-  // yang di-assign ke dirinya (audit A4: link email TASK_ASSIGNED tidak 404).
-  if (profile.role === 'TEAM_MEMBER' && !isOwner) {
+  // Scope baca: assignee, atau pemegang izin kelola task di project ini
+  // (Admin, PM project; audit A4: link email TASK_ASSIGNED tidak 404).
+  // VIEWER tetap boleh membaca semua task (aturan lama).
+  if (profile.role !== 'VIEWER' && !isOwner && !canFullEdit && !canDelete && !canCancel) {
     notFound()
   }
-  let pmOwnsProject = false
-  if (isPM) {
-    pmOwnsProject = await isProjectManager(task.project_id, profile.id)
-    if (!pmOwnsProject && !isOwner) {
-      notFound()
-    }
-  }
-  const canFullEdit = isAdmin || (isPM && pmOwnsProject)
-  // Sama dengan canActOnTask di server action.
-  const canChangeStatus = canActOnTask(profile.role, {
-    isAssignee: isOwner,
-    managesProject: pmOwnsProject,
-  })
-  const canDelete = isAdmin || (isPM && pmOwnsProject)
-  const canCancel = canCancelTask(profile.role, { managesProject: pmOwnsProject })
+  // Sama dengan canActOnLoadedTask di server action.
+  const canChangeStatus =
+    canFullEdit || canActOnTask(profile.role, { isAssignee: isOwner, managesProject: false })
   const canSubmitEvidence = can(profile.role, 'tasks.submitEvidenceOwn') && canChangeStatus
 
   const [{ data: project }, { data: workstream }, { data: assignee }, { data: creator }] =
@@ -88,14 +81,10 @@ export default async function TaskDetailPage({
   // Data untuk form edit (hanya diambil kalau boleh edit penuh).
   // PM: dropdown project hanya project miliknya (audit C3; server menolak
   // pindah ke project PM lain).
-  let projectsQuery = admin.from('projects').select('id, code, name').order('name', { ascending: true }).limit(500)
-  if (isPM && canFullEdit) {
-    const { data: links } = await admin.from('project_managers').select('project_id').eq('user_id', profile.id)
-    projectsQuery = projectsQuery.in(
-      'id',
-      ((links ?? []) as { project_id: string }[]).map((l) => l.project_id)
-    )
-  }
+  const projectsQuery = applyProjectScope(
+    admin.from('projects').select('id, code, name').order('name', { ascending: true }).limit(500),
+    await permissionProjects(profile.id, 'tasks.edit')
+  )
   const [projectsRes, workstreamsRes, users] = canFullEdit
     ? await Promise.all([
         projectsQuery,

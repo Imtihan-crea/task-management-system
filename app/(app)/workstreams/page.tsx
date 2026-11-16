@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { requireProfile } from '@/lib/auth/session'
+import { managedProjects } from '@/lib/auth/current-access'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { AppShell } from '@/components/layout/AppShell'
 import { PageHeader, EmptyState } from '@/components/ui/primitives'
@@ -24,12 +25,12 @@ export default async function WorkstreamsPage({
 
   // Scope mengikuti project scope (§18 PRD 08-09 + §34 PRD 03-04).
   let projectIds: string[] | null = null
-  if (role === 'PROJECT_MANAGER') {
-    const { data: links } = await admin
-      .from('project_managers')
-      .select('project_id')
-      .eq('user_id', profile.id)
-    projectIds = ((links ?? []) as { project_id: string }[]).map((l) => l.project_id)
+  const granted = role === 'PROJECT_MANAGER' || role === 'TEAM_MEMBER' ? await managedProjects(profile.id) : null
+  if (granted?.all) {
+    projectIds = null
+  } else if (role === 'PROJECT_MANAGER') {
+    // Project kelolaan + yang diberi lewat aturan per akun.
+    projectIds = granted!.ids
   } else if (role === 'TEAM_MEMBER') {
     const { data: myTasks } = await admin
       .from('tasks')
@@ -38,7 +39,7 @@ export default async function WorkstreamsPage({
       .eq('is_deleted', false)
       .limit(1000)
     projectIds = [
-      ...new Set(((myTasks ?? []) as { project_id: string }[]).map((t) => t.project_id)),
+      ...new Set([...((myTasks ?? []) as { project_id: string }[]).map((t) => t.project_id), ...granted!.ids]),
     ]
   }
 

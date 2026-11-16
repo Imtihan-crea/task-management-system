@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { can } from '@/lib/auth/permissions'
+import { hasPermission, managedProjects } from '@/lib/auth/current-access'
 import { PROJECT_STATUSES } from '@/lib/auth/roles'
 import { AppShell } from '@/components/layout/AppShell'
 import { ProjectStatusBadge } from '@/components/ui/Badges'
@@ -61,7 +61,7 @@ export default async function ProjectsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const profile = await requireProfile()
-  const canCreate = can(profile.role, 'projects.create')
+  const canCreate = await hasPermission(profile.id, 'projects.create')
 
   const params = await searchParams
   const q = sanitize(typeof params.q === 'string' ? params.q : undefined)
@@ -116,9 +116,11 @@ export default async function ProjectsPage({
     }
   }
 
-  // MEMBER hanya melihat project yang dia terlibat (punya task aktif di sana).
+  // MEMBER hanya melihat project yang dia terlibat (punya task aktif di sana)
+  // atau yang boleh ia kelola lewat aturan per akun.
   let visibleProjects = projects
-  if (profile.role === 'TEAM_MEMBER') {
+  const granted = profile.role === 'TEAM_MEMBER' ? await managedProjects(profile.id) : null
+  if (granted && !granted.all) {
     const { data: myTasks } = await admin
       .from('tasks')
       .select('project_id')
@@ -126,9 +128,10 @@ export default async function ProjectsPage({
       .eq('is_deleted', false)
       .limit(1000)
 
-    const myProjectIds = new Set(
-      ((myTasks ?? []) as { project_id: string }[]).map((t) => t.project_id)
-    )
+    const myProjectIds = new Set([
+      ...((myTasks ?? []) as { project_id: string }[]).map((t) => t.project_id),
+      ...granted.ids,
+    ])
     visibleProjects = projects.filter((p) => myProjectIds.has(p.id))
   }
 

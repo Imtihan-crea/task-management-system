@@ -1,7 +1,8 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { requireAdmin } from '@/lib/auth/session'
+import { requireProfile } from '@/lib/auth/session'
+import { hasPermission, requirePermission } from '@/lib/auth/current-access'
 import { newUserRoleError, superAdminError } from '@/lib/auth/super-admin'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isUserRole, isUserStatus } from '@/lib/auth/roles'
@@ -113,15 +114,16 @@ async function wouldRemoveLastAdmin(targetId: string, nextRole: UserRole, nextSt
   })
 }
 
-/** Super Admin (migrasi 018). Kolom belum ada / gagal baca = bukan Super Admin. */
+/** Super Admin atau Developer (migrasi 018/019). Gagal baca = bukan keduanya. */
 async function isSuperAdmin(userId: string): Promise<boolean> {
   const { data, error } = await createAdminClient()
     .from('profiles')
-    .select('is_super_admin')
+    .select('is_super_admin, is_developer')
     .eq('id', userId)
-    .maybeSingle<{ is_super_admin: boolean }>()
+    .maybeSingle<{ is_super_admin: boolean; is_developer: boolean }>()
   if (error) console.warn('[super-admin] read failed:', error.message)
-  return data?.is_super_admin === true
+  // Developer setara Super Admin untuk aturan ini (migrasi 019).
+  return data?.is_super_admin === true || data?.is_developer === true
 }
 
 /** Cek aturan Super Admin untuk aksi admin terhadap user lain (lib/auth/super-admin.ts). */
@@ -142,7 +144,7 @@ export async function inviteUser(
   _prev: UserFormState,
   formData: FormData
 ): Promise<UserFormState> {
-  const actor = await requireAdmin()
+  const actor = await requirePermission('users.invite')
 
   const fullName = readLimitedField(formData, 'full_name')
   const email = readLimitedField(formData, 'email').toLowerCase()
@@ -362,7 +364,7 @@ export async function createUserWithPassword(
   _prev: UserFormState,
   formData: FormData
 ): Promise<UserFormState> {
-  const actor = await requireAdmin()
+  const actor = await requirePermission('users.invite')
 
   const fullName = readLimitedField(formData, 'full_name')
   const email = readLimitedField(formData, 'email').toLowerCase()
@@ -514,7 +516,7 @@ export async function updateUser(
   _prev: UserFormState,
   formData: FormData
 ): Promise<UserFormState> {
-  const adminProfile = await requireAdmin()
+  const adminProfile = await requirePermission('users.edit')
 
   const targetId = readLimitedField(formData, 'id')
   const fullName = readLimitedField(formData, 'full_name')
@@ -536,6 +538,12 @@ export async function updateUser(
 
   const superError = await superGuard(adminProfile.id, { id: targetId, role: current.role }, { role, status })
   if (superError) return { error: superError }
+  if (role !== current.role && !(await hasPermission(adminProfile.id, 'users.changeRole'))) {
+    return { error: 'Anda tidak punya izin mengubah role.' }
+  }
+  if (status !== current.status && !(await hasPermission(adminProfile.id, status === 'ACTIVE' ? 'users.activate' : 'users.deactivate'))) {
+    return { error: 'Anda tidak punya izin mengubah status user.' }
+  }
 
   const statusError = userEditStatusError({
     actorId: adminProfile.id,
@@ -614,7 +622,7 @@ export async function setUserStatus(
   _prev: UserFormState,
   formData: FormData
 ): Promise<UserFormState> {
-  const adminProfile = await requireAdmin()
+  const adminProfile = await requireProfile()
 
   const targetId = readLimitedField(formData, 'id')
   const status = readLimitedField(formData, 'status')
@@ -636,6 +644,9 @@ export async function setUserStatus(
 
   const superError = await superGuard(adminProfile.id, { id: targetId, role: current.role }, { status })
   if (superError) return { error: superError }
+  if (!(await hasPermission(adminProfile.id, status === 'ACTIVE' ? 'users.activate' : 'users.deactivate'))) {
+    return { error: 'Anda tidak punya izin mengubah status user.' }
+  }
 
   const changeError = quickStatusChangeError({
     actorId: adminProfile.id,
@@ -694,7 +705,7 @@ export async function generateAccessLink(
   _prev: UserFormState,
   formData: FormData
 ): Promise<UserFormState> {
-  const actor = await requireAdmin()
+  const actor = await requirePermission('users.edit')
   const targetId = readLimitedField(formData, 'id')
 
   const admin = createAdminClient()

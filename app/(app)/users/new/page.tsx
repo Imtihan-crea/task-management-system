@@ -1,11 +1,11 @@
 import Link from 'next/link'
-import { requireAdmin } from '@/lib/auth/session'
+import { requirePermission } from '@/lib/auth/current-access'
 import { AppShell } from '@/components/layout/AppShell'
 import { CreateUserForm } from '@/components/users/CreateUserForm'
 import { InviteUserForm } from '@/components/users/InviteUserForm'
 
 export default async function AddUserPage() {
-  await requireAdmin()
+  await requirePermission('users.invite')
 
   return (
     <AppShell>

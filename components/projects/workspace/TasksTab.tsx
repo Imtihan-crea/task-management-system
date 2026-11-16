@@ -39,7 +39,7 @@ export async function TasksTab({
     .eq('project_id', projectId)
     .eq('is_deleted', false)
   // TEAM_MEMBER hanya task miliknya (sama dengan /tasks).
-  if (viewer.role === 'TEAM_MEMBER') taskQuery = taskQuery.eq('assignee_id', viewer.id)
+  if (viewer.role === 'TEAM_MEMBER' && !viewer.managesProject) taskQuery = taskQuery.eq('assignee_id', viewer.id)
   // Urutan dipasang sekali: builder PostgREST mutable, .order di dalam callback menumpuk per halaman.
   const orderedTasks = taskQuery.order('deadline', { ascending: true }).order('id')
   // PM project lain hanya bisa membuka task yang di-assign kepadanya.

@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { requireProfile } from '@/lib/auth/session'
+import { hasPermission } from '@/lib/auth/current-access'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isTaskPriority } from '@/lib/auth/roles'
 import {
@@ -54,7 +55,7 @@ async function assertCanReview(
   suggestion: Pick<TaskSuggestion, 'project_id'>,
   profile: { id: string; role: string }
 ): Promise<boolean> {
-  return canManageProjectFor(profile, suggestion.project_id)
+  return canManageProjectFor(profile, suggestion.project_id, 'suggestions.review')
 }
 
 export async function createSuggestion(
@@ -303,7 +304,7 @@ export async function reviewSuggestion(
 ): Promise<SuggestionFormState> {
   const profile = await requireProfile()
 
-  if (!can(profile.role, 'suggestions.review')) {
+  if (!(await hasPermission(profile.id, 'suggestions.review'))) {
     return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 

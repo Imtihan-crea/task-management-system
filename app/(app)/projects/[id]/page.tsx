@@ -15,6 +15,7 @@ import { MeetingsTab } from '@/components/projects/workspace/MeetingsTab'
 import { ActivityTab, MembersTab } from '@/components/projects/workspace/ActivityMembersTabs'
 import { SettingsTab } from '@/components/projects/workspace/SettingsTab'
 import { isProjectManager } from '@/lib/data/projects'
+import { hasPermission } from '@/lib/auth/current-access'
 import { canSuggestForProject } from '@/lib/auth/project-access'
 import type { Project } from '@/types/project'
 
@@ -49,8 +50,6 @@ export default async function ProjectDetailPage({
   const str = (v: string | string[] | undefined) => (typeof v === 'string' ? v : '')
   const tab = parseTab(str(query.tab))
 
-  const canEditProject = can(profile.role, 'projects.edit')
-  const canManageWorkstream = can(profile.role, 'workstreams.create')
 
   const admin = createAdminClient()
   const { data: project } = await admin
@@ -65,8 +64,16 @@ export default async function ProjectDetailPage({
     profile.role === 'ADMIN' ||
     (profile.role === 'PROJECT_MANAGER' && (await isProjectManager(id, profile.id)))
   const canEditThis = profile.role === 'ADMIN' || isOwner
+  // Izin di project ini: peran + aturan per akun (lib/auth/access.ts).
+  const [canEditProject, canManageWorkstream, canCreateTask, canEditTask] = await Promise.all([
+    hasPermission(profile.id, 'projects.edit', id),
+    hasPermission(profile.id, 'workstreams.create', id),
+    hasPermission(profile.id, 'tasks.create', id),
+    hasPermission(profile.id, 'tasks.edit', id),
+  ])
+  const hasGrantHere = canEditProject || canManageWorkstream || canCreateTask || canEditTask
 
-  if (profile.role === 'TEAM_MEMBER') {
+  if (profile.role === 'TEAM_MEMBER' && !hasGrantHere) {
     const { count: involved } = await admin
       .from('tasks')
       .select('id', { count: 'exact', head: true })
@@ -164,7 +171,7 @@ export default async function ProjectDetailPage({
         <Tabs
           label="Workspace Project"
           items={TABS.filter(
-            (t) => t.key !== 'settings' || (canEditThis && canEditProject)
+            (t) => t.key !== 'settings' || canEditProject
           ).map((t) => ({
             key: t.key,
             label: t.label,
@@ -183,7 +190,7 @@ export default async function ProjectDetailPage({
         )}
         {tab === 'workstreams' && (
           <Suspense fallback={<SkeletonRows rows={3} />}>
-            <WorkstreamsTab projectId={id} canManage={canEditThis && canManageWorkstream} />
+            <WorkstreamsTab projectId={id} canManage={canManageWorkstream} />
           </Suspense>
         )}
         {tab === 'tasks' && (
@@ -193,9 +200,9 @@ export default async function ProjectDetailPage({
           >
             <TasksTab
               projectId={id}
-              canCreate={can(profile.role, 'tasks.create') && canEditThis}
+              canCreate={canCreateTask}
               filters={{ ws: fWs, status: fStatus, priority: fPriority }}
-              viewer={{ id: profile.id, role: profile.role, managesProject: isOwner }}
+              viewer={{ id: profile.id, role: profile.role, managesProject: canEditTask }}
             />
           </Suspense>
         )}
@@ -224,7 +231,7 @@ export default async function ProjectDetailPage({
             <MembersTab projectId={id} />
           </Suspense>
         )}
-        {tab === 'settings' && canEditThis && canEditProject && (
+        {tab === 'settings' && canEditProject && (
           <Suspense fallback={<SkeletonRows rows={3} />}>
             <SettingsTab projectId={id} />
           </Suspense>

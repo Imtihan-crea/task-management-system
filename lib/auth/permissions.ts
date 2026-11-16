@@ -14,6 +14,8 @@ export type Permission =
   | 'users.changeRole'
   | 'users.activate'
   | 'users.deactivate'
+  // Hanya Super Admin / Developer (lib/auth/access.ts), tidak ada di paket peran.
+  | 'permissions.manage'
   | 'profile.viewOwn'
   | 'profile.editOwn'
   | 'projects.view'
@@ -27,6 +29,7 @@ export type Permission =
   | 'tasks.edit'
   | 'tasks.changeStatusOwn'
   | 'tasks.submitEvidenceOwn'
+  | 'tasks.cancel'
   | 'tasks.delete'
   | 'suggestions.create'
   | 'suggestions.review'
@@ -57,6 +60,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'tasks.view',
     'tasks.create',
     'tasks.edit',
+    'tasks.cancel',
     'tasks.changeStatusOwn',
     'tasks.submitEvidenceOwn',
     'tasks.delete',
@@ -81,6 +85,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'tasks.view',
     'tasks.create',
     'tasks.edit',
+    'tasks.cancel',
     'tasks.changeStatusOwn',
     'tasks.submitEvidenceOwn',
     'tasks.delete',

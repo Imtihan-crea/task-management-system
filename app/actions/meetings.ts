@@ -2,9 +2,10 @@
 
 import { revalidatePath } from 'next/cache'
 import { requireProfile } from '@/lib/auth/session'
+import { hasPermission } from '@/lib/auth/current-access'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { can } from '@/lib/auth/permissions'
-import { CLOSED_PROJECT_ERROR, isProjectClosed, isProjectManager } from '@/lib/data/projects'
+import { CLOSED_PROJECT_ERROR, isProjectClosed } from '@/lib/data/projects'
 import { assertCanCreateInProject, getMeetingAccess } from '@/lib/data/meeting-access'
 import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
@@ -1694,7 +1695,7 @@ export async function createTaskFromActionItem(
   }
 
   // PM hanya boleh di project miliknya (aturan task yang existing, §47).
-  if (profile.role === 'PROJECT_MANAGER' && !(await isProjectManager(projectId, profile.id))) {
+  if (!(await hasPermission(profile.id, 'tasks.create', projectId))) {
     return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
   if (await isProjectClosed(projectId)) return { error: CLOSED_PROJECT_ERROR } // audit B14

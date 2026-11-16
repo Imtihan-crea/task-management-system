@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { readSheet, SheetNotFoundError } from 'read-excel-file/node'
-import { requireManager } from '@/lib/auth/session'
+import { requirePermission } from '@/lib/auth/current-access'
 import { CLOSED_PROJECT_ERROR, canManageProjectFor, isProjectClosed } from '@/lib/data/projects'
 import { readLimitedField } from '@/lib/forms/limits'
 import { TIMELINE_SHEET } from '@/lib/import/timeline'
@@ -12,7 +12,7 @@ const MAX_FILE_BYTES = 4 * 1024 * 1024
 
 /** Import task dari Excel format "Timeline Harian" (sheet Timeline); inti di lib/import/run.ts. */
 export async function importTimeline(_prev: ImportState, formData: FormData): Promise<ImportState> {
-  const profile = await requireManager()
+  const profile = await requirePermission('tasks.create')
   const projectId = readLimitedField(formData, 'project_id')
   const fallbackAssignee = readLimitedField(formData, 'fallback_assignee_id')
   const file = formData.get('file')
@@ -20,7 +20,7 @@ export async function importTimeline(_prev: ImportState, formData: FormData): Pr
   if (!projectId) return { error: 'Pilih Project tujuan.' }
   if (!(file instanceof File) || file.size === 0) return { error: 'Pilih file Excel (.xlsx).' }
   if (file.size > MAX_FILE_BYTES) return { error: 'File lebih dari 4 MB.' }
-  if (!(await canManageProjectFor(profile, projectId))) {
+  if (!(await canManageProjectFor(profile, projectId, 'tasks.create'))) {
     return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
   if (await isProjectClosed(projectId)) return { error: CLOSED_PROJECT_ERROR }

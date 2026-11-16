@@ -3,8 +3,6 @@
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import type { UserRole } from '@/types/profile'
-import { can } from '@/lib/auth/permissions'
 import { KasuatLogo } from '@/components/brand/KasuatLogo'
 
 type NavItem = {
@@ -79,11 +77,12 @@ const ICONS: Record<string, string> = {
 }
 
 export function Sidebar({
-  role,
+  allowed,
   collapsed,
   onNavigate,
 }: {
-  role: UserRole
+  /** Izin menu yang dimiliki user (dihitung server di app/(app)/layout.tsx). */
+  allowed: string[]
   collapsed?: boolean
   onNavigate?: () => void
 }) {
@@ -93,7 +92,7 @@ export function Sidebar({
     <nav aria-label="Navigasi utama" className="flex h-full flex-col gap-1 overflow-y-auto p-3">
       {GROUPS.map((group) => {
         const visible = group.items.filter(
-          (item) => item.permission === null || can(role, item.permission as never)
+          (item) => item.permission === null || allowed.includes(item.permission)
         )
         if (visible.length === 0) return null
         return (

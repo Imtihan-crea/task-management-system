@@ -1,5 +1,5 @@
 import Link from 'next/link'
-import { requireManager } from '@/lib/auth/session'
+import { applyProjectScope, permissionProjects, requirePermission } from '@/lib/auth/current-access'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { AppShell } from '@/components/layout/AppShell'
 import { ImportTimelineForm } from '@/components/tasks/ImportTimelineForm'
@@ -10,18 +10,16 @@ export default async function ImportTasksPage({
 }: {
   searchParams: Promise<{ project?: string }>
 }) {
-  const profile = await requireManager()
+  const profile = await requirePermission('tasks.create')
   const params = await searchParams
   const presetProject = typeof params.project === 'string' ? params.project : ''
   const admin = createAdminClient()
 
-  // PM hanya bisa import ke project miliknya (sama dengan halaman Buat Task).
-  let query = admin.from('projects').select('id, code, name').not('status', 'in', '(COMPLETED,CANCELLED)').order('name').limit(500)
-  if (profile.role === 'PROJECT_MANAGER') {
-    const { data: links } = await admin.from('project_managers').select('project_id').eq('user_id', profile.id)
-    const ids = ((links ?? []) as { project_id: string }[]).map((l) => l.project_id)
-    query = query.in('id', ids.length ? ids : ['00000000-0000-0000-0000-000000000000'])
-  }
+  // Hanya project tempat ia boleh membuat task (sama dengan halaman Buat Task).
+  const query = applyProjectScope(
+    admin.from('projects').select('id, code, name').not('status', 'in', '(COMPLETED,CANCELLED)').order('name').limit(500),
+    await permissionProjects(profile.id, 'tasks.create')
+  )
   const [{ data: projects }, users] = await Promise.all([query, getActiveUsers()])
 
   return (

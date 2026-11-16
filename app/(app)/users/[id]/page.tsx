@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
-import { requireAdmin } from '@/lib/auth/session'
+import { requirePermission } from '@/lib/auth/current-access'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ROLE_LABELS, STATUS_LABELS } from '@/lib/auth/roles'
 import { AppShell } from '@/components/layout/AppShell'
@@ -33,7 +33,7 @@ export default async function UserDetailPage({
 }: {
   params: Promise<{ id: string }>
 }) {
-  const viewer = await requireAdmin()
+  const viewer = await requirePermission('users.view')
 
   const { id } = await params
   const admin = createAdminClient()

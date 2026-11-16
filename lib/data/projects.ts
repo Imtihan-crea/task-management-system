@@ -1,7 +1,8 @@
 import 'server-only'
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { canManageProject } from '@/lib/auth/project-access'
+import { hasPermission } from '@/lib/auth/current-access'
+import type { Permission } from '@/lib/auth/permissions'
 
 /**
  * Satu-satunya sumber kebenaran untuk "siapa PM project ini":
@@ -31,17 +32,15 @@ export async function isProjectManager(
 }
 
 /**
- * canManageProject + query PM hanya bila role-nya PM (ADMIN tanpa query).
+ * Boleh `permission` di project ini? Peran + aturan per akun (lib/auth/access.ts).
  * Dipakai server action untuk cek kelola project/task/workstream/suggestion.
  */
 export async function canManageProjectFor(
-  profile: { id: string; role: string },
-  projectId: string
+  profile: { id: string },
+  projectId: string,
+  permission: Permission
 ): Promise<boolean> {
-  return canManageProject(
-    profile.role,
-    profile.role === 'PROJECT_MANAGER' && (await isProjectManager(projectId, profile.id))
-  )
+  return hasPermission(profile.id, permission, projectId)
 }
 
 /**

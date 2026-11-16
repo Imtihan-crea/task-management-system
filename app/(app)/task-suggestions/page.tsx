@@ -1,5 +1,6 @@
 import Link from 'next/link'
 import { requireProfile } from '@/lib/auth/session'
+import { applyProjectScope, permissionProjects } from '@/lib/auth/current-access'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { can } from '@/lib/auth/permissions'
 import { SUGGESTION_STATUSES, SUGGESTION_STATUS_LABELS } from '@/lib/auth/roles'
@@ -27,8 +28,6 @@ export default async function SuggestionsPage({
 }) {
   const profile = await requireProfile()
   const canCreate = can(profile.role, 'suggestions.create')
-  const isAdmin = profile.role === 'ADMIN'
-  const isPM = profile.role === 'PROJECT_MANAGER'
 
   const params = await searchParams
   const str = (v: string | string[] | undefined) => (typeof v === 'string' ? v : '')
@@ -38,40 +37,28 @@ export default async function SuggestionsPage({
 
   const admin = createAdminClient()
 
-  // Scope baca: creator lihat miliknya; PM lihat di project miliknya; admin semua.
+  // Scope baca: creator lihat miliknya; reviewer (suggestions.review: Admin, PM
+  // project, atau diberi per akun) lihat di project tempat ia boleh review.
+  const reviewScope = await permissionProjects(profile.id, 'suggestions.review')
   let scopedIds: string[] | null = null // null = semua
-  if (!isAdmin) {
-    if (isPM && view !== 'mine') {
-      const { data: links } = await admin
-        .from('project_managers')
-        .select('project_id')
-        .eq('user_id', profile.id)
-      const myProjectIds = ((links ?? []) as { project_id: string }[]).map((l) => l.project_id)
-
-      const { data: own } = await admin
-        .from('task_suggestions')
-        .select('id')
-        .eq('suggested_by', profile.id)
-        .limit(500)
-      const ownIds = ((own ?? []) as { id: string }[]).map((o) => o.id)
-
-      const { data: inScope } = myProjectIds.length
-        ? await admin.from('task_suggestions').select('id').in('project_id', myProjectIds).limit(500)
-        : { data: [] }
-      scopedIds = [
-        ...new Set([
-          ...ownIds,
-          ...((inScope ?? []) as { id: string }[]).map((s) => s.id),
-        ]),
-      ]
+  if (!(reviewScope.all && reviewScope.exclude.length === 0)) {
+    const { data: own } = await admin
+      .from('task_suggestions')
+      .select('id')
+      .eq('suggested_by', profile.id)
+      .limit(500)
+    const ownIds = ((own ?? []) as { id: string }[]).map((o) => o.id)
+    const canReviewSome = reviewScope.all || reviewScope.include.length > 0
+    if (canReviewSome && view !== 'mine') {
+      const { data: inScope } = await applyProjectScope(
+        admin.from('task_suggestions').select('id').limit(500),
+        reviewScope,
+        'project_id'
+      )
+      scopedIds = [...new Set([...ownIds, ...((inScope ?? []) as { id: string }[]).map((s) => s.id)])]
     } else {
-      // TEAM_MEMBER atau view=mine: hanya miliknya.
-      const { data: own } = await admin
-        .from('task_suggestions')
-        .select('id')
-        .eq('suggested_by', profile.id)
-        .limit(500)
-      scopedIds = ((own ?? []) as { id: string }[]).map((o) => o.id)
+      // Bukan reviewer atau view=mine: hanya miliknya.
+      scopedIds = ownIds
     }
   }
 

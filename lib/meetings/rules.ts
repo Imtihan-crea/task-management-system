@@ -88,12 +88,20 @@ export type MeetingAccess = {
   isOwner: boolean
   isParticipant: boolean
   isProjectPM: boolean
+  /**
+   * Punya izin meetings.edit untuk project meeting ini (peran + aturan per akun,
+   * lib/auth/access.ts). Kosong = dihitung dari peran (ADMIN, atau PM project).
+   */
+  hasManageGrant?: boolean
 }
+
+const manageGrant = (access: MeetingAccess, role: string) =>
+  access.hasManageGrant ?? (role === 'ADMIN' || (role === 'PROJECT_MANAGER' && access.isProjectPM))
 
 /** Boleh baca: admin, owner, peserta, atau PM project terkait. */
 export function canViewMeeting(access: MeetingAccess, role: string): boolean {
   if (!access.meeting) return false
-  if (role === 'ADMIN') return true
+  if (role === 'ADMIN' || access.hasManageGrant) return true
   return access.isOwner || access.isParticipant || access.isProjectPM
 }
 
@@ -103,10 +111,10 @@ export function canViewMeeting(access: MeetingAccess, role: string): boolean {
  */
 export function canManageMeetingFull(access: MeetingAccess, role: string): boolean {
   if (!access.meeting) return false
-  if (role === 'ADMIN') return true
+  if (manageGrant(access, role)) return true
   if (role === 'VIEWER') return false
   if (access.isOwner) return true
-  if (role === 'PROJECT_MANAGER') return access.isProjectPM || access.isParticipant
+  if (role === 'PROJECT_MANAGER') return access.isParticipant
   return false
 }
 

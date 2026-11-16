@@ -1,6 +1,6 @@
 import { Suspense } from 'react'
 import { requireProfile } from '@/lib/auth/session'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { hasPermission } from '@/lib/auth/current-access'
 import { can } from '@/lib/auth/permissions'
 import { AppShell } from '@/components/layout/AppShell'
 import { ButtonLink, PageHeader } from '@/components/ui/primitives'
@@ -21,14 +21,7 @@ export default async function TasksPage({
 }) {
   const profile = await requireProfile()
   // PM tanpa project tidak bisa membuat task (dropdown project kosong; audit C8).
-  let canCreate = can(profile.role, 'tasks.create')
-  if (canCreate && profile.role === 'PROJECT_MANAGER') {
-    const { count } = await createAdminClient()
-      .from('project_managers')
-      .select('project_id', { count: 'exact', head: true })
-      .eq('user_id', profile.id)
-    canCreate = (count ?? 0) > 0
-  }
+  const canCreate = await hasPermission(profile.id, 'tasks.create')
 
   const params = await searchParams
   const str = (v: string | string[] | undefined) => (typeof v === 'string' ? v : '')

@@ -2,6 +2,7 @@ import 'server-only'
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isProjectManager } from '@/lib/data/projects'
+import { hasPermission, permissionProjects } from '@/lib/auth/current-access'
 import type { MeetingAccess } from '@/lib/meetings/rules'
 import type { MeetingStatus } from '@/types/meeting'
 import type { UserRole } from '@/types/profile'
@@ -41,7 +42,7 @@ export async function getMeetingAccess(
 
   const isOwner = meeting.organizer_id === userId || meeting.created_by === userId
 
-  const [{ data: part }, isProjectPM] = await Promise.all([
+  const [{ data: part }, isProjectPM, hasManageGrant] = await Promise.all([
     admin
       .from('meeting_participants')
       .select('id')
@@ -51,6 +52,10 @@ export async function getMeetingAccess(
     meeting.project_id && role === 'PROJECT_MANAGER'
       ? isProjectManager(meeting.project_id, userId)
       : Promise.resolve(false),
+    // Meeting tanpa project: hanya pemegang meetings.edit di semua project.
+    meeting.project_id
+      ? hasPermission(userId, 'meetings.edit', meeting.project_id)
+      : permissionProjects(userId, 'meetings.edit').then((s) => s.all),
   ])
 
   return {
@@ -58,6 +63,7 @@ export async function getMeetingAccess(
     isOwner,
     isParticipant: Boolean(part),
     isProjectPM,
+    hasManageGrant,
   }
 }
 

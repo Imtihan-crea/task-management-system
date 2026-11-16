@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { requireManager } from '@/lib/auth/session'
+import { requirePermission } from '@/lib/auth/current-access'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { canManageProjectFor } from '@/lib/data/projects'
 import { logActivity } from '@/lib/activity-log/service'
@@ -17,7 +17,7 @@ export async function createWorkstream(
   _prev: WorkstreamFormState,
   formData: FormData
 ): Promise<WorkstreamFormState> {
-  const profile = await requireManager()
+  const profile = await requirePermission('workstreams.create')
 
   const projectId = readLimitedField(formData, 'project_id')
   const name = readLimitedField(formData, 'name')
@@ -25,7 +25,7 @@ export async function createWorkstream(
 
   if (!projectId) return { error: 'Project wajib diisi.' }
   if (!name) return { error: 'Nama Workstream wajib diisi.' }
-  if (!(await canManageProjectFor(profile, projectId))) {
+  if (!(await canManageProjectFor(profile, projectId, 'workstreams.create'))) {
     return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
@@ -75,7 +75,7 @@ export async function updateWorkstream(
   _prev: WorkstreamFormState,
   formData: FormData
 ): Promise<WorkstreamFormState> {
-  const profile = await requireManager()
+  const profile = await requirePermission('workstreams.edit')
 
   const id = readLimitedField(formData, 'id')
   const name = readLimitedField(formData, 'name')
@@ -92,7 +92,7 @@ export async function updateWorkstream(
     .single<{ project_id: string; code: string }>()
 
   if (!current) return { error: 'Workstream tidak ditemukan.' }
-  if (!(await canManageProjectFor(profile, current.project_id))) {
+  if (!(await canManageProjectFor(profile, current.project_id, 'workstreams.edit'))) {
     return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
@@ -125,7 +125,7 @@ export async function deleteWorkstream(
   _prev: WorkstreamFormState,
   formData: FormData
 ): Promise<WorkstreamFormState> {
-  const profile = await requireManager()
+  const profile = await requirePermission('workstreams.delete')
 
   const id = readLimitedField(formData, 'id')
   if (!id) return { error: 'Workstream tidak ditemukan.' }
@@ -138,7 +138,7 @@ export async function deleteWorkstream(
     .single<{ project_id: string; code: string; name: string }>()
 
   if (!current) return { error: 'Workstream tidak ditemukan.' }
-  if (!(await canManageProjectFor(profile, current.project_id))) {
+  if (!(await canManageProjectFor(profile, current.project_id, 'workstreams.delete'))) {
     return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 

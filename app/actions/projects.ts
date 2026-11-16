@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { requireManager } from '@/lib/auth/session'
+import { requirePermission } from '@/lib/auth/current-access'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isProjectStatus } from '@/lib/auth/roles'
 import { canManageProjectFor } from '@/lib/data/projects'
@@ -68,7 +68,7 @@ export async function createProject(
   _prev: ProjectFormState,
   formData: FormData
 ): Promise<ProjectFormState> {
-  const actor = await requireManager()
+  const actor = await requirePermission('projects.create')
 
   const name = readLimitedField(formData, 'name')
   const client = readLimitedField(formData, 'client')
@@ -155,7 +155,7 @@ export async function updateProject(
   _prev: ProjectFormState,
   formData: FormData
 ): Promise<ProjectFormState> {
-  const profile = await requireManager()
+  const profile = await requirePermission('projects.edit')
 
   const id = readLimitedField(formData, 'id')
   const name = readLimitedField(formData, 'name')
@@ -176,7 +176,7 @@ export async function updateProject(
   if (startDate && endDate && endDate < startDate) {
     return { error: 'Deadline harus setelah tanggal mulai.' }
   }
-  if (!(await canManageProjectFor(profile, id))) {
+  if (!(await canManageProjectFor(profile, id, 'projects.edit'))) {
     return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
   if (!(await assertActiveUsers(managerIds))) {

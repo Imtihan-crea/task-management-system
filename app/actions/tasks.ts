@@ -1,16 +1,17 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { requireManager, requireProfile } from '@/lib/auth/session'
+import { requireProfile } from '@/lib/auth/session'
+import { hasPermission, requirePermission } from '@/lib/auth/current-access'
+import type { Permission } from '@/lib/auth/permissions'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isTaskPriority, isTaskStatus } from '@/lib/auth/roles'
 import {
   CLOSED_PROJECT_ERROR,
   canManageProjectFor,
   isProjectClosed,
-  isProjectManager,
 } from '@/lib/data/projects'
-import { canActOnTask, canCancelTask } from '@/lib/auth/task-access'
+import { canActOnTask } from '@/lib/auth/task-access'
 import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
 import { emitTaskAssigned } from '@/lib/notifications/task-assigned'
@@ -28,7 +29,7 @@ export type TaskFormState = {
 } | undefined
 
 /** Pastikan workstream (kalau diisi) memang milik project tersebut. */
-async function assertCanManageTask(taskId: string, profile: { id: string; role: string }) {
+async function assertCanManageTask(taskId: string, profile: { id: string }, permission: Permission) {
   // ADMIN juga memuat task: task terhapus ditolak (audit C15) dan projectId
   // asli dipakai pemanggil (cek pindah project / project tertutup).
   const admin = createAdminClient()
@@ -42,7 +43,7 @@ async function assertCanManageTask(taskId: string, profile: { id: string; role: 
   if (!task) return { allowed: false, projectId: '' }
 
   return {
-    allowed: await canManageProjectFor(profile, task.project_id),
+    allowed: await canManageProjectFor(profile, task.project_id, permission),
     projectId: task.project_id,
   }
 }
@@ -52,12 +53,9 @@ async function canActOnLoadedTask(
   profile: { id: string; role: UserRole },
   task: { assignee_id: string; project_id: string }
 ): Promise<boolean> {
-  return canActOnTask(profile.role, {
-    isAssignee: task.assignee_id === profile.id,
-    // Query PM hanya untuk role PM; role lain tidak membutuhkannya.
-    managesProject:
-      profile.role === 'PROJECT_MANAGER' && (await isProjectManager(task.project_id, profile.id)),
-  })
+  // Pemegang tasks.edit di project ini (Admin, PM project, atau diberi per akun) selalu boleh.
+  if (await hasPermission(profile.id, 'tasks.edit', task.project_id)) return true
+  return canActOnTask(profile.role, { isAssignee: task.assignee_id === profile.id, managesProject: false })
 }
 
 function validateTaskFields(input: {
@@ -88,7 +86,7 @@ export async function createTask(
   _prev: TaskFormState,
   formData: FormData
 ): Promise<TaskFormState> {
-  const profile = await requireManager()
+  const profile = await requirePermission('tasks.create')
 
   const title = readLimitedField(formData, 'title')
   const description = readLimitedField(formData, 'description')
@@ -117,7 +115,7 @@ export async function createTask(
   }
 
   // PM hanya boleh buat task di project miliknya.
-  if (!(await canManageProjectFor(profile, projectId))) {
+  if (!(await canManageProjectFor(profile, projectId, 'tasks.create'))) {
     return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
   if (await isProjectClosed(projectId)) return { error: CLOSED_PROJECT_ERROR }
@@ -188,7 +186,7 @@ export async function updateTask(
   _prev: TaskFormState,
   formData: FormData
 ): Promise<TaskFormState> {
-  const profile = await requireManager()
+  const profile = await requirePermission('tasks.edit')
 
   const id = readLimitedField(formData, 'id')
   const title = readLimitedField(formData, 'title')
@@ -219,12 +217,12 @@ export async function updateTask(
   // terminal lama bila task sudah selesai (audit A1: edit tanpa reopen).
   const isTerminal = status === 'DONE' || status === 'CANCELLED'
 
-  const scope = await assertCanManageTask(id, profile)
+  const scope = await assertCanManageTask(id, profile, 'tasks.edit')
   if (!scope.allowed) {
     return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
   // Pindah project: PM juga harus PM di project tujuan (sama seperti createTask).
-  if (projectId !== scope.projectId && !(await canManageProjectFor(profile, projectId))) {
+  if (projectId !== scope.projectId && !(await canManageProjectFor(profile, projectId, 'tasks.edit'))) {
     return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
   // Pindah ke project tertutup ditolak (audit B14).
@@ -620,9 +618,7 @@ export async function cancelTask(
 
   if (!task) return { error: 'Task tidak ditemukan.' }
 
-  const managesProject =
-    profile.role === 'PROJECT_MANAGER' && (await isProjectManager(task.project_id, profile.id))
-  if (!canCancelTask(profile.role, { managesProject })) {
+  if (!(await hasPermission(profile.id, 'tasks.cancel', task.project_id))) {
     return { error: 'Hanya PM project atau Admin yang dapat membatalkan task.' }
   }
 
@@ -845,12 +841,12 @@ export async function deleteTask(
   _prev: TaskFormState,
   formData: FormData
 ): Promise<TaskFormState> {
-  const profile = await requireManager()
+  const profile = await requirePermission('tasks.delete')
 
   const id = readLimitedField(formData, 'id')
   if (!id) return { error: 'Task tidak ditemukan.' }
 
-  const scope = await assertCanManageTask(id, profile)
+  const scope = await assertCanManageTask(id, profile, 'tasks.delete')
   if (!scope.allowed) {
     return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
