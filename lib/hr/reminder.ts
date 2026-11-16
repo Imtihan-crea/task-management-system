@@ -1,10 +1,16 @@
 /** Pengingat Daily Tracker (HR Tahap 1). Murni supaya bisa dites. */
 
-export type ReminderUser = { id: string; status: string; is_developer: boolean | null; deleted_at: string | null }
+export type ReminderUser = {
+  id: string
+  status: string
+  is_developer: boolean | null
+  deleted_at: string | null
+  tracker_required: boolean | null
+}
 
 /**
  * Siapa yang diingatkan hari ini: hanya di hari kerja (bukan libur kalender),
- * user aktif yang belum mencatat satu aktivitas pun hari itu. Akun Developer
+ * user aktif yang wajib isi tracker dan belum mencatat satu aktivitas pun hari itu. Akun Developer
  * (bukan akun kerja harian) dan akun terhapus dilewati.
  * shortcut: cuti/izin/sakit belum dikecualikan; tambahkan saat Tahap 2 (leave_requests).
  */
@@ -18,7 +24,8 @@ export function usersToRemind(
   return users
     .filter((u) => u.status === 'ACTIVE' && !u.deleted_at && !loggedUserIds.has(u.id))
     // Mode uji: akun yang ditunjuk ikut walau akun Developer (akun untuk mencoba semua fitur).
-    .filter((u) => (only ? only.has(u.id) : !u.is_developer))
+    // Tanpa mode uji: hanya yang wajib isi tracker (keputusan pemilik 16 Nov 2026), bukan akun Developer.
+    .filter((u) => (only ? only.has(u.id) : !u.is_developer && u.tracker_required === true))
     .map((u) => u.id)
 }
 

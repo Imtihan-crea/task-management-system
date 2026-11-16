@@ -123,10 +123,11 @@ try {
   await p.selectOption('#emp_level', 'STAFF')
   await p.fill('#emp_join', '2025-01-02')
   await p.fill('#emp_quota', '12')
+  await p.check('#emp_tracker')
   await p.getByRole('button', { name: 'Simpan data karyawan' }).click()
-  check('data karyawan tersimpan', await until(async () => {
-    const r = (await db.from('profiles').select('division, position_level, join_date, annual_leave_quota').eq('id', member.id).single()).data
-    return r?.division === 'HR' && r.position_level === 'STAFF' && r.join_date === '2025-01-02' && r.annual_leave_quota === 12
+  check('data karyawan tersimpan (termasuk wajib isi tracker)', await until(async () => {
+    const r = (await db.from('profiles').select('division, position_level, join_date, annual_leave_quota, tracker_required').eq('id', member.id).single()).data
+    return r?.division === 'HR' && r.position_level === 'STAFF' && r.join_date === '2025-01-02' && r.annual_leave_quota === 12 && r.tracker_required === true
   }))
 
   // Import histori Excel (data palsu)

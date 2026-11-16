@@ -14,13 +14,13 @@ function cek(label: string, aktual: unknown, harap: unknown): void {
   }
 }
 
-const empty: EmployeeFields = { division: null, position_title: null, position_level: null, join_date: null, annual_leave_quota: null }
+const empty: EmployeeFields = { division: null, position_title: null, position_level: null, join_date: null, annual_leave_quota: null, tracker_required: false }
 const ctx = { divisions: ['Operation', 'HR'], positions: ['CEO'], current: { ...empty, division: 'Divisi Lama' }, today: '2026-11-16' }
-const base = { division: '', position_title: '', position_level: '', join_date: '', annual_leave_quota: '' }
+const base = { division: '', position_title: '', position_level: '', join_date: '', annual_leave_quota: '', tracker_required: '' }
 
 cek('semua kosong', parseEmployee(base, ctx), { value: empty })
-cek('lengkap', parseEmployee({ division: 'HR', position_title: 'CEO', position_level: 'BUSINESS_LEAD', join_date: '2024-01-15', annual_leave_quota: '12' }, ctx), {
-  value: { division: 'HR', position_title: 'CEO', position_level: 'BUSINESS_LEAD', join_date: '2024-01-15', annual_leave_quota: 12 },
+cek('lengkap', parseEmployee({ division: 'HR', position_title: 'CEO', position_level: 'BUSINESS_LEAD', join_date: '2024-01-15', annual_leave_quota: '12', tracker_required: 'on' }, ctx), {
+  value: { division: 'HR', position_title: 'CEO', position_level: 'BUSINESS_LEAD', join_date: '2024-01-15', annual_leave_quota: 12, tracker_required: true },
 })
 cek('divisi di luar master ditolak', 'error' in parseEmployee({ ...base, division: 'Ngawur' }, ctx), true)
 cek('divisi lama (arsip) tetap boleh', parseEmployee({ ...base, division: 'Divisi Lama' }, ctx), { value: { ...empty, division: 'Divisi Lama' } })

@@ -14,7 +14,7 @@ function cek(label: string, aktual: unknown, harap: unknown): void {
   }
 }
 
-const u = (id: string, o: Partial<ReminderUser> = {}): ReminderUser => ({ id, status: 'ACTIVE', is_developer: false, deleted_at: null, ...o })
+const u = (id: string, o: Partial<ReminderUser> = {}): ReminderUser => ({ id, status: 'ACTIVE', is_developer: false, deleted_at: null, tracker_required: true, ...o })
 const users = [u('a'), u('b'), u('dev', { is_developer: true }), u('off', { status: 'INACTIVE' }), u('inv', { status: 'INVITED' }), u('del', { deleted_at: '2026-11-01', status: 'INACTIVE' })]
 
 cek('hari kerja: yang belum isi', usersToRemind(users, new Set(['b']), true), ['a'])
@@ -28,6 +28,8 @@ cek('mode uji tanpa id sah = tidak ada', usersToRemind(mix, new Set(), true, pil
 cek('mode uji: akun ditunjuk sudah isi = tidak', usersToRemind(mix, new Set([A]), true, pilotUsers(A)), [])
 cek('mode uji: akun Developer yang ditunjuk ikut', usersToRemind(users, new Set(), true, new Set(['dev'])), ['dev'])
 cek('tanpa mode uji: Developer tetap dilewati', usersToRemind(users, new Set(), true, null).includes('dev'), false)
+cek('tidak wajib isi tracker = tidak diingatkan', usersToRemind([u('x', { tracker_required: false }), u('y')], new Set(), true), ['y'])
+cek('mode uji tetap kirim ke yang ditunjuk walau tidak wajib', usersToRemind([u('x', { tracker_required: false })], new Set(), true, new Set(['x'])), ['x'])
 cek('saklar mati bawaan', reminderEnabled(undefined), false)
 cek('saklar "1" tetap mati', reminderEnabled('1'), false)
 cek('saklar true', reminderEnabled('true'), true)

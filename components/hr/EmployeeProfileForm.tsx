@@ -58,6 +58,10 @@ export function EmployeeProfileForm({
           <label htmlFor="emp_quota" className={LABEL}>Hak cuti tahunan (hari)</label>
           <input id="emp_quota" name="annual_leave_quota" type="number" min={0} max={60} step={1} defaultValue={values.annual_leave_quota ?? ''} className={INPUT} />
         </div>
+        <div className="flex items-center gap-2 sm:col-span-2">
+          <input id="emp_tracker" name="tracker_required" type="checkbox" defaultChecked={values.tracker_required} className="h-5 w-5" />
+          <label htmlFor="emp_tracker" className="text-sm font-medium">Wajib isi Daily Tracker (dapat pengingat sore bila belum mengisi)</label>
+        </div>
       </fieldset>
       {canEdit && (
         <div className="flex flex-wrap items-center gap-3 sm:col-span-2">

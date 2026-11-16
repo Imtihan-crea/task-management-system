@@ -41,7 +41,7 @@ async function handle(request: Request) {
   try {
     ;[users, logged] = await Promise.all([
       allRows<ReminderUser>((from, to) =>
-        admin.from('profiles').select('id, status, is_developer, deleted_at').eq('status', 'ACTIVE').order('id').range(from, to)
+        admin.from('profiles').select('id, status, is_developer, deleted_at, tracker_required').eq('status', 'ACTIVE').order('id').range(from, to)
       ),
       allRows<{ user_id: string }>((from, to) =>
         admin.from('work_logs').select('user_id').eq('work_date', today).order('id').range(from, to)

@@ -52,7 +52,7 @@ export default async function UserDetailPage({
 
   const { data: profile } = await admin
     .from('profiles')
-    .select('id, full_name, email, role, status, created_at, updated_at, is_super_admin, is_developer, deleted_at, division, position_title, position_level, join_date, annual_leave_quota')
+    .select('id, full_name, email, role, status, created_at, updated_at, is_super_admin, is_developer, deleted_at, division, position_title, position_level, join_date, annual_leave_quota, tracker_required')
     .eq('id', id)
     .single<ProfileRow & EmployeeFields>()
 

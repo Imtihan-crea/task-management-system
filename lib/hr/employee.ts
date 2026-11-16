@@ -13,9 +13,14 @@ export type EmployeeFields = {
   position_level: string | null
   join_date: string | null
   annual_leave_quota: number | null
+  /** Wajib isi Daily Tracker (dapat pengingat sore). */
+  tracker_required: boolean
 }
 
 export type EmployeeInput = { [K in keyof EmployeeFields]: string }
+
+/** Checkbox HTML: tercentang = 'on'. */
+export const checked = (v: string) => v === 'on' || v === 'true'
 
 /**
  * Validasi isian. Divisi & jabatan wajib dari pilihan aktif Master Reference;
@@ -51,6 +56,7 @@ export function parseEmployee(
       position_level: input.position_level || null,
       join_date: input.join_date || null,
       annual_leave_quota: quota,
+      tracker_required: checked(input.tracker_required),
     },
   }
 }

@@ -11,7 +11,7 @@ import { todayISO } from '@/lib/utils/dates'
 
 export type EmployeeFormState = { error?: string; success?: string } | undefined
 
-const FIELDS = ['division', 'position_title', 'position_level', 'join_date', 'annual_leave_quota'] as const
+const FIELDS = ['division', 'position_title', 'position_level', 'join_date', 'annual_leave_quota', 'tracker_required'] as const
 
 /** Data karyawan (divisi, jabatan, level, tanggal masuk, kuota cuti). Izin hr.manage. */
 export async function updateEmployeeProfile(_prev: EmployeeFormState, formData: FormData): Promise<EmployeeFormState> {
@@ -20,7 +20,7 @@ export async function updateEmployeeProfile(_prev: EmployeeFormState, formData: 
   const admin = createAdminClient()
   const { data: current } = await admin
     .from('profiles')
-    .select('division, position_title, position_level, join_date, annual_leave_quota, deleted_at')
+    .select('division, position_title, position_level, join_date, annual_leave_quota, tracker_required, deleted_at')
     .eq('id', userId)
     .maybeSingle<EmployeeFields & { deleted_at: string | null }>()
   if (!current || current.deleted_at) return { error: 'User tidak ditemukan.' }
