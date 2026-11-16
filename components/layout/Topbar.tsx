@@ -11,8 +11,11 @@ type Summary = { unread: number; recent: NotificationItem[] }
 
 function useSummary(active: boolean) {
   const [data, setData] = useState<Summary | null>(null)
+  const loaded = useRef(false)
   useEffect(() => {
-    if (!active) return
+    // Muat sekali saat halaman dibuka (angka belum dibaca di lonceng), lalu setiap popover dibuka.
+    if (!active && loaded.current) return
+    loaded.current = true
     let cancelled = false
     fetch('/api/notifications/summary')
       .then((r) => (r.ok ? r.json() : null))
@@ -46,6 +49,9 @@ export function BellPopover() {
 
   return (
     <Popover
+      // Bug lama (16 Nov 2026): status buka tidak tersambung, data tidak pernah dimuat ("Memuat..." terus).
+      open={open}
+      onOpenChange={setOpen}
       label="Notifications"
       button={
         <span className="relative inline-flex items-center">

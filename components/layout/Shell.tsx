@@ -61,10 +61,12 @@ export function Shell({
         </div>
       </aside>
 
-      <div className="flex min-w-0 flex-1 flex-col">
+      {/* Panel besar berbingkai di layar lebar, konten selebar layar (pola FMS/IMS, 16 Nov 2026). */}
+      <div className="flex min-w-0 flex-1 flex-col lg:p-3">
+        <div className="flex min-w-0 flex-1 flex-col lg:rounded-2xl lg:border lg:border-zinc-200 lg:bg-zinc-50 dark:lg:border-zinc-800 dark:lg:bg-zinc-950">
         {/* Topbar */}
-        <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/95 backdrop-blur dark:border-zinc-800 dark:bg-zinc-900/95">
-          <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-2 px-3">
+        <header className="sticky top-0 z-40 border-b border-zinc-200 bg-white/95 backdrop-blur lg:rounded-t-2xl dark:border-zinc-800 dark:bg-zinc-900/95">
+          <div className="mx-auto flex h-14 w-full max-w-7xl items-center gap-2 px-3 lg:max-w-none lg:px-6">
             <button
               type="button"
               onClick={toggleDesktop}
@@ -91,13 +93,14 @@ export function Shell({
           </div>
         </header>
 
-        <main className="mx-auto w-full max-w-5xl flex-1 px-3 py-4">{children}</main>
+        <main className="mx-auto w-full max-w-7xl flex-1 px-3 py-4 lg:max-w-none lg:px-6 lg:py-5">{children}</main>
 
-        <footer className="mx-auto w-full max-w-5xl px-3 pb-4">
+        <footer className="mx-auto w-full max-w-7xl px-3 pb-4 lg:max-w-none lg:px-6">
           <p className="text-center text-xs text-zinc-600 dark:text-zinc-400">
             kasuat.co &middot; v1.10.0
           </p>
         </footer>
+        </div>
       </div>
 
       {/* Drawer mobile */}

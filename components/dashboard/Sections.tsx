@@ -212,7 +212,7 @@ export async function UpcomingSection({ userId, role, filters }: Ctx & { filters
   const blocked = tasks.filter((t) => t.status === 'BLOCKED').slice(0, 7)
 
   return (
-    <div className="mt-6 grid gap-6 lg:grid-cols-3">
+    <div className="mt-6 grid gap-6 lg:grid-cols-3 [&>*]:min-w-0">
       <section className="rounded-2xl bg-white p-4 shadow dark:bg-zinc-900">
         <h2 className="mb-3 text-lg font-bold">Task Terdekat (7 hari)</h2>
         <MiniList items={upcoming} empty="Tidak ada task dalam 7 hari ke depan." projectNames={projectNames} assigneeNames={assigneeNames} />

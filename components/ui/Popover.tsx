@@ -12,6 +12,8 @@ export function Popover({
   children,
   align = 'right',
   nameFromContent = false,
+  open: openProp,
+  onOpenChange,
 }: {
   label: string
   button: ReactNode
@@ -19,8 +21,17 @@ export function Popover({
   align?: 'left' | 'right'
   /** Nama tombol diambil dari isinya (ada teks terlihat), bukan aria-label: hindari label-content-name-mismatch. */
   nameFromContent?: boolean
+  /** Opsional: kendalikan buka/tutup dari luar (mis. muat data saat dibuka). */
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
 }) {
-  const [open, setOpen] = useState(false)
+  const [innerOpen, setInnerOpen] = useState(false)
+  const open = openProp ?? innerOpen
+  const setOpen = (v: boolean | ((prev: boolean) => boolean)) => {
+    const next = typeof v === 'function' ? v(open) : v
+    setInnerOpen(next)
+    onOpenChange?.(next)
+  }
   const panelId = useId()
   const rootRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
