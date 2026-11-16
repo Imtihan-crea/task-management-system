@@ -73,7 +73,10 @@ export function monthlyStatus(hours: number, workdays: number, r: TrackerRules =
 
 /** 'HH:MM' atau 'HH:MM:SS' -> menit sejak tengah malam; null bila tidak valid. */
 export function parseTime(value: string): number | null {
-  const m = /^([01]\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?$/.exec(value.trim())
+  const v = value.trim()
+  // 24:00 = akhir hari (aktivitas yang selesai tepat tengah malam; Postgres time menerimanya).
+  if (/^24:00(?::00)?$/.test(v)) return 1440
+  const m = /^([01]\d|2[0-3]):([0-5]\d)(?::[0-5]\d)?$/.exec(v)
   return m ? Number(m[1]) * 60 + Number(m[2]) : null
 }
 

@@ -83,15 +83,16 @@ export type ImportLog = {
   source: 'IMPORT'
 }
 
-export type SkipReason = 'time' | 'date' | 'future' | 'noName' | 'noProject' | 'noCategory' | 'noLocation' | 'tooLong' | 'overlap'
+export const EMPTY_CATEGORY = '(tanpa kategori)'
+export const EMPTY_LOCATION = '(tanpa lokasi)'
+
+export type SkipReason = 'time' | 'date' | 'future' | 'noName' | 'noProject' | 'tooLong' | 'overlap'
 export const SKIP_LABEL: Record<SkipReason, string> = {
   time: 'jam tidak valid/lewat tengah malam',
   date: 'tanggal tidak valid',
   future: 'tanggal di masa depan',
   noName: 'nama kosong',
   noProject: 'proyek kosong',
-  noCategory: 'kategori kosong',
-  noLocation: 'lokasi kosong',
   tooLong: 'kategori/lokasi lebih dari 60 karakter',
   overlap: 'bentrok jam dengan entri yang diisi di aplikasi',
 }
@@ -156,25 +157,20 @@ export function buildImport(sheets: SheetInput[], ctx: ImportContext): ImportBui
         continue
       }
       const start = parseClock(r[7])
-      const end = parseClock(r[8])
+      // Selesai tepat tengah malam ditulis 00:00 di sheet (durasinya positif di sheet): simpan 24:00.
+      const rawEnd = parseClock(r[8])
+      const end = rawEnd === '00:00' && start && start > '00:00' ? '24:00' : rawEnd
       if (!start || !end || end <= start) {
         skipped.time++
         continue
       }
 
       const projText = text(r[4])
-      const catText = text(r[11])
-      const locText = text(r[10])
+      // Kategori/lokasi kosong tetap diimport (jamnya ikut terhitung seperti di sheet) sebagai teks bebas.
+      const catText = text(r[11]) || EMPTY_CATEGORY
+      const locText = text(r[10]) || EMPTY_LOCATION
       if (!projText) {
         skipped.noProject++
-        continue
-      }
-      if (!catText) {
-        skipped.noCategory++
-        continue
-      }
-      if (!locText) {
-        skipped.noLocation++
         continue
       }
       if (catText.length > MAX.short || locText.length > MAX.short) {

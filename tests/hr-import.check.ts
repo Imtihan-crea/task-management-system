@@ -97,6 +97,9 @@ cek('nama ganda tak dikenal', buildImport([sheet('Daily Oktober 26', baris({}))]
 b = buildImport([sheet('Daily Oktober 26',
   baris({ 7: '22:00', 8: '01:00' }), baris({ 7: '09:00', 8: '09:00' }), baris({ 7: 'x' }), baris({ 8: null }))], ctx)
 cek('jam dilewati', [b.rows.length, b.skipped.time], [0, 4])
+// Selesai tepat tengah malam (00:00 di sheet) = 24:00, jamnya ikut (cocok dengan sheet Okt 2026)
+b = buildImport([sheet('Daily Oktober 26', baris({ 7: '22:45', 8: '00:00' }), baris({ 7: '00:00', 8: '00:00' }))], ctx)
+cek('selesai 00:00 jadi 24:00', [b.rows.length, b.rows[0]?.end_time, b.skipped.time], [1, '24:00', 1])
 
 // Tanggal
 b = buildImport([sheet('Daily Oktober 26', baris({ 0: 'rusak' }), baris({ 0: '2026-11-17' }), baris({ 0: '2026-11-16' }), baris({ 0: null }))], ctx)
@@ -117,8 +120,8 @@ b = buildImport([sheet('Daily Oktober 26',
   baris({ 11: 'desain lama' }), baris({ 11: 'Kategori Baru', 10: 'Rumah' }), baris({ 11: '' }), baris({ 10: '' }), baris({ 11: panjang }), baris({ 10: panjang }))], ctx)
 cek('kategori arsip cocok', [b.rows[0].category_ref, b.rows[0].category], ['c2', 'Desain Lama'])
 cek('kategori+lokasi bebas', [b.rows[1].category_ref, b.rows[1].category, b.rows[1].location_ref, b.rows[1].location], [null, 'Kategori Baru', null, 'Rumah'])
-cek('kosong/panjang dilewati', [b.rows.length, b.skipped.noCategory, b.skipped.noLocation, b.skipped.tooLong], [2, 1, 1, 2])
-cek('hitung teks bebas', b.free, { project: 0, category: 1, location: 1 })
+cek('kosong diimport sbg teks bebas, panjang dilewati', [b.rows.length, b.rows[2].category, b.rows[2].category_ref, b.rows[3].location, b.skipped.tooLong], [4, '(tanpa kategori)', null, '(tanpa lokasi)', 2])
+cek('hitung teks bebas', b.free, { project: 0, category: 2, location: 2 })
 
 // Pemotongan teks panjang & aktivitas kosong
 b = buildImport([sheet('Daily Oktober 26', baris({ 5: 'a'.repeat(400), 6: 'd'.repeat(6000), 12: 'o'.repeat(3000) }), baris({ 5: '' }))], ctx)

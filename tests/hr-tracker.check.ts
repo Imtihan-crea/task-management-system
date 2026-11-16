@@ -22,7 +22,9 @@ function cek(label: string, aktual: unknown, harap: unknown): void {
 // Jam & durasi
 cek('parse 08:30', parseTime('08:30'), 510)
 cek('parse 08:30:00', parseTime('08:30:00'), 510)
-cek('parse 24:00 ditolak', parseTime('24:00'), null)
+cek('parse 24:00 = akhir hari', parseTime('24:00'), 1440)
+cek('parse 24:30 ditolak', parseTime('24:30'), null)
+cek('durasi sampai 24:00', durationMinutes('22:45', '24:00:00'), 75)
 cek('parse 8:30 ditolak', parseTime('8:30'), null)
 cek('durasi 08:00-09:30', durationMinutes('08:00', '09:30'), 90)
 cek('durasi lewat tengah malam ditolak', durationMinutes('22:00', '01:00'), null)
