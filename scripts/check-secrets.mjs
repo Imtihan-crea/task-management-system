@@ -20,6 +20,7 @@ import { extname, join, relative } from 'node:path'
 const ALLOWED_EMAIL_DOMAINS = new Set([
   'contoh.com',
   'example.com',
+  'example.invalid',
   'email.com',
   'domain.com',
   'test.com',

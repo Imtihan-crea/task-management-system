@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { brandEmailHtml } from '@/lib/email/layout'
+import { isPlaceholderEmail } from '@/lib/email/placeholder'
 
 /**
  * Pengiriman email transaksional via Brevo API.
@@ -26,7 +27,8 @@ export async function sendEmail(input: {
     return false
   }
 
-  if (input.to.length === 0) return true
+  const to = input.to.filter((r) => !isPlaceholderEmail(r.email))
+  if (to.length === 0) return true
 
   try {
     const response = await fetch('https://api.brevo.com/v3/smtp/email', {
@@ -42,9 +44,9 @@ export async function sendEmail(input: {
         // satu penerima -> messageVersions (satu email terpisah per penerima,
         // tetap satu request; jatah Brevo dihitung per penerima seperti
         // sebelumnya).
-        ...(input.to.length === 1
-          ? { to: input.to }
-          : { messageVersions: input.to.map((recipient) => ({ to: [recipient] })) }),
+        ...(to.length === 1
+          ? { to }
+          : { messageVersions: to.map((recipient) => ({ to: [recipient] })) }),
         subject: input.subject,
         htmlContent: brandEmailHtml({ title: input.subject, bodyHtml: input.html }),
       }),

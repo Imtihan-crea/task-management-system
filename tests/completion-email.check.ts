@@ -8,6 +8,7 @@ import {
   NOTES_EMAIL_LIMIT,
   type CompletionSummary,
 } from '../lib/meetings/completion-email'
+import { isPlaceholderEmail } from '../lib/email/placeholder'
 
 let ok = 0
 let gagal = 0
@@ -114,6 +115,9 @@ const nulls = buildCompletionEmailBody({
 })
 cek('tanpa assignee/deadline tidak crash', nulls.includes('Status: OPEN'), true)
 cek('tanpa crash ada assignee line?', !nulls.includes('Assignee:'), true)
+
+cek('ID login .invalid tidak dikirimi email', isPlaceholderEmail('nama@example.invalid '), true)
+cek('email biasa tetap dikirimi', isPlaceholderEmail('nama@contoh.com'), false)
 
 console.log(`LULUS: ${ok}`)
 console.log(`GAGAL: ${gagal}`)
