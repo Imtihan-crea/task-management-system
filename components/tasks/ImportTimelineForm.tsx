@@ -1,7 +1,8 @@
 'use client'
 
 import { useFormAction } from '@/lib/forms/use-form-action'
-import { importTimeline, type ImportState } from '@/app/actions/task-import'
+import { importTimeline } from '@/app/actions/task-import'
+import type { ImportState } from '@/lib/import/run'
 
 const INITIAL: ImportState = undefined
 const FIELD =
