@@ -26,6 +26,8 @@ cek('mode uji: hanya akun ditunjuk', usersToRemind(mix, new Set(), true, pilotUs
 cek('mode uji kosong = semua', usersToRemind(mix, new Set(), true, pilotUsers('  ')), [A, 'b'])
 cek('mode uji tanpa id sah = tidak ada', usersToRemind(mix, new Set(), true, pilotUsers('salah')), [])
 cek('mode uji: akun ditunjuk sudah isi = tidak', usersToRemind(mix, new Set([A]), true, pilotUsers(A)), [])
+cek('mode uji: akun Developer yang ditunjuk ikut', usersToRemind(users, new Set(), true, new Set(['dev'])), ['dev'])
+cek('tanpa mode uji: Developer tetap dilewati', usersToRemind(users, new Set(), true, null).includes('dev'), false)
 cek('saklar mati bawaan', reminderEnabled(undefined), false)
 cek('saklar "1" tetap mati', reminderEnabled('1'), false)
 cek('saklar true', reminderEnabled('true'), true)

@@ -16,8 +16,9 @@ export function usersToRemind(
 ): string[] {
   if (!isWorkday) return []
   return users
-    .filter((u) => u.status === 'ACTIVE' && !u.is_developer && !u.deleted_at && !loggedUserIds.has(u.id))
-    .filter((u) => !only || only.has(u.id))
+    .filter((u) => u.status === 'ACTIVE' && !u.deleted_at && !loggedUserIds.has(u.id))
+    // Mode uji: akun yang ditunjuk ikut walau akun Developer (akun untuk mencoba semua fitur).
+    .filter((u) => (only ? only.has(u.id) : !u.is_developer))
     .map((u) => u.id)
 }
 
