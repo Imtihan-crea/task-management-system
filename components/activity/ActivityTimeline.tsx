@@ -70,6 +70,8 @@ export function describeActivity(entry: Pick<ActivityEntry, 'action' | 'metadata
       return 'User diaktifkan'
     case 'USER_DEACTIVATED':
       return 'User dinonaktifkan'
+    case 'USER_DELETED':
+      return 'Akun dihapus (riwayat tetap)'
     case 'ROLE_CHANGED':
       return `Role diubah ${str(m.old_role)} → ${str(m.new_role)}`
     case 'PERMISSION_CHANGED':

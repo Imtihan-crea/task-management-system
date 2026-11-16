@@ -3,7 +3,7 @@
 import { revalidatePath } from 'next/cache'
 import { requireProfile } from '@/lib/auth/session'
 import { hasPermission, requirePermission } from '@/lib/auth/current-access'
-import { newUserRoleError, superAdminError } from '@/lib/auth/super-admin'
+import { MSG_DELETED, newUserRoleError, superAdminError, topActionError } from '@/lib/auth/super-admin'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isUserRole, isUserStatus } from '@/lib/auth/roles'
 import { validateAdminPassword } from '@/lib/auth/password'
@@ -547,11 +547,12 @@ export async function updateUser(
 
   const { data: current, error: readError } = await createAdminClient()
     .from('profiles')
-    .select('role, status')
+    .select('role, status, deleted_at')
     .eq('id', targetId)
-    .single<{ role: UserRole; status: UserStatus }>()
+    .single<{ role: UserRole; status: UserStatus; deleted_at: string | null }>()
 
   if (readError || !current) return { error: 'User tidak ditemukan.' }
+  if (current.deleted_at) return { error: MSG_DELETED }
 
   const superError = await superGuard(adminProfile.id, { id: targetId, role: current.role }, { role, status })
   if (superError) return { error: superError }
@@ -672,11 +673,12 @@ export async function setUserStatus(
 
   const { data: current, error: readError } = await admin
     .from('profiles')
-    .select('role, status')
+    .select('role, status, deleted_at')
     .eq('id', targetId)
-    .single<{ role: UserRole; status: UserStatus }>()
+    .single<{ role: UserRole; status: UserStatus; deleted_at: string | null }>()
 
   if (readError || !current) return { error: 'User tidak ditemukan.' }
+  if (current.deleted_at) return { error: MSG_DELETED }
 
   const superError = await superGuard(adminProfile.id, { id: targetId, role: current.role }, { status })
   if (superError) return { error: superError }
@@ -744,11 +746,12 @@ export async function generateAccessLink(
   const admin = createAdminClient()
   const { data: target } = await admin
     .from('profiles')
-    .select('email, status, role')
+    .select('email, status, role, deleted_at')
     .eq('id', targetId)
-    .single<{ email: string; status: UserStatus; role: UserRole }>()
+    .single<{ email: string; status: UserStatus; role: UserRole; deleted_at: string | null }>()
 
   if (!target) return { error: 'User tidak ditemukan.' }
+  if (target.deleted_at) return { error: MSG_DELETED }
   const superError = await superGuard(actor.id, { id: targetId, role: target.role })
   if (superError) return { error: superError }
   if (target.status === 'INACTIVE') {
@@ -804,4 +807,159 @@ export async function generateAccessLink(
     success: kind === 'invite' ? 'Link undangan baru berhasil dibuat.' : 'Link reset Password berhasil dibuat.',
     inviteLink: link,
   }
+}
+
+/* ------------------------------------------------------------------ */
+/* Tindakan petinggi: set password, ganti email, hapus akun (16 Nov)   */
+/* Hanya Super Admin / Developer (lib/auth/super-admin.ts).            */
+/* ------------------------------------------------------------------ */
+
+type TopTargetRow = {
+  id: string
+  email: string
+  role: UserRole
+  status: UserStatus
+  is_super_admin: boolean
+  is_developer: boolean
+  deleted_at: string | null
+}
+
+async function loadTopAction(actorId: string, targetId: string, action: 'password' | 'email' | 'delete') {
+  const { data: target } = await createAdminClient()
+    .from('profiles')
+    .select('id, email, role, status, is_super_admin, is_developer, deleted_at')
+    .eq('id', targetId)
+    .maybeSingle<TopTargetRow>()
+  if (!target) return { error: 'User tidak ditemukan.' as string, target: null }
+  const error = topActionError(
+    { id: actorId, isTop: await isSuperAdmin(actorId) },
+    { id: target.id, isTop: target.is_super_admin || target.is_developer, deleted: Boolean(target.deleted_at) },
+    action
+  )
+  return { error, target }
+}
+
+/** Set password user lain secara langsung; user wajib ganti saat login berikutnya. */
+export async function setUserPassword(_prev: UserFormState, formData: FormData): Promise<UserFormState> {
+  const actor = await requireProfile()
+  const targetId = readLimitedField(formData, 'id')
+  const password = readRawField(formData, 'password')
+
+  const { error: guardError, target } = await loadTopAction(actor.id, targetId, 'password')
+  if (guardError || !target) return { error: guardError ?? 'User tidak ditemukan.' }
+  const passwordError = validateAdminPassword(password)
+  if (passwordError) return { error: passwordError }
+
+  const admin = createAdminClient()
+  const { error } = await admin.auth.admin.updateUserById(target.id, { password })
+  if (error) {
+    console.error('[set-password] Supabase error:', error.message)
+    return { error: /password/i.test(error.message) ? error.message : 'Tidak dapat mengganti password.' }
+  }
+  // Password ketikan admin = sementara, kecuali untuk akun sendiri.
+  const requireChange = target.id !== actor.id
+  await admin.from('profiles').update({ must_change_password: requireChange }).eq('id', target.id)
+
+  await logActivity({
+    actorUserId: actor.id,
+    action: 'USER_UPDATED',
+    entityType: 'user',
+    entityId: target.id,
+    metadata: { set_by_admin: 'password', must_change_password: requireChange },
+  })
+  revalidatePath(`/users/${target.id}`)
+  return {
+    success: requireChange
+      ? 'Password diganti. User wajib membuat password sendiri saat login berikutnya — bagikan dengan aman.'
+      : 'Password Anda diganti.',
+  }
+}
+
+/** Ganti email / ID login. */
+export async function changeUserEmail(_prev: UserFormState, formData: FormData): Promise<UserFormState> {
+  const actor = await requireProfile()
+  const targetId = readLimitedField(formData, 'id')
+  const email = readLimitedField(formData, 'email').toLowerCase()
+
+  const { error: guardError, target } = await loadTopAction(actor.id, targetId, 'email')
+  if (guardError || !target) return { error: guardError ?? 'User tidak ditemukan.' }
+  if (!validEmail(email)) return { error: 'Masukkan alamat Email yang valid.' }
+  if (email === target.email.toLowerCase()) return { success: 'Email tidak berubah.' }
+  if ((await findProfileByEmail(email)) || (await findAuthUserByEmail(email))) {
+    return { error: 'Email ini sudah dipakai akun lain.' }
+  }
+
+  const admin = createAdminClient()
+  // email_confirm: true -> langsung aktif, tidak menunggu email konfirmasi.
+  const { error: authError } = await admin.auth.admin.updateUserById(target.id, { email, email_confirm: true })
+  if (authError) {
+    console.error('[change-email] Supabase error:', authError.message)
+    return { error: 'Tidak dapat mengganti email.' }
+  }
+  const { error: profileError } = await admin.from('profiles').update({ email }).eq('id', target.id)
+  if (profileError) {
+    // Kembalikan email login supaya auth dan profil tetap sama.
+    await admin.auth.admin.updateUserById(target.id, { email: target.email, email_confirm: true })
+    console.error('[change-email] profile update failed:', profileError.message)
+    return { error: 'Tidak dapat mengganti email.' }
+  }
+
+  await logActivity({
+    actorUserId: actor.id,
+    action: 'USER_UPDATED',
+    entityType: 'user',
+    entityId: target.id,
+    entityCode: email,
+    metadata: { set_by_admin: 'email', old_email: target.email, new_email: email },
+  })
+  revalidatePath('/users')
+  revalidatePath(`/users/${target.id}`)
+  return { success: 'Email / ID login diganti. User login dengan email baru mulai sekarang.' }
+}
+
+/**
+ * Hapus akun (lunak): login diblokir, status INACTIVE, deleted_at terisi,
+ * aturan wewenang dihapus. Profil tetap ada supaya riwayat tetap terbaca.
+ */
+export async function deleteUserAccount(_prev: UserFormState, formData: FormData): Promise<UserFormState> {
+  const actor = await requireProfile()
+  const targetId = readLimitedField(formData, 'id')
+
+  const { error: guardError, target } = await loadTopAction(actor.id, targetId, 'delete')
+  if (guardError || !target) return { error: guardError ?? 'User tidak ditemukan.' }
+  if (await wouldRemoveLastAdmin(target.id, target.role, 'INACTIVE')) {
+    return { error: 'Minimal satu administrator aktif harus tetap ada.' }
+  }
+
+  const admin = createAdminClient()
+  // ~100 tahun: Supabase Auth menolak login dan refresh token akun ini.
+  const { error: banError } = await admin.auth.admin.updateUserById(target.id, { ban_duration: '876000h' })
+  if (banError) {
+    console.error('[delete-user] ban failed:', banError.message)
+    return { error: 'Tidak dapat menghapus akun. Silakan coba lagi.' }
+  }
+  const { error } = await admin
+    .from('profiles')
+    .update({ status: 'INACTIVE', deleted_at: new Date().toISOString() })
+    .eq('id', target.id)
+  if (error) {
+    await admin.auth.admin.updateUserById(target.id, { ban_duration: 'none' })
+    console.error('[delete-user] profile update failed:', error.message)
+    return { error: 'Tidak dapat menghapus akun. Silakan coba lagi.' }
+  }
+  await admin.from('user_permissions').delete().eq('user_id', target.id)
+
+  await logActivity({
+    actorUserId: actor.id,
+    action: 'USER_DELETED',
+    entityType: 'user',
+    entityId: target.id,
+    entityCode: target.email,
+    metadata: { email: target.email, old_status: target.status },
+  })
+  revalidatePath('/users')
+  revalidatePath(`/users/${target.id}`)
+  revalidatePath('/dashboard')
+  const note = await deactivationNote(target.id)
+  return { success: `Akun dihapus: tidak bisa login lagi, riwayatnya tetap ada.${note}` }
 }

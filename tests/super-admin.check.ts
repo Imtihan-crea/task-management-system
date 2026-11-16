@@ -9,6 +9,11 @@ import {
   MSG_ROLE_NEEDS_CHANGE_ROLE,
   newUserRoleError,
   superAdminError,
+  MSG_DELETED,
+  MSG_DELETE_SELF,
+  MSG_DELETE_TOP,
+  MSG_TOP_ONLY,
+  topActionError,
 } from '../lib/auth/super-admin'
 
 let ok = 0
@@ -45,6 +50,20 @@ cek('user baru member oleh admin', newUserRoleError(false, 'TEAM_MEMBER', true),
 cek('PM baru tanpa izin ubah role', newUserRoleError(false, 'PROJECT_MANAGER', false), MSG_ROLE_NEEDS_CHANGE_ROLE)
 cek('PM baru dengan izin ubah role', newUserRoleError(false, 'PROJECT_MANAGER', true), null)
 cek('Viewer baru tanpa izin ubah role', newUserRoleError(false, 'VIEWER', false), null)
+
+// Tindakan petinggi
+const top = { id: 's', isTop: true }
+const notTop = { id: 'a', isTop: false }
+const tgt = (o = {}) => ({ id: 'm', isTop: false, deleted: false, ...o })
+cek('admin biasa set password', topActionError(notTop, tgt(), 'password'), MSG_TOP_ONLY)
+cek('admin biasa hapus', topActionError(notTop, tgt(), 'delete'), MSG_TOP_ONLY)
+cek('petinggi set password', topActionError(top, tgt(), 'password'), null)
+cek('petinggi ganti email', topActionError(top, tgt(), 'email'), null)
+cek('petinggi hapus member', topActionError(top, tgt(), 'delete'), null)
+cek('hapus diri sendiri', topActionError(top, tgt({ id: 's', isTop: true }), 'delete'), MSG_DELETE_SELF)
+cek('hapus petinggi lain', topActionError(top, tgt({ id: 'd', isTop: true }), 'delete'), MSG_DELETE_TOP)
+cek('petinggi ganti password sendiri', topActionError(top, tgt({ id: 's', isTop: true }), 'password'), null)
+cek('akun dihapus tidak bisa diubah', topActionError(top, tgt({ deleted: true }), 'email'), MSG_DELETED)
 
 console.log(`LULUS: ${ok}`)
 console.log(`GAGAL: ${gagal}`)

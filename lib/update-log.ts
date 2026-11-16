@@ -16,6 +16,7 @@ export const UPDATE_LOG: UpdateLogEntry[] = [
   {
     date: '2026-11-16',
     added: [
+      'Khusus Super Admin dan Developer di detail user: set password langsung (user wajib ganti saat login), ganti email / ID login, dan hapus akun. Akun yang dihapus tidak bisa login lagi dan hilang dari daftar, tetapi namanya tetap di riwayat task, meeting, dan activity.',
       'Wewenang per akun: Super Admin dan Developer bisa memberi atau mencabut izin tertentu untuk satu akun (di halaman detail user, bagian Wewenang), berlaku di semua project atau project tertentu. Tanpa pengaturan, izin tetap mengikuti peran seperti sebelumnya. Mengganti role user menghapus pengaturan per akun yang lama.',
       'Akun Developer (setara Super Admin untuk mengatur wewenang).',
       'Super Admin: tingkat tertinggi di atas Admin. Hanya Super Admin yang bisa mengubah, menonaktifkan, membuat link reset untuk, atau mengangkat Admin; Super Admin tidak bisa diturunkan atau dinonaktifkan. Terlihat di halaman Users.',

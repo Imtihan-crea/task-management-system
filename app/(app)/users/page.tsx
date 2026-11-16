@@ -56,6 +56,7 @@ export default async function UsersPage({
     .from('profiles')
     .select('id, full_name, email, role, status, created_at, is_super_admin, is_developer')
     .order(sortKey, { ascending })
+    .is('deleted_at', null) // akun dihapus disembunyikan; riwayatnya tetap
     .limit(200)
 
   if (q) query = query.or(`full_name.ilike.%${q}%,email.ilike.%${q}%`)

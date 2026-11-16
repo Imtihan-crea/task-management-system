@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { hasPermission, requirePermission } from '@/lib/auth/current-access'
 import { PermissionsSection } from '@/components/users/PermissionsSection'
+import { TopActionForms } from '@/components/users/TopActionForms'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ROLE_LABELS, STATUS_LABELS } from '@/lib/auth/roles'
 import { AppShell } from '@/components/layout/AppShell'
@@ -19,6 +20,7 @@ type ProfileRow = {
   updated_at: string
   is_super_admin: boolean
   is_developer: boolean
+  deleted_at: string | null
 }
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -43,7 +45,7 @@ export default async function UserDetailPage({
 
   const { data: profile } = await admin
     .from('profiles')
-    .select('id, full_name, email, role, status, created_at, updated_at, is_super_admin, is_developer')
+    .select('id, full_name, email, role, status, created_at, updated_at, is_super_admin, is_developer, deleted_at')
     .eq('id', id)
     .single<ProfileRow>()
 
@@ -84,21 +86,41 @@ export default async function UserDetailPage({
             />
           </dl>
 
-          <div className="mt-4 max-w-[220px]">
-            <StatusToggleForm user={profile} isSelf={viewer.id === profile.id} />
-          </div>
-          <div className="mt-2 max-w-[320px]">
-            <AccessLinkForm user={profile} />
-          </div>
+          {profile.deleted_at ? (
+            <p role="status" className="mt-4 rounded-lg bg-zinc-100 p-3 text-sm font-medium dark:bg-zinc-800">
+              Akun dihapus pada {formatDateTime(profile.deleted_at)}. Tidak bisa login; riwayatnya tetap ada.
+            </p>
+          ) : (
+            <>
+              <div className="mt-4 max-w-[220px]">
+                <StatusToggleForm user={profile} isSelf={viewer.id === profile.id} />
+              </div>
+              <div className="mt-2 max-w-[320px]">
+                <AccessLinkForm user={profile} />
+              </div>
+            </>
+          )}
         </section>
 
-        <section className="flex-1 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
-          <h2 className="mb-4 text-lg font-bold">Ubah User</h2>
-          <EditUserForm user={profile} isSelf={viewer.id === profile.id} />
-        </section>
+        {!profile.deleted_at && (
+          <section className="flex-1 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+            <h2 className="mb-4 text-lg font-bold">Ubah User</h2>
+            <EditUserForm user={profile} isSelf={viewer.id === profile.id} />
+          </section>
+        )}
       </div>
 
-      {canManagePermissions && (
+      {canManagePermissions && !profile.deleted_at && (
+        <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+          <h2 className="mb-4 text-lg font-bold">Tindakan Super Admin</h2>
+          <TopActionForms
+            user={profile}
+            canDelete={!profile.is_super_admin && !profile.is_developer && viewer.id !== profile.id}
+          />
+        </section>
+      )}
+
+      {canManagePermissions && !profile.deleted_at && (
         <div className="mt-6">
           <PermissionsSection user={profile} />
         </div>

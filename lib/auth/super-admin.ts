@@ -39,3 +39,27 @@ export function newUserRoleError(actorIsSuper: boolean, role: UserRole, canChang
   if (role !== 'TEAM_MEMBER' && role !== 'VIEWER' && !canChangeRole) return MSG_ROLE_NEEDS_CHANGE_ROLE
   return null
 }
+
+/* --- Tindakan petinggi (Super Admin / Developer saja), 16 Nov 2026 --- */
+
+export const MSG_TOP_ONLY = 'Hanya Super Admin atau Developer yang bisa melakukan ini.'
+export const MSG_DELETED = 'Akun ini sudah dihapus.'
+export const MSG_DELETE_SELF = 'Anda tidak bisa menghapus akun sendiri.'
+export const MSG_DELETE_TOP = 'Akun Super Admin atau Developer tidak bisa dihapus.'
+
+type TopTarget = { id: string; isTop: boolean; deleted: boolean }
+
+/** Set password / ganti email / hapus: pelaku harus petinggi, target belum dihapus. */
+export function topActionError(
+  actor: { id: string; isTop: boolean },
+  target: TopTarget,
+  action: 'password' | 'email' | 'delete'
+): string | null {
+  if (!actor.isTop) return MSG_TOP_ONLY
+  if (target.deleted) return MSG_DELETED
+  if (action === 'delete') {
+    if (target.id === actor.id) return MSG_DELETE_SELF
+    if (target.isTop) return MSG_DELETE_TOP
+  }
+  return null
+}
