@@ -57,6 +57,7 @@ export const PERMISSION_SCOPE: Record<Permission, PermissionScope> = {
   'hr.manage': 'global',
   'tracker.review': 'project',
   'reference.manage': 'global',
+  'leave.approve': 'global',
 }
 
 /** Hanya Super Admin dan Developer; tidak bisa diberikan ke akun lain. */

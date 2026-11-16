@@ -71,6 +71,12 @@ export async function ensureAdmin(db) {
   return tempAdmin
 }
 
+/** Jadikan admin uji akun Developer (semua izin, termasuk HR) untuk uji tampilan semua halaman. */
+export async function makeAdminDeveloper(db) {
+  const u = await ensureAdmin(db)
+  await db.from('profiles').update({ is_developer: true }).eq('id', u.id)
+}
+
 /** Login lewat password sebagai admin uji; mengembalikan id profilnya. */
 export async function loginAdmin(db, page) {
   const u = await ensureAdmin(db)
@@ -177,10 +183,12 @@ export async function appPages(page) {
     const hrefs = await page.locator('a[href]').evaluateAll((as) => as.map((a) => a.getAttribute('href')))
     return hrefs.find((h) => re.test(h ?? ''))
   }
-  const paths = ['/dashboard', '/tasks', '/tasks?view=overdue', '/projects', '/meetings', '/task-suggestions', '/activity', '/users', '/notifications', '/profile', '/settings', '/update-log', '/tasks/new', '/projects/new', '/meetings/new', '/task-suggestions/new', '/users/new']
+  const paths = ['/dashboard', '/tasks', '/tasks?view=overdue', '/projects', '/meetings', '/task-suggestions', '/activity', '/users', '/notifications', '/profile', '/settings', '/update-log', '/tasks/new', '/projects/new', '/meetings/new', '/task-suggestions/new', '/users/new',
+    // HR (16 Nov 2026); halaman berizin HR terbuka hanya bila pemanggil memakai akun berizin (lihat devPages).
+    '/tracker', '/tracker/rekap', '/tracker/import', '/master-reference', '/settings/hr', '/cuti', '/cuti/persetujuan']
   const proj = await first('/projects', new RegExp(`^/projects/${UUID}$`))
   if (proj) {
-    for (const t of ['', '?tab=tasks', '?tab=workstreams', '?tab=meetings', '?tab=activity', '?tab=members', '?tab=settings']) paths.push(proj + t)
+    for (const t of ['', '?tab=tasks', '?tab=workstreams', '?tab=meetings', '?tab=tracker', '?tab=activity', '?tab=members', '?tab=settings']) paths.push(proj + t)
     paths.push(`/workstreams/new?project=${proj.split('/').pop()}`)
   }
   const task = await first('/tasks', new RegExp(`^/tasks/${UUID}$`))

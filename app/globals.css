@@ -3,7 +3,8 @@
 /* Kasuat design tokens (§46, §68). Satu-satunya sumber warna/font brand. */
 :root {
   --kasuat-gold: #BE9B5C;
-  --kasuat-deep-gold: #9C7C3F;
+  /* 16 Nov 2026 (keputusan pemilik, docs/usulan-warna-gold.md kandidat B): #9C7C3F hanya 3,91:1 di putih. */
+  --kasuat-deep-gold: #82652F;
   --kasuat-light-gold: #D9C08E;
   --kasuat-black: #221F1F;
   --kasuat-grey: #A6A6A6;
@@ -34,6 +35,8 @@
   :root {
     --background: #0a0a0a;
     --foreground: #ededed;
+    /* Di latar gelap emas tua terlalu redup; tautan memakai emas utama. */
+    --kasuat-deep-gold: #BE9B5C;
   }
 }
 

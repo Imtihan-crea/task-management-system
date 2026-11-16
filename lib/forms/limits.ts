@@ -31,6 +31,10 @@ export const FIELD_MAX: Record<string, number> = {
   category: 60,
   // location (lokasi meeting) sudah 200; tracker membatasi 60 di form & database.
   label: 80,
+  // Cuti (migrasi 024)
+  reason: 1000,
+  attachment_url: 2000,
+  decision_note: 1000,
 }
 
 /** Field lain (id, status, tanggal, dll.) jauh lebih pendek; ini jaring pengaman. */

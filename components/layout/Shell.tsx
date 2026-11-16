@@ -55,7 +55,10 @@ export function Shell({
           collapsed ? 'w-16' : 'w-60'
         }`}
       >
-        <SidebarBrand collapsed={collapsed} />
+        {/* Sejajar dengan topbar di panel berbingkai (panel mulai 12px dari atas, topbar 56px). */}
+        <div className="pt-3">
+          <SidebarBrand collapsed={collapsed} />
+        </div>
         <div className="min-h-0 flex-1">
           <Sidebar allowed={allowed} collapsed={collapsed} />
         </div>

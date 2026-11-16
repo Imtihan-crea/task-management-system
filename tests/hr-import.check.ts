@@ -2,7 +2,7 @@
  * Uji lib/hr/import-tracker.ts — import histori Daily Tracker (data palsu).
  * Jalankan: npx tsx tests/hr-import.check.ts
  */
-import { buildImport, datesByUser, dropAppOverlaps, isDailySheet, parseClock, parseDate, rangesByUser, summarize } from '../lib/hr/import-tracker'
+import { buildImport, buildLeaveImport, datesByUser, dropAppOverlaps, isDailySheet, parseClock, parseDate, rangesByUser, summarize } from '../lib/hr/import-tracker'
 import type { ReferenceRow } from '../lib/hr/reference'
 
 let ok = 0
@@ -156,6 +156,29 @@ cek('ringkasan menyebut bentrok', summarize(tanpaBentrok).includes('2 bentrok ja
 
 // Import ulang hanya mengganti tanggal yang ada di berkas
 cek('tanggal per user', [...datesByUser(b.rows)], [['u1', ['2026-10-09', '2026-10-10']]])
+
+// Leave Form (HR Tahap 2)
+const LF_HEAD = ['Tanggal', 'Month', 'Nama', 'Divisi', 'Kategori', 'Keterangan', '', 'Nama', 'Tanggal Masuk', 'Lama', 'Hak Cuti Tahunan', 'Cuti Diambil', 'Sisa']
+const lf = { sheet: 'Leave Form', data: [
+  ['Tanggal', 'Month', 'Nama', 'Divisi', 'Kategori', 'Keterangan', '', 'Nama', 'Tanggal Masuk', 'Lama', 'Hak Cuti Tahunan', 'Cuti Diambil', 'Sisa'],
+  ['2026-02-13', 'Feb', 'Budi Santoso', 'IT', 'Sakit', 'demam', '', 'Budi Santoso', '2023-05-15', '', 12, '', 12],
+  ['2026-06-08', 'Jun', 'budi santoso', 'IT', 'Cuti', '', '', 'Orang Asing', '2024-01-01', '', 0, '', 0],
+  ['2026-06-09', 'Jun', 'Budi Santoso', 'IT', 'Libur', '', '', '', '', '', '', '', ''],
+  ['2027-01-01', 'Jan', 'Budi Santoso', 'IT', 'Izin', '', '', '', '', '', '', '', ''],
+  ['', 'Dec', '', '', '', '', '', '', '', '', '', '', ''],
+] } as never
+const lb = buildLeaveImport([lf], ctx)
+cek('leave: log sah', lb.leave, [
+  { user_id: 'u1', kind: 'SAKIT', date: '2026-02-13', reason: 'demam' },
+  { user_id: 'u1', kind: 'CUTI', date: '2026-06-08', reason: null },
+])
+cek('leave: kategori aneh & masa depan dilewati', lb.skipped, 2)
+cek('leave: data kanan', lb.employees, [{ user_id: 'u1', join_date: '2023-05-15', quota: 12 }])
+cek('leave: nama kanan tak cocok tidak memblokir', [lb.unknownNames, lb.unmatchedEmployees], [[], ['Orang Asing']])
+const lb2 = buildLeaveImport([{ sheet: 'Leave Form', data: [LF_HEAD, ['', '', '', '', '', '', '', 'Muhammad Budi Santoso Putra', '2022-01-03', '', 12]] } as never], ctx)
+cek('leave: nama lengkap resmi cocok ke profil', lb2.employees, [{ user_id: 'u1', join_date: '2022-01-03', quota: 12 }])
+cek('leave: nama log tak dikenal memblokir', buildLeaveImport([{ sheet: 'Leave Form', data: [LF_HEAD, ['2026-02-13', '', 'Siapa Ini', '', 'Sakit']] } as never], ctx).unknownNames, ['Siapa Ini'])
+cek('leave: tanpa sheet', buildLeaveImport([], ctx), { leave: [], employees: [], unknownNames: [], skipped: 0, unmatchedEmployees: [] })
 
 console.log(`${ok} lulus, ${gagal} gagal`)
 if (gagal > 0) process.exit(1)

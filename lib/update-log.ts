@@ -14,6 +14,18 @@ export type UpdateLogEntry = {
 
 export const UPDATE_LOG: UpdateLogEntry[] = [
   {
+    date: '2026-11-17',
+    title: 'Cuti, izin & sakit',
+    added: [
+      'Cuti, izin, dan sakit (menu Cuti & Izin): ajukan dari aplikasi (hanya hari kerja yang dihitung), lihat status dan sisa cuti tahunan. Penyetuju (izin Setujui cuti, atau pengelola HR) menerima notifikasi, menyetujui atau menolak dengan catatan; karyawan dikabari lewat notifikasi dan email. Pengajuan sendiri harus diputuskan penyetuju lain.',
+      'Rekap Daily Tracker menampilkan target serta jumlah hari cuti, izin, dan sakit; pengingat sore tidak dikirim ke yang sedang cuti. Pengaturan HR punya pilihan agar cuti mengurangi target jam (bawaan mati, seperti sheet).',
+      'Data karyawan: tanda Wajib isi Daily Tracker (pengingat sore hanya untuk yang wajib).',
+      'Lonceng notifikasi kini menampilkan jumlah belum dibaca dan isinya; notifikasi cuti dan Daily Tracker membuka halaman terkait. Logo Kasuat membuka Dashboard.',
+      'Tampilan selebar layar dengan panel berbingkai (seperti FMS/IMS); warna tautan emas lebih jelas dibaca.',
+    ],
+    removed: [],
+  },
+  {
     date: '2026-11-16',
     added: [
       'Daily Tracker (menu Daily Tracker): setiap karyawan mencatat aktivitas kerja per jam (proyek, aktivitas, jam mulai–selesai, kategori, lokasi, output). Jam mulai otomatis menyambung dari aktivitas sebelumnya; jam yang bentrok atau lewat tengah malam ditolak. Ringkasan jam hari ini, minggu ini, dan bulan ini dibanding target 8 jam per hari kerja.',

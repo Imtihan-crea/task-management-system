@@ -43,7 +43,7 @@ export default async function MasterReferencePage() {
           <section key={l.list} id={l.list} className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
             <h2 className="text-lg font-bold">{l.title}</h2>
             <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-400">{l.hint}</p>
-            <div className="overflow-x-auto">
+            <div className="relative overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-left text-zinc-600 dark:text-zinc-400">

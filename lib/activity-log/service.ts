@@ -22,6 +22,11 @@ export type ActivityAction =
   | 'HR_TARGET_CHANGED'
   | 'HR_PROFILE_UPDATED'
   | 'TRACKER_IMPORTED'
+  // --- Cuti / izin / sakit (migrasi 024) ---
+  | 'LEAVE_REQUESTED'
+  | 'LEAVE_APPROVED'
+  | 'LEAVE_REJECTED'
+  | 'LEAVE_CANCELLED'
   | 'PROJECT_CREATED'
   | 'PROJECT_UPDATED'
   | 'PROJECT_PM_ADDED'
@@ -72,6 +77,7 @@ export type ActivityEntityType =
   | 'meeting_action_item'
   | 'master_reference'
   | 'hr'
+  | 'leave'
   | ''
 
 export type LogActivityInput = {

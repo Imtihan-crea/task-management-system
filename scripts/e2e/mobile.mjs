@@ -3,7 +3,7 @@
 import os from 'node:os'
 import path from 'node:path'
 import fs from 'node:fs'
-import { guard, serviceClient, loadPlaywright, loginAdmin, runCleanup, appPages, BASE, writeOut } from './lib.mjs'
+import { guard, serviceClient, loadPlaywright, loginAdmin, makeAdminDeveloper, runCleanup, appPages, BASE, writeOut } from './lib.mjs'
 
 const SHOT_DIR = process.env.SHOT_DIR ?? path.join(os.homedir(), '.cache/taskmgmt-smoke/fase3/mobile')
 fs.mkdirSync(SHOT_DIR, { recursive: true })
@@ -41,6 +41,7 @@ async function check(p) {
 
 try {
   await check('/login')
+  await makeAdminDeveloper(db)
   await loginAdmin(db, page)
   for (const p of await appPages(page)) await check(p)
 } finally {

@@ -1,6 +1,6 @@
 # Usulan warna `deep-gold` (kontras AA)
 
-Tanggal: 9 Nov 2026. Hanya usulan; warna aplikasi **tidak diubah**. Keputusan ada pada pemilik.
+Tanggal: 9 Nov 2026. **Diputuskan 16 Nov 2026: kandidat B (`#82652F`) untuk mode terang; mode gelap memakai `#BE9B5C`.**
 
 ## Masalah
 

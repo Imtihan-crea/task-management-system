@@ -70,3 +70,8 @@ export async function managedProjects(userId: string): Promise<{ all: boolean; i
   const scopes = await Promise.all(MANAGE_PERMISSIONS.map((p) => permissionProjects(userId, p)))
   return { all: scopes.some((s) => s.all), ids: [...new Set(scopes.flatMap((s) => s.include))] }
 }
+
+/** Penyetuju cuti: izin leave.approve atau hr.manage (keputusan pemilik 16 Nov 2026). */
+export async function canApproveLeave(userId: string): Promise<boolean> {
+  return (await hasPermission(userId, 'leave.approve')) || (await hasPermission(userId, 'hr.manage'))
+}

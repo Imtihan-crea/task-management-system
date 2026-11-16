@@ -47,6 +47,8 @@ const GROUPS: { title: string | null; items: Omit<NavItem, 'icon'>[] }[] = [
     items: [
       { href: '/meetings', label: 'Meetings', permission: 'meetings.view' },
       { href: '/tracker', label: 'Daily Tracker', permission: null },
+      { href: '/cuti', label: 'Cuti & Izin', permission: null },
+      { href: '/cuti/persetujuan', label: 'Persetujuan Cuti', permission: 'leave.approve' },
       { href: '/task-suggestions', label: 'Task Suggestions', permission: 'suggestions.create' },
     ],
   },
@@ -69,6 +71,8 @@ const GROUPS: { title: string | null; items: Omit<NavItem, 'icon'>[] }[] = [
 const ALL_HREFS = GROUPS.flatMap((g) => g.items.map((i) => i.href))
 
 const ICONS: Record<string, string> = {
+  '/cuti': 'M8 7V3m8 4V3M4 11h16M5 5h14a1 1 0 011 1v13a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1zm4 10h6',
+  '/cuti/persetujuan': 'M9 12l2 2 4-4M5 5h14a1 1 0 011 1v13a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z',
   '/settings/hr': 'M8 7V3m8 4V3M4 11h16M5 5h14a1 1 0 011 1v13a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z',
   '/master-reference': 'M4 6h16M4 12h16M4 18h10',
   '/tracker': 'M12 8v4l3 2M3 12a9 9 0 1018 0 9 9 0 00-18 0zM8 3h8',
@@ -145,14 +149,14 @@ export function Sidebar({
 export function SidebarBrand({ collapsed }: { collapsed?: boolean }) {
   if (!collapsed) {
     return (
-      <div className="flex items-center px-3 py-3">
+      <Link href="/dashboard" aria-label="Kasuat, ke Dashboard" className="flex h-14 items-center px-6">
         <KasuatLogo />
-      </div>
+      </Link>
     )
   }
   // Mode icon: hanya area mark dari aset resmi (bukan redraw).
   return (
-    <div className="flex items-center justify-center px-2 py-3">
+    <Link href="/dashboard" aria-label="Kasuat, ke Dashboard" className="flex h-14 items-center justify-center px-2">
       <span className="block w-7 overflow-hidden" aria-hidden="true">
         <Image
           src="/brand/kasuat-logo-white.png"
@@ -162,6 +166,6 @@ export function SidebarBrand({ collapsed }: { collapsed?: boolean }) {
           style={{ height: 26, width: 'auto', maxWidth: 'none' }}
         />
       </span>
-    </div>
+    </Link>
   )
 }

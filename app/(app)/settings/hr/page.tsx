@@ -84,7 +84,7 @@ export default async function HrSettingsPage({ searchParams }: { searchParams: P
       <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
         <h2 className="text-lg font-bold">Target jam bulanan {year}</h2>
         <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-400">Otomatis = hari kerja × {rules.hoursPerDay} jam. Kunci manual bila ada penyesuaian khusus.</p>
-        <div className="overflow-x-auto">
+        <div className="relative overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-left text-zinc-600 dark:text-zinc-400">

@@ -15,6 +15,8 @@ export type TrackerRules = {
   hoursPerDay: number
   /** Kode Master Reference kategori "tidak produktif" (untuk D04 di Tahap 3). */
   breakCategoryCode: string
+  /** Hari cuti/izin/sakit disetujui mengurangi target bulanan (mati = ikut sheet, keputusan pemilik 16 Nov 2026). */
+  leaveReducesTarget: boolean
   /** Ambang jam, urut dari tertinggi: [lebih, sesuai, cukup]; di bawahnya = kurang. */
   dailyThresholds: [number, number, number]
   weeklyThresholds: [number, number, number]
@@ -25,6 +27,7 @@ export type TrackerRules = {
 export const DEFAULT_RULES: TrackerRules = {
   hoursPerDay: 8,
   breakCategoryCode: 'BREAK_PERSONAL',
+  leaveReducesTarget: false,
   dailyThresholds: [8.1, 7, 6],
   weeklyThresholds: [40.1, 35.1, 30.1],
   monthlyPerDay: [8, 7, 6],
@@ -203,13 +206,16 @@ export function monthlySummary(
   logs: LogRow[],
   workdays: number,
   rules: TrackerRules = DEFAULT_RULES,
-  lockedTarget?: number | null
+  lockedTarget?: number | null,
+  leaveDays = 0
 ): MonthlySummary {
   const minutes = logs.reduce((s, l) => s + l.duration_minutes, 0)
   const totalHours = round2(minutes / 60)
   const activeDays = new Set(logs.map((l) => l.work_date)).size
-  const targetHours = lockedTarget ?? workdays * rules.hoursPerDay
-  const effectiveDays = lockedTarget ? lockedTarget / rules.hoursPerDay : workdays
+  // Cuti mengurangi target hanya bila aturan dinyalakan (bawaan mati, ikut sheet).
+  const cut = rules.leaveReducesTarget ? Math.min(leaveDays, workdays) * rules.hoursPerDay : 0
+  const targetHours = Math.max((lockedTarget ?? workdays * rules.hoursPerDay) - cut, 0)
+  const effectiveDays = targetHours / rules.hoursPerDay
   return {
     totalHours,
     workdays,

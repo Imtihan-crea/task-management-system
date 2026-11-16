@@ -5,7 +5,7 @@
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
-import { guard, serviceClient, loadPlaywright, loginAdmin, runCleanup, appPages, BASE, writeOut } from './lib.mjs'
+import { guard, serviceClient, loadPlaywright, loginAdmin, makeAdminDeveloper, runCleanup, appPages, BASE, writeOut } from './lib.mjs'
 
 const AXE = process.env.AXE_PATH ?? path.join(os.homedir(), '.cache/taskmgmt-smoke/fase3/axe/node_modules/axe-core/axe.min.js')
 if (!fs.existsSync(AXE)) { console.error('axe.min.js tidak ditemukan: ' + AXE + ' (set AXE_PATH)'); process.exit(2) }
@@ -29,6 +29,7 @@ async function audit(p) {
 
 try {
   await audit('/login')
+  await makeAdminDeveloper(db)
   await loginAdmin(db, page)
   for (const p of await appPages(page)) await audit(p)
 } finally {

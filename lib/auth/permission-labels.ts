@@ -44,6 +44,7 @@ export const PERMISSION_GROUPS: { title: string; items: { permission: Permission
       { permission: 'hr.manage', label: 'Kelola data HR (profil karyawan, kalender libur, target jam, pengaturan)' },
       { permission: 'tracker.review', label: 'Lihat dan komentari tracker anggota project' },
       { permission: 'reference.manage', label: 'Kelola Master Reference (tambah, ubah, arsip, kukuhkan usulan)' },
+      { permission: 'leave.approve', label: 'Setujui / tolak cuti, izin, dan sakit' },
     ],
   },
 ]

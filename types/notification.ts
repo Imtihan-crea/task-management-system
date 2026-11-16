@@ -22,9 +22,13 @@ export type NotificationType =
   // --- HR Daily Tracker (migrasi 021) ---
   | 'TRACKER_REMINDER'
   | 'TRACKER_COMMENT'
+  // --- Cuti / izin / sakit (migrasi 024) ---
+  | 'LEAVE_REQUESTED'
+  | 'LEAVE_DECIDED'
 
 /** 'tracker': entityId = tanggal YYYY-MM-DD (tautan ke Daily Tracker hari itu). */
-export type NotificationEntityType = 'task' | 'project' | 'suggestion' | 'meeting' | 'tracker' | ''
+/** 'leave' = pengajuan milik sendiri (/cuti); 'leave_review' = untuk penyetuju (/cuti/persetujuan). */
+export type NotificationEntityType = 'task' | 'project' | 'suggestion' | 'meeting' | 'tracker' | 'leave' | 'leave_review' | ''
 
 export interface NotificationItem {
   id: string
@@ -60,6 +64,8 @@ export function notificationHref(
   if (entityType === 'project' && entityId) return `/projects/${entityId}`
   if (entityType === 'suggestion' && entityId) return `/task-suggestions/${entityId}`
   if (entityType === 'meeting' && entityId) return `/meetings/${entityId}`
+  if (entityType === 'leave') return '/cuti'
+  if (entityType === 'leave_review') return '/cuti/persetujuan'
   if (entityType === 'tracker' && /^\d{4}-\d{2}-\d{2}$/.test(entityId)) return `/tracker?tanggal=${entityId}`
   return '/dashboard'
 }

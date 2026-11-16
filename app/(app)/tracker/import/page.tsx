@@ -32,12 +32,17 @@ export default async function ImportTrackerPage() {
           </li>
           <li>
             Baris dilewati (dihitung per alasan) bila tanggal atau jam tidak valid, jam selesai tidak setelah jam
-            mulai (termasuk lewat tengah malam), tanggal di masa depan, atau Proyek, Kategori, atau Lokasi kosong.
+            mulai, tanggal di masa depan, Proyek kosong, atau jamnya bentrok dengan entri yang diisi di aplikasi.
+            Selesai 00:00 dibaca tengah malam (24:00); Kategori/Lokasi kosong dicatat sebagai teks bebas.
           </li>
-          <li>Jam yang tumpang tindih tidak diperiksa: data disalin apa adanya supaya total jam sama dengan sheet.</li>
+          <li>Jam yang tumpang tindih di dalam file tidak diperiksa: data disalin apa adanya supaya total jam sama dengan sheet.</li>
           <li>
-            Import ulang aman: untuk tiap orang di file, entri hasil import sebelumnya pada rentang tanggal file
-            diganti. Entri yang diisi lewat aplikasi tidak pernah disentuh.
+            Import ulang aman: hanya entri hasil import sebelumnya pada tanggal yang ada di file yang diganti.
+            Entri yang diisi atau diubah lewat aplikasi tidak pernah disentuh.
+          </li>
+          <li>
+            Sheet <strong>Leave Form</strong> (bila ada) ikut diimport: catatan cuti/izin/sakit masuk sebagai pengajuan
+            yang sudah disetujui; tanggal masuk dan hak cuti hanya diisi bila di profil masih kosong.
           </li>
         </ul>
       </div>

@@ -12,7 +12,7 @@ export type ReminderUser = {
  * Siapa yang diingatkan hari ini: hanya di hari kerja (bukan libur kalender),
  * user aktif yang wajib isi tracker dan belum mencatat satu aktivitas pun hari itu. Akun Developer
  * (bukan akun kerja harian) dan akun terhapus dilewati.
- * shortcut: cuti/izin/sakit belum dikecualikan; tambahkan saat Tahap 2 (leave_requests).
+ * Yang cuti/izin/sakit disetujui ikut dalam `loggedUserIds` (dikecualikan oleh pemanggil).
  */
 export function usersToRemind(
   users: ReminderUser[],

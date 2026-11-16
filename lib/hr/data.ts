@@ -34,7 +34,7 @@ export async function loadCalendar(from: string, to: string): Promise<CalendarDa
 }
 
 /** Hari kerja + target dikunci untuk bulan 'YYYY-MM'. */
-export async function loadMonthBasis(month: string): Promise<{ workdays: string[]; lockedTarget: number | null }> {
+export async function loadMonthBasis(month: string): Promise<{ workdays: string[]; lockedTarget: number | null; calendar: CalendarDay[] }> {
   const [from, to] = monthRange(month)
   const [calendar, target] = await Promise.all([
     loadCalendar(from, to),
@@ -47,6 +47,7 @@ export async function loadMonthBasis(month: string): Promise<{ workdays: string[
   return {
     workdays: workingDays(from, to, calendar),
     lockedTarget: target.data ? Number(target.data.target_hours) : null,
+    calendar,
   }
 }
 
@@ -206,4 +207,38 @@ export async function loadReviewLogs(filter: { projectId?: string; userId?: stri
     category: r.category_ref ? label.get(r.category_ref) ?? r.category : r.category + FREE_TEXT_MARK,
     output: r.output,
   }))
+}
+
+export type LeaveRecord = {
+  id: string
+  user_id: string
+  kind: 'CUTI' | 'IZIN' | 'SAKIT'
+  start_date: string
+  end_date: string
+  days: number
+  reason: string | null
+  attachment_url: string | null
+  status: 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED'
+  decided_by: string | null
+  decided_at: string | null
+  decision_note: string | null
+  source: string
+  created_at: string
+}
+
+/** Pengajuan cuti yang menyentuh rentang [from, to] (opsional per user / status). */
+export async function loadLeave(filter: { from: string; to: string; userId?: string; statuses?: string[] }): Promise<LeaveRecord[]> {
+  return allRows<LeaveRecord>((f, t) => {
+    let q = createAdminClient()
+      .from('leave_requests')
+      .select('id, user_id, kind, start_date, end_date, days, reason, attachment_url, status, decided_by, decided_at, decision_note, source, created_at')
+      .lte('start_date', filter.to)
+      .gte('end_date', filter.from)
+      .order('start_date', { ascending: false })
+      .order('id')
+      .range(f, t)
+    if (filter.userId) q = q.eq('user_id', filter.userId)
+    if (filter.statuses) q = q.in('status', filter.statuses)
+    return q
+  })
 }

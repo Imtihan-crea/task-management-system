@@ -148,3 +148,12 @@ export function trackerReminderBody(i: { baseUrl: string; date: string }): strin
     url: u(i.baseUrl, `/tracker?tanggal=${i.date}`),
   })
 }
+
+export function leaveDecisionBody(i: { baseUrl: string; kindLabel: string; start: string; end: string; approved: boolean; note: string }): string {
+  return notice({
+    introHtml: `Pengajuan <strong>${h(i.kindLabel)}</strong> Anda ${i.approved ? '<strong>disetujui</strong>' : '<strong>ditolak</strong>'}:`,
+    rows: [{ label: 'Tanggal', text: i.start === i.end ? i.start : `${i.start} s/d ${i.end}` }, ...(i.note ? [{ label: 'Catatan', text: i.note }] : [])],
+    linkLabel: 'Lihat pengajuan',
+    url: u(i.baseUrl, '/cuti'),
+  })
+}

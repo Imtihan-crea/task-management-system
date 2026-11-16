@@ -5,7 +5,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { AppShell } from '@/components/layout/AppShell'
 import { KpiCard, PageHeader } from '@/components/ui/primitives'
 import { WorkLogForm, DeleteWorkLogButton, type WorkLogValues } from '@/components/tracker/WorkLogForm'
-import { FREE_TEXT_MARK, loadComments, loadMonthBasis, loadReferences, loadRules, loadTrackerProjects } from '@/lib/hr/data'
+import { FREE_TEXT_MARK, loadComments, loadLeave, loadMonthBasis, loadReferences, loadRules, loadTrackerProjects } from '@/lib/hr/data'
+import { leaveDaysIn, type LeaveRow } from '@/lib/hr/leave'
 import { CommentThread } from '@/components/tracker/ReviewLogList'
 import {
   STATUS_LABEL, addDays, dailyStatus, isoWeek, monthRange, monthlySummary, suggestStart, weekStart, weeklyStatus,
@@ -73,7 +74,8 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
     .filter((l) => l.work_date >= monthFrom && l.work_date <= monthTo)
     .map((l) => ({ user_id: profile.id, work_date: l.work_date, project_name: l.project, category: l.category, duration_minutes: l.duration_minutes }))
   const sum = (rows: { duration_minutes: number }[]) => rows.reduce((s, l) => s + l.duration_minutes, 0)
-  const summary = monthlySummary(monthLogs, basis.workdays.length, rules, basis.lockedTarget)
+  const ownLeave = leaveDaysIn((await loadLeave({ from: monthFrom, to: monthTo, userId: profile.id, statuses: ['APPROVED'] })) as LeaveRow[], monthFrom, monthTo, basis.calendar)
+  const summary = monthlySummary(monthLogs, basis.workdays.length, rules, basis.lockedTarget, ownLeave.CUTI + ownLeave.IZIN + ownLeave.SAKIT)
   const comments = await loadComments(dayLogs.map((l) => l.id))
   const editing = sp.ubah ? dayLogs.find((l) => l.id === sp.ubah) ?? null : null
 
@@ -126,7 +128,7 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
         {dayLogs.length === 0 ? (
           <p className="text-sm text-zinc-600 dark:text-zinc-400">Belum ada aktivitas di tanggal ini.</p>
         ) : (
-          <div className="overflow-x-auto">
+          <div className="relative overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left text-zinc-600 dark:text-zinc-400">

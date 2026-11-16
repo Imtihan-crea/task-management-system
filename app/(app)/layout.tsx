@@ -1,7 +1,7 @@
 import type { ReactNode } from 'react'
 import { requireProfile } from '@/lib/auth/session'
 import { Shell } from '@/components/layout/Shell'
-import { hasPermission } from '@/lib/auth/current-access'
+import { canApproveLeave, hasPermission } from '@/lib/auth/current-access'
 import type { Permission } from '@/lib/auth/permissions'
 
 const MENU_PERMISSIONS: Permission[] = ['projects.view', 'tasks.view', 'meetings.view', 'suggestions.create', 'users.view', 'reference.manage', 'hr.manage']
@@ -17,6 +17,8 @@ export default async function AppGroupLayout({ children }: { children: ReactNode
   const allowed = (
     await Promise.all(MENU_PERMISSIONS.map(async (p) => ((await hasPermission(profile.id, p)) ? p : null)))
   ).filter((p): p is Permission => p !== null)
+  // Menu Persetujuan Cuti: leave.approve atau hr.manage.
+  if (!allowed.includes('leave.approve') && (await canApproveLeave(profile.id))) allowed.push('leave.approve')
 
   return (
     <Shell

@@ -3,7 +3,8 @@ import { requirePermission } from '@/lib/auth/current-access'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { AppShell } from '@/components/layout/AppShell'
 import { PageHeader } from '@/components/ui/primitives'
-import { loadComments, loadLogs, loadMonthBasis, loadReviewLogs, loadRules } from '@/lib/hr/data'
+import { loadComments, loadLeave, loadLogs, loadMonthBasis, loadReviewLogs, loadRules } from '@/lib/hr/data'
+import { leaveDaysIn, type LeaveRow } from '@/lib/hr/leave'
 import { ReviewLogList } from '@/components/tracker/ReviewLogList'
 import { hasPermission } from '@/lib/auth/current-access'
 import { STATUS_LABEL, breakdown, monthRange, monthlySummary, type Breakdown } from '@/lib/hr/tracker'
@@ -58,7 +59,7 @@ export default async function TrackerRekapPage({
   const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(sp.bulan ?? '') ? sp.bulan! : todayISO().slice(0, 7)
   const [from, to] = monthRange(month)
 
-  const [peopleRes, logs, basis, rules] = await Promise.all([
+  const [peopleRes, logs, basis, rules, leave] = await Promise.all([
     createAdminClient()
       .from('profiles')
       .select('id, full_name, email, division, position_title')
@@ -67,13 +68,17 @@ export default async function TrackerRekapPage({
     loadLogs(from, to),
     loadMonthBasis(month),
     loadRules(to),
+    loadLeave({ from, to, statuses: ['APPROVED'] }),
   ])
   const everyone = (peopleRes.data ?? []) as Person[]
   const divisions = [...new Set(everyone.map((p) => p.division).filter((d): d is string => !!d))].sort()
   const people = sp.divisi ? everyone.filter((p) => p.division === sp.divisi) : everyone
   const byUser = new Map<string, typeof logs>()
   for (const l of logs) byUser.set(l.user_id, [...(byUser.get(l.user_id) ?? []), l])
-  const rows = people.map((p) => ({ p, s: monthlySummary(byUser.get(p.id) ?? [], basis.workdays.length, rules, basis.lockedTarget) }))
+  const rows = people.map((p) => {
+    const l = leaveDaysIn(leave.filter((x) => x.user_id === p.id) as LeaveRow[], from, to, basis.calendar)
+    return { p, l, s: monthlySummary(byUser.get(p.id) ?? [], basis.workdays.length, rules, basis.lockedTarget, l.CUTI + l.IZIN + l.SAKIT) }
+  })
   const focus = sp.orang ? everyone.find((p) => p.id === sp.orang) : undefined
   const focusLogs = focus ? byUser.get(focus.id) ?? [] : []
   const focusEntries = focus ? await loadReviewLogs({ userId: focus.id, from, to }) : []
@@ -124,11 +129,15 @@ export default async function TrackerRekapPage({
               <th className="py-2 pr-3 text-right">Hari aktif</th>
               <th className="py-2 pr-3 text-right">Jam/hari</th>
               <th className="py-2 pr-3 text-right">Jam/aktivitas</th>
+              <th className="py-2 pr-3 text-right">Target</th>
+              <th className="py-2 pr-3 text-right">Cuti</th>
+              <th className="py-2 pr-3 text-right">Izin</th>
+              <th className="py-2 pr-3 text-right">Sakit</th>
               <th className="py-2">Status</th>
             </tr>
           </thead>
           <tbody>
-            {rows.map(({ p, s }) => (
+            {rows.map(({ p, s, l }) => (
               <tr key={p.id} className="border-b last:border-0">
                 <td className="py-2 pr-3">
                   <Link href={`/tracker/rekap?${qs({ orang: p.id })}`} className="font-semibold text-kasuat-deep-gold hover:underline">
@@ -142,6 +151,10 @@ export default async function TrackerRekapPage({
                 <td className="py-2 pr-3 text-right">{s.activeDays}</td>
                 <td className="py-2 pr-3 text-right">{num(s.avgHoursPerActiveDay)}</td>
                 <td className="py-2 pr-3 text-right">{num(s.avgHoursPerActivity)}</td>
+                <td className="py-2 pr-3 text-right">{num(s.targetHours)}</td>
+                <td className="py-2 pr-3 text-right">{l.CUTI}</td>
+                <td className="py-2 pr-3 text-right">{l.IZIN}</td>
+                <td className="py-2 pr-3 text-right">{l.SAKIT}</td>
                 <td className="py-2">{STATUS_LABEL[s.status]}</td>
               </tr>
             ))}

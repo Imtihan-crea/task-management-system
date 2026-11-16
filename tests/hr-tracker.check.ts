@@ -108,6 +108,11 @@ const kunci = monthlySummary([log('2026-11-02', 'X', 'Focus Work', 150 * 60)], 2
 cek('target dikunci', kunci.targetHours, 150)
 cek('status ikut target dikunci', kunci.status, 'SESUAI')
 cek('summary bulan tanpa hari kerja', monthlySummary([], 0).effectiveness, 0)
+// Cuti mengurangi target: bawaan mati (ikut sheet), bisa dinyalakan
+cek('cuti tidak mengurangi target (bawaan)', monthlySummary(logs, 20, undefined, null, 2).targetHours, 160)
+const potong = monthlySummary([log('2026-11-02', 'X', 'Focus Work', 144 * 60)], 20, { ...DEFAULT_RULES, leaveReducesTarget: true }, null, 2)
+cek('cuti mengurangi target bila dinyalakan', [potong.targetHours, potong.effectiveness, potong.status], [144, 100, 'SESUAI'])
+cek('potongan tidak melebihi hari kerja', monthlySummary([], 3, { ...DEFAULT_RULES, leaveReducesTarget: true }, null, 9).targetHours, 0)
 
 console.log(`hr-tracker: ${ok} lulus, ${gagal} gagal`)
 if (gagal) process.exit(1)

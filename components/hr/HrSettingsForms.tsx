@@ -49,6 +49,10 @@ export function RulesForm({ rules, today }: { rules: TrackerRules; today: string
       </div>
       <Triple prefix="daily" label="Status harian" values={rules.dailyThresholds} unit="Jam per hari" />
       <Triple prefix="weekly" label="Status mingguan" values={rules.weeklyThresholds} unit="Jam per minggu" />
+      <div className="flex items-center gap-2">
+        <input id="leave_reduces_target" name="leave_reduces_target" type="checkbox" defaultChecked={rules.leaveReducesTarget} className="h-5 w-5" />
+        <label htmlFor="leave_reduces_target" className="text-sm font-medium">Cuti, izin, dan sakit yang disetujui mengurangi target jam bulan itu (mati = seperti sheet lama)</label>
+      </div>
       <Triple prefix="monthly" label="Status bulanan" values={rules.monthlyPerDay} unit="Jam per hari kerja; 'lebih' = di atas hari kerja × angka ini" />
       <div className="flex flex-wrap items-center gap-3">
         <button type="submit" disabled={pending} className={BTN}>{pending ? 'Menyimpan...' : 'Simpan aturan'}</button>

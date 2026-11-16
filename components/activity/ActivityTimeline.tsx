@@ -94,6 +94,14 @@ export function describeActivity(entry: Pick<ActivityEntry, 'action' | 'metadata
       return 'Data karyawan diubah'
     case 'TRACKER_IMPORTED':
       return `Histori Daily Tracker diimport (${String(m.rows ?? 0)} aktivitas)`
+    case 'LEAVE_REQUESTED':
+      return `Pengajuan ${str(m.kind_label)} ${str(m.start_date)} s/d ${str(m.end_date)}`
+    case 'LEAVE_APPROVED':
+      return `${str(m.kind_label)} ${str(m.start_date)} s/d ${str(m.end_date)} disetujui`
+    case 'LEAVE_REJECTED':
+      return `${str(m.kind_label)} ${str(m.start_date)} s/d ${str(m.end_date)} ditolak`
+    case 'LEAVE_CANCELLED':
+      return `${str(m.kind_label)} ${str(m.start_date)} s/d ${str(m.end_date)} dibatalkan`
     case 'PERMISSION_CHANGED':
       return m.scope === 'project' ? `Wewenang project ${str(m.project_code)} diubah` : 'Wewenang user diubah'
     default:

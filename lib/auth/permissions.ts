@@ -50,6 +50,8 @@ export type Permission =
   // Kelola Master Reference (tambah, ubah, arsip, kukuhkan usulan teks bebas).
   // Tanpa bawaan peran: diberikan per akun lewat Wewenang (keputusan pemilik).
   | 'reference.manage'
+  // Setujui / tolak cuti, izin, sakit (Tahap 2). Tanpa bawaan peran; hr.manage juga boleh.
+  | 'leave.approve'
 
 const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ADMIN: [

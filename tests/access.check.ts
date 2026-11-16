@@ -92,7 +92,7 @@ cek('scope include', applyProjectScope(fakeQuery(), { all: false, include: ['P1'
 cek('scope kosong = tidak ada hasil', applyProjectScope(fakeQuery(), { all: false, include: [], exclude: [] }).calls, [['in', 'id', ['00000000-0000-0000-0000-000000000000']]])
 
 // HR Tahap 1 (16 Nov 2026): izin baru, satu-satunya penjaga karena tulis lewat service role.
-const HR_ONLY: Permission[] = ['hr.view', 'hr.manage', 'reference.manage']
+const HR_ONLY: Permission[] = ['hr.view', 'hr.manage', 'reference.manage', 'leave.approve']
 for (const role of ROLES) {
   for (const p of HR_ONLY) {
     cek(`${role} ${p} tanpa aturan = tidak`, decide(ctx(role), p), false)

@@ -277,3 +277,60 @@ export function summarize(b: ImportBuild): string {
   if (free.length) parts.push(`Teks bebas (usulan baru untuk Master Reference): ${free.join(', ')}.`)
   return parts.join(' ')
 }
+
+/* ---------- Leave Form (HR Tahap 2) ---------- */
+
+export type ImportLeave = { user_id: string; kind: 'CUTI' | 'IZIN' | 'SAKIT'; date: string; reason: string | null }
+export type ImportEmployee = { user_id: string; join_date: string | null; quota: number | null }
+export type LeaveBuild = { leave: ImportLeave[]; employees: ImportEmployee[]; unknownNames: string[]; skipped: number; unmatchedEmployees: string[] }
+
+const LEAVE_KIND: Record<string, ImportLeave['kind']> = { cuti: 'CUTI', izin: 'IZIN', sakit: 'SAKIT' }
+
+/**
+ * Sheet "Leave Form": kiri = log per hari (A Tanggal, C Nama, E Kategori, F Keterangan),
+ * kanan = data per orang (H Nama, I Tanggal Masuk, K Hak Cuti Tahunan). "Cuti Diambil"
+ * (manual di sheet) tidak dibaca: di aplikasi dihitung dari cuti yang disetujui.
+ * Log diimport sebagai pengajuan DISETUJUI (keputusan pemilik 16 Nov 2026).
+ */
+export function buildLeaveImport(sheets: SheetInput[], ctx: Pick<ImportContext, 'users' | 'today'>): LeaveBuild {
+  const data = sheets.find((s) => normalizeText(s.sheet).toLowerCase() === 'leave form')?.data ?? []
+  const unknown = new Map<string, string>()
+  const findUser = (name: string) => {
+    const hit = ctx.users.filter((u) => u.full_name && sameText(u.full_name, name))
+    if (hit.length === 1) return hit[0].id
+    unknown.set(name.toLocaleLowerCase('id-ID'), name)
+    return null
+  }
+  // Bagian kanan memakai nama lengkap resmi (mis. "Muhammad Diaz Ilyasa" vs profil "Diaz Ilyasa"):
+  // cocok bila semua kata nama profil ada di nama sheet, dan hanya satu profil yang cocok.
+  const words = (s: string) => normalizeText(s).toLocaleLowerCase('id-ID').split(' ')
+  const findLoose = (name: string) => {
+    const exact = ctx.users.filter((u) => u.full_name && sameText(u.full_name, name))
+    if (exact.length === 1) return exact[0].id
+    const have = new Set(words(name))
+    const hit = ctx.users.filter((u) => u.full_name && words(u.full_name).every((w) => have.has(w)))
+    return hit.length === 1 ? hit[0].id : null
+  }
+  const unmatched: string[] = []
+  const leave: ImportLeave[] = []
+  const employees: ImportEmployee[] = []
+  let skipped = 0
+  for (const r of data.slice(1)) {
+    const name = text(r[2])
+    if (name) {
+      const userId = findUser(name)
+      const date = parseDate(r[0])
+      const kind = LEAVE_KIND[text(r[4]).toLowerCase()]
+      if (userId && date && kind && date <= ctx.today) leave.push({ user_id: userId, kind, date, reason: text(r[5]) ? cut(text(r[5]), 1000) : null })
+      else if (userId) skipped++
+    }
+    const right = text(r[7])
+    if (right) {
+      const userId = findLoose(right)
+      if (!userId) unmatched.push(right)
+      const q = r[10] === null || r[10] === undefined || r[10] === '' ? null : Number(r[10])
+      if (userId) employees.push({ user_id: userId, join_date: parseDate(r[8]), quota: q !== null && Number.isInteger(q) && q >= 0 && q <= 60 ? q : null })
+    }
+  }
+  return { leave, employees, unknownNames: [...unknown.values()].sort((a, b) => a.localeCompare(b, 'id')), skipped, unmatchedEmployees: unmatched }
+}
