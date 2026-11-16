@@ -22,7 +22,7 @@ export function loadPlaywright() {
   return createRequire(dir.replace(/\/?$/, '/'))('playwright')
 }
 
-function loadEnv() {
+export function loadEnv() {
   const text = fs.readFileSync(path.join(REPO, '.env.local'), 'utf8')
   return Object.fromEntries(
     text.split('\n').filter((l) => /^[A-Z_]+=/.test(l))

@@ -74,6 +74,26 @@ export function describeActivity(entry: Pick<ActivityEntry, 'action' | 'metadata
       return 'Akun dihapus (riwayat tetap)'
     case 'ROLE_CHANGED':
       return `Role diubah ${str(m.old_role)} → ${str(m.new_role)}`
+    case 'REFERENCE_ADDED':
+      return `Pilihan "${str(m.label)}" ditambahkan ke ${str(m.list_title)}`
+    case 'REFERENCE_UPDATED':
+      return `Pilihan "${str(m.from)}" diubah menjadi "${str(m.label)}"`
+    case 'REFERENCE_ARCHIVED':
+      return `Pilihan "${str(m.label)}" diarsipkan`
+    case 'REFERENCE_RESTORED':
+      return `Pilihan "${str(m.label)}" diaktifkan lagi`
+    case 'REFERENCE_PROMOTED':
+      return `Teks bebas "${str(m.text)}" dikukuhkan sebagai "${str(m.label)}"`
+    case 'HR_RULES_CHANGED':
+      return `Aturan jam kerja diubah (berlaku ${str(m.effective_from)})`
+    case 'HR_CALENDAR_CHANGED':
+      return m.removed ? `Kalender ${str(m.day)} dihapus` : `Kalender ${str(m.day)}: ${str(m.name)}`
+    case 'HR_TARGET_CHANGED':
+      return m.target_hours ? `Target jam ${str(m.month)} dikunci ${String(m.target_hours)} jam` : `Kunci target jam ${str(m.month)} dilepas`
+    case 'HR_PROFILE_UPDATED':
+      return 'Data karyawan diubah'
+    case 'TRACKER_IMPORTED':
+      return `Histori Daily Tracker diimport (${String(m.rows ?? 0)} aktivitas)`
     case 'PERMISSION_CHANGED':
       return m.scope === 'project' ? `Wewenang project ${str(m.project_code)} diubah` : 'Wewenang user diubah'
     default:

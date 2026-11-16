@@ -91,6 +91,27 @@ cek('scope semua kecuali', applyProjectScope(fakeQuery(), { all: true, include: 
 cek('scope include', applyProjectScope(fakeQuery(), { all: false, include: ['P1', 'P2'], exclude: [] }, 'project_id').calls, [['in', 'project_id', ['P1', 'P2']]])
 cek('scope kosong = tidak ada hasil', applyProjectScope(fakeQuery(), { all: false, include: [], exclude: [] }).calls, [['in', 'id', ['00000000-0000-0000-0000-000000000000']]])
 
+// HR Tahap 1 (16 Nov 2026): izin baru, satu-satunya penjaga karena tulis lewat service role.
+const HR_ONLY: Permission[] = ['hr.view', 'hr.manage', 'reference.manage']
+for (const role of ROLES) {
+  for (const p of HR_ONLY) {
+    cek(`${role} ${p} tanpa aturan = tidak`, decide(ctx(role), p), false)
+    cek(`${role} ${p} diberi = ya`, decide(ctx(role, { overrides: [{ permission: p, projectId: null, granted: true }] }), p), true)
+    cek(`${role} ${p} dapat dari peran? tidak`, can(role, p), false)
+  }
+  cek(`${role} ${'hr.*'} bisa diberikan lewat Wewenang`, HR_ONLY.every(isGrantable), true)
+}
+cek('ADMIN tracker.review semua project', [decide(ctx('ADMIN'), 'tracker.review', 'P1'), decide(ctx('ADMIN'), 'tracker.review', 'P2')], [true, true])
+cek('PM tracker.review hanya project kelolaan', [decide(ctx('PROJECT_MANAGER'), 'tracker.review', 'P1'), decide(ctx('PROJECT_MANAGER'), 'tracker.review', 'P2')], [true, false])
+cek('TEAM tracker.review tanpa aturan', decide(ctx('TEAM_MEMBER'), 'tracker.review', 'P1'), false)
+cek('TEAM tracker.review diberi di P2 saja', [
+  decide(ctx('TEAM_MEMBER', { overrides: [{ permission: 'tracker.review', projectId: 'P2', granted: true }] }), 'tracker.review', 'P2'),
+  decide(ctx('TEAM_MEMBER', { overrides: [{ permission: 'tracker.review', projectId: 'P2', granted: true }] }), 'tracker.review', 'P1'),
+], [true, false])
+cek('PM tracker.review dicabut di P1', decide(ctx('PROJECT_MANAGER', { overrides: [{ permission: 'tracker.review', projectId: 'P1', granted: false }] }), 'tracker.review', 'P1'), false)
+cek('Super Admin hr.manage', decide(ctx('ADMIN', { isSuperAdmin: true }), 'hr.manage'), true)
+cek('Developer reference.manage', decide(ctx('ADMIN', { isDeveloper: true }), 'reference.manage'), true)
+
 console.log(`LULUS: ${ok}`)
 console.log(`GAGAL: ${gagal}`)
 if (gagal > 0) process.exit(1)

@@ -37,6 +37,15 @@ export const PERMISSION_GROUPS: { title: string; items: { permission: Permission
     title: 'Meeting',
     items: [{ permission: 'meetings.edit', label: 'Kelola meeting (ubah, selesai/batal, peserta)' }],
   },
+  {
+    title: 'HR dan Daily Tracker',
+    items: [
+      { permission: 'hr.view', label: 'Lihat tracker dan rekap jam semua karyawan' },
+      { permission: 'hr.manage', label: 'Kelola data HR (profil karyawan, kalender libur, target jam, pengaturan)' },
+      { permission: 'tracker.review', label: 'Lihat dan komentari tracker anggota project' },
+      { permission: 'reference.manage', label: 'Kelola Master Reference (tambah, ubah, arsip, kukuhkan usulan)' },
+    ],
+  },
 ]
 
 export const PERMISSION_LABEL: Record<string, string> = Object.fromEntries(

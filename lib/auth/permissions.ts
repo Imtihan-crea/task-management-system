@@ -40,6 +40,16 @@ export type Permission =
   | 'meetings.complete'
   | 'meetings.cancel'
   | 'meetings.manageParticipants'
+  // --- HR Tahap 1 (16 Nov 2026): Daily Tracker ---
+  // hr.view/hr.manage tidak ada di paket peran: hanya Super Admin/Developer
+  // dan akun yang diberi lewat tab Wewenang (keputusan pemilik).
+  | 'hr.view'
+  | 'hr.manage'
+  // Lihat & komentari tracker anggota project (PM View).
+  | 'tracker.review'
+  // Kelola Master Reference (tambah, ubah, arsip, kukuhkan usulan teks bebas).
+  // Tanpa bawaan peran: diberikan per akun lewat Wewenang (keputusan pemilik).
+  | 'reference.manage'
 
 const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ADMIN: [
@@ -72,6 +82,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'meetings.complete',
     'meetings.cancel',
     'meetings.manageParticipants',
+    'tracker.review',
   ],
   PROJECT_MANAGER: [
     'profile.viewOwn',
@@ -97,6 +108,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'meetings.complete',
     'meetings.cancel',
     'meetings.manageParticipants',
+    'tracker.review',
   ],
   TEAM_MEMBER: [
     'profile.viewOwn',

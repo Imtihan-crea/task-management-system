@@ -3,6 +3,9 @@ import { notFound } from 'next/navigation'
 import { hasPermission, requirePermission } from '@/lib/auth/current-access'
 import { PermissionsSection } from '@/components/users/PermissionsSection'
 import { TopActionForms } from '@/components/users/TopActionForms'
+import { EmployeeProfileForm } from '@/components/hr/EmployeeProfileForm'
+import { loadReferences } from '@/lib/hr/data'
+import type { EmployeeFields } from '@/lib/hr/employee'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ROLE_LABELS, STATUS_LABELS } from '@/lib/auth/roles'
 import { AppShell } from '@/components/layout/AppShell'
@@ -38,18 +41,23 @@ export default async function UserDetailPage({
   params: Promise<{ id: string }>
 }) {
   const viewer = await requirePermission('users.view')
-  const canManagePermissions = await hasPermission(viewer.id, 'permissions.manage')
+  const [canManagePermissions, canViewHr, canManageHr] = await Promise.all([
+    hasPermission(viewer.id, 'permissions.manage'),
+    hasPermission(viewer.id, 'hr.view'),
+    hasPermission(viewer.id, 'hr.manage'),
+  ])
 
   const { id } = await params
   const admin = createAdminClient()
 
   const { data: profile } = await admin
     .from('profiles')
-    .select('id, full_name, email, role, status, created_at, updated_at, is_super_admin, is_developer, deleted_at')
+    .select('id, full_name, email, role, status, created_at, updated_at, is_super_admin, is_developer, deleted_at, division, position_title, position_level, join_date, annual_leave_quota')
     .eq('id', id)
-    .single<ProfileRow>()
+    .single<ProfileRow & EmployeeFields>()
 
   if (!profile) notFound()
+  const refs = canViewHr || canManageHr ? await loadReferences(['DIVISION', 'POSITION']) : []
 
   // Last Login diambil dari Supabase Auth (data reliable, bukan dummy).
   // Sengaja tidak disimpan di profiles.
@@ -109,6 +117,19 @@ export default async function UserDetailPage({
           </section>
         )}
       </div>
+
+      {(canViewHr || canManageHr) && !profile.deleted_at && (
+        <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+          <h2 className="mb-4 text-lg font-bold">Data Karyawan</h2>
+          <EmployeeProfileForm
+            userId={profile.id}
+            values={profile}
+            divisions={refs.filter((r) => r.list === 'DIVISION' && !r.archived_at).map((r) => r.label)}
+            positions={refs.filter((r) => r.list === 'POSITION' && !r.archived_at).map((r) => r.label)}
+            canEdit={canManageHr}
+          />
+        </section>
+      )}
 
       {canManagePermissions && !profile.deleted_at && (
         <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">

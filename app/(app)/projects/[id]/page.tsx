@@ -14,6 +14,8 @@ import { TasksTab } from '@/components/projects/workspace/TasksTab'
 import { MeetingsTab } from '@/components/projects/workspace/MeetingsTab'
 import { ActivityTab, MembersTab } from '@/components/projects/workspace/ActivityMembersTabs'
 import { SettingsTab } from '@/components/projects/workspace/SettingsTab'
+import { TrackerTab } from '@/components/projects/workspace/TrackerTab'
+import { todayISO } from '@/lib/utils/dates'
 import { isProjectManager } from '@/lib/data/projects'
 import { hasPermission } from '@/lib/auth/current-access'
 import { canSuggestForProject } from '@/lib/auth/project-access'
@@ -24,6 +26,7 @@ const TABS = [
   { key: 'workstreams', label: 'Workstreams' },
   { key: 'tasks', label: 'Tasks' },
   { key: 'meetings', label: 'Meetings' },
+  { key: 'tracker', label: 'Daily Tracker' },
   { key: 'activity', label: 'Activity' },
   { key: 'members', label: 'Anggota' },
   { key: 'settings', label: 'Pengaturan' },
@@ -65,13 +68,17 @@ export default async function ProjectDetailPage({
     (profile.role === 'PROJECT_MANAGER' && (await isProjectManager(id, profile.id)))
   const canEditThis = profile.role === 'ADMIN' || isOwner
   // Izin di project ini: peran + aturan per akun (lib/auth/access.ts).
-  const [canEditProject, canManageWorkstream, canCreateTask, canEditTask] = await Promise.all([
+  const [canEditProject, canManageWorkstream, canCreateTask, canEditTask, canReviewTracker, canViewHr] = await Promise.all([
     hasPermission(profile.id, 'projects.edit', id),
     hasPermission(profile.id, 'workstreams.create', id),
     hasPermission(profile.id, 'tasks.create', id),
     hasPermission(profile.id, 'tasks.edit', id),
+    hasPermission(profile.id, 'tracker.review', id),
+    hasPermission(profile.id, 'hr.view'),
   ])
-  const hasGrantHere = canEditProject || canManageWorkstream || canCreateTask || canEditTask
+  const canSeeTracker = canReviewTracker || canViewHr
+  // Izin per akun tracker.review / hr.view juga membuka halaman project (review 16 Nov 2026).
+  const hasGrantHere = canEditProject || canManageWorkstream || canCreateTask || canEditTask || canSeeTracker
 
   if (profile.role === 'TEAM_MEMBER' && !hasGrantHere) {
     const { count: involved } = await admin
@@ -102,6 +109,7 @@ export default async function ProjectDetailPage({
     workstreams: wsCount ?? 0,
     tasks: taskCount ?? 0,
     meetings: meetingCount ?? 0,
+    tracker: undefined,
     activity: undefined,
     members: undefined,
     settings: undefined,
@@ -171,7 +179,7 @@ export default async function ProjectDetailPage({
         <Tabs
           label="Workspace Project"
           items={TABS.filter(
-            (t) => t.key !== 'settings' || canEditProject
+            (t) => (t.key !== 'settings' || canEditProject) && (t.key !== 'tracker' || canSeeTracker)
           ).map((t) => ({
             key: t.key,
             label: t.label,
@@ -218,6 +226,14 @@ export default async function ProjectDetailPage({
                 can(profile.role, 'meetings.create') &&
                 (canEditThis || profile.role === 'TEAM_MEMBER')
               }
+            />
+          </Suspense>
+        )}
+        {tab === 'tracker' && canSeeTracker && (
+          <Suspense fallback={<SkeletonRows rows={5} />}>
+            <TrackerTab
+              projectId={id}
+              month={/^\d{4}-(0[1-9]|1[0-2])$/.test(str(query.bulan)) ? str(query.bulan) : todayISO().slice(0, 7)}
             />
           </Suspense>
         )}

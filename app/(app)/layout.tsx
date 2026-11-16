@@ -4,7 +4,7 @@ import { Shell } from '@/components/layout/Shell'
 import { hasPermission } from '@/lib/auth/current-access'
 import type { Permission } from '@/lib/auth/permissions'
 
-const MENU_PERMISSIONS: Permission[] = ['projects.view', 'tasks.view', 'meetings.view', 'suggestions.create', 'users.view']
+const MENU_PERMISSIONS: Permission[] = ['projects.view', 'tasks.view', 'meetings.view', 'suggestions.create', 'users.view', 'reference.manage', 'hr.manage']
 
 /**
  * Layout grup (app): shell persisten (sidebar + header tetap mounted

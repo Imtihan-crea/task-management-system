@@ -53,6 +53,10 @@ export const PERMISSION_SCOPE: Record<Permission, PermissionScope> = {
   'meetings.complete': 'role',
   'meetings.cancel': 'role',
   'meetings.manageParticipants': 'role',
+  'hr.view': 'global',
+  'hr.manage': 'global',
+  'tracker.review': 'project',
+  'reference.manage': 'global',
 }
 
 /** Hanya Super Admin dan Developer; tidak bisa diberikan ke akun lain. */

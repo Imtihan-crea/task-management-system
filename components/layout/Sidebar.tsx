@@ -46,6 +46,7 @@ const GROUPS: { title: string | null; items: Omit<NavItem, 'icon'>[] }[] = [
     title: 'KOLABORASI',
     items: [
       { href: '/meetings', label: 'Meetings', permission: 'meetings.view' },
+      { href: '/tracker', label: 'Daily Tracker', permission: null },
       { href: '/task-suggestions', label: 'Task Suggestions', permission: 'suggestions.create' },
     ],
   },
@@ -57,13 +58,20 @@ const GROUPS: { title: string | null; items: Omit<NavItem, 'icon'>[] }[] = [
     title: 'SISTEM',
     items: [
       { href: '/users', label: 'Users', permission: 'users.view' },
+      { href: '/master-reference', label: 'Master Reference', permission: 'reference.manage' },
+      { href: '/settings/hr', label: 'Pengaturan HR', permission: 'hr.manage' },
       { href: '/settings', label: 'Pengaturan', permission: null },
       { href: '/update-log', label: 'Update Log', permission: null },
     ],
   },
 ]
 
+const ALL_HREFS = GROUPS.flatMap((g) => g.items.map((i) => i.href))
+
 const ICONS: Record<string, string> = {
+  '/settings/hr': 'M8 7V3m8 4V3M4 11h16M5 5h14a1 1 0 011 1v13a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z',
+  '/master-reference': 'M4 6h16M4 12h16M4 18h10',
+  '/tracker': 'M12 8v4l3 2M3 12a9 9 0 1018 0 9 9 0 00-18 0zM8 3h8',
   '/update-log': 'M12 8v4l3 2M3 12a9 9 0 1018 0 9 9 0 00-18 0z',
   '/dashboard': 'M3 12l9-9 9 9M5 10v10h5v-6h4v6h5V10',
   '/projects': 'M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V7z',
@@ -104,9 +112,9 @@ export function Sidebar({
             )}
             {group.title && collapsed && <div className="pt-3" />}
             {visible.map((item) => {
-              const active =
-                pathname === item.href ||
-                (item.href !== '/dashboard' && pathname.startsWith(item.href))
+              // Menu dengan href terpanjang yang cocok menang (/settings/hr bukan /settings).
+              const matches = (href: string) => pathname === href || (href !== '/dashboard' && pathname.startsWith(href + '/'))
+              const active = matches(item.href) && !ALL_HREFS.some((h) => h.length > item.href.length && h.startsWith(item.href) && matches(h))
               return (
                 <Link
                   key={item.href}

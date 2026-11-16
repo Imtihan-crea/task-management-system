@@ -22,6 +22,15 @@ export const FIELD_MAX: Record<string, number> = {
   review_note: 2000,
   description: 5000,
   notes: 20000,
+  // Daily Tracker (migrasi 021)
+  activity: 300,
+  detail: 5000,
+  output: 2000,
+  comment: 2000,
+  project: 150,
+  category: 60,
+  // location (lokasi meeting) sudah 200; tracker membatasi 60 di form & database.
+  label: 80,
 }
 
 /** Field lain (id, status, tanggal, dll.) jauh lebih pendek; ini jaring pengaman. */

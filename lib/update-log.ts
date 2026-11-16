@@ -16,6 +16,13 @@ export const UPDATE_LOG: UpdateLogEntry[] = [
   {
     date: '2026-11-16',
     added: [
+      'Daily Tracker (menu Daily Tracker): setiap karyawan mencatat aktivitas kerja per jam (proyek, aktivitas, jam mulai–selesai, kategori, lokasi, output). Jam mulai otomatis menyambung dari aktivitas sebelumnya; jam yang bentrok atau lewat tengah malam ditolak. Ringkasan jam hari ini, minggu ini, dan bulan ini dibanding target 8 jam per hari kerja.',
+      'Proyek, kategori, dan lokasi bisa dipilih dari daftar atau diketik sendiri bila tidak ada; isian ketikan menjadi usulan untuk dikukuhkan atasan.',
+      'Master Reference (bagi pemegang izin): mengelola daftar pilihan kategori, lokasi, proyek internal, divisi, dan jabatan. Pilihan tidak bisa dihapus, hanya diarsipkan; label hanya boleh ditambah, tidak diganti.',
+      'Rekap Daily Tracker (bagi pemegang izin HR): jam, efektivitas, jumlah aktivitas, hari aktif, dan status per karyawan per bulan, dengan rincian per proyek, per kategori, dan daftar aktivitas.',
+      'Tab Daily Tracker di setiap project untuk PM: jam anggota di project itu dan komentar pemeriksa; karyawan mendapat notifikasi dan melihat komentarnya di Daily Tracker.',
+      'Pengaturan HR: aturan jam kerja, kalender libur, dan target jam bulanan. Data karyawan (divisi, jabatan, tanggal masuk, hak cuti) di detail user. Import histori Daily Tracker dari Excel.',
+      'Izin baru di Wewenang: lihat data HR, kelola data HR, kelola Master Reference (diberikan per akun), dan lihat tracker anggota project (bawaan Admin dan PM).',
       'Khusus Super Admin dan Developer di detail user: set password langsung (user wajib ganti saat login), ganti email / ID login, dan hapus akun. Akun yang dihapus tidak bisa login lagi dan hilang dari daftar, tetapi namanya tetap di riwayat task, meeting, dan activity.',
       'Wewenang per akun: Super Admin dan Developer bisa memberi atau mencabut izin tertentu untuk satu akun (di halaman detail user, bagian Wewenang), berlaku di semua project atau project tertentu. Tanpa pengaturan, izin tetap mengikuti peran seperti sebelumnya. Mengganti role user menghapus pengaturan per akun yang lama.',
       'Akun Developer (setara Super Admin untuk mengatur wewenang).',
@@ -23,6 +30,7 @@ export const UPDATE_LOG: UpdateLogEntry[] = [
       'Import task dari Excel (menu Tasks, tombol Import Excel) untuk Admin dan PM. Format sama dengan file timeline harian marketing: sheet Timeline, Divisi menjadi Workstream, Nama PIC dicocokkan dengan user. Import ulang file yang diperbarui mengubah task yang sudah ada, tidak membuat dobel.',
     ],
     removed: [],
+    pending: ['Pengingat sore bagi yang belum mengisi Daily Tracker sudah disiapkan tetapi belum dinyalakan.'],
   },
   {
     date: '2026-11-10',

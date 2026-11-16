@@ -140,3 +140,11 @@ export function meetingNotesPendingBody(i: { baseUrl: string; meetingId: string;
     url: u(i.baseUrl, `/meetings/${i.meetingId}?tab=notes`),
   })
 }
+
+export function trackerReminderBody(i: { baseUrl: string; date: string }): string {
+  return notice({
+    introHtml: `Daily Tracker Anda untuk <strong>${h(i.date)}</strong> belum diisi. Catat aktivitas hari ini sebelum pulang.`,
+    linkLabel: 'Isi Daily Tracker',
+    url: u(i.baseUrl, `/tracker?tanggal=${i.date}`),
+  })
+}

@@ -10,6 +10,18 @@ export type ActivityAction =
   | 'USER_DELETED'
   | 'ROLE_CHANGED'
   | 'PERMISSION_CHANGED'
+  // --- Master Reference (migrasi 022) ---
+  | 'REFERENCE_ADDED'
+  | 'REFERENCE_UPDATED'
+  | 'REFERENCE_ARCHIVED'
+  | 'REFERENCE_RESTORED'
+  | 'REFERENCE_PROMOTED'
+  // --- HR (migrasi 021) ---
+  | 'HR_RULES_CHANGED'
+  | 'HR_CALENDAR_CHANGED'
+  | 'HR_TARGET_CHANGED'
+  | 'HR_PROFILE_UPDATED'
+  | 'TRACKER_IMPORTED'
   | 'PROJECT_CREATED'
   | 'PROJECT_UPDATED'
   | 'PROJECT_PM_ADDED'
@@ -58,6 +70,8 @@ export type ActivityEntityType =
   // --- Phase 11 ---
   | 'meeting'
   | 'meeting_action_item'
+  | 'master_reference'
+  | 'hr'
   | ''
 
 export type LogActivityInput = {

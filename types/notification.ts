@@ -19,8 +19,12 @@ export type NotificationType =
   | 'MEETING_REMINDER'
   | 'MEETING_NOTES_PENDING'
   | 'DAILY_DIGEST'
+  // --- HR Daily Tracker (migrasi 021) ---
+  | 'TRACKER_REMINDER'
+  | 'TRACKER_COMMENT'
 
-export type NotificationEntityType = 'task' | 'project' | 'suggestion' | 'meeting' | ''
+/** 'tracker': entityId = tanggal YYYY-MM-DD (tautan ke Daily Tracker hari itu). */
+export type NotificationEntityType = 'task' | 'project' | 'suggestion' | 'meeting' | 'tracker' | ''
 
 export interface NotificationItem {
   id: string
@@ -56,6 +60,7 @@ export function notificationHref(
   if (entityType === 'project' && entityId) return `/projects/${entityId}`
   if (entityType === 'suggestion' && entityId) return `/task-suggestions/${entityId}`
   if (entityType === 'meeting' && entityId) return `/meetings/${entityId}`
+  if (entityType === 'tracker' && /^\d{4}-\d{2}-\d{2}$/.test(entityId)) return `/tracker?tanggal=${entityId}`
   return '/dashboard'
 }
 
