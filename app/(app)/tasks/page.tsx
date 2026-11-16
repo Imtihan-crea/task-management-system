@@ -61,6 +61,11 @@ export default async function TasksPage({
         actions={
           <>
             {canCreate && <ButtonLink href="/tasks/new">+ Tambah Task</ButtonLink>}
+            {canCreate && (
+              <ButtonLink href="/tasks/import" variant="secondary">
+                Import Excel
+              </ButtonLink>
+            )}
             {can(profile.role, 'suggestions.create') && (
               <ButtonLink href="/task-suggestions/new" variant="secondary">
                 + Usulkan Task

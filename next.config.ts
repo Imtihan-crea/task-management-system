@@ -14,6 +14,8 @@ const securityHeaders = [
 ];
 
 const nextConfig: NextConfig = {
+  // Import Excel task (app/actions/task-import.ts) menerima file sampai 4 MB.
+  experimental: { serverActions: { bodySizeLimit: "5mb" } },
   headers() {
     return [{ source: "/:path*", headers: securityHeaders }];
   },
