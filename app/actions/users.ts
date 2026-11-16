@@ -2,6 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { requireAdmin } from '@/lib/auth/session'
+import { newUserRoleError, superAdminError } from '@/lib/auth/super-admin'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isUserRole, isUserStatus } from '@/lib/auth/roles'
 import { validateAdminPassword } from '@/lib/auth/password'
@@ -112,6 +113,27 @@ async function wouldRemoveLastAdmin(targetId: string, nextRole: UserRole, nextSt
   })
 }
 
+/** Super Admin (migrasi 018). Kolom belum ada / gagal baca = bukan Super Admin. */
+async function isSuperAdmin(userId: string): Promise<boolean> {
+  const { data, error } = await createAdminClient()
+    .from('profiles')
+    .select('is_super_admin')
+    .eq('id', userId)
+    .maybeSingle<{ is_super_admin: boolean }>()
+  if (error) console.warn('[super-admin] read failed:', error.message)
+  return data?.is_super_admin === true
+}
+
+/** Cek aturan Super Admin untuk aksi admin terhadap user lain (lib/auth/super-admin.ts). */
+async function superGuard(
+  actorId: string,
+  target: { id: string; role: UserRole },
+  next: { role?: UserRole; status?: UserStatus } = {}
+): Promise<string | null> {
+  const [actorSuper, targetSuper] = await Promise.all([isSuperAdmin(actorId), isSuperAdmin(target.id)])
+  return superAdminError({ id: actorId, isSuper: actorSuper }, { ...target, isSuper: targetSuper }, next)
+}
+
 /* ------------------------------------------------------------------ */
 /* 13 - Invite User                                                    */
 /* ------------------------------------------------------------------ */
@@ -129,6 +151,8 @@ export async function inviteUser(
   if (!fullName) return { error: 'Nama lengkap wajib diisi.' }
   if (!validEmail(email)) return { error: 'Masukkan alamat Email yang valid.' }
   if (!isUserRole(role)) return { error: 'Pilih role yang valid.' }
+  const roleError = newUserRoleError(await isSuperAdmin(actor.id), role)
+  if (roleError) return { error: roleError }
 
   const admin = createAdminClient()
 
@@ -349,6 +373,8 @@ export async function createUserWithPassword(
   if (!fullName) return { error: 'Nama lengkap wajib diisi.' }
   if (!validEmail(email)) return { error: 'Masukkan alamat Email yang valid.' }
   if (!isUserRole(role)) return { error: 'Pilih role yang valid.' }
+  const roleError = newUserRoleError(await isSuperAdmin(actor.id), role)
+  if (roleError) return { error: roleError }
 
   const passwordError = validateAdminPassword(password)
   if (passwordError) return { error: passwordError }
@@ -508,6 +534,9 @@ export async function updateUser(
 
   if (readError || !current) return { error: 'User tidak ditemukan.' }
 
+  const superError = await superGuard(adminProfile.id, { id: targetId, role: current.role }, { role, status })
+  if (superError) return { error: superError }
+
   const statusError = userEditStatusError({
     actorId: adminProfile.id,
     targetId,
@@ -605,6 +634,9 @@ export async function setUserStatus(
 
   if (readError || !current) return { error: 'User tidak ditemukan.' }
 
+  const superError = await superGuard(adminProfile.id, { id: targetId, role: current.role }, { status })
+  if (superError) return { error: superError }
+
   const changeError = quickStatusChangeError({
     actorId: adminProfile.id,
     targetId,
@@ -668,11 +700,13 @@ export async function generateAccessLink(
   const admin = createAdminClient()
   const { data: target } = await admin
     .from('profiles')
-    .select('email, status')
+    .select('email, status, role')
     .eq('id', targetId)
-    .single<{ email: string; status: UserStatus }>()
+    .single<{ email: string; status: UserStatus; role: UserRole }>()
 
   if (!target) return { error: 'User tidak ditemukan.' }
+  const superError = await superGuard(actor.id, { id: targetId, role: target.role })
+  if (superError) return { error: superError }
   if (target.status === 'INACTIVE') {
     return { error: 'Aktifkan user terlebih dahulu.' }
   }

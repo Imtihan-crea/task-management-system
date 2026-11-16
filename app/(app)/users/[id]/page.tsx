@@ -16,6 +16,7 @@ type ProfileRow = {
   status: UserStatus
   created_at: string
   updated_at: string
+  is_super_admin: boolean
 }
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -39,7 +40,7 @@ export default async function UserDetailPage({
 
   const { data: profile } = await admin
     .from('profiles')
-    .select('id, full_name, email, role, status, created_at, updated_at')
+    .select('id, full_name, email, role, status, created_at, updated_at, is_super_admin')
     .eq('id', id)
     .single<ProfileRow>()
 
@@ -71,7 +72,7 @@ export default async function UserDetailPage({
           <dl>
             <Row label="Nama Lengkap" value={profile.full_name || '-'} />
             <Row label="Email" value={profile.email} />
-            <Row label="Role" value={ROLE_LABELS[profile.role]} />
+            <Row label="Role" value={profile.is_super_admin ? 'Super Admin' : ROLE_LABELS[profile.role]} />
             <Row label="Status" value={STATUS_LABELS[profile.status]} />
             <Row label="Tanggal Dibuat" value={formatDateTime(profile.created_at)} />
             <Row

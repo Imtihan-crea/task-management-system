@@ -16,6 +16,7 @@ export const UPDATE_LOG: UpdateLogEntry[] = [
   {
     date: '2026-11-16',
     added: [
+      'Super Admin: tingkat tertinggi di atas Admin. Hanya Super Admin yang bisa mengubah, menonaktifkan, membuat link reset untuk, atau mengangkat Admin; Super Admin tidak bisa diturunkan atau dinonaktifkan. Terlihat di halaman Users.',
       'Import task dari Excel (menu Tasks, tombol Import Excel) untuk Admin dan PM. Format sama dengan file timeline harian marketing: sheet Timeline, Divisi menjadi Workstream, Nama PIC dicocokkan dengan user. Import ulang file yang diperbarui mengubah task yang sudah ada, tidak membuat dobel.',
     ],
     removed: [],
