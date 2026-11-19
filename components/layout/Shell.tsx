@@ -3,6 +3,7 @@
 import { useState } from 'react'
 import type { UserRole } from '@/types/profile'
 import { Sidebar, SidebarBrand } from '@/components/layout/Sidebar'
+import { PickerOnClick } from '@/components/layout/PickerOnClick'
 import { BellPopover, GlobalSearch, ProfileMenu } from '@/components/layout/Topbar'
 
 const STORAGE_KEY = 'kasuat.sidebar.collapsed'
@@ -49,6 +50,7 @@ export function Shell({
 
   return (
     <div className="flex min-h-screen bg-kasuat-off-white dark:bg-black">
+      <PickerOnClick />
       {/* Sidebar desktop persisten */}
       <aside
         className={`sticky top-0 hidden h-screen shrink-0 flex-col bg-kasuat-black transition-[width] duration-200 lg:flex ${

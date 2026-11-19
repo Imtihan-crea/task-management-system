@@ -61,10 +61,11 @@
     "test:hr-employee": "tsx tests/hr-employee.check.ts",
     "test:hr-reminder": "tsx tests/hr-reminder.check.ts",
     "test:hr-leave": "tsx tests/hr-leave.check.ts",
+    "test:combobox": "tsx tests/combobox-filter.check.ts",
     "test:user-status": "tsx tests/user-status.check.ts",
     "check:secrets": "node scripts/check-secrets.mjs",
     "test:db": "tsx tests/postgrest-or.check.ts",
-    "test:logic": "npm run test:time && npm run test:dates && npm run test:rules && npm run test:email && npm run test:layout && npm run test:digest && npm run test:task && npm run test:auth && npm run test:canonical && npm run test:cron && npm run test:permissions && npm run test:alert && npm run test:task-access && npm run test:project-access && npm run test:user-status && npm run test:limits && npm run test:paginate && npm run test:filter-values && npm run test:ws-code && npm run test:import && npm run test:super-admin && npm run test:access && npm run test:hr-tracker && npm run test:hr-reference && npm run test:hr-import && npm run test:hr-employee && npm run test:hr-reminder && npm run test:hr-leave && npm run test:export-excel && npm run test:export-lists && npm run check:secrets"
+    "test:logic": "npm run test:time && npm run test:dates && npm run test:rules && npm run test:email && npm run test:layout && npm run test:digest && npm run test:task && npm run test:auth && npm run test:canonical && npm run test:cron && npm run test:permissions && npm run test:alert && npm run test:task-access && npm run test:project-access && npm run test:user-status && npm run test:limits && npm run test:paginate && npm run test:filter-values && npm run test:ws-code && npm run test:import && npm run test:super-admin && npm run test:access && npm run test:hr-tracker && npm run test:hr-reference && npm run test:hr-import && npm run test:hr-employee && npm run test:hr-reminder && npm run test:hr-leave && npm run test:export-excel && npm run test:export-lists && npm run test:combobox && npm run check:secrets"
   },
   "dependencies": {
     "@sentry/nextjs": "11.11.0",
