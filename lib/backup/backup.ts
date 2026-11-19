@@ -50,20 +50,37 @@ export const BACKUP_TABLES: readonly (readonly [string, readonly string[]])[] = 
 ]
 
 export const AUTH_USERS_KEY = 'auth.users'
+export const AUTH_IDENTITIES_KEY = 'auth.identities'
+/**
+ * Token sementara auth.users: dikosongkan ('') oleh RPC backup_auth_export
+ * (migrasi 028) dan sekali lagi di sini, supaya tidak pernah ikut ke email.
+ */
+export const AUTH_TEMP_TOKENS = [
+  'confirmation_token',
+  'recovery_token',
+  'email_change_token_new',
+  'email_change_token_current',
+  'phone_change_token',
+  'reauthentication_token',
+] as const
 /** Batas lampiran; di atas ini email gagal yang dikirim, bukan backup. */
 export const MAX_ATTACHMENT_BYTES = 8 * 1024 * 1024
 export const tooLarge = (bytes: number) => bytes > MAX_ATTACHMENT_BYTES
 export const MIN_PASSPHRASE_LENGTH = 12
 
-export type AuthUserRow = { id: string; email: string | null; created_at: string | null; last_sign_in_at: string | null }
 export type BackupData = {
   meta: { created_at: string; app_version: string; tables: Record<string, number> }
   tables: Record<string, unknown[]>
 }
 
-/** Hanya 4 kolom; hash password, token, dan metadata auth sengaja tidak ikut. */
-export function pickAuthUser(u: { id: string; email?: string | null; created_at?: string | null; last_sign_in_at?: string | null }): AuthUserRow {
-  return { id: u.id, email: u.email ?? null, created_at: u.created_at ?? null, last_sign_in_at: u.last_sign_in_at ?? null }
+/**
+ * Baris auth.users lengkap (termasuk hash password `encrypted_password`, supaya
+ * login lama tetap berlaku setelah pemulihan); hanya token sementara dikosongkan.
+ */
+export function sanitizeAuthUser(row: Record<string, unknown>): Record<string, unknown> {
+  const out = { ...row }
+  for (const key of AUTH_TEMP_TOKENS) out[key] = ''
+  return out
 }
 
 export function buildBackup(tables: Record<string, unknown[]>, createdAt: string, appVersion: string): BackupData {
@@ -73,9 +90,19 @@ export function buildBackup(tables: Record<string, unknown[]>, createdAt: string
 
 export const totalRows = (meta: BackupData['meta']) => Object.values(meta.tables).reduce((a, b) => a + b, 0)
 
-/** Baca semua tabel public + daftar auth.users minimal. Butuh client service role. */
+/**
+ * Baca auth.users + auth.identities (RPC migrasi 028) lalu semua tabel public.
+ * Urutan kunci `tables` = urutan pemulihan. Butuh client service role; RPC
+ * belum ada (migrasi 028 belum jalan) = gagal keras, bukan backup tanpa akun.
+ */
 export async function collectBackup(client: SupabaseClient, appVersion: string): Promise<BackupData> {
-  const tables: Record<string, unknown[]> = {}
+  const { data: auth, error } = await client.rpc('backup_auth_export')
+  if (error) throw new Error(`[backup] backup_auth_export gagal: ${error.message}`)
+  const { users, identities } = auth as { users: Record<string, unknown>[]; identities: unknown[] }
+  const tables: Record<string, unknown[]> = {
+    [AUTH_USERS_KEY]: users.map(sanitizeAuthUser),
+    [AUTH_IDENTITIES_KEY]: identities,
+  }
   for (const [name, order] of BACKUP_TABLES) {
     tables[name] = await allRows((from, to) => {
       let q = client.from(name).select('*')
@@ -83,14 +110,6 @@ export async function collectBackup(client: SupabaseClient, appVersion: string):
       return q.range(from, to)
     })
   }
-  const users: AuthUserRow[] = []
-  for (let page = 1; ; page++) {
-    const { data, error } = await client.auth.admin.listUsers({ page, perPage: 1000 })
-    if (error) throw new Error(`[backup] listUsers gagal: ${error.message}`)
-    users.push(...data.users.map(pickAuthUser))
-    if (data.users.length < 1000) break
-  }
-  tables[AUTH_USERS_KEY] = users
   return buildBackup(tables, new Date().toISOString(), appVersion)
 }
 
@@ -148,7 +167,7 @@ export function backupEmailHtml(meta: BackupData['meta'], fileName: string): str
   return (
     `<p>Backup database terlampir (<strong>${h(fileName)}</strong>), dibuat ${h(meta.created_at)}, versi ${h(meta.app_version)}.</p>` +
     `<table style="border-collapse:collapse;font-size:13px;">${rows}<tr><td style="padding-top:6px;"><strong>Total</strong></td><td style="text-align:right;padding-top:6px;"><strong>${totalRows(meta)}</strong></td></tr></table>` +
-    '<p>Berkas terenkripsi. Cara membuka: simpan lampiran, lalu dari folder repo jalankan ' +
+    '<p>Berkas terenkripsi dan memuat hash password semua akun login. Cara membuka: simpan lampiran, lalu dari folder repo jalankan ' +
     `<code>node scripts/backup/decrypt.mjs ${h(fileName)} &gt; backup.json</code> dan isi passphrase backup saat diminta. ` +
     'Langkah pemulihan ada di <code>scripts/backup/README.md</code>. Simpan email ini; jangan teruskan ke orang lain.</p>'
   )

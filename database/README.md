@@ -24,7 +24,7 @@ npm run db:status        # butuh Supabase CLI yang sudah login
 ## Tes RLS dan hak akses
 
 ```bash
-npm run test:rls         # 26 cek, butuh Supabase CLI yang sudah login
+npm run test:rls         # 42 cek, butuh Supabase CLI yang sudah login
 ```
 
 `database/tests/rls.check.sql` dijalankan ke database dalam transaksi yang **selalu

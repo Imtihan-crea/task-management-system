@@ -7,6 +7,8 @@ import { mkdtempSync, readdirSync, readFileSync, rmSync, writeFileSync } from 'n
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import {
+  AUTH_IDENTITIES_KEY,
+  AUTH_TEMP_TOKENS,
   AUTH_USERS_KEY,
   BACKUP_TABLES,
   MAX_ATTACHMENT_BYTES,
@@ -17,7 +19,7 @@ import {
   decryptBackup,
   encryptBackup,
   parseRecipients,
-  pickAuthUser,
+  sanitizeAuthUser,
   tooLarge,
   totalRows,
 } from '../lib/backup/backup'
@@ -49,20 +51,21 @@ const data = buildBackup(
     profiles: [{ id: 'u1', full_name: 'Contoh Satu' }, { id: 'u2', full_name: 'Contoh Dua' }],
     tasks: [{ id: 't1', title: 'Tugas "kutip" & <tag>' }],
     work_logs: [],
-    [AUTH_USERS_KEY]: [pickAuthUser({ id: 'u1', email: 'satu@contoh.com', created_at: '2026-01-01T00:00:00Z', last_sign_in_at: null })],
+    [AUTH_IDENTITIES_KEY]: [],
+    [AUTH_USERS_KEY]: [sanitizeAuthUser({ id: 'u1', email: 'satu@contoh.com', encrypted_password: '$2a$10$hashpalsu' })],
   },
   '2026-11-19T19:00:00.000Z',
   'abc1234'
 )
 
 // Ringkasan jumlah baris
-cek('jumlah per tabel', data.meta.tables, { profiles: 2, tasks: 1, work_logs: 0, [AUTH_USERS_KEY]: 1 })
+cek('jumlah per tabel', data.meta.tables, { profiles: 2, tasks: 1, work_logs: 0, [AUTH_IDENTITIES_KEY]: 0, [AUTH_USERS_KEY]: 1 })
 cek('total baris', totalRows(data.meta), 4)
 
 // Enkripsi-dekripsi bolak-balik
 const file = encryptBackup(data, PASS)
 cek('header berkas', file.split('\n')[0], 'TMSBAK1')
-cek('isi tidak terbaca polos', file.includes('Contoh Satu') || file.includes('contoh.com'), false)
+cek('isi tidak terbaca polos', file.includes('Contoh Satu') || file.includes('contoh.com') || file.includes('hashpalsu'), false)
 cek('bolak-balik identik', decryptBackup(file, PASS), data)
 cek('salt/iv acak: dua enkripsi berbeda', encryptBackup(data, PASS) === file, false)
 
@@ -75,17 +78,31 @@ cek('berkas rusak (1 karakter diubah)', galat(() => decryptBackup(lines.join('\n
 cek('header salah', galat(() => decryptBackup(file.replace('TMSBAK1', 'TMSBAK9'), PASS)), 'Bukan berkas backup TMS (header tidak dikenal).')
 cek('terpotong', galat(() => decryptBackup('TMSBAK1\nAAAA\n', PASS)), 'Berkas backup terpotong.')
 
-// Kolom auth tanpa rahasia
-const authRow = pickAuthUser({
+// Akun login: hash ikut (login lama pulih), token sementara tidak
+const authRow = sanitizeAuthUser({
   id: 'u9',
   email: 'sembilan@contoh.com',
-  created_at: null,
-  last_sign_in_at: null,
-  encrypted_password: 'hash-palsu',
-  confirmation_token: 'token-palsu',
-  app_metadata: { provider: 'email' },
-} as Parameters<typeof pickAuthUser>[0])
-cek('auth hanya 4 kolom', Object.keys(authRow), ['id', 'email', 'created_at', 'last_sign_in_at'])
+  encrypted_password: '$2a$10$hashpalsu',
+  raw_app_meta_data: { provider: 'email' },
+  banned_until: null,
+  ...Object.fromEntries(AUTH_TEMP_TOKENS.map((k) => [k, `token-palsu-${k}`])),
+})
+cek('hash password ikut', authRow.encrypted_password, '$2a$10$hashpalsu')
+cek('metadata ikut', authRow.raw_app_meta_data, { provider: 'email' })
+cek('token sementara dikosongkan', AUTH_TEMP_TOKENS.map((k) => authRow[k]), AUTH_TEMP_TOKENS.map(() => ''))
+cek('nilai token tidak tersisa', JSON.stringify(authRow).includes('token-palsu'), false)
+
+// Migrasi 028: fungsi hanya untuk service_role, token sama dengan kode
+const sql028 = readFileSync(join(__dirname, '..', 'database', 'migrations', '028_backup_auth_export.sql'), 'utf8')
+const sqlCode = sql028.replace(/--.*$/gm, '').replace(/\s+/g, ' ').toLowerCase()
+cek('028: security definer', sqlCode.includes('security definer'), true)
+cek("028: search_path ''", sqlCode.includes("set search_path = ''"), true)
+cek('028: revoke public/anon/authenticated', sqlCode.includes('revoke all on function public.backup_auth_export() from public, anon, authenticated;'), true)
+cek('028: grant hanya service_role', [...sqlCode.matchAll(/grant execute on function public\.backup_auth_export\(\) to ([a-z_, ]+);/g)].map((m) => m[1]), ['service_role'])
+cek('028: semua token dikosongkan', AUTH_TEMP_TOKENS.filter((k) => !sqlCode.includes(`'${k}', ''`)), [])
+cek('028: hash tidak dibuang', /- 'encrypted_password'/.test(sqlCode), false)
+cek('028: identities ikut', sqlCode.includes('from auth.identities'), true)
+cek('028: tercatat di app_migrations', sqlCode.includes("values ('028', '028_backup_auth_export'"), true)
 
 // Batas ukuran
 cek('batas 8 MB', MAX_ATTACHMENT_BYTES, 8 * 1024 * 1024)
