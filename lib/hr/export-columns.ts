@@ -31,12 +31,12 @@ const name = (p: { full_name: string | null; email: string }) => p.full_name || 
 
 type SummaryRow = Awaited<ReturnType<typeof loadRekap>>['rows'][number]
 
-/** Monthly Summary (satu baris per orang). Dipakai export rekap HR dan tracker pribadi. */
+/** Ringkasan periode (satu baris per orang). Dipakai export rekap HR dan tracker pribadi. */
 export const summaryColumns: ExcelColumn<SummaryRow>[] = [
   { header: 'Nama', width: 22, value: (r) => name(r.p) },
   { header: 'Divisi', width: 14, value: (r) => r.p.division },
   { header: 'Jabatan', width: 20, value: (r) => r.p.position_title },
-  { header: 'Total Jam Kerja (Bulan)', width: 11, format: '0.00', value: (r) => r.s.totalHours },
+  { header: 'Total Jam Kerja (Periode)', width: 11, format: '0.00', value: (r) => r.s.totalHours },
   { header: 'Target Jam', width: 9, format: '0.00', value: (r) => r.s.targetHours },
   { header: 'Efektivitas (%)', width: 11, format: '0.00', value: (r) => r.s.effectiveness },
   { header: 'Jumlah Aktivitas', width: 10, value: (r) => r.s.activities },

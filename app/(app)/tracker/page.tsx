@@ -6,11 +6,14 @@ import { ExportLink } from '@/components/export/ExportLink'
 import { AppShell } from '@/components/layout/AppShell'
 import { KpiCard, PageHeader } from '@/components/ui/primitives'
 import { WorkLogForm, DeleteWorkLogButton, type WorkLogValues } from '@/components/tracker/WorkLogForm'
-import { FREE_TEXT_MARK, loadComments, loadLeave, loadMonthBasis, loadReferences, loadRules, loadTrackerProjects } from '@/lib/hr/data'
+import { FREE_TEXT_MARK, loadComments, loadLeave, loadLogs, loadMonthBasis, loadPeriodBasis, loadReferences, loadRules, loadTrackerProjects } from '@/lib/hr/data'
+import { parsePeriod, periodSummary } from '@/lib/hr/period'
+import { BreakdownTable } from '@/components/tracker/BreakdownTable'
+import { PeriodFilter } from '@/components/tracker/PeriodFilter'
 import { leaveDaysIn, type LeaveRow } from '@/lib/hr/leave'
 import { CommentThread } from '@/components/tracker/ReviewLogList'
 import {
-  STATUS_LABEL, addDays, dailyStatus, isoWeek, monthRange, monthlySummary, suggestStart, weekStart, weeklyStatus,
+  STATUS_LABEL, addDays, breakdown, dailyStatus, isoWeek, monthRange, monthlySummary, suggestStart, weekStart, weeklyStatus,
   type LogRow,
 } from '@/lib/hr/tracker'
 import { formatDate, todayISO } from '@/lib/utils/dates'
@@ -30,7 +33,7 @@ const FreeMark = () => <span className="text-xs text-zinc-600 dark:text-zinc-400
 
 const hours = (min: number) => (min / 60).toLocaleString('id-ID', { maximumFractionDigits: 2 })
 
-export default async function TrackerPage({ searchParams }: { searchParams: Promise<{ tanggal?: string; ubah?: string }> }) {
+export default async function TrackerPage({ searchParams }: { searchParams: Promise<{ tanggal?: string; ubah?: string; periode?: string; minggu?: string; bulan?: string; dari?: string; sampai?: string }> }) {
   const profile = await requireProfile()
   const sp = await searchParams
   const today = todayISO()
@@ -41,7 +44,8 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
   const from = wFrom < monthFrom ? wFrom : monthFrom
   const to = addDays(wFrom, 6) > monthTo ? addDays(wFrom, 6) : monthTo
 
-  const [rules, projects, refs, basis, logsRes, canRekap] = await Promise.all([
+  const { period, error: periodError } = parsePeriod(sp, today)
+  const [rules, projects, refs, basis, logsRes, canRekap, periodLogs, periodBasis, periodLeave] = await Promise.all([
     loadRules(date),
     loadTrackerProjects(),
     loadReferences(['ACTIVITY_CATEGORY', 'WORK_LOCATION', 'INTERNAL_PROJECT']),
@@ -54,7 +58,12 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
       .lte('work_date', to)
       .order('start_time'),
     hasPermission(profile.id, 'hr.view'),
+    loadLogs(period.from, period.to, [profile.id]),
+    loadPeriodBasis(period.from, period.to, period.month),
+    loadLeave({ from: period.from, to: period.to, userId: profile.id, statuses: ['APPROVED'] }),
   ])
+  const periodOwnLeave = leaveDaysIn(periodLeave as LeaveRow[], period.from, period.to, periodBasis.calendar)
+  const periodSum = periodSummary(period, periodLogs, periodBasis.workdays.length, rules, periodBasis.lockedTarget, periodOwnLeave.CUTI + periodOwnLeave.IZIN + periodOwnLeave.SAKIT)
   // Tampilkan label master terkini bila tertaut; teks bebas apa adanya (ditandai).
   const label = new Map(refs.map((r) => [r.id, r.label]))
   const logs: Row[] = ((logsRes.data ?? []) as DbRow[]).map((l) => {
@@ -78,6 +87,7 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
   const ownLeave = leaveDaysIn((await loadLeave({ from: monthFrom, to: monthTo, userId: profile.id, statuses: ['APPROVED'] })) as LeaveRow[], monthFrom, monthTo, basis.calendar)
   const summary = monthlySummary(monthLogs, basis.workdays.length, rules, basis.lockedTarget, ownLeave.CUTI + ownLeave.IZIN + ownLeave.SAKIT)
   const comments = await loadComments(dayLogs.map((l) => l.id))
+  const pq = new URLSearchParams(period.query).toString()
   const editing = sp.ubah ? dayLogs.find((l) => l.id === sp.ubah) ?? null : null
 
   return (
@@ -92,7 +102,7 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
                 Rekap semua karyawan
               </Link>
             )}
-            <ExportLink href={`/tracker/export?bulan=${month}`} />
+            <ExportLink href={`/tracker/export?${pq}`} />
           </div>
         }
       />
@@ -123,9 +133,9 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-bold">Aktivitas {formatDate(date)}</h2>
           <nav aria-label="Pilih tanggal" className="flex gap-3 text-sm font-semibold">
-            <Link href={`/tracker?tanggal=${addDays(date, -1)}`} className="text-kasuat-deep-gold hover:underline">Hari sebelumnya</Link>
+            <Link href={`/tracker?tanggal=${addDays(date, -1)}&${pq}`} className="text-kasuat-deep-gold hover:underline">Hari sebelumnya</Link>
             {date < today && (
-              <Link href={`/tracker?tanggal=${addDays(date, 1)}`} className="text-kasuat-deep-gold hover:underline">Hari berikutnya</Link>
+              <Link href={`/tracker?tanggal=${addDays(date, 1)}&${pq}`} className="text-kasuat-deep-gold hover:underline">Hari berikutnya</Link>
             )}
           </nav>
         </div>
@@ -155,7 +165,7 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
                     <td className="py-2 pr-3">{l.location}{l.free.includes('location') && <FreeMark />}</td>
                     <td className="py-2 pr-3">{l.output || <span className="font-semibold text-red-700">Kosong</span>}</td>
                     <td className="py-2 whitespace-nowrap">
-                      <Link href={`/tracker?tanggal=${date}&ubah=${l.id}`} className="inline-block min-h-[44px] px-2 py-3 text-sm font-semibold text-kasuat-deep-gold hover:underline">Ubah</Link>
+                      <Link href={`/tracker?tanggal=${date}&ubah=${l.id}&${pq}`} className="inline-block min-h-[44px] px-2 py-3 text-sm font-semibold text-kasuat-deep-gold hover:underline">Ubah</Link>
                       <DeleteWorkLogButton id={l.id} />
                     </td>
                   </tr>
@@ -164,6 +174,21 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
             </table>
           </div>
         )}
+      </section>
+      <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+        <h2 className="text-lg font-bold">Rekap periode</h2>
+        <PeriodFilter period={period} error={periodError} base="/tracker" keep={{ tanggal: date }} />
+        <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
+          <KpiCard label={`Total jam (${STATUS_LABEL[periodSum.status]})`} value={`${periodSum.totalHours.toLocaleString('id-ID')} / ${periodSum.targetHours}`} />
+          <KpiCard label="Efektivitas" value={`${periodSum.effectiveness.toLocaleString('id-ID')}%`} />
+          <KpiCard label="Hari aktif" value={`${periodSum.activeDays} / ${periodBasis.workdays.length}`} />
+          <KpiCard label="Aktivitas" value={String(periodSum.activities)} />
+        </div>
+        <div className="mt-4 grid gap-6 lg:grid-cols-3">
+          <BreakdownTable title="Jam per klien" keyLabel="Klien" rows={breakdown(periodLogs, 'client')} />
+          <BreakdownTable title="Jam per proyek" keyLabel="Proyek" rows={breakdown(periodLogs, 'project_name')} />
+          <BreakdownTable title="Jam per kategori" keyLabel="Kategori" rows={breakdown(periodLogs, 'category')} />
+        </div>
       </section>
     </AppShell>
   )

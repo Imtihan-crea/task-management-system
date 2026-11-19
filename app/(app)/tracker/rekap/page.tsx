@@ -3,70 +3,41 @@ import { requirePermission } from '@/lib/auth/current-access'
 import { AppShell } from '@/components/layout/AppShell'
 import { PageHeader } from '@/components/ui/primitives'
 import { loadComments, loadReviewLogs } from '@/lib/hr/data'
-import { loadRekap, parseMonth } from '@/lib/hr/rekap'
+import { loadRekap } from '@/lib/hr/rekap'
+import { parsePeriod } from '@/lib/hr/period'
+import { BreakdownTable } from '@/components/tracker/BreakdownTable'
+import { PeriodFilter } from '@/components/tracker/PeriodFilter'
 import { ExportLink } from '@/components/export/ExportLink'
 import { ReviewLogList } from '@/components/tracker/ReviewLogList'
 import { hasPermission } from '@/lib/auth/current-access'
-import { STATUS_LABEL, breakdown, type Breakdown } from '@/lib/hr/tracker'
+import { STATUS_LABEL, breakdown } from '@/lib/hr/tracker'
+import { todayISO } from '@/lib/utils/dates'
 
 const num = (n: number) => n.toLocaleString('id-ID', { maximumFractionDigits: 2 })
-const INPUT = 'rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800'
-
-function BreakdownTable({ title, rows, keyLabel }: { title: string; rows: Breakdown[]; keyLabel: string }) {
-  return (
-    <div>
-      <h3 className="mb-2 font-semibold">{title}</h3>
-      {rows.length === 0 ? (
-        <p className="text-sm text-zinc-600 dark:text-zinc-400">Tidak ada data.</p>
-      ) : (
-        <table className="w-full text-sm">
-          <thead>
-            <tr className="border-b text-left text-zinc-600 dark:text-zinc-400">
-              <th className="py-2 pr-3">{keyLabel}</th>
-              <th className="py-2 pr-3 text-right">Jam</th>
-              <th className="py-2 pr-3 text-right">Aktivitas</th>
-              <th className="py-2 text-right">%</th>
-            </tr>
-          </thead>
-          <tbody>
-            {rows.map((r) => (
-              <tr key={r.key} className="border-b last:border-0">
-                <td className="py-2 pr-3">{r.key}</td>
-                <td className="py-2 pr-3 text-right">{num(r.hours)}</td>
-                <td className="py-2 pr-3 text-right">{r.count}</td>
-                <td className="py-2 text-right">{num(r.percent)}</td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      )}
-    </div>
-  )
-}
-
 /** Rekap Daily Tracker semua karyawan (sheet Monthly Summary + Month Track). Izin hr.view. */
 export default async function TrackerRekapPage({
   searchParams,
 }: {
-  searchParams: Promise<{ bulan?: string; divisi?: string; orang?: string }>
+  searchParams: Promise<{ periode?: string; minggu?: string; bulan?: string; dari?: string; sampai?: string; divisi?: string; orang?: string }>
 }) {
   const viewer = await requirePermission('hr.view')
   const canManageHr = await hasPermission(viewer.id, 'hr.manage')
   const sp = await searchParams
-  const month = parseMonth(sp.bulan)
-  const { from, to, everyone, divisions, byUser, rows, basis, rules } = await loadRekap(month, sp.divisi)
+  const { period, error } = parsePeriod(sp, todayISO())
+  const { from, to, everyone, divisions, people, byUser, rows, basis, rules } = await loadRekap(period, sp.divisi)
+  const allLogs = people.flatMap((p) => byUser.get(p.id) ?? [])
   const focus = sp.orang ? everyone.find((p) => p.id === sp.orang) : undefined
   const focusLogs = focus ? byUser.get(focus.id) ?? [] : []
   const focusEntries = focus ? await loadReviewLogs({ userId: focus.id, from, to }) : []
   const focusComments = await loadComments(focusEntries.map((l) => l.id))
   const qs = (extra: Record<string, string>) =>
-    new URLSearchParams({ bulan: month, ...(sp.divisi ? { divisi: sp.divisi } : {}), ...extra }).toString()
+    new URLSearchParams({ ...period.query, ...(sp.divisi ? { divisi: sp.divisi } : {}), ...extra }).toString()
 
   return (
     <AppShell>
       <PageHeader
         title="Rekap Daily Tracker"
-        subtitle={`Hari kerja ${basis.workdays.length}, target ${basis.lockedTarget ?? basis.workdays.length * rules.hoursPerDay} jam${basis.lockedTarget ? ' (dikunci HR)' : ''}.`}
+        subtitle={`${period.label}. Hari kerja ${basis.workdays.length}, target ${(period.month && basis.lockedTarget) || basis.workdays.length * rules.hoursPerDay} jam${period.month && basis.lockedTarget ? ' (dikunci HR)' : ''}.`}
         actions={
           <div className="flex flex-wrap items-center gap-3 text-sm font-semibold">
             <ExportLink href={`/tracker/rekap/export?${qs({})}`} />
@@ -80,23 +51,18 @@ export default async function TrackerRekapPage({
         }
       />
 
-      <form className="mt-4 flex flex-wrap items-end gap-3">
-        <div>
-          <label htmlFor="bulan" className="mb-1 block text-sm font-medium">Bulan</label>
-          <input id="bulan" name="bulan" type="month" defaultValue={month} className={INPUT} />
-        </div>
+      <PeriodFilter period={period} error={error} base="/tracker/rekap" keep={sp.orang ? { orang: sp.orang } : {}}>
         <div>
           <label htmlFor="divisi" className="mb-1 block text-sm font-medium">Divisi</label>
-          <select id="divisi" name="divisi" defaultValue={sp.divisi ?? ''} className={INPUT}>
+          <select id="divisi" name="divisi" defaultValue={sp.divisi ?? ''} className="rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800">
             <option value="">Semua</option>
             {divisions.map((d) => <option key={d}>{d}</option>)}
           </select>
         </div>
-        <button type="submit" className="min-h-[44px] rounded-lg bg-kasuat-gold px-4 py-2 font-semibold text-kasuat-black">Tampilkan</button>
-      </form>
+      </PeriodFilter>
 
       <section className="mt-6 overflow-x-auto rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
-        <h2 className="mb-3 text-lg font-bold">Ringkasan bulanan</h2>
+        <h2 className="mb-3 text-lg font-bold">Ringkasan periode</h2>
         <table className="w-full text-sm">
           <thead>
             <tr className="border-b text-left text-zinc-600 dark:text-zinc-400">
@@ -141,10 +107,16 @@ export default async function TrackerRekapPage({
         </table>
       </section>
 
+      <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+        <h2 className="mb-3 text-lg font-bold">Jam per klien (semua orang di tabel)</h2>
+        <BreakdownTable title="Ke klien mana waktu terpakai" keyLabel="Klien" rows={breakdown(allLogs, 'client')} />
+      </section>
+
       {focus && (
         <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
           <h2 className="mb-3 text-lg font-bold">Rincian {focus.full_name || focus.email}</h2>
           <div className="grid gap-6 lg:grid-cols-2">
+            <BreakdownTable title="Jam per klien" keyLabel="Klien" rows={breakdown(focusLogs, 'client')} />
             <BreakdownTable title="Jam per proyek" keyLabel="Proyek" rows={breakdown(focusLogs, 'project_name')} />
             <BreakdownTable title="Jam per kategori" keyLabel="Kategori" rows={breakdown(focusLogs, 'category')} />
           </div>
