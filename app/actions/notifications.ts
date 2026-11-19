@@ -3,6 +3,8 @@
 import { revalidatePath } from 'next/cache'
 import { requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { toForm } from '@/lib/bulk'
+import { bulk } from '@/lib/bulk-server'
 
 function on(value: FormDataEntryValue | null): boolean {
   return value === 'on'
@@ -69,4 +71,9 @@ export async function saveNotificationPreferences(
 
   revalidatePath('/notifications')
   return { success: 'Preferensi berhasil disimpan.' }
+}
+
+/** Aksi massal (19 Nov 2026): tandai dibaca lewat markNotificationRead (hanya milik sendiri). */
+export async function bulkMarkNotificationsRead(ids: unknown) {
+  return bulk(ids, (id) => markNotificationRead(toForm({ id })), 'ditandai dibaca')
 }

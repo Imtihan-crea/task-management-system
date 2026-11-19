@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { formatDate } from '@/lib/utils/dates'
+import { BulkCheckbox } from '@/components/ui/BulkSelect'
 
 export type ActivityEntry = {
   id: string
@@ -124,10 +125,13 @@ export function ActivityTimeline({
   entries,
   actorNames,
   emptyText = 'Belum ada Activity.',
+  selectable = false,
 }: {
   entries: ActivityEntry[]
   actorNames: Record<string, string>
   emptyText?: string
+  /** Kotak pilih per entri (wajib di dalam BulkSelectProvider), untuk export terpilih. */
+  selectable?: boolean
 }) {
   if (entries.length === 0) {
     return <p className="text-sm text-zinc-600 dark:text-zinc-400">{emptyText}</p>
@@ -137,6 +141,7 @@ export function ActivityTimeline({
     <ol className="flex flex-col gap-4">
       {entries.map((entry) => (
         <li key={entry.id} className="flex gap-3">
+          {selectable && <BulkCheckbox id={String(entry.id)} label={describeActivity(entry)} className="-mt-2.5 -ml-2" />}
           <span
             aria-hidden="true"
             className="mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full bg-[#BE9B5C]"

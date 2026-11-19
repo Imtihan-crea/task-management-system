@@ -4,6 +4,9 @@ import { loadWorkstreams, sanitizeWorkstreamSearch } from '@/lib/data/workstream
 import { ExportLink } from '@/components/export/ExportLink'
 import { AppShell } from '@/components/layout/AppShell'
 import { PageHeader, EmptyState } from '@/components/ui/primitives'
+import { hasPermission } from '@/lib/auth/current-access'
+import { BulkBar, BulkCheckbox, BulkSelectProvider } from '@/components/ui/BulkSelect'
+import { bulkDeleteWorkstreams } from '@/app/actions/workstreams'
 
 export default async function WorkstreamsPage({
   searchParams,
@@ -15,7 +18,10 @@ export default async function WorkstreamsPage({
   const qRaw = typeof params.q === 'string' ? params.q : ''
   const q = sanitizeWorkstreamSearch(qRaw).toLowerCase()
 
-  const { workstreams, projectNames, taskCounts } = await loadWorkstreams(profile, q)
+  const [{ workstreams, projectNames, taskCounts }, canDelete] = await Promise.all([
+    loadWorkstreams(profile, q),
+    hasPermission(profile.id, 'workstreams.delete'),
+  ])
 
   return (
     <AppShell>
@@ -47,11 +53,17 @@ export default async function WorkstreamsPage({
           <EmptyState title="Workstream tidak ditemukan." message="Workstream dikelola di dalam setiap Project." />
         </div>
       ) : (
-        <>
-          <div className="mt-4 hidden scroll-x-hint overflow-x-auto rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 md:block dark:bg-zinc-900">
+        <BulkSelectProvider ids={workstreams.map((w) => w.id)}>
+          <BulkBar
+            noun="workstream"
+            actions={canDelete ? [{ key: 'delete', label: 'Hapus', run: bulkDeleteWorkstreams, danger: true }] : []}
+            exportHref={`/workstreams/export${q ? `?q=${encodeURIComponent(q)}` : ''}`}
+          />
+          <div className="mt-3 hidden scroll-x-hint overflow-x-auto rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 md:block dark:bg-zinc-900">
             <table className="w-full text-left text-sm">
               <thead className="border-b text-xs uppercase text-zinc-600 dark:text-zinc-400">
                 <tr>
+                  <th scope="col" className="w-12 py-3 pl-2"><span className="sr-only">Pilih</span></th>
                   <th scope="col" className="px-4 py-3">Kode</th>
                   <th scope="col" className="px-4 py-3">Nama</th>
                   <th scope="col" className="px-4 py-3">Project</th>
@@ -61,6 +73,7 @@ export default async function WorkstreamsPage({
               <tbody>
                 {workstreams.map((w) => (
                   <tr key={w.id} className="border-b last:border-0">
+                    <td className="py-1 pl-2"><BulkCheckbox id={w.id} label={`${w.code} ${w.name}`} /></td>
                     <td className="px-4 py-3 font-mono text-xs">{w.code}</td>
                     <td className="px-4 py-3">
                       <Link href={`/projects/${w.project_id}`} className="font-medium hover:underline">
@@ -76,10 +89,11 @@ export default async function WorkstreamsPage({
           </div>
           <ul className="mt-4 flex flex-col gap-3 md:hidden">
             {workstreams.map((w) => (
-              <li key={w.id}>
+              <li key={w.id} className="flex items-start rounded-2xl bg-white shadow-sm dark:bg-zinc-900">
+                <BulkCheckbox id={w.id} label={`${w.code} ${w.name}`} className="mt-2 ml-1" />
                 <Link
                   href={`/projects/${w.project_id}`}
-                  className="block rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900"
+                  className="block min-w-0 flex-1 rounded-2xl py-4 pr-4 pl-1"
                 >
                   <p className="font-semibold">
                     <span className="mr-2 rounded-md bg-zinc-100 px-1.5 py-0.5 font-mono text-xs dark:bg-zinc-800">
@@ -94,7 +108,7 @@ export default async function WorkstreamsPage({
               </li>
             ))}
           </ul>
-        </>
+        </BulkSelectProvider>
       )}
     </AppShell>
   )

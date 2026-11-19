@@ -8,6 +8,7 @@ import { breakdown, type Breakdown } from '@/lib/hr/tracker'
 import { todayISO } from '@/lib/utils/dates'
 import { exportInfo, type ExcelColumn } from '@/lib/export/excel'
 import { exportResponse } from '@/lib/export'
+import { onlySelected, selectedIds } from '@/lib/bulk'
 
 export const dynamic = 'force-dynamic'
 
@@ -34,7 +35,12 @@ export async function GET(request: NextRequest) {
   )
   if (error) return new Response(error, { status: 400 })
   const divisi = sp.get('divisi') || null
-  const { from, to, people, byUser, rows, basis, rules, leaveColumns } = await loadRekap(period, divisi)
+  const rekap = await loadRekap(period, divisi)
+  const { from, to, byUser, basis, rules, leaveColumns } = rekap
+  // ?ids= : hanya orang terpilih (tetap dalam cakupan rekap/divisi).
+  const picked = selectedIds(sp)
+  const people = onlySelected(rekap.people, picked)
+  const rows = onlySelected(rekap.rows, picked, (r) => r.p.id)
 
   const ids = new Set(people.map((p) => p.id))
   const divisionOf = new Map(people.map((p) => [p.id, p.division]))
@@ -47,7 +53,7 @@ export async function GET(request: NextRequest) {
   const locked = period.month ? basis.lockedTarget : null
   const target = locked ?? basis.workdays.length * rules.hoursPerDay
   const info = exportInfo(name(viewer), [
-    `Periode: ${period.label} · Divisi: ${divisi ?? 'Semua'}`,
+    `Periode: ${period.label} · Divisi: ${divisi ?? 'Semua'}${picked ? ` · ${people.length} orang terpilih` : ''}`,
     `Hari kerja ${basis.workdays.length}, target ${target} jam${locked ? ' (dikunci HR)' : ''}`,
   ])
 

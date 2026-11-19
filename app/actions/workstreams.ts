@@ -7,6 +7,8 @@ import { canManageProjectFor } from '@/lib/data/projects'
 import { logActivity } from '@/lib/activity-log/service'
 import { readLimitedField } from '@/lib/forms/limits'
 import { nextWorkstreamCode } from '@/lib/workstreams/code'
+import { toForm } from '@/lib/bulk'
+import { bulk } from '@/lib/bulk-server'
 
 export type WorkstreamFormState = {
   error?: string
@@ -200,4 +202,9 @@ export async function deleteWorkstream(
   revalidatePath('/projects')
   revalidatePath(`/projects/${current.project_id}`)
   return { success: 'Workstream berhasil dihapus.' }
+}
+
+/** Aksi massal (19 Nov 2026): hapus lewat deleteWorkstream (izin per project, larangan bila masih dipakai task/saran). */
+export async function bulkDeleteWorkstreams(ids: unknown) {
+  return bulk(ids, (id) => deleteWorkstream(undefined, toForm({ id })), 'dihapus')
 }

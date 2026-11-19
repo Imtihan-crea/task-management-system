@@ -8,6 +8,8 @@ import {
 } from '@/components/notifications/NotificationComponents'
 import { Pagination, paginate, parsePage } from '@/components/ui/Pagination'
 import type { NotificationItem, NotificationPreferences } from '@/types/notification'
+import { BulkBar, BulkSelectProvider } from '@/components/ui/BulkSelect'
+import { bulkMarkNotificationsRead } from '@/app/actions/notifications'
 
 const DEFAULT_PREFS = {
   email_enabled: true,
@@ -67,7 +69,12 @@ export default async function NotificationsPage({
       </div>
 
       <div className="mt-4">
-        <NotificationList items={pageItems} />
+        <BulkSelectProvider ids={pageItems.map((n) => n.id)}>
+        <BulkBar noun="notifikasi" paged={totalPages > 1} actions={[{ key: 'read', label: 'Tandai dibaca', run: bulkMarkNotificationsRead }]} />
+        <div className="mt-2">
+          <NotificationList items={pageItems} selectable />
+        </div>
+        </BulkSelectProvider>
         <Pagination
           basePath="/notifications"
           params={{}}

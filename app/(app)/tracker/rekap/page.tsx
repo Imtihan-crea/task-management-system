@@ -12,6 +12,7 @@ import { ReviewLogList } from '@/components/tracker/ReviewLogList'
 import { hasPermission } from '@/lib/auth/current-access'
 import { STATUS_LABEL, breakdown } from '@/lib/hr/tracker'
 import { todayISO } from '@/lib/utils/dates'
+import { BulkBar, BulkCheckbox, BulkSelectProvider } from '@/components/ui/BulkSelect'
 
 const num = (n: number) => n.toLocaleString('id-ID', { maximumFractionDigits: 2 })
 /** Rekap Daily Tracker semua karyawan (sheet Monthly Summary + Month Track). Izin hr.view. */
@@ -63,10 +64,13 @@ export default async function TrackerRekapPage({
 
       <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
         <h2 className="mb-3 text-lg font-bold">Ringkasan periode</h2>
-        <div className="scroll-x-hint overflow-x-auto">
+        <BulkSelectProvider ids={rows.map(({ p }) => p.id)}>
+        <BulkBar noun="orang" exportHref={`/tracker/rekap/export?${qs({})}`} />
+        <div className="scroll-x-hint mt-2 overflow-x-auto">
         <table className="w-full whitespace-nowrap text-sm">
           <thead>
             <tr className="border-b text-left text-zinc-600 dark:text-zinc-400">
+              <th className="w-12 py-2"><span className="sr-only">Pilih</span></th>
               <th className="sticky left-0 z-10 bg-white py-2 pr-3 dark:bg-zinc-900">Nama</th>
               <th className="py-2 pr-3">Divisi</th>
               <th className="py-2 pr-3 text-right">Total jam</th>
@@ -83,6 +87,7 @@ export default async function TrackerRekapPage({
           <tbody>
             {rows.map(({ p, s, l }) => (
               <tr key={p.id} className="border-b last:border-0">
+                <td className="py-0"><BulkCheckbox id={p.id} label={p.full_name || p.email} /></td>
                 <td className="sticky left-0 z-10 bg-white py-2 pr-3 dark:bg-zinc-900">
                   <Link href={`/tracker/rekap?${qs({ orang: p.id })}`} className="font-semibold text-kasuat-deep-gold hover:underline">
                     {p.full_name || p.email}
@@ -103,6 +108,7 @@ export default async function TrackerRekapPage({
           </tbody>
         </table>
         </div>
+        </BulkSelectProvider>
       </section>
 
       <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">

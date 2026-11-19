@@ -6,6 +6,7 @@ import { exportInfo, type ExcelColumn } from '@/lib/export/excel'
 import { exportResponse } from '@/lib/export'
 import { allRows } from '@/lib/utils/paginate'
 import { todayISO } from '@/lib/utils/dates'
+import { onlySelected, selectedIds } from '@/lib/bulk'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,7 +16,9 @@ export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams
   const filters = parseActivityFilters((k) => sp.get(k) ?? '')
   const pager = await activityPager(filters)
-  const entries = await allRows<ActivityEntry>(pager)
+  const picked = selectedIds(sp)
+  // shortcut: export terpilih tetap membaca semua entri sesuai filter lalu menyaring; cukup selama log < puluhan ribu baris.
+  const entries = onlySelected(await allRows<ActivityEntry>(pager), picked, (e) => String(e.id))
   const actorNames = await resolveActorNames(entries)
 
   const columns: ExcelColumn<ActivityEntry>[] = [
@@ -27,6 +30,7 @@ export async function GET(request: NextRequest) {
     { header: 'Keterangan', width: 56, value: (e) => describeActivity(e) },
   ]
   const f = [
+    picked && 'Hanya baris terpilih',
     filters.entity && `Entitas: ${filters.entity}`,
     filters.action && `Aksi: ${filters.action.replace(/_/g, ' ')}`,
     filters.actor && `Pelaku: ${filters.actor}`,

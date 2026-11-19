@@ -11,8 +11,10 @@ import Link from 'next/link'
 import { useFormStatus } from 'react-dom'
 import { notificationHref, type NotificationItem, type NotificationPreferences } from '@/types/notification'
 import { formatDate } from '@/lib/utils/dates'
+import { BulkCheckbox } from '@/components/ui/BulkSelect'
 
-export function NotificationList({ items }: { items: NotificationItem[] }) {
+/** `selectable`: kotak pilih per notifikasi (wajib di dalam BulkSelectProvider). */
+export function NotificationList({ items, selectable = false }: { items: NotificationItem[]; selectable?: boolean }) {
   if (items.length === 0) {
     return (
       <p className="rounded-2xl bg-white p-8 text-center text-sm text-zinc-600 dark:text-zinc-400 shadow dark:bg-zinc-900">
@@ -29,6 +31,7 @@ export function NotificationList({ items }: { items: NotificationItem[] }) {
           className={`rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900 ${n.is_read ? 'opacity-70' : ''}`}
         >
           <div className="flex items-start gap-3">
+            {selectable && <BulkCheckbox id={n.id} label={n.title} className="-mt-2.5 -ml-2.5" />}
             <span aria-hidden="true" className="mt-0.5">
               {n.is_read ? '○' : '●'}
             </span>

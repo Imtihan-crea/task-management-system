@@ -6,6 +6,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { Tabs } from '@/components/ui/Tabs'
 import { FIELD, FIELD_LABEL, FILTER_GRID, FilterPanel, PageHeader, SUBMIT } from '@/components/ui/primitives'
 import { SkeletonRows } from '@/components/ui/Skeleton'
+import { BulkBar, BulkSelectProvider } from '@/components/ui/BulkSelect'
 import {
   ActivityTimeline,
   resolveActorNames,
@@ -60,6 +61,15 @@ const ACTION_OPTIONS = [
   'MEETING_TASK_CREATED',
 ]
 
+/** Route export dengan filter halaman ini (tanpa paginasi). */
+function exportHref(f: ActivityFilters): string {
+  const p = new URLSearchParams()
+  for (const [k, v] of Object.entries({ entity: f.entity, action: f.action, actor: f.actor, from: f.from, to: f.to, project: f.project })) {
+    if (v) p.set(k, v)
+  }
+  return `/activity/export?${p}`
+}
+
 function str(v: string | string[] | undefined): string {
   return typeof v === 'string' ? v : ''
 }
@@ -103,9 +113,13 @@ async function ActivityResults({ filters }: { filters: ActivityFilters }) {
 
   return (
     <>
-      <div className="mt-4 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
-        <ActivityTimeline entries={entries} actorNames={actorNames} emptyText="Activity tidak ditemukan." />
-      </div>
+      <BulkSelectProvider ids={entries.map((e) => String(e.id))}>
+        {/* Baca-saja: pilih hanya untuk export terpilih. */}
+        <BulkBar noun="entri" paged={totalPages > 1} exportHref={exportHref(filters)} />
+        <div className="mt-2 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
+          <ActivityTimeline entries={entries} actorNames={actorNames} emptyText="Activity tidak ditemukan." selectable />
+        </div>
+      </BulkSelectProvider>
 
       <div className="mt-4 flex items-center justify-between">
         <p className="text-sm text-zinc-600 dark:text-zinc-400">
@@ -154,17 +168,13 @@ export default async function ActivityPage({
     page,
   }
   const resultsKey = JSON.stringify(filters)
-  const exportParams = new URLSearchParams()
-  for (const [k, v] of Object.entries({ entity: fEntity, action: fAction, actor: fActor, from: fFrom, to: fTo, project: fProject })) {
-    if (v) exportParams.set(k, v)
-  }
 
   return (
     <AppShell>
       <PageHeader
         title="Activity Log"
         subtitle="Riwayat aktivitas penting di seluruh sistem."
-        actions={<ExportLink href={`/activity/export?${exportParams}`} />}
+        actions={<ExportLink href={exportHref(filters)} />}
       />
 
       <div className="mt-4">

@@ -8,6 +8,8 @@ import { loadReferences, loadTrackerProjects } from '@/lib/hr/data'
 import { normalizeText, resolveChoice, sameText, type ReferenceRow } from '@/lib/hr/reference'
 import { durationMinutes, findOverlap } from '@/lib/hr/tracker'
 import { todayISO } from '@/lib/utils/dates'
+import { toForm } from '@/lib/bulk'
+import { bulk } from '@/lib/bulk-server'
 
 export type TrackerFormState = { error?: string; success?: string } | undefined
 
@@ -162,4 +164,9 @@ export async function deleteWorkLog(_prev: TrackerFormState, formData: FormData)
   if (error || !data?.length) return { error: 'Entri tidak ditemukan.' }
   revalidatePath('/tracker')
   return { success: 'Aktivitas dihapus.' }
+}
+
+/** Aksi massal (19 Nov 2026): hapus banyak catatan sendiri lewat deleteWorkLog (hanya milik sendiri). */
+export async function bulkDeleteWorkLogs(ids: unknown) {
+  return bulk(ids, (id) => deleteWorkLog(undefined, toForm({ id })), 'dihapus')
 }

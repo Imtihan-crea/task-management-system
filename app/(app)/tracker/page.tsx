@@ -17,6 +17,8 @@ import {
   type LogRow,
 } from '@/lib/hr/tracker'
 import { formatDate, todayISO } from '@/lib/utils/dates'
+import { BulkBar, BulkCheckbox, BulkSelectProvider } from '@/components/ui/BulkSelect'
+import { bulkDeleteWorkLogs } from '@/app/actions/tracker'
 
 type DbRow = Omit<WorkLogValues, 'project'> & {
   work_date: string
@@ -143,10 +145,13 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
         {dayLogs.length === 0 ? (
           <p className="text-sm text-zinc-600 dark:text-zinc-400">Belum ada aktivitas di tanggal ini.</p>
         ) : (
-          <div className="scroll-x-hint relative overflow-x-auto">
+          <BulkSelectProvider ids={dayLogs.map((l) => l.id)}>
+          <BulkBar noun="aktivitas" actions={[{ key: 'delete', label: 'Hapus', run: bulkDeleteWorkLogs, danger: true }]} />
+          <div className="scroll-x-hint relative mt-2 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left text-zinc-600 dark:text-zinc-400">
+                  <th className="w-12 py-2"><span className="sr-only">Pilih</span></th>
                   <th className="py-2 pr-3">Jam</th>
                   <th className="py-2 pr-3">Proyek</th>
                   <th className="py-2 pr-3">Aktivitas</th>
@@ -159,6 +164,7 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
               <tbody>
                 {dayLogs.map((l) => (
                   <tr key={l.id} className="border-b align-top last:border-0">
+                    <td className="py-0"><BulkCheckbox id={l.id} label={`${l.start_time.slice(0, 5)} ${l.activity}`} /></td>
                     <td className="py-2 pr-3 whitespace-nowrap">{l.start_time.slice(0, 5)}–{l.end_time.slice(0, 5)} ({hours(l.duration_minutes)} j)</td>
                     <td className="py-2 pr-3">{l.project}{l.free.includes('project') && <FreeMark />}</td>
                     <td className="py-2 pr-3">{l.activity}<CommentThread comments={comments.get(l.id) ?? []} /></td>
@@ -174,6 +180,7 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
               </tbody>
             </table>
           </div>
+          </BulkSelectProvider>
         )}
       </section>
       <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">

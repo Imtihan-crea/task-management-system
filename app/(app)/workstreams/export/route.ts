@@ -5,6 +5,7 @@ import { exportInfo, type ExcelColumn } from '@/lib/export/excel'
 import { exportResponse } from '@/lib/export'
 import { wibDate } from '@/lib/export/task-columns'
 import { todayISO } from '@/lib/utils/dates'
+import { onlySelected, selectedIds } from '@/lib/bulk'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,7 +13,10 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
   const profile = await requireProfile()
   const q = sanitizeWorkstreamSearch(request.nextUrl.searchParams.get('q') ?? '').toLowerCase()
-  const { workstreams, projectNames, taskCounts } = await loadWorkstreams(profile, q)
+  const loaded = await loadWorkstreams(profile, q)
+  const { projectNames, taskCounts } = loaded
+  const picked = selectedIds(request.nextUrl.searchParams)
+  const workstreams = onlySelected(loaded.workstreams, picked)
 
   type Row = (typeof workstreams)[number]
   const columns: ExcelColumn<Row>[] = [
@@ -23,6 +27,6 @@ export async function GET(request: NextRequest) {
     { header: 'Jumlah Task', width: 10, value: (w) => taskCounts[w.id] ?? 0 },
     { header: 'Dibuat', width: 12, value: (w) => wibDate(w.created_at) },
   ]
-  const info = exportInfo(profile.full_name || profile.email, [`${workstreams.length} workstream`, ...(q ? [`Cari: ${q}`] : [])])
+  const info = exportInfo(profile.full_name || profile.email, [`${workstreams.length} workstream`, ...(picked ? ['Hanya baris terpilih'] : []), ...(q ? [`Cari: ${q}`] : [])])
   return exportResponse(request, `Workstreams ${todayISO()}`, [{ name: 'Workstreams', title: 'DAFTAR WORKSTREAMS', info, columns, rows: workstreams }])
 }
