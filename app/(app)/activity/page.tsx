@@ -4,6 +4,7 @@ import { activityPager, type ActivityFilters } from '@/lib/data/activity-list'
 import { ExportLink } from '@/components/export/ExportLink'
 import { AppShell } from '@/components/layout/AppShell'
 import { Tabs } from '@/components/ui/Tabs'
+import { FIELD, FIELD_LABEL, FILTER_GRID, FilterPanel, PageHeader, SUBMIT } from '@/components/ui/primitives'
 import { SkeletonRows } from '@/components/ui/Skeleton'
 import {
   ActivityTimeline,
@@ -102,7 +103,7 @@ async function ActivityResults({ filters }: { filters: ActivityFilters }) {
 
   return (
     <>
-      <div className="mt-4 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+      <div className="mt-4 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
         <ActivityTimeline entries={entries} actorNames={actorNames} emptyText="Activity tidak ditemukan." />
       </div>
 
@@ -160,15 +161,11 @@ export default async function ActivityPage({
 
   return (
     <AppShell>
-      <div className="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h1 className="text-2xl font-bold">Activity Log</h1>
-          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-            Riwayat aktivitas penting di seluruh sistem.
-          </p>
-        </div>
-        <ExportLink href={`/activity/export?${exportParams}`} />
-      </div>
+      <PageHeader
+        title="Activity Log"
+        subtitle="Riwayat aktivitas penting di seluruh sistem."
+        actions={<ExportLink href={`/activity/export?${exportParams}`} />}
+      />
 
       <div className="mt-4">
         <Tabs
@@ -198,49 +195,48 @@ export default async function ActivityPage({
         />
       </div>
 
-      <form
-        method="get"
-        className="mt-4 flex flex-col gap-3 rounded-2xl bg-white p-4 shadow sm:flex-row sm:flex-wrap sm:items-end dark:bg-zinc-900"
-      >
+      <FilterPanel active={[fAction, fActor, fFrom, fTo].filter(Boolean).length}>
+      <form method="get" className={FILTER_GRID}>
         {fEntity && <input type="hidden" name="entity" value={fEntity} />}
         <div>
-          <label htmlFor="f-entity" className="mb-1 block text-sm font-medium">Entitas</label>
-          <select id="f-entity" name="entity" defaultValue={fEntity} className="w-full min-w-0 sm:w-auto min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800">
+          <label htmlFor="f-entity" className={FIELD_LABEL}>Entitas</label>
+          <select id="f-entity" name="entity" defaultValue={fEntity} className={FIELD}>
             {ENTITY_OPTIONS.map((e) => (
               <option key={e} value={e}>{e === '' ? 'Semua' : e}</option>
             ))}
           </select>
         </div>
         <div>
-          <label htmlFor="f-action" className="mb-1 block text-sm font-medium">Aksi</label>
-          <select id="f-action" name="action" defaultValue={fAction} className="w-full min-w-0 sm:w-auto min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800">
+          <label htmlFor="f-action" className={FIELD_LABEL}>Aksi</label>
+          <select id="f-action" name="action" defaultValue={fAction} className={FIELD}>
             {ACTION_OPTIONS.map((a) => (
               <option key={a} value={a}>{a === '' ? 'Semua' : a.replace(/_/g, ' ')}</option>
             ))}
           </select>
         </div>
         <div>
-          <label htmlFor="f-actor" className="mb-1 block text-sm font-medium">Pelaku</label>
+          <label htmlFor="f-actor" className={FIELD_LABEL}>Pelaku</label>
           <input
             id="f-actor"
             name="actor"
             defaultValue={fActor}
             placeholder="Nama user"
-            className="w-full min-w-0 sm:w-auto min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
+            className={FIELD}
           />
         </div>
         <div>
-          <label htmlFor="f-from" className="mb-1 block text-sm font-medium">Dari</label>
-          <input id="f-from" name="from" type="date" defaultValue={fFrom} className="w-full min-w-0 sm:w-auto min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800" />
+          <label htmlFor="f-from" className={FIELD_LABEL}>Dari</label>
+          <input id="f-from" name="from" type="date" defaultValue={fFrom} className={FIELD} />
         </div>
         <div>
-          <label htmlFor="f-to" className="mb-1 block text-sm font-medium">Sampai</label>
-          <input id="f-to" name="to" type="date" defaultValue={fTo} className="w-full min-w-0 sm:w-auto min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800" />
+          <label htmlFor="f-to" className={FIELD_LABEL}>Sampai</label>
+          <input id="f-to" name="to" type="date" defaultValue={fTo} className={FIELD} />
         </div>
-        <button type="submit" className="min-h-[44px] rounded-lg bg-kasuat-gold px-5 py-2 font-semibold text-kasuat-black">
+        <button type="submit" className={SUBMIT}>
           Terapkan
         </button>
       </form>
+      </FilterPanel>
 
       <Suspense key={resultsKey} fallback={<SkeletonRows rows={5} />}>
         <ActivityResults filters={filters} />

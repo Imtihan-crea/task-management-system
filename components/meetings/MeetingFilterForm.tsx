@@ -3,9 +3,7 @@ import { getActiveUsers } from '@/lib/data/users'
 import { MEETING_STATUSES, MEETING_TYPES } from '@/lib/db/schema'
 import { MEETING_STATUS_LABELS, MEETING_TYPE_LABELS } from '@/types/meeting'
 import type { MeetingFilters } from '@/lib/data/meetings'
-
-const inputCls =
-  'min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800'
+import { FIELD as inputCls, FIELD_LABEL, FILTER_GRID, FilterPanel, SUBMIT } from '@/components/ui/primitives'
 
 /**
  * Form filter /meetings (§8, §35): Search, Project, Type, Status,
@@ -15,15 +13,15 @@ const inputCls =
 export async function MeetingFilterForm({ filters }: { filters: MeetingFilters }) {
   const [projects, users] = await Promise.all([fetchMeetingProjects(), getActiveUsers()])
 
+  const active = [filters.q, filters.project, filters.type, filters.status, filters.organizer, filters.dateFrom, filters.dateTo].filter(Boolean).length
+
   return (
-    <form
-      method="get"
-      className="mt-4 flex flex-col gap-3 rounded-2xl bg-white p-4 shadow dark:bg-zinc-900"
-    >
+    <FilterPanel active={active}>
+    <form method="get">
       {filters.tab !== 'upcoming' && <input type="hidden" name="tab" value={filters.tab} />}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="sm:col-span-2 lg:col-span-1">
-          <label htmlFor="mq" className="mb-1 block text-sm font-medium">
+      <div className={FILTER_GRID}>
+        <div className="sm:col-span-2">
+          <label htmlFor="mq" className={FIELD_LABEL}>
             Cari
           </label>
           <input
@@ -36,7 +34,7 @@ export async function MeetingFilterForm({ filters }: { filters: MeetingFilters }
           />
         </div>
         <div>
-          <label htmlFor="mproject" className="mb-1 block text-sm font-medium">
+          <label htmlFor="mproject" className={FIELD_LABEL}>
             Project
           </label>
           <select id="mproject" name="project" defaultValue={filters.project} className={inputCls}>
@@ -49,7 +47,7 @@ export async function MeetingFilterForm({ filters }: { filters: MeetingFilters }
           </select>
         </div>
         <div>
-          <label htmlFor="mtype" className="mb-1 block text-sm font-medium">
+          <label htmlFor="mtype" className={FIELD_LABEL}>
             Tipe Meeting
           </label>
           <select id="mtype" name="type" defaultValue={filters.type} className={inputCls}>
@@ -62,7 +60,7 @@ export async function MeetingFilterForm({ filters }: { filters: MeetingFilters }
           </select>
         </div>
         <div>
-          <label htmlFor="mstatus" className="mb-1 block text-sm font-medium">
+          <label htmlFor="mstatus" className={FIELD_LABEL}>
             Status
           </label>
           <select id="mstatus" name="status" defaultValue={filters.status} className={inputCls}>
@@ -75,7 +73,7 @@ export async function MeetingFilterForm({ filters }: { filters: MeetingFilters }
           </select>
         </div>
         <div>
-          <label htmlFor="morganizer" className="mb-1 block text-sm font-medium">
+          <label htmlFor="morganizer" className={FIELD_LABEL}>
             Organizer
           </label>
           <select
@@ -92,9 +90,9 @@ export async function MeetingFilterForm({ filters }: { filters: MeetingFilters }
             ))}
           </select>
         </div>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 sm:col-span-2">
           <div>
-            <label htmlFor="mfrom" className="mb-1 block text-sm font-medium">
+            <label htmlFor="mfrom" className={FIELD_LABEL}>
               Dari
             </label>
             <input
@@ -106,7 +104,7 @@ export async function MeetingFilterForm({ filters }: { filters: MeetingFilters }
             />
           </div>
           <div>
-            <label htmlFor="mto" className="mb-1 block text-sm font-medium">
+            <label htmlFor="mto" className={FIELD_LABEL}>
               Sampai
             </label>
             <input
@@ -118,13 +116,11 @@ export async function MeetingFilterForm({ filters }: { filters: MeetingFilters }
             />
           </div>
         </div>
+        <button type="submit" className={SUBMIT}>
+          Terapkan
+        </button>
       </div>
-      <button
-        type="submit"
-        className="min-h-[44px] rounded-lg bg-kasuat-gold px-5 py-2 font-semibold text-kasuat-black sm:w-auto"
-      >
-        Terapkan
-      </button>
     </form>
+    </FilterPanel>
   )
 }

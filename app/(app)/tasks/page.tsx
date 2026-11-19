@@ -56,18 +56,18 @@ export default async function TasksPage({
         subtitle="Kelola semua task, pantau progress, dan pastikan semua selesai tepat waktu."
         actions={
           <>
-            <ExportLink href={`/tasks/export${exportQs ? `?${exportQs}` : ''}`} />
             {canCreate && <ButtonLink href="/tasks/new">+ Tambah Task</ButtonLink>}
-            {canCreate && (
-              <ButtonLink href="/tasks/import" variant="secondary">
-                Import Excel
-              </ButtonLink>
-            )}
             {can(profile.role, 'suggestions.create') && (
               <ButtonLink href="/task-suggestions/new" variant="secondary">
                 + Usulkan Task
               </ButtonLink>
             )}
+            {canCreate && (
+              <ButtonLink href="/tasks/import" variant="secondary">
+                Import Excel
+              </ButtonLink>
+            )}
+            <ExportLink href={`/tasks/export${exportQs ? `?${exportQs}` : ''}`} />
           </>
         }
       />
@@ -95,7 +95,7 @@ export default async function TasksPage({
 
       <Suspense
         fallback={
-          <div className="mt-4 h-40 animate-pulse rounded-2xl bg-white shadow dark:bg-zinc-900" />
+          <div className="mt-4 h-11 animate-pulse rounded-2xl bg-white shadow-sm md:h-40 dark:bg-zinc-900" />
         }
       >
         <TaskFilterForm

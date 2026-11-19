@@ -4,14 +4,12 @@ import { canViewClients, hasPermission } from '@/lib/auth/current-access'
 import { redirect } from 'next/navigation'
 import { ExportLink } from '@/components/export/ExportLink'
 import { AppShell } from '@/components/layout/AppShell'
-import { ButtonLink, EmptyState, KpiCard, PageHeader } from '@/components/ui/primitives'
+import { ButtonLink, EmptyState, FIELD, FIELD_LABEL, FILTER_GRID, FilterPanel, KpiCard, PageHeader, SUBMIT } from '@/components/ui/primitives'
 import { loadLeads, loadNames, sanitizeLeadSearch } from '@/lib/clients/data'
 import { STAGES, STAGE_LABEL, isStage, rupiah, summarize } from '@/lib/clients/pipeline'
 import { getActiveUsers } from '@/lib/data/users'
 import { displayName } from '@/lib/data/user-options'
 import { formatDate } from '@/lib/utils/dates'
-
-const SELECT = 'min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800'
 
 /** Pipeline lead: ringkasan per tahap + daftar dengan filter tahap, PIC, dan nama. */
 export default async function ClientsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
@@ -40,8 +38,8 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
         subtitle={`${rows.length} lead${rows.length !== all.length ? ` dari ${all.length}` : ''}`}
         actions={
           <>
-            <ExportLink href={`/clients/export${exportQs ? `?${exportQs}` : ''}`} />
             {canManage && <ButtonLink href="/clients/new">Tambah Lead</ButtonLink>}
+            <ExportLink href={`/clients/export${exportQs ? `?${exportQs}` : ''}`} />
           </>
         }
       />
@@ -54,33 +52,35 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
         ))}
       </div>
 
-      <form method="get" className="mt-4 grid gap-3 rounded-2xl bg-white p-4 shadow sm:grid-cols-4 sm:items-end dark:bg-zinc-900">
+      <FilterPanel active={[stage, pic, q].filter(Boolean).length}>
+      <form method="get" className={FILTER_GRID}>
         <div>
-          <label htmlFor="f_stage" className="mb-1 block text-sm font-medium">Tahap</label>
-          <select id="f_stage" name="stage" defaultValue={stage} className={SELECT}>
+          <label htmlFor="f_stage" className={FIELD_LABEL}>Tahap</label>
+          <select id="f_stage" name="stage" defaultValue={stage} className={FIELD}>
             <option value="">Semua tahap</option>
             {STAGES.map((s) => <option key={s.value} value={s.value}>{s.label}</option>)}
           </select>
         </div>
         <div>
-          <label htmlFor="f_pic" className="mb-1 block text-sm font-medium">PIC</label>
-          <select id="f_pic" name="pic" defaultValue={pic} className={SELECT}>
+          <label htmlFor="f_pic" className={FIELD_LABEL}>PIC</label>
+          <select id="f_pic" name="pic" defaultValue={pic} className={FIELD}>
             <option value="">Semua PIC</option>
             <option value="none">Belum ada PIC</option>
             {users.map((u) => <option key={u.id} value={u.id}>{displayName(u)}</option>)}
           </select>
         </div>
         <div>
-          <label htmlFor="f_q" className="mb-1 block text-sm font-medium">Cari perusahaan</label>
-          <input id="f_q" name="q" type="search" defaultValue={q} placeholder="Nama perusahaan" className={SELECT} />
+          <label htmlFor="f_q" className={FIELD_LABEL}>Cari perusahaan</label>
+          <input id="f_q" name="q" type="search" defaultValue={q} placeholder="Nama perusahaan" className={FIELD} />
         </div>
-        <button type="submit" className="min-h-[44px] rounded-lg bg-kasuat-gold px-5 py-2 font-semibold text-kasuat-black">Terapkan</button>
+        <button type="submit" className={SUBMIT}>Terapkan</button>
       </form>
+      </FilterPanel>
 
       {rows.length === 0 ? (
         <div className="mt-4"><EmptyState title="Lead tidak ditemukan." message="Ubah filter, atau tambah lead baru." /></div>
       ) : (
-        <div className="mt-4 overflow-x-auto rounded-2xl bg-white shadow dark:bg-zinc-900">
+        <div className="mt-4 scroll-x-hint overflow-x-auto rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
           <table className="w-full text-left text-sm">
             <thead className="border-b text-xs uppercase text-zinc-600 dark:text-zinc-400">
               <tr>

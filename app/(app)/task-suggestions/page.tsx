@@ -138,9 +138,9 @@ export default async function SuggestionsPage({
         </div>
       </div>
 
-      <form method="get" className="mt-4 flex flex-col gap-3 rounded-2xl bg-white p-4 shadow sm:flex-row sm:items-end dark:bg-zinc-900">
+      <form method="get" className="mt-4 grid grid-cols-[1fr_auto] items-end gap-3 rounded-2xl border border-zinc-200 bg-white p-3 sm:flex sm:p-4 dark:border-zinc-800 dark:bg-zinc-900">
         {view === 'mine' && <input type="hidden" name="view" value="mine" />}
-        <div className="flex-1">
+        <div className="col-span-2 sm:flex-1">
           <label htmlFor="q" className="mb-1 block text-sm font-medium">Cari</label>
           <input
             id="q"
@@ -157,7 +157,7 @@ export default async function SuggestionsPage({
             id="status"
             name="status"
             defaultValue={fStatus}
-            className="min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
+            className="min-h-[44px] w-full rounded-lg border bg-white px-3 py-2 text-base sm:w-48 dark:bg-zinc-800"
           >
             <option value="">Semua</option>
             {SUGGESTION_STATUSES.map((s) => (
@@ -187,7 +187,7 @@ export default async function SuggestionsPage({
             <li key={s.id}>
               <Link
                 href={`/task-suggestions/${s.id}`}
-                className="block rounded-2xl bg-white p-4 shadow hover:shadow-md dark:bg-zinc-900"
+                className="block rounded-2xl bg-white p-4 shadow-sm hover:shadow-md dark:bg-zinc-900"
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="rounded-md bg-zinc-100 px-1.5 py-0.5 font-mono text-xs dark:bg-zinc-800">

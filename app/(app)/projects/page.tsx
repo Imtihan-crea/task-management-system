@@ -6,7 +6,7 @@ import { PROJECT_STATUSES } from '@/lib/auth/roles'
 import { AppShell } from '@/components/layout/AppShell'
 import { ProjectStatusBadge } from '@/components/ui/Badges'
 import { formatDate } from '@/lib/utils/dates'
-import { ButtonLink, PageHeader } from '@/components/ui/primitives'
+import { ButtonLink, FIELD, FIELD_LABEL, FILTER_GRID, FilterPanel, PageHeader, SUBMIT } from '@/components/ui/primitives'
 import type { Project, ProjectProgress, ProjectStatus } from '@/types/project'
 import { allRows } from '@/lib/utils/paginate'
 
@@ -160,12 +160,10 @@ export default async function ProjectsPage({
         }
       />
 
-      <form
-        method="get"
-        className="mt-4 flex flex-col gap-3 rounded-2xl bg-white p-4 shadow sm:flex-row sm:items-end dark:bg-zinc-900"
-      >
-        <div className="flex-1">
-          <label htmlFor="q" className="mb-1 block text-sm font-medium">
+      <FilterPanel active={[q, statusFilter, pmQuery].filter(Boolean).length}>
+      <form method="get" className={FILTER_GRID}>
+        <div className="sm:col-span-2">
+          <label htmlFor="q" className={FIELD_LABEL}>
             Cari
           </label>
           <input
@@ -174,18 +172,18 @@ export default async function ProjectsPage({
             type="search"
             defaultValue={q}
             placeholder="Kode, nama project, atau client"
-            className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base outline-none focus:border-black dark:border-zinc-700 dark:bg-zinc-800"
+            className={FIELD}
           />
         </div>
         <div>
-          <label htmlFor="status" className="mb-1 block text-sm font-medium">
+          <label htmlFor="status" className={FIELD_LABEL}>
             Status
           </label>
           <select
             id="status"
             name="status"
             defaultValue={statusFilter}
-            className="min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
+            className={FIELD}
           >
             <option value="">Semua</option>
             {PROJECT_STATUSES.map((s) => (
@@ -196,7 +194,7 @@ export default async function ProjectsPage({
           </select>
         </div>
         <div>
-          <label htmlFor="pm" className="mb-1 block text-sm font-medium">
+          <label htmlFor="pm" className={FIELD_LABEL}>
             Project Manager
           </label>
           <input
@@ -204,16 +202,14 @@ export default async function ProjectsPage({
             name="pm"
             defaultValue={pmQuery}
             placeholder="Nama PM"
-            className="min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
+            className={FIELD}
           />
         </div>
-        <button
-          type="submit"
-          className="min-h-[44px] rounded-lg bg-kasuat-gold px-5 py-2 font-semibold text-kasuat-black"
-        >
+        <button type="submit" className={SUBMIT}>
           Terapkan
         </button>
       </form>
+      </FilterPanel>
 
       {error ? (
         <p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm font-medium text-red-700 dark:bg-red-950 dark:text-red-300">
@@ -233,7 +229,7 @@ export default async function ProjectsPage({
               <li key={project.id}>
                 <Link
                   href={`/projects/${project.id}`}
-                  className="block rounded-2xl bg-white p-5 shadow hover:shadow-md dark:bg-zinc-900"
+                  className="block rounded-2xl bg-white p-4 shadow-sm sm:p-5 hover:shadow-md dark:bg-zinc-900"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">

@@ -45,7 +45,7 @@ export async function TaskResults({ filters }: { filters: TaskFilters }) {
         {tasks.length} task
         {overdueCount > 0 ? ` · ${overdueCount} Overdue` : ''}
       </p>
-      <div className="mt-3 hidden overflow-x-auto rounded-2xl bg-white shadow md:block dark:bg-zinc-900">
+      <div className="scroll-x-hint mt-3 hidden overflow-x-auto rounded-2xl border border-zinc-200 md:block dark:border-zinc-800">
         <table className="w-full text-left text-sm">
           <thead className="border-b text-xs uppercase text-zinc-600 dark:text-zinc-400">
             <tr>
@@ -62,7 +62,7 @@ export async function TaskResults({ filters }: { filters: TaskFilters }) {
           <tbody>
             {pageItems.map((task) => (
               <tr key={task.id} className="relative border-b last:border-0">
-                <td className="px-4 py-3 font-mono text-xs">{task.code}</td>
+                <td className="whitespace-nowrap px-4 py-3 font-mono text-xs">{task.code}</td>
                 <td className="px-4 py-3">
                   <Link
                     href={`/tasks/${task.id}`}
@@ -79,39 +79,37 @@ export async function TaskResults({ filters }: { filters: TaskFilters }) {
                 <td className="px-4 py-3">{assigneeNames[task.assignee_id] ?? '-'}</td>
                 <td className="px-4 py-3"><PriorityBadge priority={task.priority} /></td>
                 <td className="px-4 py-3"><TaskStatusBadge status={task.status} /></td>
-                <td className="px-4 py-3">{formatDate(task.deadline)}</td>
+                <td className="whitespace-nowrap px-4 py-3">{formatDate(task.deadline)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      <ul className="mt-4 flex flex-col gap-3 md:hidden">
+      <ul className="mt-3 divide-y divide-zinc-200 overflow-hidden rounded-2xl border border-zinc-200 bg-white md:hidden dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
         {pageItems.map((task) => (
           <li key={task.id}>
             <Link
               href={`/tasks/${task.id}`}
-              className="block rounded-2xl bg-white p-4 shadow dark:bg-zinc-900"
+              className="block px-3 py-2.5 active:bg-zinc-50 dark:active:bg-zinc-800"
             >
-              <p className="font-semibold">
-                <span className="mr-2 rounded-md bg-zinc-100 px-1.5 py-0.5 font-mono text-xs dark:bg-zinc-800">
-                  {task.code}
-                </span>
-                {task.title}
-              </p>
-              <p className="mt-0.5 truncate text-sm text-zinc-600 dark:text-zinc-400">
+              <div className="flex items-start justify-between gap-2">
+                <p className="min-w-0 text-sm font-semibold leading-snug">
+                  <span className="mr-1.5 font-mono text-xs font-normal text-zinc-600 dark:text-zinc-400">{task.code}</span>
+                  {task.title}
+                </p>
+                <span className="shrink-0"><TaskStatusBadge status={task.status} /></span>
+              </div>
+              <p className="mt-0.5 truncate text-xs text-zinc-600 dark:text-zinc-400">
                 {projectNames[task.project_id] ?? '-'} &middot;{' '}
                 {task.workstream_id ? (workstreamNames[task.workstream_id] ?? '-') : 'Tanpa Workstream'} &middot;{' '}
                 {assigneeNames[task.assignee_id] ?? '-'}
               </p>
-              <div className="mt-2 flex flex-wrap items-center gap-1.5">
+              <div className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-zinc-600 dark:text-zinc-400">
                 <PriorityBadge priority={task.priority} />
-                <TaskStatusBadge status={task.status} />
                 {showsOverdueBadge(task.deadline, task.status, task.completed_at, task.cancelled_at) && <OverdueBadge />}
+                <span>Deadline {formatDate(task.deadline)}</span>
               </div>
-              <p className="mt-2 text-xs text-zinc-600 dark:text-zinc-400">
-                Deadline {formatDate(task.deadline)}
-              </p>
             </Link>
           </li>
         ))}

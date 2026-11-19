@@ -52,7 +52,7 @@ export function DebouncedTaskSearch({ initial }: { initial: string }) {
         }}
         placeholder="Kode (T-01), nama, project, assignee"
         autoComplete="off"
-        className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
+        className="min-h-[44px] w-full min-w-0 rounded-lg border bg-white px-3 py-2 text-base dark:bg-zinc-800"
       />
     </div>
   )

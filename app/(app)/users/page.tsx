@@ -4,7 +4,7 @@ import { buildUserQuery, parseUserFilters, type UserListRow } from '@/lib/data/u
 import { ROLE_LABELS, STATUS_LABELS, USER_ROLES, USER_STATUSES } from '@/lib/auth/roles'
 import { ExportLink } from '@/components/export/ExportLink'
 import { AppShell } from '@/components/layout/AppShell'
-import { ButtonLink, PageHeader } from '@/components/ui/primitives'
+import { ButtonLink, FIELD, FIELD_LABEL, FILTER_GRID, FilterPanel, PageHeader, SUBMIT } from '@/components/ui/primitives'
 import { StatusToggleForm } from '@/components/users/UserForms'
 import { formatDate } from '@/lib/utils/dates'
 
@@ -44,19 +44,17 @@ export default async function UsersPage({
         subtitle="Kelola user, role, dan status. Hanya ADMIN yang bisa akses halaman ini."
         actions={
           <>
-            <ExportLink href={`/users/export?${exportParams}`} />
             <ButtonLink href="/users/new">+ Tambah User</ButtonLink>
+            <ExportLink href={`/users/export?${exportParams}`} />
           </>
         }
       />
 
       {/* Search + Filter (PRD section 10 & 11) */}
-      <form
-        method="get"
-        className="mt-4 flex flex-col gap-3 rounded-2xl bg-white p-4 shadow sm:flex-row sm:items-end dark:bg-zinc-900"
-      >
-        <div className="flex-1">
-          <label htmlFor="q" className="mb-1 block text-sm font-medium">
+      <FilterPanel active={[q, roleFilter, statusFilter].filter(Boolean).length}>
+      <form method="get" className={FILTER_GRID}>
+        <div className="sm:col-span-2">
+          <label htmlFor="q" className={FIELD_LABEL}>
             Cari
           </label>
           <input
@@ -65,19 +63,19 @@ export default async function UsersPage({
             type="search"
             defaultValue={q}
             placeholder="Cari nama atau email"
-            className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base outline-none focus:border-black dark:border-zinc-700 dark:bg-zinc-800"
+            className={FIELD}
           />
         </div>
 
         <div>
-          <label htmlFor="role" className="mb-1 block text-sm font-medium">
+          <label htmlFor="role" className={FIELD_LABEL}>
             Role
           </label>
           <select
             id="role"
             name="role"
             defaultValue={roleFilter}
-            className="min-h-[44px] rounded-lg border px-3 py-2 text-base outline-none focus:border-black dark:border-zinc-700 dark:bg-zinc-800"
+            className={FIELD}
           >
             <option value="">Semua</option>
             {USER_ROLES.map((role) => (
@@ -89,14 +87,14 @@ export default async function UsersPage({
         </div>
 
         <div>
-          <label htmlFor="status" className="mb-1 block text-sm font-medium">
+          <label htmlFor="status" className={FIELD_LABEL}>
             Status
           </label>
           <select
             id="status"
             name="status"
             defaultValue={statusFilter}
-            className="min-h-[44px] rounded-lg border px-3 py-2 text-base outline-none focus:border-black dark:border-zinc-700 dark:bg-zinc-800"
+            className={FIELD}
           >
             <option value="">Semua</option>
             {USER_STATUSES.map((status) => (
@@ -108,14 +106,14 @@ export default async function UsersPage({
         </div>
 
         <div>
-          <label htmlFor="sort" className="mb-1 block text-sm font-medium">
+          <label htmlFor="sort" className={FIELD_LABEL}>
             Urutkan
           </label>
           <select
             id="sort"
             name="sort"
             defaultValue={`${sortKey}.${ascending ? 'asc' : 'desc'}`}
-            className="min-h-[44px] rounded-lg border px-3 py-2 text-base outline-none focus:border-black dark:border-zinc-700 dark:bg-zinc-800"
+            className={FIELD}
           >
             {SORT_OPTIONS.map((option) => (
               <option key={option.value} value={option.value}>
@@ -125,13 +123,11 @@ export default async function UsersPage({
           </select>
         </div>
 
-        <button
-          type="submit"
-          className="min-h-[44px] rounded-lg bg-kasuat-gold px-5 py-2 font-semibold text-kasuat-black"
-        >
+        <button type="submit" className={SUBMIT}>
           Terapkan
         </button>
       </form>
+      </FilterPanel>
 
       {error ? (
         <p role="alert" className="mt-4 rounded-lg bg-red-50 p-3 text-sm font-medium text-red-700 dark:bg-red-950 dark:text-red-300">
@@ -146,7 +142,7 @@ export default async function UsersPage({
       ) : (
         <>
           {/* Desktop: table */}
-          <div className="mt-4 hidden overflow-x-auto rounded-2xl bg-white shadow md:block dark:bg-zinc-900">
+          <div className="mt-4 hidden scroll-x-hint overflow-x-auto rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 md:block dark:bg-zinc-900">
             <table className="w-full text-left text-sm">
               <thead className="border-b text-xs uppercase text-zinc-600 dark:text-zinc-400">
                 <tr>
@@ -201,7 +197,7 @@ export default async function UsersPage({
             {users.map((user) => (
               <li
                 key={user.id}
-                className="rounded-2xl bg-white p-4 shadow dark:bg-zinc-900"
+                className="rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900"
               >
                 <p className="font-semibold">{user.full_name || '-'}</p>
                 <p className="break-all text-sm text-zinc-600 dark:text-zinc-400">{user.email}</p>

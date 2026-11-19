@@ -57,7 +57,7 @@ export async function MeetingResults({
           // Hanya untuk role yang boleh membuat meeting (VIEWER tidak; temuan e2e:rbac).
           action={
             can(scope.role as UserRole, 'meetings.create') ? (
-              <Link href="/meetings/new" className="font-semibold text-kasuat-deep-gold hover:underline">+ Buat Meeting</Link>
+              <Link href="/meetings/new" className="inline-flex min-h-[44px] items-center font-semibold text-kasuat-deep-gold hover:underline">+ Buat Meeting</Link>
             ) : undefined
           }
         />
@@ -72,7 +72,7 @@ export async function MeetingResults({
       </p>
 
       {/* Desktop: tabel */}
-      <div className="mt-3 hidden overflow-x-auto rounded-2xl bg-white shadow md:block dark:bg-zinc-900">
+      <div className="mt-3 hidden scroll-x-hint overflow-x-auto rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 md:block dark:bg-zinc-900">
         <table className="w-full text-left text-sm">
           <thead className="border-b text-xs uppercase text-zinc-600 dark:text-zinc-400">
             <tr>
@@ -149,7 +149,7 @@ function MeetingCard({
     <li>
       <Link
         href={`/meetings/${m.id}`}
-        className="block rounded-2xl bg-white p-4 shadow dark:bg-zinc-900"
+        className="block rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900"
       >
         <p className="font-semibold">
           <span className="mr-2 rounded-md bg-zinc-100 px-1.5 py-0.5 font-mono text-xs dark:bg-zinc-800">

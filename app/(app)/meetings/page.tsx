@@ -49,8 +49,8 @@ export default async function MeetingsPage({
         subtitle="Pusat kontrol operasional untuk semua meeting."
         actions={
           <>
-            <ExportLink href={`/meetings/export?${exportParams}`} />
             {canCreate && <ButtonLink href="/meetings/new">+ Buat Meeting</ButtonLink>}
+            <ExportLink href={`/meetings/export?${exportParams}`} />
           </>
         }
       />

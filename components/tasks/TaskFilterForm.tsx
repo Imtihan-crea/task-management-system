@@ -1,6 +1,7 @@
 import { fetchTaskLookups } from '@/lib/data/task-list'
 import { DebouncedTaskSearch } from '@/components/tasks/TaskSearch'
 import type { TaskTabKey } from '@/components/tasks/TaskTabs'
+import { FIELD, FIELD_LABEL, FILTER_GRID, FilterPanel, SUBMIT } from '@/components/ui/primitives'
 
 const SORT_OPTIONS = [
   { value: 'deadline.asc', label: 'Deadline (terdekat, belum selesai dulu)' },
@@ -29,28 +30,28 @@ export type TaskFilterState = {
  */
 export async function TaskFilterForm({ state }: { state: TaskFilterState }) {
   const lookups = await fetchTaskLookups()
+  const active = [state.q, state.project, state.workstream, state.status, state.priority, state.deadline].filter(Boolean).length
+    + (state.sort && state.sort !== 'deadline.asc' ? 1 : 0)
 
   return (
-    <form
-      method="get"
-      className="mt-4 flex flex-col gap-3 rounded-2xl bg-white p-4 shadow dark:bg-zinc-900"
-    >
+    <FilterPanel active={active}>
+    <form method="get">
       {state.tab !== 'all' && (
         <input type="hidden" name="view" value={state.tab === 'mine' ? 'mine' : state.tab} />
       )}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        <div className="sm:col-span-2 lg:col-span-1">
+      <div className={FILTER_GRID}>
+        <div className="sm:col-span-2">
           <DebouncedTaskSearch key={state.q} initial={state.q} />
         </div>
         <div>
-          <label htmlFor="project" className="mb-1 block text-sm font-medium">
+          <label htmlFor="project" className={FIELD_LABEL}>
             Project
           </label>
           <select
             id="project"
             name="project"
             defaultValue={state.project}
-            className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
+            className={FIELD}
           >
             <option value="">Semua</option>
             {lookups.projects.map((p) => (
@@ -61,14 +62,14 @@ export async function TaskFilterForm({ state }: { state: TaskFilterState }) {
           </select>
         </div>
         <div>
-          <label htmlFor="workstream" className="mb-1 block text-sm font-medium">
+          <label htmlFor="workstream" className={FIELD_LABEL}>
             Workstream
           </label>
           <select
             id="workstream"
             name="workstream"
             defaultValue={state.workstream}
-            className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
+            className={FIELD}
           >
             <option value="">Semua</option>
             {lookups.workstreams
@@ -81,14 +82,14 @@ export async function TaskFilterForm({ state }: { state: TaskFilterState }) {
           </select>
         </div>
         <div>
-          <label htmlFor="status" className="mb-1 block text-sm font-medium">
+          <label htmlFor="status" className={FIELD_LABEL}>
             Status
           </label>
           <select
             id="status"
             name="status"
             defaultValue={state.status}
-            className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
+            className={FIELD}
           >
             <option value="">Semua</option>
             {(['TODO', 'IN_PROGRESS', 'REVIEW', 'BLOCKED', 'DONE', 'CANCELLED'] as const).map((s) => (
@@ -99,14 +100,14 @@ export async function TaskFilterForm({ state }: { state: TaskFilterState }) {
           </select>
         </div>
         <div>
-          <label htmlFor="priority" className="mb-1 block text-sm font-medium">
+          <label htmlFor="priority" className={FIELD_LABEL}>
             Prioritas
           </label>
           <select
             id="priority"
             name="priority"
             defaultValue={state.priority}
-            className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
+            className={FIELD}
           >
             <option value="">Semua</option>
             {(['LOW', 'MEDIUM', 'HIGH'] as const).map((p) => (
@@ -117,14 +118,14 @@ export async function TaskFilterForm({ state }: { state: TaskFilterState }) {
           </select>
         </div>
         <div>
-          <label htmlFor="deadline" className="mb-1 block text-sm font-medium">
+          <label htmlFor="deadline" className={FIELD_LABEL}>
             Deadline
           </label>
           <select
             id="deadline"
             name="deadline"
             defaultValue={state.deadline}
-            className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
+            className={FIELD}
           >
             <option value="">Semua</option>
             <option value="overdue">Overdue</option>
@@ -132,14 +133,14 @@ export async function TaskFilterForm({ state }: { state: TaskFilterState }) {
           </select>
         </div>
         <div>
-          <label htmlFor="sort" className="mb-1 block text-sm font-medium">
+          <label htmlFor="sort" className={FIELD_LABEL}>
             Urutkan
           </label>
           <select
             id="sort"
             name="sort"
             defaultValue={state.sort}
-            className="min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
+            className={FIELD}
           >
             {SORT_OPTIONS.map((o) => (
               <option key={o.value} value={o.value}>
@@ -148,13 +149,11 @@ export async function TaskFilterForm({ state }: { state: TaskFilterState }) {
             ))}
           </select>
         </div>
+        <button type="submit" className={SUBMIT}>
+          Terapkan
+        </button>
       </div>
-      <button
-        type="submit"
-        className="min-h-[44px] rounded-lg bg-kasuat-gold px-5 py-2 font-semibold text-kasuat-black sm:w-auto"
-      >
-        Terapkan
-      </button>
     </form>
+    </FilterPanel>
   )
 }

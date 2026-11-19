@@ -25,8 +25,8 @@ export default async function WorkstreamsPage({
         actions={<ExportLink href={`/workstreams/export${q ? `?q=${encodeURIComponent(q)}` : ''}`} />}
       />
 
-      <form method="get" className="mt-4 flex flex-col gap-3 rounded-2xl bg-white p-4 shadow sm:flex-row sm:items-end dark:bg-zinc-900">
-        <div className="flex-1">
+      <form method="get" className="mt-4 grid grid-cols-[1fr_auto] items-end gap-3 rounded-2xl border border-zinc-200 bg-white p-3 sm:flex sm:p-4 dark:border-zinc-800 dark:bg-zinc-900">
+        <div className="col-span-2 sm:flex-1">
           <label htmlFor="q" className="mb-1 block text-sm font-medium">Cari</label>
           <input
             id="q"
@@ -48,7 +48,7 @@ export default async function WorkstreamsPage({
         </div>
       ) : (
         <>
-          <div className="mt-4 hidden overflow-x-auto rounded-2xl bg-white shadow md:block dark:bg-zinc-900">
+          <div className="mt-4 hidden scroll-x-hint overflow-x-auto rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 md:block dark:bg-zinc-900">
             <table className="w-full text-left text-sm">
               <thead className="border-b text-xs uppercase text-zinc-600 dark:text-zinc-400">
                 <tr>
@@ -79,7 +79,7 @@ export default async function WorkstreamsPage({
               <li key={w.id}>
                 <Link
                   href={`/projects/${w.project_id}`}
-                  className="block rounded-2xl bg-white p-4 shadow dark:bg-zinc-900"
+                  className="block rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900"
                 >
                   <p className="font-semibold">
                     <span className="mr-2 rounded-md bg-zinc-100 px-1.5 py-0.5 font-mono text-xs dark:bg-zinc-800">
