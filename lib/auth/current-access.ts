@@ -17,10 +17,12 @@ import type { UserRole } from '@/types/profile'
  */
 export const loadAccess = cache(async (userId: string): Promise<AccessContext> => {
   const admin = createAdminClient()
-  const [profileRes, overridesRes, managedRes] = await Promise.all([
+  const [profileRes, overridesRes, managedRes, memberRes] = await Promise.all([
     admin.from('profiles').select('role, is_super_admin, is_developer').eq('id', userId).maybeSingle(),
     admin.from('user_permissions').select('permission, project_id, granted').eq('user_id', userId),
     admin.from('project_managers').select('project_id').eq('user_id', userId),
+    // Anggota project = punya task aktif di sana (sama dengan RLS 016 dan daftar project).
+    admin.from('tasks').select('project_id').eq('assignee_id', userId).eq('is_deleted', false).limit(1000),
   ])
   let profile = profileRes.data as { role: UserRole; is_super_admin?: boolean; is_developer?: boolean } | null
   if (profileRes.error) {
@@ -39,6 +41,7 @@ export const loadAccess = cache(async (userId: string): Promise<AccessContext> =
       (o) => ({ permission: o.permission, projectId: o.project_id, granted: o.granted })
     ),
     managedProjectIds: ((managedRes.data ?? []) as { project_id: string }[]).map((r) => r.project_id),
+    memberProjectIds: [...new Set(((memberRes.data ?? []) as { project_id: string }[]).map((r) => r.project_id))],
   }
 })
 
@@ -56,10 +59,10 @@ export async function permissionProjects(userId: string, permission: Permission)
   return projectScope(await loadAccess(userId), permission)
 }
 
-/** Pengganti requireAdmin/requireManager: tanpa izin -> dashboard. */
+/** Pengganti requireAdmin/requireManager: tanpa izin -> Portal dengan pesan ditolak. */
 export async function requirePermission(permission: Permission) {
   const profile = await requireProfile()
-  if (!(await hasPermission(profile.id, permission))) redirect('/dashboard?denied=1')
+  if (!(await hasPermission(profile.id, permission))) redirect('/portal?denied=1')
   return profile
 }
 

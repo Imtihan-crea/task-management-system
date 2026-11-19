@@ -116,7 +116,7 @@ export async function requireAdmin(): Promise<CurrentProfile> {
   const profile = await requireProfile()
 
   if (profile.role !== 'ADMIN') {
-    redirect('/dashboard?denied=1')
+    redirect('/portal?denied=1')
   }
 
   return profile
@@ -130,7 +130,7 @@ export async function requireManager(): Promise<CurrentProfile> {
   const profile = await requireProfile()
 
   if (profile.role !== 'ADMIN' && profile.role !== 'PROJECT_MANAGER') {
-    redirect('/dashboard?denied=1')
+    redirect('/portal?denied=1')
   }
 
   return profile

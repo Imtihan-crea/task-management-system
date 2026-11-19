@@ -11,7 +11,7 @@ const INITIAL: PermissionFormState = undefined
 const FIELD =
   'rounded-lg border px-2 py-1.5 text-sm outline-none focus:border-black dark:border-zinc-700 dark:bg-zinc-800'
 
-type Item = { permission: string; label: string; byRole: boolean; mode: 'default' | 'grant' | 'revoke'; perProject: boolean }
+type Item = { permission: string; label: string; byRole: boolean; mode: 'default' | 'grant' | 'revoke'; perProject: boolean; roleScope: string }
 
 function Status({ state }: { state: PermissionFormState }) {
   if (state?.error) return <p role="alert" className="text-sm font-medium text-red-600">{state.error}</p>
@@ -34,7 +34,7 @@ export function GlobalPermissionsForm({ userId, groups }: { userId: string; grou
                 <label htmlFor={`perm_${i.permission}`} className="text-sm">
                   {i.label}
                   <span className="ml-2 text-xs text-zinc-600 dark:text-zinc-400">
-                    peran: {i.byRole ? (i.perProject ? 'ya (project kelolaan)' : 'ya') : 'tidak'}
+                    peran: {i.byRole ? (i.perProject ? `ya (${i.roleScope})` : 'ya') : 'tidak'}
                   </span>
                 </label>
                 <select id={`perm_${i.permission}`} name={`perm:${i.permission}`} defaultValue={i.mode} className={FIELD}>

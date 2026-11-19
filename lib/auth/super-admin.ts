@@ -27,7 +27,7 @@ export function superAdminError(
   return null
 }
 
-export const MSG_ROLE_NEEDS_CHANGE_ROLE = 'Tanpa izin ubah role, user baru hanya bisa Team Member atau Viewer.'
+export const MSG_ROLE_NEEDS_CHANGE_ROLE = 'Tanpa izin ubah role, user baru hanya bisa Project Officer atau Guest.'
 
 /**
  * User baru (undang / buat dengan password): ADMIN hanya oleh Super Admin;

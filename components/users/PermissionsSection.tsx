@@ -40,6 +40,8 @@ export async function PermissionsSection({
       label: i.label,
       byRole: can(user.role, i.permission),
       perProject: PERMISSION_SCOPE[i.permission] === 'project',
+      roleScope:
+        user.role === 'ADMIN' ? 'semua project' : user.role === 'PROJECT_MANAGER' ? 'project kelolaan' : 'project tempat ia punya task',
       mode: globalMode(i.permission) as 'default' | 'grant' | 'revoke',
     })),
   }))
@@ -51,7 +53,8 @@ export async function PermissionsSection({
       <h2 className="text-lg font-bold">Wewenang</h2>
       <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
         Peran menjadi paket awal. &quot;Beri&quot; atau &quot;Cabut&quot; berlaku untuk akun ini saja. Izin project dari
-        peran PM hanya berlaku di project yang ia kelola. Aturan per project menang atas aturan semua project.
+        peran Project Manager hanya berlaku di project yang ia kelola; dari peran Project Officer di project tempat
+        ia punya task. Aturan per project menang atas aturan semua project.
       </p>
 
       <div className="mt-4">

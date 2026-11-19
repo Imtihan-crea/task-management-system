@@ -9,8 +9,9 @@ import { can, type Permission } from '@/lib/auth/permissions'
  * 2. Aturan akun untuk project itu (user_permissions dengan project_id).
  * 3. Aturan akun untuk semua project (project_id null).
  * 4. Paket peran (lib/auth/permissions.ts). Izin per project dari paket peran
- *    berlaku di semua project untuk ADMIN dan di project yang ia kelola untuk PM,
- *    sama dengan aturan sebelum fitur ini.
+ *    berlaku di semua project untuk ADMIN, di project yang ia kelola untuk PM,
+ *    dan di project tempat ia punya task untuk Project Officer / Guest (COA).
+ *    Izin global dari paket peran berlaku seperti tertulis di matriks.
  */
 
 export type PermissionScope = 'global' | 'project' | 'role'
@@ -81,6 +82,8 @@ export type AccessContext = {
   isDeveloper: boolean
   overrides: PermissionOverride[]
   managedProjectIds: string[]
+  /** Project tempat ia punya task aktif (anggota project). */
+  memberProjectIds: string[]
 }
 
 /** Cakupan project sebuah izin: semua (kecuali exclude) atau hanya include. */
@@ -96,9 +99,9 @@ export function projectScope(ctx: AccessContext, permission: Permission): Projec
   const byRole = can(ctx.role, permission)
 
   let all = globalRow ? globalRow.granted : byRole && ctx.role === 'ADMIN'
-  const include = new Set<string>(
-    !globalRow && byRole && ctx.role === 'PROJECT_MANAGER' ? ctx.managedProjectIds : []
-  )
+  const roleProjects =
+    ctx.role === 'ADMIN' ? [] : ctx.role === 'PROJECT_MANAGER' ? ctx.managedProjectIds : ctx.memberProjectIds
+  const include = new Set<string>(!globalRow && byRole ? roleProjects : [])
   const exclude = new Set<string>()
   if (globalRow && !globalRow.granted) all = false
 

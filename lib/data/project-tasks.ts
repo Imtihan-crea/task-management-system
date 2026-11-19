@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { hasPermission } from '@/lib/auth/current-access'
 import type { TaskStatus } from '@/types/task'
 import type { UserRole } from '@/types/profile'
+import { seesOwnProjectsOnly } from '@/lib/auth/roles'
 
 export type ProjectTaskRow = {
   id: string
@@ -37,8 +38,8 @@ export async function loadProjectTasks(projectId: string, viewer: ProjectTaskVie
     .select('id, code, title, workstream_id, assignee_id, priority, status, start_date, deadline, completed_at, cancelled_at, created_at')
     .eq('project_id', projectId)
     .eq('is_deleted', false)
-  // TEAM_MEMBER hanya task miliknya (sama dengan /tasks).
-  if (viewer.role === 'TEAM_MEMBER' && !viewer.managesProject) taskQuery = taskQuery.eq('assignee_id', viewer.id)
+  // Project Officer / Guest tanpa izin ubah task di project ini: hanya task miliknya.
+  if (seesOwnProjectsOnly(viewer.role) && !viewer.managesProject) taskQuery = taskQuery.eq('assignee_id', viewer.id)
   // Urutan dipasang sekali: builder PostgREST mutable, .order di dalam callback menumpuk per halaman.
   const orderedTasks = taskQuery.order('deadline', { ascending: true }).order('id')
 
@@ -107,7 +108,7 @@ export async function projectTaskViewer(
   const hasGrantHere = canEditProject || canManageWorkstream || canCreateTask || canEditTask || canReviewTracker || canViewHr
 
   // Salinan aturan akses app/(app)/projects/[id]/page.tsx; ubah keduanya.
-  if (profile.role === 'TEAM_MEMBER' && !hasGrantHere) {
+  if (seesOwnProjectsOnly(profile.role) && !hasGrantHere) {
     const { count } = await admin
       .from('tasks')
       .select('id', { count: 'exact', head: true })

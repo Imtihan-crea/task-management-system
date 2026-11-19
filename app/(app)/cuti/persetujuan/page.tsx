@@ -19,7 +19,7 @@ const INPUT = 'rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:b
 /** Persetujuan cuti / izin / sakit + saldo cuti semua karyawan. Izin leave.approve atau hr.manage. */
 export default async function LeaveApprovalPage({ searchParams }: { searchParams: Promise<{ bulan?: string }> }) {
   const profile = await requireProfile()
-  if (!(await canApproveLeave(profile.id))) redirect('/dashboard?denied=1')
+  if (!(await canApproveLeave(profile.id))) redirect('/portal?denied=1')
   const sp = await searchParams
   const today = todayISO()
   const year = today.slice(0, 4)

@@ -189,7 +189,8 @@ cek('PM peserta meeting project PM lain -> tidak', canCreateTaskFromMeeting(acc(
 cek('PM project ini -> boleh', canCreateTaskFromMeeting(acc(mtg(P1), { isProjectPM: true }), 'PROJECT_MANAGER'), true)
 cek('PM peserta meeting tanpa project -> boleh (pilih project)', canCreateTaskFromMeeting(acc(mtg(null)), 'PROJECT_MANAGER'), true)
 cek('ADMIN peserta -> boleh', canCreateTaskFromMeeting(acc(mtg(P1)), 'ADMIN'), true)
-cek('TEAM_MEMBER -> tidak', canCreateTaskFromMeeting(acc(mtg(P1)), 'TEAM_MEMBER'), false)
+cek('TEAM_MEMBER tanpa info izin project -> tidak', canCreateTaskFromMeeting(acc(mtg(P1)), 'TEAM_MEMBER'), false)
+cek('TEAM_MEMBER dengan tasks.create di project -> boleh', canCreateTaskFromMeeting(acc(mtg(P1), { canCreateTask: true }), 'TEAM_MEMBER'), true)
 
 /* ---------- meeting CANCELLED dikunci (audit B5) ---------- */
 cek('CANCELLED: konten dikunci walau ADMIN', canManageMeetingContent(acc(mtg(P1, 'CANCELLED')), 'ADMIN'), false)

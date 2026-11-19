@@ -19,6 +19,7 @@ import { todayISO } from '@/lib/utils/dates'
 import { isProjectManager } from '@/lib/data/projects'
 import { hasPermission } from '@/lib/auth/current-access'
 import { canSuggestForProject } from '@/lib/auth/project-access'
+import { seesOwnProjectsOnly } from '@/lib/auth/roles'
 import type { Project } from '@/types/project'
 
 const TABS = [
@@ -81,7 +82,7 @@ export default async function ProjectDetailPage({
   const hasGrantHere = canEditProject || canManageWorkstream || canCreateTask || canEditTask || canSeeTracker
 
   // Aturan yang sama ada di projectTaskViewer (lib/data/project-tasks.ts) untuk export; ubah keduanya.
-  if (profile.role === 'TEAM_MEMBER' && !hasGrantHere) {
+  if (seesOwnProjectsOnly(profile.role) && !hasGrantHere) {
     const { count: involved } = await admin
       .from('tasks')
       .select('id', { count: 'exact', head: true })

@@ -82,8 +82,8 @@ export const fetchTaskRows = cache(async (scope: TaskScope): Promise<TaskRow[]> 
 
   // PM / Team Member: task yang di-assign kepadanya + task di project tempat ia
   // boleh mengelola task (tasks.edit: PM project, atau diberi per akun), sama
-  // dengan aturan baca /tasks/[id] (lanjutan audit B1/A4). Admin/Viewer semua.
-  if (scope.role === 'TEAM_MEMBER' || scope.role === 'PROJECT_MANAGER') {
+  // dengan aturan baca /tasks/[id] (lanjutan audit B1/A4). Admin semua; Guest hanya task miliknya.
+  if (scope.role !== 'ADMIN') {
     // Sama dengan aturan buka /tasks/[id]: edit, batal, atau hapus di project itu.
     const scopes = await Promise.all(
       (['tasks.edit', 'tasks.cancel', 'tasks.delete'] as const).map((p) => permissionProjects(scope.userId, p))

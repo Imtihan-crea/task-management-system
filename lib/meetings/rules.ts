@@ -141,9 +141,10 @@ export function canCreateTaskFromMeeting(access: MeetingAccess, role: UserRole):
     if (!access.canCreateTask) return false
   } else {
     if (!can(role, 'tasks.create')) return false
-    // Audit B4: PM hanya di project miliknya (sama dengan server action).
+    // Audit B4: selain Admin hanya di project miliknya (sama dengan server action).
+    // Tanpa canCreateTask, keanggotaan Project Officer tidak diketahui: tolak.
     // Meeting tanpa project: project dipilih di form dari project miliknya.
-    if (role === 'PROJECT_MANAGER' && access.meeting.project_id && !access.isProjectPM) return false
+    if (role !== 'ADMIN' && access.meeting.project_id && !access.isProjectPM) return false
   }
   return canViewMeeting(access, role)
 }

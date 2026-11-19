@@ -57,8 +57,8 @@ export default async function TaskDetailPage({
 
   // Scope baca: assignee, atau pemegang izin kelola task di project ini
   // (Admin, PM project; audit A4: link email TASK_ASSIGNED tidak 404).
-  // VIEWER tetap boleh membaca semua task (aturan lama).
-  if (profile.role !== 'VIEWER' && !isOwner && !canFullEdit && !canDelete && !canCancel) {
+  // Guest hanya task miliknya (COA, 19 Nov 2026; sebelumnya Viewer membaca semua).
+  if (!isOwner && !canFullEdit && !canDelete && !canCancel) {
     notFound()
   }
   // Sama dengan canActOnLoadedTask di server action.

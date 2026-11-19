@@ -4,6 +4,7 @@ import { managedProjects } from '@/lib/auth/current-access'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { allRows } from '@/lib/utils/paginate'
 import type { UserRole } from '@/types/profile'
+import { seesOwnProjectsOnly } from '@/lib/auth/roles'
 
 export function sanitizeWorkstreamSearch(value: string | undefined): string {
   return (value ?? '').replace(/[,()*%]/g, ' ').trim().slice(0, 60)
@@ -19,13 +20,13 @@ export async function loadWorkstreams(profile: { id: string; role: UserRole }, q
 
   // Scope mengikuti project scope (§18 PRD 08-09 + §34 PRD 03-04).
   let projectIds: string[] | null = null
-  const granted = role === 'PROJECT_MANAGER' || role === 'TEAM_MEMBER' ? await managedProjects(profile.id) : null
+  const granted = role !== 'ADMIN' ? await managedProjects(profile.id) : null
   if (granted?.all) {
     projectIds = null
   } else if (role === 'PROJECT_MANAGER') {
     // Project kelolaan + yang diberi lewat aturan per akun.
     projectIds = granted!.ids
-  } else if (role === 'TEAM_MEMBER') {
+  } else if (seesOwnProjectsOnly(role)) {
     const { data: myTasks } = await admin
       .from('tasks')
       .select('project_id')

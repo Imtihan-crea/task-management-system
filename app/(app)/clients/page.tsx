@@ -16,7 +16,7 @@ import { bulkChangeLeadStage, bulkSetLeadOwner } from '@/app/actions/clients'
 /** Pipeline lead: ringkasan per tahap + daftar dengan filter tahap, PIC, dan nama. */
 export default async function ClientsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const profile = await requireProfile()
-  if (!(await canViewClients(profile.id))) redirect('/dashboard?denied=1')
+  if (!(await canViewClients(profile.id))) redirect('/portal?denied=1')
   const params = await searchParams
   const str = (k: string) => (typeof params[k] === 'string' ? (params[k] as string) : '')
   const stage = isStage(str('stage')) ? str('stage') : ''

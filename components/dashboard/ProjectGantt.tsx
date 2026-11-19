@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getDashboardScope } from '@/lib/data/dashboard'
+import { seesOwnProjectsOnly } from '@/lib/auth/roles'
 import { todayISO } from '@/lib/utils/dates'
 import { allRows } from '@/lib/utils/paginate'
 
@@ -319,7 +320,7 @@ async function ProjectTaskGantt({
     .eq('is_deleted', false)
     .order('deadline', { ascending: true })
     .limit(500)
-  if (role === 'TEAM_MEMBER') q = q.eq('assignee_id', userId)
+  if (seesOwnProjectsOnly(role)) q = q.eq('assignee_id', userId)
 
   const { data } = await q
   const tasks = (data ?? []) as {

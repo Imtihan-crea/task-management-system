@@ -5,6 +5,7 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import type { TaskRow } from '@/lib/data/task-list'
 import { allRows } from '@/lib/utils/paginate'
 import { hasImpossibleFilter } from '@/lib/data/filter-values'
+import { seesOwnProjectsOnly } from '@/lib/auth/roles'
 
 /** Sama seperti fetchTaskRows: assignee di-embed, tanpa query profiles terpisah. */
 const DASHBOARD_TASK_SELECT =
@@ -43,7 +44,8 @@ export const getDashboardScope = cache(
       }
     }
 
-    if (role === 'TEAM_MEMBER') {
+    // Project Officer / Guest: project tempat ia punya task, task miliknya.
+    if (seesOwnProjectsOnly(role)) {
       const { data: myTasks } = await admin
         .from('tasks')
         .select('project_id')

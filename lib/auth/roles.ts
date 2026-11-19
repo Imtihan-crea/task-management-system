@@ -12,12 +12,24 @@ export const USER_ROLES: UserRole[] = [
 
 export const USER_STATUSES: UserStatus[] = ['INVITED', 'ACTIVE', 'INACTIVE']
 
+/** Label peran mengikuti bagan wewenang Kasuat (COA); kode di database tetap. */
 export const ROLE_LABELS: Record<UserRole, string> = {
-  ADMIN: 'ADMIN',
-  PROJECT_MANAGER: 'PROJECT MANAGER',
-  TEAM_MEMBER: 'TEAM MEMBER',
-  VIEWER: 'VIEWER',
+  ADMIN: 'Admin',
+  PROJECT_MANAGER: 'Project Manager',
+  TEAM_MEMBER: 'Project Officer',
+  VIEWER: 'Guest',
 }
+
+/** Label tampil akun: Super Admin / Developer menimpa label peran. */
+export function roleLabel(p: { role: UserRole; is_super_admin?: boolean | null; is_developer?: boolean | null }): string {
+  return p.is_super_admin ? 'Super Admin' : p.is_developer ? 'Developer' : ROLE_LABELS[p.role]
+}
+
+/**
+ * Project Officer dan Guest hanya melihat project tempat ia punya task (plus
+ * project yang diberi lewat izin). Admin dan PM melihat semua project.
+ */
+export const seesOwnProjectsOnly = (role: string) => role === 'TEAM_MEMBER' || role === 'VIEWER'
 
 export const STATUS_LABELS: Record<UserStatus, string> = {
   INVITED: 'INVITED',

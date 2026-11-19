@@ -22,7 +22,7 @@ export default async function NewMeetingPage({
   const profile = await requireProfile()
 
   if (!can(profile.role, 'meetings.create')) {
-    redirect('/dashboard?denied=1')
+    redirect('/portal?denied=1')
   }
 
   const params = await searchParams

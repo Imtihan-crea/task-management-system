@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { hasPermission, managedProjects } from '@/lib/auth/current-access'
-import { PROJECT_STATUSES } from '@/lib/auth/roles'
+import { PROJECT_STATUSES, seesOwnProjectsOnly } from '@/lib/auth/roles'
 import { AppShell } from '@/components/layout/AppShell'
 import { ProjectStatusBadge } from '@/components/ui/Badges'
 import { formatDate } from '@/lib/utils/dates'
@@ -121,10 +121,10 @@ export default async function ProjectsPage({
     }
   }
 
-  // MEMBER hanya melihat project yang dia terlibat (punya task aktif di sana)
+  // Project Officer / Guest hanya melihat project yang dia terlibat (punya task aktif di sana)
   // atau yang boleh ia kelola lewat aturan per akun.
   let visibleProjects = projects
-  const granted = profile.role === 'TEAM_MEMBER' ? await managedProjects(profile.id) : null
+  const granted = seesOwnProjectsOnly(profile.role) ? await managedProjects(profile.id) : null
   if (granted && !granted.all) {
     const { data: myTasks } = await admin
       .from('tasks')
