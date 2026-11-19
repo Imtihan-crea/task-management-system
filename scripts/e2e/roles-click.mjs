@@ -209,8 +209,8 @@ try {
   ids.vMtgCancel = await mkMeeting('Meeting korban batal', 'SCHEDULED', [mem.id, users.VWR.id])
   ids.vAi = await mkAi(ids.vMtg, 'AI korban')
   ids.vPart = (await db.from('meeting_participants').select('id').eq('meeting_id', ids.vMtg).eq('user_id', mem.id).single()).data.id
-  // Fixture per role berhak (ADM dan PM): tiap klik berhak punya target sendiri
-  for (const r of ['ADM', 'PM']) {
+  // Fixture per role berhak (ADM, PM, dan MEM sejak COA): tiap klik berhak punya target sendiri
+  for (const r of ['ADM', 'PM', 'MEM']) {
     fx[r] = {
       tEdit: await mkTask(`Task ubah ${r}`), tStatus: await mkTask(`Task status ${r}`), tSubmit: await mkTask(`Task submit ${r}`),
       tCancel: await mkTask(`Task batal ${r}`), tDel: await mkTask(`Task hapus ${r}`),
@@ -224,7 +224,7 @@ try {
   }
   fx.ADM.project = PA; fx.PM.project = PB
   // Task status/submit untuk MEM (assignee)
-  fx.MEM = { tStatus: await mkTask('Task status MEM'), tSubmit: await mkTask('Task submit MEM') }
+  // tStatus / tSubmit MEM sudah dibuat di loop di atas (MEM = assignee semua task uji).
   const prjMain = `/projects/${PRJ}`
 
   /* ---------- aksi ---------- */
