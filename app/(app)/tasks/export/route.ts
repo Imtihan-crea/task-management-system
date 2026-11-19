@@ -6,6 +6,7 @@ import { exportInfo } from '@/lib/export/excel'
 import { exportResponse } from '@/lib/export'
 import { statusLabel, taskColumns, type ExportTaskRow } from '@/lib/export/task-columns'
 import { todayISO } from '@/lib/utils/dates'
+import { onlySelected, selectedIds } from '@/lib/bulk'
 
 export const dynamic = 'force-dynamic'
 
@@ -13,7 +14,11 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
   const profile = await requireProfile()
   const filters = parseTaskFilters(request.nextUrl.searchParams, { userId: profile.id, role: profile.role }, parseTaskTab)
-  const { tasks, projectNames, workstreamNames, assigneeNames } = await loadTaskResults(filters)
+  const loaded = await loadTaskResults(filters)
+  const { projectNames, workstreamNames, assigneeNames } = loaded
+  // ?ids= : export terpilih, tetap di dalam cakupan daftar (id di luar cakupan diabaikan).
+  const picked = selectedIds(request.nextUrl.searchParams)
+  const tasks = onlySelected(loaded.tasks, picked)
 
   const rows: ExportTaskRow[] = tasks.map((t) => ({
     code: t.code,
@@ -30,6 +35,7 @@ export async function GET(request: NextRequest) {
   }))
 
   const f = [
+    picked && 'Hanya baris terpilih',
     `Tab: ${filters.tab}`,
     filters.q && `Cari: ${filters.q}`,
     filters.project && `Project: ${projectNames[filters.project] ?? filters.project}`,

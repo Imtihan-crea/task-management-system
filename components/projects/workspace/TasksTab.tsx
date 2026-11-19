@@ -4,6 +4,8 @@ import { ExportLink } from '@/components/export/ExportLink'
 import { PriorityBadge, TaskStatusBadge, OverdueBadge } from '@/components/ui/Badges'
 import { showsOverdueBadge } from '@/lib/utils/dates'
 import type { UserRole } from '@/types/profile'
+import { BulkBar, BulkCheckbox, BulkSelectProvider } from '@/components/ui/BulkSelect'
+import { taskBulkActions } from '@/components/tasks/task-bulk-actions'
 
 export async function TasksTab({
   projectId,
@@ -17,14 +19,17 @@ export async function TasksTab({
   /** Audit B1: daftar dan link mengikuti aturan baca /tasks/[id]. */
   viewer: { id: string; role: UserRole; managesProject: boolean }
 }) {
-  const { wsList, wsNames, assigneeNames, visibleTasks } = await loadProjectTasks(projectId, viewer, filters)
+  const [{ wsList, wsNames, assigneeNames, visibleTasks }, bulkActions] = await Promise.all([
+    loadProjectTasks(projectId, viewer, filters),
+    taskBulkActions(viewer.id, viewer.role),
+  ])
   const exportParams = new URLSearchParams()
   if (filters.ws) exportParams.set('ws', filters.ws)
   if (filters.status) exportParams.set('status', filters.status)
   if (filters.priority) exportParams.set('priority', filters.priority)
   const exportQs = exportParams.toString()
   const rowCls =
-    'flex flex-col gap-1 rounded-lg px-2 py-2.5 sm:flex-row sm:items-center sm:justify-between'
+    'flex min-w-0 flex-1 flex-col gap-1 rounded-lg px-2 py-2.5 sm:flex-row sm:items-center sm:justify-between'
   // PM project lain hanya bisa membuka task yang di-assign kepadanya.
   const canOpen = (t: ProjectTaskRow) =>
     viewer.role !== 'PROJECT_MANAGER' || viewer.managesProject || t.assignee_id === viewer.id
@@ -113,6 +118,8 @@ export async function TasksTab({
       {visibleTasks.length === 0 ? (
         <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">Belum ada Task.</p>
       ) : (
+        <BulkSelectProvider ids={visibleTasks.map((t) => t.id)}>
+        <BulkBar noun="task" actions={bulkActions} exportHref={`/projects/${projectId}/export/tasks${exportQs ? `?${exportQs}` : ''}`} />
         <ul className="-mx-2 mt-3 divide-y divide-zinc-100 dark:divide-zinc-800">
           {visibleTasks.map((task) => {
             const body = (
@@ -135,7 +142,8 @@ export async function TasksTab({
               </>
             )
             return (
-              <li key={task.id}>
+              <li key={task.id} className="flex items-start sm:items-center">
+                <BulkCheckbox id={task.id} label={`${task.code} ${task.title}`} className="mt-1 sm:mt-0" />
                 {canOpen(task) ? (
                   <Link href={`/tasks/${task.id}`} className={`${rowCls} hover:bg-zinc-50 dark:hover:bg-zinc-800`}>
                     {body}
@@ -147,6 +155,7 @@ export async function TasksTab({
             )
           })}
         </ul>
+        </BulkSelectProvider>
       )}
     </section>
   )

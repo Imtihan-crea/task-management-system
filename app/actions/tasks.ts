@@ -22,6 +22,8 @@ import { assertActiveUser, assertWorkstreamInProject } from '@/lib/data/assertio
 import { readLimitedField } from '@/lib/forms/limits'
 import { isValidDateInput } from '@/lib/forms/dates'
 import { taskBlockedBody, taskDoneBody } from '@/lib/email/templates'
+import { readInput, toForm } from '@/lib/bulk'
+import { bulk } from '@/lib/bulk-server'
 
 export type TaskFormState = {
   error?: string
@@ -943,4 +945,64 @@ export async function submitEvidence(
   revalidatePath(`/tasks/${id}`)
   revalidatePath(`/projects/${task.project_id}`)
   return { success: 'Evidence berhasil disimpan.' }
+}
+
+/* ------------------------------------------------------------------ */
+/* Aksi massal (pilih satu / sebagian / semua, 19 Nov 2026).           */
+/* Tiap item lewat aksi satuan di atas: izin, log, notifikasi sama.    */
+/* ------------------------------------------------------------------ */
+
+export async function bulkChangeTaskStatus(ids: unknown, input: unknown) {
+  const status = readInput(input, 'status')
+  return bulk(ids, (id) => changeTaskStatus(undefined, toForm({ id, status })), 'diperbarui')
+}
+
+export async function bulkCancelTasks(ids: unknown) {
+  return bulk(ids, (id) => cancelTask(undefined, toForm({ id })), 'dibatalkan')
+}
+
+/** Ubah satu kolom (prioritas / assignee) lewat updateTask: isian lain diisi nilai task saat ini. */
+async function updateTaskField(id: string, patch: { priority?: string; assignee_id?: string }): Promise<TaskFormState> {
+  const { data: t } = await createAdminClient()
+    .from('tasks')
+    .select('title, description, project_id, workstream_id, assignee_id, priority, status, start_date, deadline')
+    .eq('id', id)
+    .eq('is_deleted', false)
+    .maybeSingle<{
+      title: string
+      description: string | null
+      project_id: string
+      workstream_id: string | null
+      assignee_id: string
+      priority: string
+      status: string
+      start_date: string | null
+      deadline: string
+    }>()
+  if (!t) return { error: 'Task tidak ditemukan.' }
+  return updateTask(
+    undefined,
+    toForm({
+      id,
+      title: t.title,
+      description: t.description,
+      project_id: t.project_id,
+      workstream_id: t.workstream_id,
+      assignee_id: patch.assignee_id ?? t.assignee_id,
+      priority: patch.priority ?? t.priority,
+      status: t.status,
+      start_date: t.start_date,
+      deadline: t.deadline,
+    })
+  )
+}
+
+export async function bulkSetTaskPriority(ids: unknown, input: unknown) {
+  const priority = readInput(input, 'priority')
+  return bulk(ids, (id) => updateTaskField(id, { priority }), 'diperbarui')
+}
+
+export async function bulkSetTaskAssignee(ids: unknown, input: unknown) {
+  const assigneeId = readInput(input, 'assignee_id')
+  return bulk(ids, (id) => updateTaskField(id, { assignee_id: assigneeId }), 'diperbarui')
 }

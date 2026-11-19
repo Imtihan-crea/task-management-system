@@ -4,6 +4,8 @@ import { PriorityBadge, TaskStatusBadge, OverdueBadge } from '@/components/ui/Ba
 import { Pagination, paginate } from '@/components/ui/Pagination'
 import { loadTaskResults, type TaskFilters } from '@/lib/data/task-results'
 import { EmptyState } from '@/components/ui/primitives'
+import { BulkBar, BulkCheckbox, BulkSelectProvider } from '@/components/ui/BulkSelect'
+import { taskBulkActions } from '@/components/tasks/task-bulk-actions'
 
 export type { TaskFilters }
 
@@ -15,7 +17,10 @@ export async function TaskResults({ filters }: { filters: TaskFilters }) {
   const { q, tab, sort, page } = filters
 
   // Fetch bersama TaskTabs via cache() — 1x query per request.
-  const { allTasks, tasks, projectNames, workstreamNames, assigneeNames } = await loadTaskResults(filters)
+  const [{ allTasks, tasks, projectNames, workstreamNames, assigneeNames }, bulkActions] = await Promise.all([
+    loadTaskResults(filters),
+    taskBulkActions(filters.userId, filters.role),
+  ])
 
   const overdueCount = tasks.filter((t) => isOverdue(t.deadline, t.status)).length
   const { pageItems, totalPages } = paginate(tasks, page, 50)
@@ -39,16 +44,20 @@ export async function TaskResults({ filters }: { filters: TaskFilters }) {
     )
   }
 
+  const exportQs = new URLSearchParams(baseParams).toString()
+
   return (
-    <>
+    <BulkSelectProvider ids={pageItems.map((t) => t.id)}>
       <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400" role="status">
         {tasks.length} task
         {overdueCount > 0 ? ` · ${overdueCount} Overdue` : ''}
       </p>
+      <BulkBar noun="task" actions={bulkActions} exportHref={`/tasks/export${exportQs ? `?${exportQs}` : ''}`} paged={totalPages > 1} />
       <div className="scroll-x-hint mt-3 hidden overflow-x-auto rounded-2xl border border-zinc-200 md:block dark:border-zinc-800">
         <table className="w-full text-left text-sm">
           <thead className="border-b text-xs uppercase text-zinc-600 dark:text-zinc-400">
             <tr>
+              <th scope="col" className="w-12 py-3 pl-2"><span className="sr-only">Pilih</span></th>
               <th scope="col" className="px-4 py-3">ID</th>
               <th scope="col" className="px-4 py-3">Task</th>
               <th scope="col" className="px-4 py-3">Project</th>
@@ -62,6 +71,7 @@ export async function TaskResults({ filters }: { filters: TaskFilters }) {
           <tbody>
             {pageItems.map((task) => (
               <tr key={task.id} className="relative border-b last:border-0">
+                <td className="py-1 pl-2"><BulkCheckbox id={task.id} label={`${task.code} ${task.title}`} /></td>
                 <td className="whitespace-nowrap px-4 py-3 font-mono text-xs">{task.code}</td>
                 <td className="px-4 py-3">
                   <Link
@@ -88,10 +98,11 @@ export async function TaskResults({ filters }: { filters: TaskFilters }) {
 
       <ul className="mt-3 divide-y divide-zinc-200 overflow-hidden rounded-2xl border border-zinc-200 bg-white md:hidden dark:divide-zinc-800 dark:border-zinc-800 dark:bg-zinc-900">
         {pageItems.map((task) => (
-          <li key={task.id}>
+          <li key={task.id} className="flex items-start">
+            <BulkCheckbox id={task.id} label={`${task.code} ${task.title}`} className="mt-1 ml-1" />
             <Link
               href={`/tasks/${task.id}`}
-              className="block px-3 py-2.5 active:bg-zinc-50 dark:active:bg-zinc-800"
+              className="block min-w-0 flex-1 py-2.5 pr-3 pl-1 active:bg-zinc-50 dark:active:bg-zinc-800"
             >
               <div className="flex items-start justify-between gap-2">
                 <p className="min-w-0 text-sm font-semibold leading-snug">
@@ -122,6 +133,6 @@ export async function TaskResults({ filters }: { filters: TaskFilters }) {
         total={tasks.length}
         label="task"
       />
-    </>
+    </BulkSelectProvider>
   )
 }

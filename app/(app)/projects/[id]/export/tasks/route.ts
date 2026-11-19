@@ -5,6 +5,7 @@ import { exportInfo } from '@/lib/export/excel'
 import { exportResponse } from '@/lib/export'
 import { statusLabel, taskColumns, type ExportTaskRow } from '@/lib/export/task-columns'
 import { todayISO } from '@/lib/utils/dates'
+import { onlySelected, selectedIds } from '@/lib/bulk'
 
 export const dynamic = 'force-dynamic'
 
@@ -19,7 +20,8 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   const filters = { ws: sp.get('ws') ?? '', status: sp.get('status') ?? '', priority: sp.get('priority') ?? '' }
   const { wsNames, assigneeNames, visibleTasks } = await loadProjectTasks(id, viewer, filters)
 
-  const rows: ExportTaskRow[] = visibleTasks.map((t) => ({
+  const picked = selectedIds(sp)
+  const rows: ExportTaskRow[] = onlySelected(visibleTasks, picked).map((t) => ({
     code: t.code,
     title: t.title,
     project: viewer.projectLabel,
@@ -34,6 +36,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   }))
 
   const f = [
+    picked && 'Hanya baris terpilih',
     filters.ws && `Workstream: ${wsNames[filters.ws] ?? filters.ws}`,
     filters.status && `Status: ${statusLabel(filters.status)}`,
     filters.priority && `Prioritas: ${filters.priority}`,
