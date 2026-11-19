@@ -75,9 +75,10 @@ export default async function TrackerRekapPage({
               <th className="py-2 pr-3 text-right">Jam/hari</th>
               <th className="py-2 pr-3 text-right">Jam/aktivitas</th>
               <th className="py-2 pr-3 text-right">Target</th>
-              <th className="py-2 pr-3 text-right">Cuti</th>
-              <th className="py-2 pr-3 text-right">Izin</th>
-              <th className="py-2 pr-3 text-right">Sakit</th>
+              <th className="py-2 pr-3 text-right">Cuti Tahunan</th>
+              <th className="py-2 pr-3 text-right">Cuti Khusus</th>
+              <th className="py-2 pr-3 text-right">Cuti Sakit</th>
+              <th className="py-2 pr-3 text-right">Luar Tanggungan</th>
               <th className="py-2">Status</th>
             </tr>
           </thead>
@@ -98,8 +99,9 @@ export default async function TrackerRekapPage({
                 <td className="py-2 pr-3 text-right">{num(s.avgHoursPerActivity)}</td>
                 <td className="py-2 pr-3 text-right">{num(s.targetHours)}</td>
                 <td className="py-2 pr-3 text-right">{l.CUTI}</td>
-                <td className="py-2 pr-3 text-right">{l.IZIN}</td>
+                <td className="py-2 pr-3 text-right">{l.KHUSUS}</td>
                 <td className="py-2 pr-3 text-right">{l.SAKIT}</td>
+                <td className="py-2 pr-3 text-right">{l.TANPA_GAJI}</td>
                 <td className="py-2">{STATUS_LABEL[s.status]}</td>
               </tr>
             ))}

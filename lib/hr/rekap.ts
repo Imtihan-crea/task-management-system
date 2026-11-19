@@ -2,7 +2,7 @@ import 'server-only'
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadLeave, loadLogs, loadPeriodBasis, loadRules } from '@/lib/hr/data'
-import { leaveDaysIn, type LeaveRow } from '@/lib/hr/leave'
+import { leaveDaysIn, paidLeaveDays, type LeaveRow } from '@/lib/hr/leave'
 import { periodSummary, type Period } from '@/lib/hr/period'
 import type { LogRow } from '@/lib/hr/tracker'
 import { todayISO } from '@/lib/utils/dates'
@@ -34,7 +34,7 @@ export async function loadRekap(period: Period, divisi?: string | null) {
   for (const l of logs) byUser.set(l.user_id, [...(byUser.get(l.user_id) ?? []), l])
   const rows = people.map((p) => {
     const l = leaveDaysIn(leave.filter((x) => x.user_id === p.id) as LeaveRow[], from, to, basis.calendar)
-    return { p, l, s: periodSummary(period, byUser.get(p.id) ?? [], basis.workdays.length, rules, basis.lockedTarget, l.CUTI + l.IZIN + l.SAKIT) }
+    return { p, l, s: periodSummary(period, byUser.get(p.id) ?? [], basis.workdays.length, rules, basis.lockedTarget, paidLeaveDays(l)) }
   })
   return { from, to, everyone, divisions, people, byUser, rows, basis, rules }
 }

@@ -15,7 +15,7 @@ export type TrackerRules = {
   hoursPerDay: number
   /** Kode Master Reference kategori "tidak produktif" (untuk D04 di Tahap 3). */
   breakCategoryCode: string
-  /** Hari cuti/izin/sakit disetujui mengurangi target bulanan (mati = ikut sheet, keputusan pemilik 16 Nov 2026). */
+  /** Nyala: hari cuti berbayar disetujui mengurangi target. Mati (bawaan): hari cuti dihitung jam kerja (keputusan pemilik 19 Nov 2026). */
   leaveReducesTarget: boolean
   /** Ambang jam, urut dari tertinggi: [lebih, sesuai, cukup]; di bawahnya = kurang. */
   dailyThresholds: [number, number, number]
@@ -136,7 +136,7 @@ export function addDays(date: string, days: number): string {
   return d.toISOString().slice(0, 10)
 }
 
-export type CalendarDay = { day: string; kind: 'HOLIDAY' | 'WORKDAY' }
+export type CalendarDay = { day: string; kind: 'HOLIDAY' | 'WORKDAY'; name?: string | null }
 
 /** Hari kerja dalam rentang [from, to]: Senin–Jumat, minus libur, plus hari kerja pengganti. */
 export function workingDays(from: string, to: string, calendar: CalendarDay[]): string[] {
@@ -190,7 +190,9 @@ export function breakdown(logs: LogRow[], key: 'project_name' | 'category' | 'cl
 }
 
 export type MonthlySummary = {
+  /** Jam kerja tercatat + jam cuti berbayar (`leaveHours`). */
   totalHours: number
+  leaveHours: number
   workdays: number
   targetHours: number
   /** Persen jam aktual terhadap target (sheet: C/D). */
@@ -215,21 +217,26 @@ export function monthlySummary(
   leaveDays = 0
 ): MonthlySummary {
   const minutes = logs.reduce((s, l) => s + l.duration_minutes, 0)
-  const totalHours = round2(minutes / 60)
+  const workHours = minutes / 60
   const activeDays = new Set(logs.map((l) => l.work_date)).size
-  // Cuti mengurangi target hanya bila aturan dinyalakan (bawaan mati, ikut sheet).
-  const cut = rules.leaveReducesTarget ? Math.min(leaveDays, workdays) * rules.hoursPerDay : 0
+  // Cuti berbayar disetujui: bawaan dihitung jam kerja (jam/hari per hari, keputusan pemilik
+  // 19 Nov 2026); bila aturan leaveReducesTarget dinyalakan, target yang dikurangi (bukan keduanya).
+  const days = Math.min(leaveDays, workdays)
+  const leaveHours = rules.leaveReducesTarget ? 0 : round2(days * rules.hoursPerDay)
+  const totalHours = round2(workHours + leaveHours)
+  const cut = rules.leaveReducesTarget ? days * rules.hoursPerDay : 0
   const targetHours = Math.max((lockedTarget ?? workdays * rules.hoursPerDay) - cut, 0)
   const effectiveDays = targetHours / rules.hoursPerDay
   return {
     totalHours,
+    leaveHours,
     workdays,
     targetHours,
     effectiveness: targetHours ? round2((totalHours / targetHours) * 100) : 0,
     activities: logs.length,
     activeDays,
-    avgHoursPerActiveDay: activeDays ? round2(totalHours / activeDays) : 0,
-    avgHoursPerActivity: logs.length ? round2(totalHours / logs.length) : 0,
+    avgHoursPerActiveDay: activeDays ? round2(workHours / activeDays) : 0,
+    avgHoursPerActivity: logs.length ? round2(workHours / logs.length) : 0,
     status: monthlyStatus(totalHours, effectiveDays, rules),
   }
 }

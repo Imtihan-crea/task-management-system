@@ -14,10 +14,10 @@ export async function GET(request: NextRequest) {
   const year = todayISO().slice(0, 4)
   const rows = await loadLeave({ from: `${Number(year) - 1}-01-01`, to: `${Number(year) + 1}-12-31`, userId: profile.id })
   const by = profile.full_name || profile.email
-  return exportResponse(request, `Pengajuan Cuti Izin Sakit ${by}`, [
+  return exportResponse(request, `Pengajuan Cuti ${by}`, [
     {
       name: 'Pengajuan',
-      title: `PENGAJUAN CUTI, IZIN & SAKIT - ${by.toUpperCase()}`,
+      title: `PENGAJUAN CUTI - ${by.toUpperCase()}`,
       info: exportInfo(by, [`Periode: ${Number(year) - 1}-${Number(year) + 1}`]),
       columns: await leaveColumns(rows),
       rows,

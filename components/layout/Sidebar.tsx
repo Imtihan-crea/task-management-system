@@ -47,7 +47,7 @@ const GROUPS: { title: string | null; items: Omit<NavItem, 'icon'>[] }[] = [
     items: [
       { href: '/meetings', label: 'Meetings', permission: 'meetings.view' },
       { href: '/tracker', label: 'Daily Tracker', permission: null },
-      { href: '/cuti', label: 'Cuti & Izin', permission: null },
+      { href: '/cuti', label: 'Cuti', permission: null },
       { href: '/cuti/persetujuan', label: 'Persetujuan Cuti', permission: 'leave.approve' },
       { href: '/task-suggestions', label: 'Task Suggestions', permission: 'suggestions.create' },
     ],

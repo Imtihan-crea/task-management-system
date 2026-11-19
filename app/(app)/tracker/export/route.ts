@@ -3,7 +3,7 @@ import { requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadLeave, loadPeriodBasis, loadReviewLogs, loadRules } from '@/lib/hr/data'
 import { dailyDataColumns, plain, summaryColumns } from '@/lib/hr/export-columns'
-import { leaveDaysIn, type LeaveRow } from '@/lib/hr/leave'
+import { leaveDaysIn, paidLeaveDays, type LeaveRow } from '@/lib/hr/leave'
 import { parsePeriod, periodSummary } from '@/lib/hr/period'
 import { breakdown, type Breakdown } from '@/lib/hr/tracker'
 import { todayISO } from '@/lib/utils/dates'
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
   const division = me.data?.division ?? null
   const l = leaveDaysIn(leave as LeaveRow[], from, to, basis.calendar)
   const logRows = logs.map((x) => ({ user_id: x.user_id, work_date: x.work_date, project_name: x.project, category: x.category, duration_minutes: x.duration_minutes, client: x.client }))
-  const s = periodSummary(period, logRows, basis.workdays.length, rules, basis.lockedTarget, l.CUTI + l.IZIN + l.SAKIT)
+  const s = periodSummary(period, logRows, basis.workdays.length, rules, basis.lockedTarget, paidLeaveDays(l))
   const sorted = [...logs].sort((a, b) => a.work_date.localeCompare(b.work_date) || a.start_time.localeCompare(b.start_time))
   const info = exportInfo(by, [`Periode: ${period.label} · Nama: ${by}`])
   return exportResponse(request, `Daily Tracker ${by} ${label}`, [

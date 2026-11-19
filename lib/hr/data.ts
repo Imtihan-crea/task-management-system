@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { createAdminClient } from '@/lib/supabase/admin'
+import type { LeaveKind } from '@/lib/hr/leave'
 import { mergeRules, monthRange, workingDays, type CalendarDay, type LogRow, type TrackerRules } from '@/lib/hr/tracker'
 import type { ReferenceList, ReferenceRow } from '@/lib/hr/reference'
 import { allRows } from '@/lib/utils/paginate'
@@ -26,7 +27,7 @@ export async function loadRules(onDate: string): Promise<TrackerRules> {
 export async function loadCalendar(from: string, to: string): Promise<CalendarDay[]> {
   const { data, error } = await createAdminClient()
     .from('work_calendar')
-    .select('day, kind')
+    .select('day, kind, name')
     .gte('day', from)
     .lte('day', to)
   if (error) console.warn('[hr] work_calendar read failed:', error.message)
@@ -231,7 +232,8 @@ export async function loadReviewLogs(filter: { projectId?: string; userId?: stri
 export type LeaveRecord = {
   id: string
   user_id: string
-  kind: 'CUTI' | 'IZIN' | 'SAKIT'
+  kind: LeaveKind
+  special_reason: string | null
   start_date: string
   end_date: string
   days: number
@@ -250,7 +252,7 @@ export async function loadLeave(filter: { from: string; to: string; userId?: str
   return allRows<LeaveRecord>((f, t) => {
     let q = createAdminClient()
       .from('leave_requests')
-      .select('id, user_id, kind, start_date, end_date, days, reason, attachment_url, status, decided_by, decided_at, decision_note, source, created_at')
+      .select('id, user_id, kind, special_reason, start_date, end_date, days, reason, attachment_url, status, decided_by, decided_at, decision_note, source, created_at')
       .lte('start_date', filter.to)
       .gte('end_date', filter.from)
       .order('start_date', { ascending: false })

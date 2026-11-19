@@ -42,7 +42,7 @@ export default async function LeaveApprovalPage({ searchParams }: { searchParams
   return (
     <AppShell>
       <PageHeader
-        title="Persetujuan Cuti, Izin & Sakit"
+        title="Persetujuan Cuti"
         subtitle="Pengajuan sendiri harus diputuskan penyetuju lain."
         actions={<ExportLink href={`/cuti/persetujuan/export?bulan=${month}`} />}
       />

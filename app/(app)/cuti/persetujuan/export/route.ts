@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
     loadLeave({ from, to }),
   ])
   const info = exportInfo(profile.full_name || profile.email, [`Bulan: ${month}`])
-  return exportResponse(request, `Pengajuan Cuti Izin Sakit ${month}`, [
+  return exportResponse(request, `Pengajuan Cuti ${month}`, [
     { name: 'Menunggu Persetujuan', title: 'PENGAJUAN MENUNGGU PERSETUJUAN', info, columns: await leaveColumns(pending), rows: pending },
     { name: 'Semua Pengajuan', title: `SEMUA PENGAJUAN ${month}`, info, columns: await leaveColumns(monthRows), rows: monthRows },
   ])

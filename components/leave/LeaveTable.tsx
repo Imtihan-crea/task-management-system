@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react'
 import type { LeaveRecord } from '@/lib/hr/data'
-import { KIND_LABEL, STATUS_LABEL } from '@/lib/hr/leave'
+import { KIND_LABEL, SPECIAL_LABEL, STATUS_LABEL } from '@/lib/hr/leave'
 import { formatDate } from '@/lib/utils/dates'
 
 const STATUS_TONE: Record<LeaveRecord['status'], string> = {
@@ -44,7 +44,7 @@ export function LeaveTable({
           {rows.map((l) => (
             <tr key={l.id} className="border-b align-top last:border-0">
               {person && <td className="py-2 pr-3">{person(l)}</td>}
-              <td className="py-2 pr-3">{KIND_LABEL[l.kind]}</td>
+              <td className="py-2 pr-3">{KIND_LABEL[l.kind]}{l.special_reason && <span className="block text-xs text-zinc-600 dark:text-zinc-400">{SPECIAL_LABEL[l.special_reason] ?? l.special_reason}</span>}</td>
               <td className="py-2 pr-3 whitespace-nowrap">{range(l)}</td>
               <td className="py-2 pr-3 text-right">{l.days}</td>
               <td className="py-2 pr-3">

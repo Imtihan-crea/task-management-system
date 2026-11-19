@@ -10,11 +10,9 @@ import { readLimitedField } from '@/lib/forms/limits'
 import { getAppBaseUrl } from '@/lib/app-url'
 import { leaveDecisionBody } from '@/lib/email/templates'
 import { loadCalendar, loadLeave } from '@/lib/hr/data'
-import { KIND_LABEL, leaveDays, overlappingLeave, rangeError, type LeaveKind } from '@/lib/hr/leave'
+import { KIND_LABEL, kindError, leaveDays, overlappingLeave, rangeError, SPECIAL_LABEL, type LeaveKind } from '@/lib/hr/leave'
 
 export type LeaveFormState = { error?: string; success?: string } | undefined
-
-const KINDS: LeaveKind[] = ['CUTI', 'IZIN', 'SAKIT']
 
 function done() {
   revalidatePath('/cuti', 'layout')
@@ -29,7 +27,7 @@ async function approverIds(exceptId: string): Promise<string[]> {
   return allowed.filter((id): id is string => id !== null)
 }
 
-/** Karyawan mengajukan cuti / izin / sakit untuk dirinya sendiri. */
+/** Karyawan mengajukan cuti untuk dirinya sendiri. */
 export async function submitLeave(_prev: LeaveFormState, formData: FormData): Promise<LeaveFormState> {
   const profile = await requireProfile()
   const kind = readLimitedField(formData, 'kind') as LeaveKind
@@ -37,14 +35,17 @@ export async function submitLeave(_prev: LeaveFormState, formData: FormData): Pr
   const end = readLimitedField(formData, 'end_date') || start
   const reason = readLimitedField(formData, 'reason') || null
   const attachment = readLimitedField(formData, 'attachment_url') || null
+  const special = kind === 'KHUSUS' ? readLimitedField(formData, 'special_reason') || null : null
 
-  if (!KINDS.includes(kind)) return { error: 'Pilih jenis: cuti, izin, atau sakit.' }
-  const err = rangeError(start, end)
-  if (err) return { error: err }
+  // Cek tanggal dulu (sebelum membaca kalender), lalu jenis + batas hari Cuti Khusus.
+  const rangeErr = rangeError(start, end, 366)
+  if (rangeErr) return { error: rangeErr }
   if (reason && reason.length > 1000) return { error: 'Alasan paling panjang 1000 karakter.' }
   if (attachment && !/^https?:\/\/\S+$/i.test(attachment)) return { error: 'Lampiran harus berupa tautan (http/https).' }
 
   const days = leaveDays(start, end, await loadCalendar(start, end))
+  const err = kindError(kind, special, start, end, days)
+  if (err) return { error: err }
   if (days === 0) return { error: 'Rentang tanggal itu tidak berisi hari kerja.' }
 
   const existing = await loadLeave({ from: start, to: end, userId: profile.id, statuses: ['PENDING', 'APPROVED'] })
@@ -53,14 +54,14 @@ export async function submitLeave(_prev: LeaveFormState, formData: FormData): Pr
 
   const { data, error } = await createAdminClient()
     .from('leave_requests')
-    .insert({ user_id: profile.id, kind, start_date: start, end_date: end, days, reason, attachment_url: attachment })
+    .insert({ user_id: profile.id, kind, special_reason: special, start_date: start, end_date: end, days, reason, attachment_url: attachment })
     .select('id')
     .single<{ id: string }>()
   if (error) {
     console.error('submitLeave failed:', error.message)
     return { error: 'Gagal menyimpan pengajuan. Silakan coba lagi.' }
   }
-  const meta = { kind, kind_label: KIND_LABEL[kind], start_date: start, end_date: end, days }
+  const meta = { kind, kind_label: KIND_LABEL[kind], special_reason: special, special_label: special ? SPECIAL_LABEL[special] : null, start_date: start, end_date: end, days }
   await logActivity({ actorUserId: profile.id, action: 'LEAVE_REQUESTED', entityType: 'leave', entityId: data.id, metadata: meta })
   await emitNotification({
     key: `leave-requested:${data.id}`,

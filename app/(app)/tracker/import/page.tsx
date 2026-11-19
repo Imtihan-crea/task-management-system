@@ -41,7 +41,7 @@ export default async function ImportTrackerPage() {
             Entri yang diisi atau diubah lewat aplikasi tidak pernah disentuh.
           </li>
           <li>
-            Sheet <strong>Leave Form</strong> (bila ada) ikut diimport: catatan cuti/izin/sakit masuk sebagai pengajuan
+            Sheet <strong>Leave Form</strong> (bila ada) ikut diimport: catatan cuti/izin/sakit (izin dicatat sebagai Cuti Tahunan) masuk sebagai pengajuan
             yang sudah disetujui; tanggal masuk dan hak cuti hanya diisi bila di profil masih kosong.
           </li>
         </ul>

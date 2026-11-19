@@ -280,11 +280,19 @@ export function summarize(b: ImportBuild): string {
 
 /* ---------- Leave Form (HR Tahap 2) ---------- */
 
-export type ImportLeave = { user_id: string; kind: 'CUTI' | 'IZIN' | 'SAKIT'; date: string; reason: string | null }
+export type ImportLeave = { user_id: string; kind: 'CUTI' | 'SAKIT' | 'TANPA_GAJI'; date: string; reason: string | null }
 export type ImportEmployee = { user_id: string; join_date: string | null; quota: number | null }
 export type LeaveBuild = { leave: ImportLeave[]; employees: ImportEmployee[]; unknownNames: string[]; skipped: number; unmatchedEmployees: string[] }
 
-const LEAVE_KIND: Record<string, ImportLeave['kind']> = { cuti: 'CUTI', izin: 'IZIN', sakit: 'SAKIT' }
+// Izin pribadi di sheet lama = Cuti Tahunan (memotong saldo), sama dengan migrasi 026.
+const LEAVE_KIND: Record<string, ImportLeave['kind']> = {
+  cuti: 'CUTI',
+  izin: 'CUTI',
+  'cuti tahunan': 'CUTI',
+  sakit: 'SAKIT',
+  'cuti sakit': 'SAKIT',
+  'cuti di luar tanggungan': 'TANPA_GAJI',
+}
 
 /**
  * Sheet "Leave Form": kiri = log per hari (A Tanggal, C Nama, E Kategori, F Keterangan),

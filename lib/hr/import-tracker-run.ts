@@ -149,5 +149,5 @@ async function importLeave(b: LeaveBuild): Promise<{ note: string } | { error: s
       filled++
     }
   }
-  return { note: `Leave Form: ${b.leave.length} hari cuti/izin/sakit diimport sebagai disetujui${b.skipped ? `, ${b.skipped} baris dilewati` : ''}; data masuk/hak cuti diisi untuk ${filled} orang${b.unmatchedEmployees.length ? ` (${b.unmatchedEmployees.length} nama di bagian kanan tidak cocok profil, dilewati: ${b.unmatchedEmployees.join(', ')})` : ''}.` }
+  return { note: `Leave Form: ${b.leave.length} hari cuti diimport sebagai disetujui (Izin dicatat sebagai Cuti Tahunan)${b.skipped ? `, ${b.skipped} baris dilewati` : ''}; data masuk/hak cuti diisi untuk ${filled} orang${b.unmatchedEmployees.length ? ` (${b.unmatchedEmployees.length} nama di bagian kanan tidak cocok profil, dilewati: ${b.unmatchedEmployees.join(', ')})` : ''}.` }
 }

@@ -10,7 +10,7 @@ import { FREE_TEXT_MARK, loadComments, loadLeave, loadLogs, loadMonthBasis, load
 import { parsePeriod, periodSummary } from '@/lib/hr/period'
 import { BreakdownTable } from '@/components/tracker/BreakdownTable'
 import { PeriodFilter } from '@/components/tracker/PeriodFilter'
-import { leaveDaysIn, type LeaveRow } from '@/lib/hr/leave'
+import { leaveDaysIn, paidLeaveDays, type LeaveRow } from '@/lib/hr/leave'
 import { CommentThread } from '@/components/tracker/ReviewLogList'
 import {
   STATUS_LABEL, addDays, breakdown, dailyStatus, isoWeek, monthRange, monthlySummary, suggestStart, weekStart, weeklyStatus,
@@ -63,7 +63,7 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
     loadLeave({ from: period.from, to: period.to, userId: profile.id, statuses: ['APPROVED'] }),
   ])
   const periodOwnLeave = leaveDaysIn(periodLeave as LeaveRow[], period.from, period.to, periodBasis.calendar)
-  const periodSum = periodSummary(period, periodLogs, periodBasis.workdays.length, rules, periodBasis.lockedTarget, periodOwnLeave.CUTI + periodOwnLeave.IZIN + periodOwnLeave.SAKIT)
+  const periodSum = periodSummary(period, periodLogs, periodBasis.workdays.length, rules, periodBasis.lockedTarget, paidLeaveDays(periodOwnLeave))
   // Tampilkan label master terkini bila tertaut; teks bebas apa adanya (ditandai).
   const label = new Map(refs.map((r) => [r.id, r.label]))
   const logs: Row[] = ((logsRes.data ?? []) as DbRow[]).map((l) => {
@@ -85,7 +85,7 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
     .map((l) => ({ user_id: profile.id, work_date: l.work_date, project_name: l.project, category: l.category, duration_minutes: l.duration_minutes }))
   const sum = (rows: { duration_minutes: number }[]) => rows.reduce((s, l) => s + l.duration_minutes, 0)
   const ownLeave = leaveDaysIn((await loadLeave({ from: monthFrom, to: monthTo, userId: profile.id, statuses: ['APPROVED'] })) as LeaveRow[], monthFrom, monthTo, basis.calendar)
-  const summary = monthlySummary(monthLogs, basis.workdays.length, rules, basis.lockedTarget, ownLeave.CUTI + ownLeave.IZIN + ownLeave.SAKIT)
+  const summary = monthlySummary(monthLogs, basis.workdays.length, rules, basis.lockedTarget, paidLeaveDays(ownLeave))
   const comments = await loadComments(dayLogs.map((l) => l.id))
   const pq = new URLSearchParams(period.query).toString()
   const editing = sp.ubah ? dayLogs.find((l) => l.id === sp.ubah) ?? null : null

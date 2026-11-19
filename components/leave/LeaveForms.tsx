@@ -1,8 +1,9 @@
 'use client'
 
+import { useState } from 'react'
 import { useFormAction } from '@/lib/forms/use-form-action'
 import { cancelOwnLeave, decideLeave, submitLeave, type LeaveFormState } from '@/app/actions/leave'
-import { LEAVE_KINDS } from '@/lib/hr/leave'
+import { LEAVE_KINDS, SPECIAL_REASONS } from '@/lib/hr/leave'
 
 const INITIAL: LeaveFormState = undefined
 const INPUT = 'w-full rounded-lg border px-3 py-2 text-base outline-none focus:border-black dark:border-zinc-700 dark:bg-zinc-800'
@@ -17,15 +18,29 @@ function Status({ state }: { state: LeaveFormState }) {
 
 export function LeaveRequestForm({ today }: { today: string }) {
   const [state, formProps, pending] = useFormAction(submitLeave, INITIAL)
+  const [kind, setKind] = useState('')
   return (
     <form {...formProps} className="grid gap-3 sm:grid-cols-3">
       <div>
         <label htmlFor="leave_kind" className={LABEL}>Jenis</label>
-        <select id="leave_kind" name="kind" required defaultValue="" className={INPUT}>
+        <select id="leave_kind" name="kind" required value={kind} onChange={(e) => setKind(e.target.value)} className={INPUT}>
           <option value="" disabled>Pilih</option>
           {LEAVE_KINDS.map((k) => <option key={k.value} value={k.value}>{k.label}</option>)}
         </select>
       </div>
+      {kind === 'KHUSUS' && (
+        <div className="sm:col-span-3">
+          <label htmlFor="leave_special" className={LABEL}>Alasan Cuti Khusus</label>
+          <select id="leave_special" name="special_reason" required defaultValue="" className={INPUT}>
+            <option value="" disabled>Pilih</option>
+            {SPECIAL_REASONS.map((r) => (
+              <option key={r.value} value={r.value}>
+                {r.label}{r.maxDays ? ` (maks ${r.maxDays} hari kerja)` : ''}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
       <div>
         <label htmlFor="leave_start" className={LABEL}>Mulai</label>
         <input id="leave_start" name="start_date" type="date" required defaultValue={today} className={INPUT} />
@@ -64,7 +79,7 @@ export function CancelOwnLeaveButton({ id }: { id: string }) {
 /** Setujui / tolak (pengajuan menunggu) atau batalkan (yang sudah disetujui). */
 export function DecideLeaveForm({ id, mode }: { id: string; mode: 'pending' | 'approved' }) {
   const [state, formProps, pending] = useFormAction(decideLeave, INITIAL, (fd) =>
-    fd.get('decision') === 'cancel' ? 'Batalkan cuti/izin/sakit yang sudah disetujui ini?' : null
+    fd.get('decision') === 'cancel' ? 'Batalkan cuti yang sudah disetujui ini?' : null
   )
   return (
     <form {...formProps} className="flex flex-wrap items-end gap-2">

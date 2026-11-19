@@ -44,8 +44,10 @@ export const summaryColumns: ExcelColumn<SummaryRow>[] = [
   { header: 'Hari Tidak Aktif Kerja', width: 10, value: (r) => Math.max(r.s.workdays - r.s.activeDays, 0) },
   { header: 'Rata-rata Jam/Hari', width: 10, format: '0.00', value: (r) => r.s.avgHoursPerActiveDay },
   { header: 'Rata-rata Durasi Aktivitas (Jam)', width: 12, format: '0.00', value: (r) => r.s.avgHoursPerActivity },
-  { header: 'Cuti (hari)', width: 8, value: (r) => r.l.CUTI },
-  { header: 'Izin (hari)', width: 8, value: (r) => r.l.IZIN },
-  { header: 'Sakit (hari)', width: 8, value: (r) => r.l.SAKIT },
+  { header: 'Cuti Tahunan (hari)', width: 9, value: (r) => r.l.CUTI },
+  { header: 'Cuti Khusus (hari)', width: 9, value: (r) => r.l.KHUSUS },
+  { header: 'Cuti Sakit (hari)', width: 9, value: (r) => r.l.SAKIT },
+  { header: 'Cuti di Luar Tanggungan (hari)', width: 11, value: (r) => r.l.TANPA_GAJI },
+  { header: 'Jam Cuti Dihitung', width: 9, format: '0.00', value: (r) => r.s.leaveHours },
   { header: 'Status', width: 16, value: (r) => STATUS_LABEL[r.s.status] },
 ]

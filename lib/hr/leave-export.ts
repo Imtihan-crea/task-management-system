@@ -2,7 +2,7 @@ import 'server-only'
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { LeaveRecord } from '@/lib/hr/data'
-import { KIND_LABEL, STATUS_LABEL } from '@/lib/hr/leave'
+import { KIND_LABEL, SPECIAL_LABEL, STATUS_LABEL } from '@/lib/hr/leave'
 import { excelDate, type ExcelColumn } from '@/lib/export/excel'
 
 type Person = { id: string; full_name: string | null; email: string; division: string | null }
@@ -18,7 +18,8 @@ export async function leaveColumns(rows: LeaveRecord[]): Promise<ExcelColumn<Lea
   return [
     { header: 'Nama', width: 22, value: (r) => name(r.user_id) },
     { header: 'Divisi', width: 14, value: (r) => byId.get(r.user_id)?.division },
-    { header: 'Jenis', width: 9, value: (r) => KIND_LABEL[r.kind] },
+    { header: 'Jenis', width: 14, value: (r) => KIND_LABEL[r.kind] },
+    { header: 'Alasan Cuti Khusus', width: 18, value: (r) => (r.special_reason ? SPECIAL_LABEL[r.special_reason] ?? r.special_reason : '') },
     { header: 'Mulai', width: 12, value: (r) => excelDate(r.start_date) },
     { header: 'Selesai', width: 12, value: (r) => excelDate(r.end_date) },
     { header: 'Hari Kerja', width: 9, value: (r) => r.days },
