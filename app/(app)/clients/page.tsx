@@ -10,6 +10,8 @@ import { STAGES, STAGE_LABEL, isStage, rupiah, summarize } from '@/lib/clients/p
 import { getActiveUsers } from '@/lib/data/users'
 import { displayName } from '@/lib/data/user-options'
 import { formatDate } from '@/lib/utils/dates'
+import { BulkBar, BulkCheckbox, BulkSelectProvider } from '@/components/ui/BulkSelect'
+import { bulkChangeLeadStage, bulkSetLeadOwner } from '@/app/actions/clients'
 
 /** Pipeline lead: ringkasan per tahap + daftar dengan filter tahap, PIC, dan nama. */
 export default async function ClientsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
@@ -80,10 +82,35 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
       {rows.length === 0 ? (
         <div className="mt-4"><EmptyState title="Lead tidak ditemukan." message="Ubah filter, atau tambah lead baru." /></div>
       ) : (
-        <div className="mt-4 scroll-x-hint overflow-x-auto rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
+        <BulkSelectProvider ids={rows.map((l) => l.id)}>
+        <BulkBar
+          noun="lead"
+          exportHref={`/clients/export${exportQs ? `?${exportQs}` : ''}`}
+          actions={
+            canManage
+              ? [
+                  {
+                    key: 'stage',
+                    label: 'Pindah tahap',
+                    run: bulkChangeLeadStage,
+                    select: { name: 'stage', label: 'Tahap tujuan', options: STAGES.map((s) => ({ value: s.value, label: s.label })) },
+                    text: { name: 'lost_reason', label: 'Alasan batal (untuk semua)', required: true, maxLength: 1000, when: 'BATAL' },
+                  },
+                  {
+                    key: 'owner',
+                    label: 'Ganti PIC',
+                    run: bulkSetLeadOwner,
+                    select: { name: 'owner_id', label: 'PIC baru', options: [{ value: 'none', label: 'Tanpa PIC' }, ...users.map((u) => ({ value: u.id, label: displayName(u) }))] },
+                  },
+                ]
+              : []
+          }
+        />
+        <div className="mt-3 scroll-x-hint overflow-x-auto rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 dark:bg-zinc-900">
           <table className="w-full text-left text-sm">
             <thead className="border-b text-xs uppercase text-zinc-600 dark:text-zinc-400">
               <tr>
+                <th scope="col" className="w-12 py-3 pl-2"><span className="sr-only">Pilih</span></th>
                 <th scope="col" className="px-4 py-3">Perusahaan</th>
                 <th scope="col" className="px-4 py-3">Tahap</th>
                 <th scope="col" className="px-4 py-3">Perkiraan nilai</th>
@@ -95,6 +122,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
             <tbody>
               {rows.map((l) => (
                 <tr key={l.id} className="border-b last:border-0">
+                  <td className="py-1 pl-2"><BulkCheckbox id={l.id} label={l.company_name} /></td>
                   <td className="px-4 py-3"><Link href={`/clients/${l.id}`} className="font-medium hover:underline">{l.company_name}</Link></td>
                   <td className="px-4 py-3">{STAGE_LABEL[l.stage]}</td>
                   <td className="px-4 py-3">{rupiah(l.estimated_value)}</td>
@@ -106,6 +134,7 @@ export default async function ClientsPage({ searchParams }: { searchParams: Prom
             </tbody>
           </table>
         </div>
+        </BulkSelectProvider>
       )}
     </AppShell>
   )

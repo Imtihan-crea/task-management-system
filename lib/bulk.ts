@@ -9,7 +9,8 @@
 /** Batas item per sekali aksi massal (dan per export terpilih). */
 export const BULK_MAX = 200
 
-const ID_RE = /^[0-9A-Za-z_-]{1,64}$/
+// uuid, angka, atau base64url (mis. teks bebas Master Reference yang dikodekan).
+const ID_RE = /^[0-9A-Za-z_-]{1,256}$/
 
 /** Daftar id dari klien (tidak tepercaya): array string valid, unik, 1..BULK_MAX. String = pesan error. */
 export function parseBulkIds(raw: unknown, max = BULK_MAX): string[] | string {

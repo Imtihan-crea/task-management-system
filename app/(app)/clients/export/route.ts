@@ -6,6 +6,7 @@ import { STAGE_LABEL, rupiah } from '@/lib/clients/pipeline'
 import { excelDate, exportInfo, type ExcelColumn } from '@/lib/export/excel'
 import { exportResponse } from '@/lib/export'
 import { todayISO } from '@/lib/utils/dates'
+import { onlySelected, selectedIds } from '@/lib/bulk'
 
 export const dynamic = 'force-dynamic'
 
@@ -15,7 +16,8 @@ export async function GET(request: NextRequest) {
   if (!(await canViewClients(profile.id))) return new Response('Forbidden', { status: 403 })
   const sp = request.nextUrl.searchParams
   const f = { stage: sp.get('stage') ?? '', pic: sp.get('pic') ?? '', q: sanitizeLeadSearch(sp.get('q') ?? '') }
-  const rows = await loadLeads(f)
+  const picked = selectedIds(sp)
+  const rows = onlySelected(await loadLeads(f), picked)
   const names = await loadNames(rows.map((r) => r.owner_id))
 
   const columns: ExcelColumn<Lead>[] = [
@@ -35,6 +37,7 @@ export async function GET(request: NextRequest) {
   const total = rows.reduce((a, r) => a + r.estimated_value, 0)
   const info = exportInfo(profile.full_name || profile.email, [
     `${rows.length} lead, total ${rupiah(total)}`,
+    ...(picked ? ['Hanya baris terpilih'] : []),
     ...(f.stage ? [`Tahap: ${STAGE_LABEL[f.stage as keyof typeof STAGE_LABEL] ?? f.stage}`] : []),
     ...(f.q ? [`Cari: ${f.q}`] : []),
   ])

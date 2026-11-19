@@ -7,6 +7,8 @@ import { logActivity } from '@/lib/activity-log/service'
 import { readLimitedField } from '@/lib/forms/limits'
 import { loadReferences } from '@/lib/hr/data'
 import { allRows } from '@/lib/utils/paginate'
+import { readInput, toForm } from '@/lib/bulk'
+import { bulk } from '@/lib/bulk-server'
 import {
   REFERENCE_LISTS, attrChanges, codeFromLabel, duplicateLabel, isReferenceList, labelError, nextSortOrder, normalizeText, parseMaxDays, renameError, sameText,
   type LeaveAttrs, type ReferenceList, type ReferenceRow,
@@ -220,4 +222,36 @@ export async function promoteFreeText(_prev: ReferenceFormState, formData: FormD
   })
   revalidatePath('/master-reference')
   return { success: `"${text}" dikukuhkan sebagai "${target.label}" (${linked} entri).` }
+}
+
+/* Aksi massal (19 Nov 2026): tiap pilihan lewat aksi satuan (izin reference.manage, log sama). */
+async function setArchivedIfChanged(id: string, archive: boolean): Promise<ReferenceFormState> {
+  const { data } = await createAdminClient().from('master_references').select('archived_at').eq('id', id).maybeSingle<{ archived_at: string | null }>()
+  if (!data) return { error: 'Pilihan tidak ditemukan.' }
+  // Jangan menimpa tanggal arsip / mencatat log ganda untuk yang sudah di keadaan tujuan.
+  if (Boolean(data.archived_at) === archive) return { error: archive ? 'Sudah diarsipkan.' : 'Sudah aktif.' }
+  return setReferenceArchived(undefined, toForm({ id, mode: archive ? 'archive' : 'restore' }))
+}
+
+export async function bulkArchiveReferences(ids: unknown) {
+  return bulk(ids, (id) => setArchivedIfChanged(id, true), 'diarsipkan')
+}
+
+export async function bulkRestoreReferences(ids: unknown) {
+  return bulk(ids, (id) => setArchivedIfChanged(id, false), 'diaktifkan lagi')
+}
+
+/** Kukuhkan banyak teks bebas sekaligus. id = teks dalam base64url; target 'new' = tiap teks jadi pilihan baru. */
+export async function bulkPromoteFreeText(ids: unknown, input: unknown) {
+  const list = readInput(input, 'list')
+  const target = readInput(input, 'target_id')
+  return bulk(
+    ids,
+    (id) =>
+      promoteFreeText(
+        undefined,
+        toForm({ list, text: Buffer.from(id, 'base64url').toString('utf8'), target_id: target === 'new' ? '' : target })
+      ),
+    'dikukuhkan'
+  )
 }

@@ -8,6 +8,10 @@ import { loadReferences } from '@/lib/hr/data'
 import { DEFAULT_REFERENCE_LIST, REFERENCE_LISTS, groupFreeText, isReferenceList, type ReferenceList, type Suggestion } from '@/lib/hr/reference'
 import { formatDate } from '@/lib/utils/dates'
 import { allRows } from '@/lib/utils/paginate'
+import { BulkBar, BulkCheckbox, BulkSelectProvider } from '@/components/ui/BulkSelect'
+import { bulkArchiveReferences, bulkPromoteFreeText, bulkRestoreReferences } from '@/app/actions/master-reference'
+
+const textId = (text: string) => Buffer.from(text, 'utf8').toString('base64url')
 
 async function freeText(list: ReferenceList): Promise<Suggestion[]> {
   const col = { ACTIVITY_CATEGORY: ['category', 'category_ref'], WORK_LOCATION: ['location', 'location_ref'], INTERNAL_PROJECT: ['project_name', 'internal_project_ref'] }[
@@ -57,10 +61,19 @@ export default async function MasterReferencePage({ searchParams }: { searchPara
       <section id={l.list} className="mt-4 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
         <h2 className="text-lg font-bold">{l.title}</h2>
         <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-400">{l.hint}</p>
+        <BulkSelectProvider ids={refs.map((r) => r.id)}>
+        <BulkBar
+          noun="pilihan"
+          actions={[
+            { key: 'archive', label: 'Arsipkan', run: bulkArchiveReferences, confirm: true },
+            { key: 'restore', label: 'Aktifkan lagi', run: bulkRestoreReferences },
+          ]}
+        />
         <div className="scroll-x-hint relative md:overflow-x-auto">
           <table className="stack-table w-full text-sm">
             <thead>
               <tr className="border-b text-left text-zinc-600 dark:text-zinc-400">
+                <th className="w-12 py-2"><span className="sr-only">Pilih</span></th>
                 <th className="py-2 pr-3">Label</th>
                 <th className="py-2 pr-3">Kode</th>
                 <th className="py-2 pr-3">Penjelasan</th>
@@ -77,6 +90,7 @@ export default async function MasterReferencePage({ searchParams }: { searchPara
             <tbody>
               {[...activeRows, ...archived].map((r) => (
                 <tr key={r.id} className={`border-b align-top last:border-0 ${r.archived_at ? 'text-zinc-500' : ''}`}>
+                  <td className="py-0"><BulkCheckbox id={r.id} label={r.label} /></td>
                   <td className="py-2 pr-3 font-medium">
                     <div>
                     {r.label}
@@ -108,6 +122,7 @@ export default async function MasterReferencePage({ searchParams }: { searchPara
             </tbody>
           </table>
         </div>
+        </BulkSelectProvider>
         <div className="mt-4">
           <AddReferenceForm list={l.list} />
         </div>
@@ -117,19 +132,42 @@ export default async function MasterReferencePage({ searchParams }: { searchPara
             {suggestions.length === 0 ? (
               <p className="text-sm text-zinc-600 dark:text-zinc-400">Belum ada.</p>
             ) : (
+              <BulkSelectProvider ids={suggestions.map((s) => textId(s.text))}>
+              <BulkBar
+                noun="usulan"
+                actions={[
+                  {
+                    key: 'promote',
+                    label: 'Kukuhkan',
+                    run: async (ids, input) => {
+                      'use server'
+                      return bulkPromoteFreeText(ids, { ...input, list: l.list })
+                    },
+                    select: {
+                      name: 'target_id',
+                      label: 'Kukuhkan sebagai',
+                      options: [{ value: 'new', label: 'Masing-masing jadi pilihan baru' }, ...activeRows.map((r) => ({ value: r.id, label: `Gabung semua ke "${r.label}"` }))],
+                    },
+                  },
+                ]}
+              />
               <ul className="mt-2 divide-y">
                 {suggestions.map((s) => (
                   <li key={s.text} className="flex flex-wrap items-end justify-between gap-2 py-2">
+                    <div className="flex items-start gap-1">
+                    <BulkCheckbox id={textId(s.text)} label={s.text} className="-mt-1" />
                     <div>
                       <p className="font-medium">{s.text}</p>
                       <p className="text-xs text-zinc-600 dark:text-zinc-400">
                         {s.count} entri, terakhir {formatDate(s.lastDate)}
                       </p>
                     </div>
+                    </div>
                     <PromoteForm list={l.list} text={s.text} targets={activeRows.map((r) => ({ id: r.id, label: r.label }))} />
                   </li>
                 ))}
               </ul>
+              </BulkSelectProvider>
             )}
           </div>
         )}

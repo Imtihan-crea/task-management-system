@@ -7,6 +7,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { logActivity } from '@/lib/activity-log/service'
 import { readLimitedField } from '@/lib/forms/limits'
 import { loadLead } from '@/lib/clients/data'
+import { readInput, toForm } from '@/lib/bulk'
+import { bulk } from '@/lib/bulk-server'
 import { STAGE_LABEL, isStage, leadError, parseValue, stageChangeError, type LeadInput } from '@/lib/clients/pipeline'
 
 export type ClientFormState = { error?: string; success?: string } | undefined
@@ -145,4 +147,38 @@ export async function addLeadNote(_prev: ClientFormState, formData: FormData): P
   await logActivity({ actorUserId: actor.id, action: 'CLIENT_LEAD_NOTE_ADDED', entityType: 'client_lead', entityId: id, metadata: { company_name: lead.company_name } })
   done(id)
   return { success: 'Catatan ditambahkan.' }
+}
+
+/* Aksi massal (19 Nov 2026): tiap lead lewat aksi satuan (izin clients.manage, aturan tahap, riwayat, log sama). */
+export async function bulkChangeLeadStage(ids: unknown, input: unknown) {
+  const stage = readInput(input, 'stage')
+  const reason = readInput(input, 'lost_reason')
+  return bulk(ids, (id) => changeLeadStage(undefined, toForm({ id, stage, lost_reason: reason })), 'dipindah')
+}
+
+/** Ganti PIC lewat updateLead: isian lain = nilai lead saat ini. Kosong = lepas PIC. */
+export async function bulkSetLeadOwner(ids: unknown, input: unknown) {
+  const owner = readInput(input, 'owner_id')
+  return bulk(
+    ids,
+    async (id) => {
+      const lead = await loadLead(id)
+      if (!lead) return { error: 'Lead tidak ditemukan.' }
+      return updateLead(
+        undefined,
+        toForm({
+          id,
+          company_name: lead.company_name,
+          contact_name: lead.contact_name,
+          contact_email: lead.contact_email,
+          contact_phone: lead.contact_phone,
+          source: lead.source,
+          estimated_value: String(lead.estimated_value),
+          description: lead.notes,
+          owner_id: owner === 'none' ? '' : owner,
+        })
+      )
+    },
+    'diperbarui'
+  )
 }
