@@ -11,6 +11,8 @@ import {
   AUTH_TEMP_TOKENS,
   AUTH_USERS_KEY,
   BACKUP_TABLES,
+  ENV_KEYS,
+  MAX_STORAGE_BYTES,
   MAX_ATTACHMENT_BYTES,
   backupEmailHtml,
   backupSubject,
@@ -19,6 +21,7 @@ import {
   decryptBackup,
   encryptBackup,
   parseRecipients,
+  pickEnv,
   sanitizeAuthUser,
   tooLarge,
   totalRows,
@@ -55,17 +58,30 @@ const data = buildBackup(
     [AUTH_USERS_KEY]: [sanitizeAuthUser({ id: 'u1', email: 'satu@contoh.com', encrypted_password: '$2a$10$hashpalsu' })],
   },
   '2026-11-19T19:00:00.000Z',
-  'abc1234'
+  'abc1234',
+  {
+    env: pickEnv({ SUPABASE_SERVICE_ROLE_KEY: 'nilai-kunci-palsu-123', CRON_SECRET: '', VERCEL_OIDC_TOKEN: 'oidc-palsu', BACKUP_PASSPHRASE: 'passphrase-palsu' }),
+    db_config: {
+      cron_jobs: [{ jobid: 1, command: 'select 1 -- Bearer cron-palsu' }],
+      policies: [{}, {}],
+      functions: [{ name: 'f' }],
+      triggers: [],
+      storage_buckets: [],
+      storage_objects: [{ bucket_id: 'b', name: 'x.png', metadata: { size: 2048 } }],
+    },
+    storage_files: { 'b/x.png': 'AAAA' },
+  }
 )
 
 // Ringkasan jumlah baris
 cek('jumlah per tabel', data.meta.tables, { profiles: 2, tasks: 1, work_logs: 0, [AUTH_IDENTITIES_KEY]: 0, [AUTH_USERS_KEY]: 1 })
 cek('total baris', totalRows(data.meta), 4)
+cek('berkas tanpa passphrase/OIDC', JSON.stringify(data).includes('passphrase-palsu') || JSON.stringify(data).includes('oidc-palsu'), false)
 
 // Enkripsi-dekripsi bolak-balik
 const file = encryptBackup(data, PASS)
 cek('header berkas', file.split('\n')[0], 'TMSBAK1')
-cek('isi tidak terbaca polos', file.includes('Contoh Satu') || file.includes('contoh.com') || file.includes('hashpalsu'), false)
+cek('isi tidak terbaca polos', ['Contoh Satu', 'contoh.com', 'hashpalsu', 'nilai-kunci-palsu'].some((v) => file.includes(v)), false)
 cek('bolak-balik identik', decryptBackup(file, PASS), data)
 cek('salt/iv acak: dua enkripsi berbeda', encryptBackup(data, PASS) === file, false)
 
@@ -104,6 +120,32 @@ cek('028: hash tidak dibuang', /- 'encrypted_password'/.test(sqlCode), false)
 cek('028: identities ikut', sqlCode.includes('from auth.identities'), true)
 cek('028: tercatat di app_migrations', sqlCode.includes("values ('028', '028_backup_auth_export'"), true)
 
+// Env: allow-list, tanpa variabel sistem dan tanpa passphrase backup
+cek('env hanya allow-list', Object.keys(data.env), [...ENV_KEYS])
+cek('env nilai ikut di berkas', data.env.SUPABASE_SERVICE_ROLE_KEY, 'nilai-kunci-palsu-123')
+cek('env kosong = null', data.env.CRON_SECRET, null)
+cek('meta env hanya status', data.meta.env.SUPABASE_SERVICE_ROLE_KEY, 'terisi')
+cek('allow-list tanpa variabel sistem', ENV_KEYS.filter((k) => /^(VERCEL|NODE_|NEXT_RUNTIME|PATH$|HOME$|AWS_|BACKUP_PASSPHRASE)/.test(k)), [])
+const SYSTEM_ENV = /^(VERCEL_|NODE_ENV$|NEXT_RUNTIME$|BACKUP_PASSPHRASE$)/
+const usedEnv = new Set<string>()
+const walk = (dir: string): string[] =>
+  readdirSync(dir, { withFileTypes: true }).flatMap((d) => (d.isDirectory() ? walk(join(dir, d.name)) : /\.(ts|tsx|mjs)$/.test(d.name) ? [join(dir, d.name)] : []))
+const root = join(__dirname, '..')
+const codeFiles = [...['app', 'lib', 'components'].flatMap((d) => walk(join(root, d))), ...readdirSync(root).filter((f) => /\.(ts|mjs)$/.test(f)).map((f) => join(root, f))]
+for (const f of codeFiles) for (const m of readFileSync(f, 'utf8').matchAll(/process\.env\.([A-Z_][A-Z0-9_]*)/g)) usedEnv.add(m[1])
+for (const m of readFileSync(join(root, '.env.example'), 'utf8').matchAll(/^([A-Z_][A-Z0-9_]*)=/gm)) usedEnv.add(m[1])
+cek('env dipakai kode/.env.example belum di ENV_KEYS', [...usedEnv].filter((k) => !SYSTEM_ENV.test(k) && !(ENV_KEYS as readonly string[]).includes(k)).sort(), [])
+
+// Konfigurasi database + storage
+cek('meta config', data.meta.config, { cron_jobs: 1, policies: 2, functions: 1, triggers: 0, storage_buckets: 0, storage_objects: 1 })
+cek('meta storage', data.meta.storage, { objects: 1, bytes: 2048, files_included: 1 })
+cek('batas storage 5 MB', MAX_STORAGE_BYTES, 5 * 1024 * 1024)
+cek('028: backup_db_config hanya service_role',
+  sqlCode.includes('revoke all on function public.backup_db_config() from public, anon, authenticated;') &&
+  [...sqlCode.matchAll(/grant execute on function public\.backup_db_config\(\) to ([a-z_, ]+);/g)].map((m) => m[1]).join() === 'service_role', true)
+cek('028: backup_db_config security definer + search_path kosong',
+  /function public\.backup_db_config\(\) returns jsonb language plpgsql stable security definer set search_path = ''/.test(sqlCode), true)
+
 // Batas ukuran
 cek('batas 8 MB', MAX_ATTACHMENT_BYTES, 8 * 1024 * 1024)
 cek('tepat batas lolos', tooLarge(MAX_ATTACHMENT_BYTES), false)
@@ -120,6 +162,9 @@ cek('penerima kosong', parseRecipients(undefined), [])
 cek('subjek', backupSubject('2026-11-20', data.meta, 2048), '[Backup TMS] 2026-11-20 (4 baris, 2 KB)')
 const html = backupEmailHtml(data.meta, 'tms-backup-2026-11-20.tmsbak.txt')
 cek('email tanpa passphrase', html.includes(PASS), false)
+cek('email tanpa nilai env/cron', ['nilai-kunci-palsu-123', 'cron-palsu', 'oidc-palsu', 'passphrase-palsu', 'VERCEL_OIDC_TOKEN', 'BACKUP_PASSPHRASE'].filter((v) => html.includes(v)), [])
+cek('email menyebut status env', html.includes('SUPABASE_SERVICE_ROLE_KEY') && html.includes('kosong'), true)
+cek('email tanpa hash', html.includes('hashpalsu'), false)
 cek('email memuat tabel', html.includes('profiles') && html.includes('<strong>4</strong>'), true)
 
 // Semua tabel di migrasi ikut dibackup (gagal bila tabel baru lupa didaftarkan)

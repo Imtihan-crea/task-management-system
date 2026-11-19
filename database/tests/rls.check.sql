@@ -115,6 +115,12 @@ begin
   insert into hasil values ('028: backup_auth_export authenticated ditolak',
     to_regprocedure('public.backup_auth_export()') is null
     or not has_function_privilege('authenticated', 'public.backup_auth_export()', 'execute'), null);
+  insert into hasil values ('028: backup_db_config anon ditolak',
+    to_regprocedure('public.backup_db_config()') is null
+    or not has_function_privilege('anon', 'public.backup_db_config()', 'execute'), null);
+  insert into hasil values ('028: backup_db_config authenticated ditolak',
+    to_regprocedure('public.backup_db_config()') is null
+    or not has_function_privilege('authenticated', 'public.backup_db_config()', 'execute'), null);
 
   -- 9. pendaftar yang minta role ADMIN tetap TEAM_MEMBER + INACTIVE
   insert into auth.users (id, instance_id, aud, role, email, raw_user_meta_data, created_at, updated_at)

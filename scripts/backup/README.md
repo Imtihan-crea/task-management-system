@@ -9,12 +9,29 @@ tambahan di samping `npm run db:backup` (lihat `docs/backup.md`), bukan penggant
 - Pemicu: Vercel Cron `/api/cron/backup` (`vercel.json`, `0 19 * * *` UTC =
   02:00 WIB; paket Hobby menjalankannya kapan saja di jam itu, jadi 02:00 sampai 03:00 WIB).
   Super Admin/Developer juga bisa menekan **Kirim backup sekarang** di Pengaturan.
-- Isi: akun login lengkap (`auth.users` dan `auth.identities`, lewat fungsi
-  `public.backup_auth_export()` dari migrasi 028) lalu semua tabel skema
-  `public` (daftar di `lib/backup/backup.ts`, urut aman untuk dipulihkan).
-  `auth.users` memuat **hash password** (`encrypted_password`, bcrypt), jadi
-  setelah dipulihkan user login dengan password lamanya. Hanya token sementara
-  (konfirmasi, recovery, ganti email/telepon, reauthentication) yang dikosongkan.
+- Isi (semua di dalam satu berkas terenkripsi):
+  - `tables`: akun login lengkap (`auth.users`, `auth.identities`, lewat fungsi
+    `public.backup_auth_export()` migrasi 028) lalu semua tabel skema `public`
+    (daftar di `lib/backup/backup.ts`, urut aman untuk dipulihkan): task,
+    project, meeting, Daily Tracker, cuti, klien, notifikasi, activity log
+    (riwayat), dan lainnya. `auth.users` memuat **hash password**
+    (`encrypted_password`, bcrypt), jadi setelah dipulihkan user login dengan
+    password lamanya. Hanya token sementara (konfirmasi, recovery, ganti
+    email/telepon, reauthentication) yang dikosongkan.
+  - `env`: nilai env aplikasi dari daftar tetap `ENV_KEYS` (Supabase URL/anon
+    key/service role key, Brevo, `CRON_SECRET`, `APP_URL`, `TRACKER_*`,
+    `BACKUP_EMAIL_TO`, Sentry). Bukan seluruh env server; variabel sistem
+    Vercel dan `BACKUP_PASSPHRASE` sendiri tidak ikut. Kosong = `null`.
+  - `db_config` (fungsi `public.backup_db_config()` migrasi 028): jadwal
+    pg_cron (`cron.job`, perintahnya memuat `CRON_SECRET`), policy RLS skema
+    public dan storage, definisi fungsi public, trigger, `storage.buckets`, dan
+    metadata `storage.objects`.
+  - `storage_files`: isi berkas storage (base64) bila totalnya di bawah 5 MB;
+    di atas itu hanya daftarnya (`db_config.storage_objects`) dan email
+    menyebut berapa berkas yang tidak ikut. Saat ini storage kosong.
+  - `meta`: jumlah baris per tabel, status env (terisi/kosong, tanpa nilai),
+    jumlah job cron/policy/fungsi/trigger/bucket, ringkasan storage.
+- Email hanya berisi ringkasan `meta`; tidak ada nilai env, data, atau hash.
 - Migrasi 028 wajib sudah jalan sebelum versi ini dipasang; tanpa fungsi itu
   backup gagal (`BACKUP_FAILED`, alasan `read`), tidak terkirim tanpa akun.
 - Format: JSON `{ meta, tables }`, di-gzip, dienkripsi AES-256-GCM. Kunci dari
@@ -31,11 +48,15 @@ karakter), `BACKUP_EMAIL_TO` (boleh beberapa, dipisah koma), plus env Brevo
 yang sudah dipakai email lain. **Passphrase wajib juga disimpan di password
 manager pemilik**: tanpa itu semua backup tidak bisa dibuka.
 
-**Berkas backup memuat hash password semua akun.** Siapa pun yang memegang
-berkas dan passphrase bisa mencoba menebak password dari hash itu. Jaga
+**Berkas backup memuat hash password semua akun dan kunci aplikasi**
+(service role key Supabase yang bisa membaca/mengubah seluruh database, API
+key Brevo, `CRON_SECRET`). Siapa pun yang memegang berkas dan passphrase
+memegang kunci produksi dan bisa mencoba menebak password dari hash. Jaga
 passphrase seketat kunci produksi: jangan kirim lewat chat atau email, jangan
-tulis di repo. Bila passphrase bocor, ganti `BACKUP_PASSPHRASE` dan minta semua
-user mengganti password (backup lama tetap terbuka dengan passphrase lama).
+tulis di repo. Bila passphrase bocor: ganti `BACKUP_PASSPHRASE`, rotasi
+service role key (JWT secret) Supabase, API key Brevo, dan `CRON_SECRET`, lalu
+minta semua user mengganti password (backup lama tetap terbuka dengan
+passphrase lama).
 
 ## Membuka berkas
 
@@ -50,7 +71,7 @@ Passphrase diketik saat diminta (tidak tampil), atau diberikan lewat env
 riwayat shell). Passphrase salah atau berkas diubah = `GAGAL: Passphrase salah
 atau berkas rusak.` dan tidak ada keluaran.
 
-`backup.json` berisi data pribadi dan hash password tanpa enkripsi: simpan di
+`backup.json` berisi data pribadi, hash password, dan kunci aplikasi tanpa enkripsi: simpan di
 luar repo, hapus setelah dipakai.
 
 ## Memulihkan ke database
@@ -127,6 +148,55 @@ tabel lain.
 5. Cek jumlah baris per tabel sama dengan `meta.tables`, coba login dengan satu
    akun lama, lalu ikuti langkah "Sesudah restore" di `docs/backup.md` (RLS,
    env Vercel, Auth, pg_cron).
+
+### Konfigurasi database
+
+Policy, fungsi, dan trigger sudah terpasang lagi oleh migrasi di langkah 1.
+`db_config` dipakai untuk membandingkan (bila ada yang dibuat langsung di
+produksi tanpa migrasi, jalankan `definition`-nya) dan untuk memasang ulang
+jadwal pg_cron:
+
+```bash
+jq -r --arg q "'" '.db_config.cron_jobs[] | "select cron.schedule(" + $q + .jobname + $q + ", " + $q + .schedule + $q + ", $cmd$" + .command + "$cmd$);"' backup.json > cron.sql
+```
+
+Periksa `cron.sql` (perbarui URL di perintahnya bila domain aplikasi berubah),
+lalu jalankan dengan `psql`. Berkas ini memuat `CRON_SECRET`: hapus setelah dipakai.
+Berkas storage: unggah ulang isi `storage_files` (base64) ke bucket yang sama
+setelah bucket dibuat dari `db_config.storage_buckets`.
+
+### Env aplikasi
+
+`env` berisi nilai yang dipakai produksi saat backup dibuat.
+
+- Lokal: `jq -r '.env | to_entries[] | select(.value != null) | "\(.key)=\(.value)"' backup.json > .env.local`
+  (berkas `.env*` sudah diabaikan git; jangan commit).
+- Vercel: Project > Settings > Environment Variables, isi tiap nama dengan
+  nilainya (Production), atau `vercel env add NAMA production` per nama, lalu
+  redeploy. Tambahkan `BACKUP_PASSPHRASE` dari password manager (tidak ada di
+  berkas).
+- Bila memulihkan ke project Supabase **baru**, `NEXT_PUBLIC_SUPABASE_URL`,
+  anon key, dan service role key diganti nilai project baru (Dashboard > Settings > API);
+  nilai lama hanya berlaku untuk project lama.
+
+## Yang TIDAK ikut backup
+
+- **Kode aplikasi dan riwayatnya**: ada di GitHub, bukan di berkas ini.
+- **Skema lengkap dalam bentuk DDL** (tabel, kolom, index, grant): dipasang dari
+  `database/migrations/`. Berkas ini hanya menyimpan policy, fungsi, trigger,
+  dan cron sebagai pembanding.
+- **Pengaturan Supabase Auth di dashboard**: SMTP (Brevo), Site URL dan
+  Redirect URL, template email, matikan signup publik, masa berlaku sesi.
+  Atur ulang manual (lihat "Sesudah restore" di `docs/backup.md`).
+- **Pengaturan project Supabase lain**: region, paket, extension yang
+  dinyalakan lewat dashboard, event trigger milik platform, Vault.
+- **Pengaturan project Vercel**: domain, region, env selain `ENV_KEYS`
+  (termasuk variabel sistem), integrasi Git, proteksi deployment.
+- **Akun dan token milik pemilik**: login dashboard Supabase/Vercel/GitHub,
+  token CLI, token akses pribadi, Brevo akun pemilik. Simpan di password manager.
+- **`BACKUP_PASSPHRASE`**: sengaja tidak ada di berkas yang ia kunci.
+- **Isi storage di atas 5 MB total**: hanya daftarnya.
+- **Data di luar database**: email yang sudah terkirim, log Vercel/Sentry.
 
 Catatan: tabel dibaca satu per satu, bukan dalam satu transaksi. Perubahan
 yang terjadi tepat saat backup berjalan (sekitar 02:00 WIB) bisa membuat satu

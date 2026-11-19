@@ -51,7 +51,7 @@ export async function runBackup(actorUserId: string | null): Promise<BackupResul
   let file: string
   let meta: BackupData['meta']
   try {
-    const data = await collectBackup(createAdminClient(), process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? 'lokal')
+    const data = await collectBackup(createAdminClient(), process.env.VERCEL_GIT_COMMIT_SHA?.slice(0, 7) ?? 'lokal', process.env)
     meta = data.meta
     file = encryptBackup(data, process.env.BACKUP_PASSPHRASE!)
   } catch (error) {
