@@ -2,7 +2,7 @@ import { redirect } from 'next/navigation'
 import type { NextRequest } from 'next/server'
 import { requireProfile } from '@/lib/auth/session'
 import { canApproveLeave } from '@/lib/auth/current-access'
-import { loadLeave } from '@/lib/hr/data'
+import { loadLeave, loadLeaveTypes } from '@/lib/hr/data'
 import { leaveColumns } from '@/lib/hr/leave-export'
 import { parseMonth } from '@/lib/hr/rekap'
 import { monthRange } from '@/lib/hr/tracker'
@@ -17,13 +17,14 @@ export async function GET(request: NextRequest) {
   if (!(await canApproveLeave(profile.id))) redirect('/dashboard?denied=1')
   const month = parseMonth(request.nextUrl.searchParams.get('bulan'))
   const [from, to] = monthRange(month)
-  const [pending, monthRows] = await Promise.all([
+  const [pending, monthRows, types] = await Promise.all([
     loadLeave({ from: '2000-01-01', to: '2100-12-31', statuses: ['PENDING'] }),
     loadLeave({ from, to }),
+    loadLeaveTypes(),
   ])
   const info = exportInfo(profile.full_name || profile.email, [`Bulan: ${month}`])
   return exportResponse(request, `Pengajuan Cuti ${month}`, [
-    { name: 'Menunggu Persetujuan', title: 'PENGAJUAN MENUNGGU PERSETUJUAN', info, columns: await leaveColumns(pending), rows: pending },
-    { name: 'Semua Pengajuan', title: `SEMUA PENGAJUAN ${month}`, info, columns: await leaveColumns(monthRows), rows: monthRows },
+    { name: 'Menunggu Persetujuan', title: 'PENGAJUAN MENUNGGU PERSETUJUAN', info, columns: await leaveColumns(pending, types), rows: pending },
+    { name: 'Semua Pengajuan', title: `SEMUA PENGAJUAN ${month}`, info, columns: await leaveColumns(monthRows, types), rows: monthRows },
   ])
 }

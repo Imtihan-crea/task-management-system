@@ -9,8 +9,8 @@ import { emitNotification } from '@/lib/notifications/service'
 import { readLimitedField } from '@/lib/forms/limits'
 import { getAppBaseUrl } from '@/lib/app-url'
 import { leaveDecisionBody } from '@/lib/email/templates'
-import { loadCalendar, loadLeave } from '@/lib/hr/data'
-import { KIND_LABEL, kindError, leaveDays, overlappingLeave, rangeError, SPECIAL_LABEL, type LeaveKind } from '@/lib/hr/leave'
+import { loadCalendar, loadLeave, loadLeaveTypes } from '@/lib/hr/data'
+import { kindError, kindLabels, leaveDays, overlappingLeave, rangeError, SPECIAL_KIND, SPECIAL_LABEL, type LeaveKind } from '@/lib/hr/leave'
 
 export type LeaveFormState = { error?: string; success?: string } | undefined
 
@@ -35,7 +35,7 @@ export async function submitLeave(_prev: LeaveFormState, formData: FormData): Pr
   const end = readLimitedField(formData, 'end_date') || start
   const reason = readLimitedField(formData, 'reason') || null
   const attachment = readLimitedField(formData, 'attachment_url') || null
-  const special = kind === 'KHUSUS' ? readLimitedField(formData, 'special_reason') || null : null
+  const special = kind === SPECIAL_KIND ? readLimitedField(formData, 'special_reason') || null : null
 
   // Cek tanggal dulu (sebelum membaca kalender), lalu jenis + batas hari Cuti Khusus.
   const rangeErr = rangeError(start, end, 366)
@@ -43,14 +43,17 @@ export async function submitLeave(_prev: LeaveFormState, formData: FormData): Pr
   if (reason && reason.length > 1000) return { error: 'Alasan paling panjang 1000 karakter.' }
   if (attachment && !/^https?:\/\/\S+$/i.test(attachment)) return { error: 'Lampiran harus berupa tautan (http/https).' }
 
-  const days = leaveDays(start, end, await loadCalendar(start, end))
-  const err = kindError(kind, special, start, end, days)
+  const [types, calendar] = await Promise.all([loadLeaveTypes(), loadCalendar(start, end)])
+  const labels = kindLabels(types)
+  const kindName = (k: string) => labels[k] ?? k
+  const days = leaveDays(start, end, calendar)
+  const err = kindError(types, kind, special, start, end, days)
   if (err) return { error: err }
   if (days === 0) return { error: 'Rentang tanggal itu tidak berisi hari kerja.' }
 
   const existing = await loadLeave({ from: start, to: end, userId: profile.id, statuses: ['PENDING', 'APPROVED'] })
   const clash = overlappingLeave(existing, { user_id: profile.id, start_date: start, end_date: end })
-  if (clash) return { error: `Sudah ada pengajuan ${KIND_LABEL[clash.kind]} ${clash.start_date} s/d ${clash.end_date} di tanggal itu.` }
+  if (clash) return { error: `Sudah ada pengajuan ${kindName(clash.kind)} ${clash.start_date} s/d ${clash.end_date} di tanggal itu.` }
 
   const { data, error } = await createAdminClient()
     .from('leave_requests')
@@ -61,20 +64,20 @@ export async function submitLeave(_prev: LeaveFormState, formData: FormData): Pr
     console.error('submitLeave failed:', error.message)
     return { error: 'Gagal menyimpan pengajuan. Silakan coba lagi.' }
   }
-  const meta = { kind, kind_label: KIND_LABEL[kind], special_reason: special, special_label: special ? SPECIAL_LABEL[special] : null, start_date: start, end_date: end, days }
+  const meta = { kind, kind_label: kindName(kind), special_reason: special, special_label: special ? SPECIAL_LABEL[special] : null, start_date: start, end_date: end, days }
   await logActivity({ actorUserId: profile.id, action: 'LEAVE_REQUESTED', entityType: 'leave', entityId: data.id, metadata: meta })
   await emitNotification({
     key: `leave-requested:${data.id}`,
     type: 'LEAVE_REQUESTED',
     userIds: await approverIds(profile.id),
-    title: `Pengajuan ${KIND_LABEL[kind]} baru`,
-    message: `${profile.full_name || profile.email}: ${KIND_LABEL[kind]} ${start === end ? start : `${start} s/d ${end}`} (${days} hari kerja).`,
+    title: `Pengajuan ${kindName(kind)} baru`,
+    message: `${profile.full_name || profile.email}: ${kindName(kind)} ${start === end ? start : `${start} s/d ${end}`} (${days} hari kerja).`,
     entityType: 'leave_review',
     entityId: data.id,
     email: null,
   })
   done()
-  return { success: `Pengajuan ${KIND_LABEL[kind]} (${days} hari kerja) terkirim, menunggu persetujuan.` }
+  return { success: `Pengajuan ${kindName(kind)} (${days} hari kerja) terkirim, menunggu persetujuan.` }
 }
 
 /** Pengaju membatalkan pengajuannya yang masih menunggu. */
@@ -90,7 +93,8 @@ export async function cancelOwnLeave(_prev: LeaveFormState, formData: FormData):
     .select('id, kind, start_date, end_date')
     .maybeSingle<{ id: string; kind: LeaveKind; start_date: string; end_date: string }>()
   if (!data) return { error: 'Pengajuan tidak ditemukan atau sudah diputuskan.' }
-  await logActivity({ actorUserId: profile.id, action: 'LEAVE_CANCELLED', entityType: 'leave', entityId: id, metadata: { ...data, kind_label: KIND_LABEL[data.kind] } })
+  const kindLabel = kindLabels(await loadLeaveTypes())[data.kind] ?? data.kind
+  await logActivity({ actorUserId: profile.id, action: 'LEAVE_CANCELLED', entityType: 'leave', entityId: id, metadata: { ...data, kind_label: kindLabel } })
   done()
   return { success: 'Pengajuan dibatalkan.' }
 }
@@ -129,7 +133,7 @@ export async function decideLeave(_prev: LeaveFormState, formData: FormData): Pr
     .select('id')
   if (error || !updated?.length) return { error: 'Gagal menyimpan; muat ulang halaman lalu coba lagi.' }
 
-  const label = KIND_LABEL[req.kind]
+  const label = kindLabels(await loadLeaveTypes())[req.kind] ?? req.kind
   const meta = { kind: req.kind, kind_label: label, start_date: req.start_date, end_date: req.end_date, note }
   await logActivity({
     actorUserId: profile.id,

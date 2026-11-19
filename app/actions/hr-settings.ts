@@ -42,6 +42,7 @@ export async function saveHrRules(_prev: HrSettingsState, formData: FormData): P
     weeklyThresholds: three(formData, 'weekly'),
     monthlyPerDay: three(formData, 'monthly'),
     leaveReducesTarget: formData.get('leave_reduces_target') === 'on',
+    jointLeaveUsesQuota: formData.get('joint_leave_uses_quota') === 'on',
   }
   const err = rulesError(rules)
   if (err) return { error: err }

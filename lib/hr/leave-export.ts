@@ -2,13 +2,14 @@ import 'server-only'
 
 import { createAdminClient } from '@/lib/supabase/admin'
 import type { LeaveRecord } from '@/lib/hr/data'
-import { KIND_LABEL, SPECIAL_LABEL, STATUS_LABEL } from '@/lib/hr/leave'
+import { kindLabels, SPECIAL_LABEL, STATUS_LABEL, type LeaveType } from '@/lib/hr/leave'
 import { excelDate, type ExcelColumn } from '@/lib/export/excel'
 
 type Person = { id: string; full_name: string | null; email: string; division: string | null }
 
 /** Kolom daftar pengajuan cuti/izin/sakit; nama & divisi diambil dari profil pemohon dan pemutus. */
-export async function leaveColumns(rows: LeaveRecord[]): Promise<ExcelColumn<LeaveRecord>[]> {
+export async function leaveColumns(rows: LeaveRecord[], types: LeaveType[]): Promise<ExcelColumn<LeaveRecord>[]> {
+  const labels = kindLabels(types)
   const ids = [...new Set(rows.flatMap((r) => [r.user_id, r.decided_by].filter((x): x is string => !!x)))]
   const { data } = ids.length
     ? await createAdminClient().from('profiles').select('id, full_name, email, division').in('id', ids)
@@ -18,7 +19,7 @@ export async function leaveColumns(rows: LeaveRecord[]): Promise<ExcelColumn<Lea
   return [
     { header: 'Nama', width: 22, value: (r) => name(r.user_id) },
     { header: 'Divisi', width: 14, value: (r) => byId.get(r.user_id)?.division },
-    { header: 'Jenis', width: 14, value: (r) => KIND_LABEL[r.kind] },
+    { header: 'Jenis', width: 14, value: (r) => labels[r.kind] ?? r.kind },
     { header: 'Alasan Cuti Khusus', width: 18, value: (r) => (r.special_reason ? SPECIAL_LABEL[r.special_reason] ?? r.special_reason : '') },
     { header: 'Mulai', width: 12, value: (r) => excelDate(r.start_date) },
     { header: 'Selesai', width: 12, value: (r) => excelDate(r.end_date) },

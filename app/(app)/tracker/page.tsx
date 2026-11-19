@@ -6,7 +6,7 @@ import { ExportLink } from '@/components/export/ExportLink'
 import { AppShell } from '@/components/layout/AppShell'
 import { KpiCard, PageHeader } from '@/components/ui/primitives'
 import { WorkLogForm, DeleteWorkLogButton, type WorkLogValues } from '@/components/tracker/WorkLogForm'
-import { FREE_TEXT_MARK, loadComments, loadLeave, loadLogs, loadMonthBasis, loadPeriodBasis, loadReferences, loadRules, loadTrackerProjects } from '@/lib/hr/data'
+import { FREE_TEXT_MARK, loadComments, loadLeave, loadLeaveTypes, loadLogs, loadMonthBasis, loadPeriodBasis, loadReferences, loadRules, loadTrackerProjects } from '@/lib/hr/data'
 import { parsePeriod, periodSummary } from '@/lib/hr/period'
 import { BreakdownTable } from '@/components/tracker/BreakdownTable'
 import { PeriodFilter } from '@/components/tracker/PeriodFilter'
@@ -45,7 +45,7 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
   const to = addDays(wFrom, 6) > monthTo ? addDays(wFrom, 6) : monthTo
 
   const { period, error: periodError } = parsePeriod(sp, today)
-  const [rules, projects, refs, basis, logsRes, canRekap, periodLogs, periodBasis, periodLeave] = await Promise.all([
+  const [rules, projects, refs, basis, logsRes, canRekap, periodLogs, periodBasis, periodLeave, leaveTypes] = await Promise.all([
     loadRules(date),
     loadTrackerProjects(),
     loadReferences(['ACTIVITY_CATEGORY', 'WORK_LOCATION', 'INTERNAL_PROJECT']),
@@ -61,9 +61,10 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
     loadLogs(period.from, period.to, [profile.id]),
     loadPeriodBasis(period.from, period.to, period.month),
     loadLeave({ from: period.from, to: period.to, userId: profile.id, statuses: ['APPROVED'] }),
+    loadLeaveTypes(),
   ])
   const periodOwnLeave = leaveDaysIn(periodLeave as LeaveRow[], period.from, period.to, periodBasis.calendar)
-  const periodSum = periodSummary(period, periodLogs, periodBasis.workdays.length, rules, periodBasis.lockedTarget, paidLeaveDays(periodOwnLeave))
+  const periodSum = periodSummary(period, periodLogs, periodBasis.workdays.length, rules, periodBasis.lockedTarget, paidLeaveDays(periodOwnLeave, leaveTypes))
   // Tampilkan label master terkini bila tertaut; teks bebas apa adanya (ditandai).
   const label = new Map(refs.map((r) => [r.id, r.label]))
   const logs: Row[] = ((logsRes.data ?? []) as DbRow[]).map((l) => {
@@ -85,7 +86,7 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
     .map((l) => ({ user_id: profile.id, work_date: l.work_date, project_name: l.project, category: l.category, duration_minutes: l.duration_minutes }))
   const sum = (rows: { duration_minutes: number }[]) => rows.reduce((s, l) => s + l.duration_minutes, 0)
   const ownLeave = leaveDaysIn((await loadLeave({ from: monthFrom, to: monthTo, userId: profile.id, statuses: ['APPROVED'] })) as LeaveRow[], monthFrom, monthTo, basis.calendar)
-  const summary = monthlySummary(monthLogs, basis.workdays.length, rules, basis.lockedTarget, paidLeaveDays(ownLeave))
+  const summary = monthlySummary(monthLogs, basis.workdays.length, rules, basis.lockedTarget, paidLeaveDays(ownLeave, leaveTypes))
   const comments = await loadComments(dayLogs.map((l) => l.id))
   const pq = new URLSearchParams(period.query).toString()
   const editing = sp.ubah ? dayLogs.find((l) => l.id === sp.ubah) ?? null : null

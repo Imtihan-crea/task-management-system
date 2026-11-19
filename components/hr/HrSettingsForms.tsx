@@ -53,6 +53,10 @@ export function RulesForm({ rules, today }: { rules: TrackerRules; today: string
         <input id="leave_reduces_target" name="leave_reduces_target" type="checkbox" defaultChecked={rules.leaveReducesTarget} className="h-5 w-5" />
         <label htmlFor="leave_reduces_target" className="text-sm font-medium">Cuti berbayar yang disetujui mengurangi target jam (mati = setiap hari cuti dihitung sebagai jam kerja per hari)</label>
       </div>
+      <div className="flex items-center gap-2">
+        <input id="joint_leave_uses_quota" name="joint_leave_uses_quota" type="checkbox" defaultChecked={rules.jointLeaveUsesQuota} className="h-5 w-5" />
+        <label htmlFor="joint_leave_uses_quota" className="text-sm font-medium">Cuti bersama (Senin–Jumat di kalender) memotong jatah cuti tahunan</label>
+      </div>
       <Triple prefix="monthly" label="Status bulanan" values={rules.monthlyPerDay} unit="Jam per hari kerja; 'lebih' = di atas hari kerja × angka ini" />
       <div className="flex flex-wrap items-center gap-3">
         <button type="submit" disabled={pending} className={BTN}>{pending ? 'Menyimpan...' : 'Simpan aturan'}</button>

@@ -1,9 +1,9 @@
 import type { NextRequest } from 'next/server'
 import { requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { loadLeave, loadPeriodBasis, loadReviewLogs, loadRules } from '@/lib/hr/data'
+import { loadLeave, loadLeaveTypes, loadPeriodBasis, loadReviewLogs, loadRules } from '@/lib/hr/data'
 import { dailyDataColumns, plain, summaryColumns } from '@/lib/hr/export-columns'
-import { leaveDaysIn, paidLeaveDays, type LeaveRow } from '@/lib/hr/leave'
+import { columnTypes, leaveDaysIn, paidLeaveDays, type LeaveRow } from '@/lib/hr/leave'
 import { parsePeriod, periodSummary } from '@/lib/hr/period'
 import { breakdown, type Breakdown } from '@/lib/hr/tracker'
 import { todayISO } from '@/lib/utils/dates'
@@ -30,18 +30,19 @@ export async function GET(request: NextRequest) {
   if (error) return new Response(error, { status: 400 })
   const { from, to } = period
   const label = period.fileLabel
-  const [logs, basis, rules, leave, me] = await Promise.all([
+  const [logs, basis, rules, leave, leaveTypes, me] = await Promise.all([
     loadReviewLogs({ userId: profile.id, from, to }),
     loadPeriodBasis(from, to, period.month),
     loadRules(to),
     loadLeave({ from, to, userId: profile.id, statuses: ['APPROVED'] }),
+    loadLeaveTypes(),
     createAdminClient().from('profiles').select('division, position_title').eq('id', profile.id).single<{ division: string | null; position_title: string | null }>(),
   ])
   const by = profile.full_name || profile.email
   const division = me.data?.division ?? null
   const l = leaveDaysIn(leave as LeaveRow[], from, to, basis.calendar)
   const logRows = logs.map((x) => ({ user_id: x.user_id, work_date: x.work_date, project_name: x.project, category: x.category, duration_minutes: x.duration_minutes, client: x.client }))
-  const s = periodSummary(period, logRows, basis.workdays.length, rules, basis.lockedTarget, paidLeaveDays(l))
+  const s = periodSummary(period, logRows, basis.workdays.length, rules, basis.lockedTarget, paidLeaveDays(l, leaveTypes))
   const sorted = [...logs].sort((a, b) => a.work_date.localeCompare(b.work_date) || a.start_time.localeCompare(b.start_time))
   const info = exportInfo(by, [`Periode: ${period.label} · Nama: ${by}`])
   return exportResponse(request, `Daily Tracker ${by} ${label}`, [
@@ -49,7 +50,7 @@ export async function GET(request: NextRequest) {
       name: 'Monthly Summary',
       title: `MONTHLY SUMMARY ${label}`,
       info,
-      columns: summaryColumns,
+      columns: summaryColumns(columnTypes(leaveTypes, [l])),
       rows: [{ p: { id: profile.id, full_name: profile.full_name, email: profile.email, division, position_title: me.data?.position_title ?? null }, l, s }],
     },
     { name: 'Daily Data', title: `DAILY DATA ${label}`, info, columns: dailyDataColumns(() => division), rows: sorted },

@@ -17,6 +17,8 @@ export type TrackerRules = {
   breakCategoryCode: string
   /** Nyala: hari cuti berbayar disetujui mengurangi target. Mati (bawaan): hari cuti dihitung jam kerja (keputusan pemilik 19 Nov 2026). */
   leaveReducesTarget: boolean
+  /** Nyala (bawaan): hari cuti bersama di kalender memotong jatah cuti tahunan (keputusan pemilik 19 Nov 2026; bisa diubah HR). */
+  jointLeaveUsesQuota: boolean
   /** Ambang jam, urut dari tertinggi: [lebih, sesuai, cukup]; di bawahnya = kurang. */
   dailyThresholds: [number, number, number]
   weeklyThresholds: [number, number, number]
@@ -28,6 +30,7 @@ export const DEFAULT_RULES: TrackerRules = {
   hoursPerDay: 8,
   breakCategoryCode: 'BREAK_PERSONAL',
   leaveReducesTarget: false,
+  jointLeaveUsesQuota: true,
   dailyThresholds: [8.1, 7, 6],
   weeklyThresholds: [40.1, 35.1, 30.1],
   monthlyPerDay: [8, 7, 6],

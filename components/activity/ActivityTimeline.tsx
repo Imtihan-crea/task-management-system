@@ -77,7 +77,8 @@ export function describeActivity(entry: Pick<ActivityEntry, 'action' | 'metadata
     case 'REFERENCE_ADDED':
       return `Pilihan "${str(m.label)}" ditambahkan ke ${str(m.list_title)}`
     case 'REFERENCE_UPDATED':
-      return `Pilihan "${str(m.from)}" diubah menjadi "${str(m.label)}"`
+      if (m.from === m.label) return `Pilihan "${str(m.label)}" diperbarui${m.changes ? ` (${str(m.changes)})` : ''}`
+      return `Pilihan "${str(m.from)}" diubah menjadi "${str(m.label)}"${m.changes ? ` (${str(m.changes)})` : ''}`
     case 'REFERENCE_ARCHIVED':
       return `Pilihan "${str(m.label)}" diarsipkan`
     case 'REFERENCE_RESTORED':

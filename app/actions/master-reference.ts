@@ -8,14 +8,15 @@ import { readLimitedField } from '@/lib/forms/limits'
 import { loadReferences } from '@/lib/hr/data'
 import { allRows } from '@/lib/utils/paginate'
 import {
-  REFERENCE_LISTS, codeFromLabel, duplicateLabel, isReferenceList, labelError, nextSortOrder, normalizeText, renameError, sameText,
-  type ReferenceList, type ReferenceRow,
+  REFERENCE_LISTS, attrChanges, codeFromLabel, duplicateLabel, isReferenceList, labelError, nextSortOrder, normalizeText, parseMaxDays, renameError, sameText,
+  type LeaveAttrs, type ReferenceList, type ReferenceRow,
 } from '@/lib/hr/reference'
 
 export type ReferenceFormState = { error?: string; success?: string } | undefined
 
 const listTitle = (list: ReferenceList) => REFERENCE_LISTS.find((l) => l.list === list)!.title
 const DESC_MAX = 500
+const COLUMNS = 'id, list, code, label, description, sort_order, archived_at, counts_hours, uses_quota, max_days'
 
 /** Kolom work_logs yang memuat teks bebas & tautan master per daftar (null = tidak dipakai tracker). */
 const LOG_COLUMNS: Partial<Record<ReferenceList, { text: string; ref: string }>> = {
@@ -31,7 +32,14 @@ function readDescription(formData: FormData): string | null | Error {
   return d || null
 }
 
-async function insertReference(list: ReferenceList, label: string, description: string | null, actorId: string) {
+/** Atribut jenis cuti dari form (centang + batas hari); hanya untuk daftar LEAVE_TYPE. */
+function readLeaveAttrs(formData: FormData): LeaveAttrs | Error {
+  const max = parseMaxDays(String(formData.get('max_days') ?? ''))
+  if ('error' in max) return new Error(max.error)
+  return { counts_hours: formData.get('counts_hours') === 'on', uses_quota: formData.get('uses_quota') === 'on', max_days: max.value }
+}
+
+async function insertReference(list: ReferenceList, label: string, description: string | null, actorId: string, attrs?: LeaveAttrs) {
   const rows = (await loadReferences([list]))
   const dup = duplicateLabel(rows, label)
   if (dup) {
@@ -46,8 +54,9 @@ async function insertReference(list: ReferenceList, label: string, description: 
       description,
       sort_order: nextSortOrder(rows),
       created_by: actorId,
+      ...(attrs ?? {}),
     })
-    .select('id, list, code, label, description, sort_order, archived_at')
+    .select(COLUMNS)
     .single<ReferenceRow>()
   if (error) {
     console.error('insertReference failed:', error.message)
@@ -66,14 +75,17 @@ export async function addReference(_prev: ReferenceFormState, formData: FormData
   const description = readDescription(formData)
   if (description instanceof Error) return { error: description.message }
 
-  const res = await insertReference(list, label, description, actor.id)
+  const attrs = list === 'LEAVE_TYPE' ? readLeaveAttrs(formData) : undefined
+  if (attrs instanceof Error) return { error: attrs.message }
+
+  const res = await insertReference(list, label, description, actor.id, attrs)
   if ('error' in res) return { error: res.error }
   await logActivity({
     actorUserId: actor.id,
     action: 'REFERENCE_ADDED',
     entityType: 'master_reference',
     entityId: res.row.id,
-    metadata: { list, list_title: listTitle(list), code: res.row.code, label },
+    metadata: { list, list_title: listTitle(list), code: res.row.code, label, ...(attrs ?? {}) },
   })
   revalidatePath('/master-reference')
   return { success: `"${label}" ditambahkan.` }
@@ -90,20 +102,25 @@ export async function updateReference(_prev: ReferenceFormState, formData: FormD
   const admin = createAdminClient()
   const { data: row } = await admin
     .from('master_references')
-    .select('id, list, code, label, description, sort_order, archived_at')
+    .select(COLUMNS)
     .eq('id', id)
     .maybeSingle<ReferenceRow>()
   if (!row) return { error: 'Pilihan tidak ditemukan.' }
+  const isLeave = row.list === 'LEAVE_TYPE'
+  const before: LeaveAttrs = { counts_hours: Boolean(row.counts_hours), uses_quota: Boolean(row.uses_quota), max_days: row.max_days ?? null }
+  const attrs = isLeave ? readLeaveAttrs(formData) : null
+  if (attrs instanceof Error) return { error: attrs.message }
+  const changes = attrs ? attrChanges(before, attrs) : ''
   const err = renameError(row.label, label)
   if (err) return { error: err }
   const dup = duplicateLabel(await loadReferences([row.list]), label, row.id)
   if (dup) return { error: `"${dup.label}" sudah ada di daftar ini.` }
-  if (label === row.label && description === row.description) return { success: 'Tidak ada perubahan.' }
+  if (label === row.label && description === row.description && !changes) return { success: 'Tidak ada perubahan.' }
 
   // Guard label lama: dua pengubah bersamaan tidak saling menimpa diam-diam.
   const { data: updated, error } = await admin
     .from('master_references')
-    .update({ label, description, updated_at: new Date().toISOString() })
+    .update({ label, description, ...(attrs ?? {}), updated_at: new Date().toISOString() })
     .eq('id', id)
     .eq('label', row.label)
     .select('id')
@@ -116,7 +133,7 @@ export async function updateReference(_prev: ReferenceFormState, formData: FormD
     action: 'REFERENCE_UPDATED',
     entityType: 'master_reference',
     entityId: id,
-    metadata: { list: row.list, code: row.code, from: row.label, label, description_changed: description !== row.description },
+    metadata: { list: row.list, code: row.code, from: row.label, label, description_changed: description !== row.description, ...(changes ? { changes } : {}) },
   })
   revalidatePath('/master-reference')
   return { success: 'Pilihan diperbarui.' }

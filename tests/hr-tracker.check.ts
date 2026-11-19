@@ -78,6 +78,10 @@ cek('merge aturan default', mergeRules(null).hoursPerDay, 8)
 
 // Validasi aturan
 cek('aturan default sah', rulesError(DEFAULT_RULES), null)
+cek('cuti bersama memotong jatah bawaan', DEFAULT_RULES.jointLeaveUsesQuota, true)
+cek('aturan lama tanpa jointLeaveUsesQuota -> bawaan', mergeRules({ hoursPerDay: 7 }).jointLeaveUsesQuota, true)
+cek('jointLeaveUsesQuota=false tersimpan', mergeRules({ jointLeaveUsesQuota: false }).jointLeaveUsesQuota, false)
+cek('jointLeaveUsesQuota=false sah', rulesError({ ...DEFAULT_RULES, jointLeaveUsesQuota: false }), null)
 cek('jam/hari 0 ditolak', rulesError({ ...DEFAULT_RULES, hoursPerDay: 0 }) !== null, true)
 cek('ambang tidak menurun ditolak', rulesError({ ...DEFAULT_RULES, dailyThresholds: [7, 8, 6] }) !== null, true)
 cek('ambang negatif ditolak', rulesError({ ...DEFAULT_RULES, weeklyThresholds: [40, 35, -1] }) !== null, true)

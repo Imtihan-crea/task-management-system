@@ -2,26 +2,37 @@
  * Cuti (HR Tahap 2, migrasi 024; jenis diganti migrasi 026). Murni supaya bisa dites.
  * Keputusan pemilik 16 Nov 2026: penyetuju = izin leave.approve (atau hr.manage).
  * Keputusan pemilik 19 Nov 2026 (mengikuti UU 13/2003 jo. UU 6/2023 dan UU 4/2024 KIA):
- * - empat jenis: Cuti Tahunan, Cuti Sakit, Cuti Khusus (alasan + batas hari), Cuti di Luar Tanggungan;
+ * - empat jenis awal: Cuti Tahunan, Cuti Sakit, Cuti Khusus (alasan + batas hari), Cuti di Luar Tanggungan;
  * - setiap hari cuti berbayar yang disetujui dihitung sebagai jam kerja (jam/hari, bawaan 8);
- *   Cuti di Luar Tanggungan tidak dihitung;
- * - saldo = hak cuti (HR) − hari Cuti Tahunan disetujui − hari cuti bersama di kalender tahun itu.
+ * - saldo = hak cuti (HR) − hari cuti disetujui − hari cuti bersama di kalender tahun itu.
+ * Keputusan pemilik 19 Nov 2026 (migrasi 027): jenis cuti diatur HR di Master Reference (LEAVE_TYPE);
+ * per jenis: dihitung jam kerja, memotong jatah, batas hari. Cuti bersama memotong jatah = aturan HR
+ * (`jointLeaveUsesQuota`). Cuti Khusus (kode KHUSUS) tetap wajib memilih alasan dari SPECIAL_REASONS.
  */
 import { addDays, workingDays, type CalendarDay } from '@/lib/hr/tracker'
 
-export type LeaveKind = 'CUTI' | 'SAKIT' | 'KHUSUS' | 'TANPA_GAJI'
+/** Kode jenis dari Master Reference (list LEAVE_TYPE); migrasi 027. */
+export type LeaveKind = string
 export type LeaveStatus = 'PENDING' | 'APPROVED' | 'REJECTED' | 'CANCELLED'
 
-export const LEAVE_KINDS: { value: LeaveKind; label: string }[] = [
-  { value: 'CUTI', label: 'Cuti Tahunan' },
-  { value: 'SAKIT', label: 'Cuti Sakit' },
-  { value: 'KHUSUS', label: 'Cuti Khusus' },
-  { value: 'TANPA_GAJI', label: 'Cuti di Luar Tanggungan' },
-]
-export const KIND_LABEL = Object.fromEntries(LEAVE_KINDS.map((k) => [k.value, k.label])) as Record<LeaveKind, string>
+/** Jenis cuti dari Master Reference. Fungsi di bawah menerimanya sebagai parameter supaya murni. */
+export type LeaveType = {
+  code: string
+  label: string
+  description: string | null
+  counts_hours: boolean
+  uses_quota: boolean
+  max_days: number | null
+  archived_at: string | null
+}
 
-/** Jenis yang dibayar = dihitung jam kerja. */
-export const PAID_KINDS: LeaveKind[] = ['CUTI', 'SAKIT', 'KHUSUS']
+/** Kode jenis yang alasannya wajib dipilih dari SPECIAL_REASONS (dasar UU, tetap di kode). */
+export const SPECIAL_KIND = 'KHUSUS'
+
+export const kindLabels = (types: Pick<LeaveType, 'code' | 'label'>[]): Record<string, string> => Object.fromEntries(types.map((t) => [t.code, t.label]))
+
+/** Jenis yang bisa dipilih untuk pengajuan baru. */
+export const activeTypes = (types: LeaveType[]) => types.filter((t) => !t.archived_at)
 
 /**
  * Alasan Cuti Khusus. `maxDays` = hari kerja (UU 13/2003 Pasal 93 ayat 4, Pasal 81);
@@ -62,15 +73,23 @@ export function rangeError(start: string, end: string, maxSpan = MAX_SPAN_DAYS):
   return null
 }
 
-/** Validasi jenis + alasan Cuti Khusus + batas hari; null = sah. `days` = hari kerja rentang. */
-export function kindError(kind: string, special: string | null, start: string, end: string, days: number): string | null {
-  if (!LEAVE_KINDS.some((k) => k.value === kind)) return 'Pilih jenis cuti.'
-  if (kind !== 'KHUSUS') return rangeError(start, end)
-  const r = SPECIAL_REASONS.find((x) => x.value === special)
-  if (!r) return 'Pilih alasan Cuti Khusus.'
-  const err = rangeError(start, end, r.maxSpan ?? MAX_SPAN_DAYS)
+/**
+ * Validasi jenis (harus aktif di master) + alasan Cuti Khusus + batas hari; null = sah.
+ * `days` = hari kerja rentang. Batas `max_days` jenis berlaku di samping batas alasan Cuti Khusus.
+ */
+export function kindError(types: LeaveType[], kind: string, special: string | null, start: string, end: string, days: number): string | null {
+  const type = activeTypes(types).find((t) => t.code === kind)
+  if (!type) return 'Pilih jenis cuti.'
+  let err: string | null
+  if (kind !== SPECIAL_KIND) err = rangeError(start, end)
+  else {
+    const r = SPECIAL_REASONS.find((x) => x.value === special)
+    if (!r) return `Pilih alasan ${type.label}.`
+    err = rangeError(start, end, r.maxSpan ?? MAX_SPAN_DAYS)
+    if (!err && r.maxDays && days > r.maxDays) err = `${type.label} "${r.label}" paling lama ${r.maxDays} hari kerja.`
+  }
   if (err) return err
-  if (r.maxDays && days > r.maxDays) return `Cuti Khusus "${r.label}" paling lama ${r.maxDays} hari kerja.`
+  if (type.max_days !== null && days > type.max_days) return `${type.label} paling lama ${type.max_days} hari kerja per pengajuan.`
   return null
 }
 
@@ -92,20 +111,27 @@ export function overlappingLeave(existing: LeaveRow[], candidate: { id?: string;
 }
 
 /** Hari kerja cuti yang disetujui per jenis dalam rentang [from, to] (mis. satu bulan). */
-export function leaveDaysIn(rows: LeaveRow[], from: string, to: string, calendar: CalendarDay[]): Record<LeaveKind, number> {
-  const out: Record<LeaveKind, number> = { CUTI: 0, SAKIT: 0, KHUSUS: 0, TANPA_GAJI: 0 }
+export function leaveDaysIn(rows: LeaveRow[], from: string, to: string, calendar: CalendarDay[]): Record<string, number> {
+  const out: Record<string, number> = {}
   for (const l of rows) {
     if (l.status !== 'APPROVED') continue
     const s = l.start_date > from ? l.start_date : from
     const e = l.end_date < to ? l.end_date : to
     if (s > e) continue
-    out[l.kind] += workingDays(s, e, calendar).length
+    out[l.kind] = (out[l.kind] ?? 0) + workingDays(s, e, calendar).length
   }
   return out
 }
 
-/** Hari cuti berbayar (dihitung jam kerja) dari hasil leaveDaysIn. */
-export const paidLeaveDays = (l: Record<LeaveKind, number>) => PAID_KINDS.reduce((s, k) => s + l[k], 0)
+/** Hari cuti yang dihitung jam kerja (`counts_hours` di master) dari hasil leaveDaysIn. */
+export const paidLeaveDays = (l: Record<string, number>, types: LeaveType[]) => types.filter((t) => t.counts_hours).reduce((s, t) => s + (l[t.code] ?? 0), 0)
+
+/**
+ * Jenis yang jadi kolom rekap/export: semua yang aktif, ditambah yang diarsipkan tetapi masih
+ * punya hari cuti di periode itu (supaya angkanya tidak hilang diam-diam).
+ */
+export const columnTypes = (types: LeaveType[], perPerson: Record<string, number>[]) =>
+  types.filter((t) => !t.archived_at || perPerson.some((l) => (l[t.code] ?? 0) > 0))
 
 /** Tanggal-tanggal hari kerja yang tertutup cuti disetujui (untuk pengingat & D01). */
 export function leaveDates(rows: LeaveRow[], from: string, to: string, calendar: CalendarDay[]): Set<string> {
@@ -126,12 +152,20 @@ export function jointLeaveDays(calendar: { day: string; kind: string; name?: str
   return calendar.filter((c) => c.kind === 'HOLIDAY' && /cuti bersama/i.test(c.name ?? '') && ![0, 6].includes(new Date(`${c.day}T00:00:00Z`).getUTCDay())).length
 }
 
-/** Saldo cuti tahunan tahun `year`: hak (HR) − hari Cuti Tahunan disetujui − cuti bersama (`joint`). */
-export function annualBalance(quota: number | null, rows: LeaveRow[], year: string, calendar: CalendarDay[], joint = 0): Balance {
+/** Cuti bersama yang memotong jatah: 0 bila HR mematikan aturannya (`jointLeaveUsesQuota`). */
+export const jointQuotaDays = (calendar: { day: string; kind: string; name?: string | null }[], usesQuota: boolean) => (usesQuota ? jointLeaveDays(calendar) : 0)
+
+/**
+ * Saldo cuti tahunan tahun `year`: hak (HR) − hari semua jenis yang `uses_quota` disetujui − cuti bersama (`joint`,
+ * lihat jointQuotaDays). `pending` = hari jenis pemotong yang masih menunggu.
+ */
+export function annualBalance(quota: number | null, rows: LeaveRow[], year: string, calendar: CalendarDay[], joint: number, types: LeaveType[]): Balance {
   const from = `${year}-01-01`
   const to = `${year}-12-31`
-  const cuti = rows.filter((r) => r.kind === 'CUTI')
-  const taken = leaveDaysIn(cuti, from, to, calendar).CUTI
-  const pending = leaveDaysIn(cuti.map((r) => ({ ...r, status: r.status === 'PENDING' ? 'APPROVED' : 'REJECTED' })), from, to, calendar).CUTI
+  const quotaCodes = new Set(types.filter((t) => t.uses_quota).map((t) => t.code))
+  const sum = (d: Record<string, number>) => [...quotaCodes].reduce((s, c) => s + (d[c] ?? 0), 0)
+  const mine = rows.filter((r) => quotaCodes.has(r.kind))
+  const taken = sum(leaveDaysIn(mine, from, to, calendar))
+  const pending = sum(leaveDaysIn(mine.map((r) => ({ ...r, status: r.status === 'PENDING' ? 'APPROVED' : 'REJECTED' })), from, to, calendar))
   return { quota, taken, joint, pending, remaining: quota === null ? null : quota - taken - joint }
 }

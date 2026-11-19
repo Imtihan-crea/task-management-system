@@ -7,8 +7,8 @@ import { AppShell } from '@/components/layout/AppShell'
 import { PageHeader } from '@/components/ui/primitives'
 import { DecideLeaveForm } from '@/components/leave/LeaveForms'
 import { LeaveTable } from '@/components/leave/LeaveTable'
-import { loadCalendar, loadLeave } from '@/lib/hr/data'
-import { annualBalance, type LeaveRow } from '@/lib/hr/leave'
+import { loadCalendar, loadLeave, loadLeaveTypes, loadRules } from '@/lib/hr/data'
+import { annualBalance, jointQuotaDays, kindLabels, type LeaveRow } from '@/lib/hr/leave'
 import { monthRange } from '@/lib/hr/tracker'
 import { todayISO } from '@/lib/utils/dates'
 
@@ -24,20 +24,24 @@ export default async function LeaveApprovalPage({ searchParams }: { searchParams
   const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(sp.bulan ?? '') ? sp.bulan! : today.slice(0, 7)
   const [from, to] = monthRange(month)
 
-  const [pending, monthRows, yearRows, calendar, peopleRes] = await Promise.all([
+  const [pending, monthRows, yearRows, calendar, peopleRes, types, rules] = await Promise.all([
     loadLeave({ from: '2000-01-01', to: '2100-12-31', statuses: ['PENDING'] }),
     loadLeave({ from, to }),
     loadLeave({ from: `${year}-01-01`, to: `${year}-12-31`, statuses: ['APPROVED', 'PENDING'] }),
     loadCalendar(`${year}-01-01`, `${year}-12-31`),
     createAdminClient().from('profiles').select('id, full_name, email, annual_leave_quota, tracker_required, status').is('deleted_at', null).order('full_name'),
+    loadLeaveTypes(),
+    loadRules(today),
   ])
+  const labels = kindLabels(types)
+  const joint = jointQuotaDays(calendar, rules.jointLeaveUsesQuota)
   type Person = { id: string; full_name: string | null; email: string; annual_leave_quota: number | null; tracker_required: boolean; status: string }
   const people = (peopleRes.data ?? []) as Person[]
   const name = new Map(people.map((p) => [p.id, p.full_name || p.email]))
   const person = (l: { user_id: string }) => name.get(l.user_id) ?? '-'
   const balances = people
     .filter((p) => p.status === 'ACTIVE' && (p.tracker_required || p.annual_leave_quota !== null))
-    .map((p) => ({ p, b: annualBalance(p.annual_leave_quota, yearRows.filter((r) => r.user_id === p.id) as LeaveRow[], year, calendar) }))
+    .map((p) => ({ p, b: annualBalance(p.annual_leave_quota, yearRows.filter((r) => r.user_id === p.id) as LeaveRow[], year, calendar, joint, types) }))
 
   return (
     <AppShell>
@@ -49,7 +53,7 @@ export default async function LeaveApprovalPage({ searchParams }: { searchParams
 
       <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
         <h2 className="mb-3 text-lg font-bold">Menunggu persetujuan ({pending.length})</h2>
-        <LeaveTable rows={pending} person={person} empty="Tidak ada pengajuan yang menunggu." actions={(l) => (l.user_id === profile.id ? null : <DecideLeaveForm id={l.id} mode="pending" />)} />
+        <LeaveTable rows={pending} labels={labels} person={person} empty="Tidak ada pengajuan yang menunggu." actions={(l) => (l.user_id === profile.id ? null : <DecideLeaveForm id={l.id} mode="pending" />)} />
       </section>
 
       <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
@@ -61,12 +65,12 @@ export default async function LeaveApprovalPage({ searchParams }: { searchParams
             <button type="submit" className="min-h-[44px] rounded-lg border px-3 py-2 text-sm font-semibold dark:border-zinc-700">Tampilkan</button>
           </form>
         </div>
-        <LeaveTable rows={monthRows} person={person} actions={(l) => (l.status === 'APPROVED' && l.user_id !== profile.id ? <DecideLeaveForm id={l.id} mode="approved" /> : null)} />
+        <LeaveTable rows={monthRows} labels={labels} person={person} actions={(l) => (l.status === 'APPROVED' && l.user_id !== profile.id ? <DecideLeaveForm id={l.id} mode="approved" /> : null)} />
       </section>
 
       <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
         <h2 className="mb-1 text-lg font-bold">Saldo cuti tahunan {year}</h2>
-        <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-400">Hak cuti diisi HR di Data Karyawan (detail user). Sisa = hak − cuti disetujui tahun ini.</p>
+        <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-400">Hak cuti diisi HR di Data Karyawan (detail user). Sisa = hak − cuti pemotong jatah yang disetujui tahun ini{rules.jointLeaveUsesQuota ? ' − cuti bersama' : ''}.</p>
         <div className="relative overflow-x-auto">
           <table className="w-full text-sm">
             <thead>

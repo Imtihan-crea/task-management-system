@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import type { LeaveKind } from '@/lib/hr/leave'
+import type { LeaveKind, LeaveType } from '@/lib/hr/leave'
 import { mergeRules, monthRange, workingDays, type CalendarDay, type LogRow, type TrackerRules } from '@/lib/hr/tracker'
 import type { ReferenceList, ReferenceRow } from '@/lib/hr/reference'
 import { allRows } from '@/lib/utils/paginate'
@@ -68,13 +68,26 @@ export async function loadProjectClients(): Promise<Map<string, string>> {
 export async function loadReferences(lists?: ReferenceList[]): Promise<ReferenceRow[]> {
   let q = createAdminClient()
     .from('master_references')
-    .select('id, list, code, label, description, sort_order, archived_at')
+    .select('id, list, code, label, description, sort_order, archived_at, counts_hours, uses_quota, max_days')
     .order('list')
     .order('sort_order')
   if (lists) q = q.in('list', lists)
   const { data, error } = await q
   if (error) console.warn('[hr] master_references read failed:', error.message)
   return (data ?? []) as ReferenceRow[]
+}
+
+/** Jenis cuti dari Master Reference (aktif dan diarsipkan; arsip tetap perlu untuk label data lama). */
+export async function loadLeaveTypes(): Promise<LeaveType[]> {
+  return (await loadReferences(['LEAVE_TYPE'])).map((r) => ({
+    code: r.code,
+    label: r.label,
+    description: r.description,
+    counts_hours: r.counts_hours ?? false,
+    uses_quota: r.uses_quota ?? false,
+    max_days: r.max_days ?? null,
+    archived_at: r.archived_at,
+  }))
 }
 
 export type TrackerProject = { id: string; name: string }

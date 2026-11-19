@@ -24,7 +24,7 @@ export default async function TrackerRekapPage({
   const canManageHr = await hasPermission(viewer.id, 'hr.manage')
   const sp = await searchParams
   const { period, error } = parsePeriod(sp, todayISO())
-  const { from, to, everyone, divisions, people, byUser, rows, basis, rules } = await loadRekap(period, sp.divisi)
+  const { from, to, everyone, divisions, people, byUser, rows, basis, rules, leaveColumns } = await loadRekap(period, sp.divisi)
   const allLogs = people.flatMap((p) => byUser.get(p.id) ?? [])
   const focus = sp.orang ? everyone.find((p) => p.id === sp.orang) : undefined
   const focusLogs = focus ? byUser.get(focus.id) ?? [] : []
@@ -75,10 +75,7 @@ export default async function TrackerRekapPage({
               <th className="py-2 pr-3 text-right">Jam/hari</th>
               <th className="py-2 pr-3 text-right">Jam/aktivitas</th>
               <th className="py-2 pr-3 text-right">Target</th>
-              <th className="py-2 pr-3 text-right">Cuti Tahunan</th>
-              <th className="py-2 pr-3 text-right">Cuti Khusus</th>
-              <th className="py-2 pr-3 text-right">Cuti Sakit</th>
-              <th className="py-2 pr-3 text-right">Luar Tanggungan</th>
+              {leaveColumns.map((t) => <th key={t.code} className="py-2 pr-3 text-right">{t.label}</th>)}
               <th className="py-2">Status</th>
             </tr>
           </thead>
@@ -98,10 +95,7 @@ export default async function TrackerRekapPage({
                 <td className="py-2 pr-3 text-right">{num(s.avgHoursPerActiveDay)}</td>
                 <td className="py-2 pr-3 text-right">{num(s.avgHoursPerActivity)}</td>
                 <td className="py-2 pr-3 text-right">{num(s.targetHours)}</td>
-                <td className="py-2 pr-3 text-right">{l.CUTI}</td>
-                <td className="py-2 pr-3 text-right">{l.KHUSUS}</td>
-                <td className="py-2 pr-3 text-right">{l.SAKIT}</td>
-                <td className="py-2 pr-3 text-right">{l.TANPA_GAJI}</td>
+                {leaveColumns.map((t) => <td key={t.code} className="py-2 pr-3 text-right">{l[t.code] ?? 0}</td>)}
                 <td className="py-2">{STATUS_LABEL[s.status]}</td>
               </tr>
             ))}

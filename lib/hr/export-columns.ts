@@ -1,6 +1,7 @@
 import 'server-only'
 
 import { FREE_TEXT_MARK, type ReviewLog } from '@/lib/hr/data'
+import type { LeaveType } from '@/lib/hr/leave'
 import type { loadRekap } from '@/lib/hr/rekap'
 import { STATUS_LABEL, isoWeek } from '@/lib/hr/tracker'
 import { excelDate, hoursOf, type ExcelColumn } from '@/lib/export/excel'
@@ -31,8 +32,8 @@ const name = (p: { full_name: string | null; email: string }) => p.full_name || 
 
 type SummaryRow = Awaited<ReturnType<typeof loadRekap>>['rows'][number]
 
-/** Ringkasan periode (satu baris per orang). Dipakai export rekap HR dan tracker pribadi. */
-export const summaryColumns: ExcelColumn<SummaryRow>[] = [
+/** Ringkasan periode (satu baris per orang). Dipakai export rekap HR dan tracker pribadi. Kolom cuti per jenis = `leaveTypes` (loadRekap). */
+export const summaryColumns = (leaveTypes: LeaveType[]): ExcelColumn<SummaryRow>[] => [
   { header: 'Nama', width: 22, value: (r) => name(r.p) },
   { header: 'Divisi', width: 14, value: (r) => r.p.division },
   { header: 'Jabatan', width: 20, value: (r) => r.p.position_title },
@@ -44,10 +45,7 @@ export const summaryColumns: ExcelColumn<SummaryRow>[] = [
   { header: 'Hari Tidak Aktif Kerja', width: 10, value: (r) => Math.max(r.s.workdays - r.s.activeDays, 0) },
   { header: 'Rata-rata Jam/Hari', width: 10, format: '0.00', value: (r) => r.s.avgHoursPerActiveDay },
   { header: 'Rata-rata Durasi Aktivitas (Jam)', width: 12, format: '0.00', value: (r) => r.s.avgHoursPerActivity },
-  { header: 'Cuti Tahunan (hari)', width: 9, value: (r) => r.l.CUTI },
-  { header: 'Cuti Khusus (hari)', width: 9, value: (r) => r.l.KHUSUS },
-  { header: 'Cuti Sakit (hari)', width: 9, value: (r) => r.l.SAKIT },
-  { header: 'Cuti di Luar Tanggungan (hari)', width: 11, value: (r) => r.l.TANPA_GAJI },
+  ...leaveTypes.map((t): ExcelColumn<SummaryRow> => ({ header: `${t.label} (hari)`, width: 11, value: (r) => r.l[t.code] ?? 0 })),
   { header: 'Jam Cuti Dihitung', width: 9, format: '0.00', value: (r) => r.s.leaveHours },
   { header: 'Status', width: 16, value: (r) => STATUS_LABEL[r.s.status] },
 ]

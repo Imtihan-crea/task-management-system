@@ -16,6 +16,27 @@ function Status({ state }: { state: ReferenceFormState }) {
   return null
 }
 
+/** Aturan hitung satu jenis cuti (daftar LEAVE_TYPE). `idp` = awalan id supaya unik per form. */
+function LeaveAttrFields({ idp, attrs }: { idp: string; attrs?: { counts_hours: boolean; uses_quota: boolean; max_days: number | null } }) {
+  return (
+    <fieldset className="grid gap-2 rounded-lg border p-3 dark:border-zinc-700 sm:col-span-3">
+      <legend className="px-1 text-sm font-semibold">Aturan hitung</legend>
+      <label className="flex min-h-[44px] items-center gap-2 text-sm">
+        <input type="checkbox" name="counts_hours" defaultChecked={attrs?.counts_hours ?? false} className="h-5 w-5" />
+        Dihitung jam kerja (hari disetujui = jam per hari ditambahkan ke jam kerja)
+      </label>
+      <label className="flex min-h-[44px] items-center gap-2 text-sm">
+        <input type="checkbox" name="uses_quota" defaultChecked={attrs?.uses_quota ?? false} className="h-5 w-5" />
+        Memotong jatah cuti tahunan
+      </label>
+      <div>
+        <label htmlFor={`${idp}-max`} className="mb-1 block text-sm font-medium">Batas hari kerja per pengajuan (kosong = tanpa batas khusus)</label>
+        <input id={`${idp}-max`} name="max_days" inputMode="numeric" maxLength={3} defaultValue={attrs?.max_days ?? ''} className={`${INPUT} sm:w-40`} />
+      </div>
+    </fieldset>
+  )
+}
+
 export function AddReferenceForm({ list }: { list: string }) {
   const [state, formProps, pending] = useFormAction(addReference, INITIAL)
   return (
@@ -29,13 +50,14 @@ export function AddReferenceForm({ list }: { list: string }) {
         <label htmlFor={`add-desc-${list}`} className="mb-1 block text-sm font-medium">Penjelasan (opsional)</label>
         <input id={`add-desc-${list}`} name="description" maxLength={500} className={INPUT} />
       </div>
+      {list === 'LEAVE_TYPE' && <LeaveAttrFields idp={`add-${list}`} />}
       <button type="submit" disabled={pending} className={BTN}>{pending ? 'Menyimpan...' : 'Tambah'}</button>
       <div className="sm:col-span-3"><Status state={state} /></div>
     </form>
   )
 }
 
-export function EditReferenceForm({ id, label, description }: { id: string; label: string; description: string | null }) {
+export function EditReferenceForm({ id, label, description, attrs }: { id: string; label: string; description: string | null; attrs?: { counts_hours: boolean; uses_quota: boolean; max_days: number | null } }) {
   const [state, formProps, pending] = useFormAction(updateReference, INITIAL)
   return (
     <details className="mt-1">
@@ -46,6 +68,7 @@ export function EditReferenceForm({ id, label, description }: { id: string; labe
         <input id={`edit-label-${id}`} name="label" required maxLength={80} defaultValue={label} className={INPUT} />
         <label className="text-sm font-medium" htmlFor={`edit-desc-${id}`}>Penjelasan</label>
         <textarea id={`edit-desc-${id}`} name="description" rows={2} maxLength={500} defaultValue={description ?? ''} className={INPUT} />
+        {attrs && <LeaveAttrFields idp={`edit-${id}`} attrs={attrs} />}
         <div className="flex flex-wrap items-center gap-3">
           <button type="submit" disabled={pending} className={BTN}>{pending ? 'Menyimpan...' : 'Simpan'}</button>
           <Status state={state} />

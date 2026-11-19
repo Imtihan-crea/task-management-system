@@ -34,7 +34,7 @@ export async function GET(request: NextRequest) {
   )
   if (error) return new Response(error, { status: 400 })
   const divisi = sp.get('divisi') || null
-  const { from, to, people, byUser, rows, basis, rules } = await loadRekap(period, divisi)
+  const { from, to, people, byUser, rows, basis, rules, leaveColumns } = await loadRekap(period, divisi)
 
   const ids = new Set(people.map((p) => p.id))
   const divisionOf = new Map(people.map((p) => [p.id, p.division]))
@@ -53,7 +53,7 @@ export async function GET(request: NextRequest) {
 
   const title = (t: string) => `${t} ${period.fileLabel}${divisi ? ` - ${divisi}` : ''}`
   return exportResponse(request, `Rekap Daily Tracker ${period.fileLabel}${divisi ? ` ${divisi}` : ''}`, [
-    { name: 'Monthly Summary', title: title('MONTHLY SUMMARY'), info, columns: summaryColumns, rows },
+    { name: 'Monthly Summary', title: title('MONTHLY SUMMARY'), info, columns: summaryColumns(leaveColumns), rows },
     { name: 'Daily Data', title: title('DAILY DATA'), info, columns: dailyDataColumns((id) => divisionOf.get(id) ?? null), rows: activities },
     { name: 'Jam per Proyek', title: title('JAM PER PROYEK'), info, columns: breakdownColumns('Proyek'), rows: perPerson('project_name') },
     { name: 'Jam per Klien', title: title('JAM PER KLIEN'), info, columns: breakdownColumns('Klien'), rows: perPerson('client') },

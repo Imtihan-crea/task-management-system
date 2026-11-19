@@ -7,15 +7,20 @@
  * - teks bebas staf tetap tersimpan dan menjadi usulan untuk dikukuhkan.
  */
 
-export type ReferenceList = 'ACTIVITY_CATEGORY' | 'WORK_LOCATION' | 'DIVISION' | 'POSITION' | 'INTERNAL_PROJECT'
+export type ReferenceList = 'ACTIVITY_CATEGORY' | 'WORK_LOCATION' | 'DIVISION' | 'POSITION' | 'INTERNAL_PROJECT' | 'LEAVE_TYPE'
 
+/** Urutan = urutan tab di halaman Master Reference. */
 export const REFERENCE_LISTS: { list: ReferenceList; title: string; hint: string; freeText: boolean }[] = [
   { list: 'ACTIVITY_CATEGORY', title: 'Kategori aktivitas', hint: 'Pilihan kategori di Daily Tracker.', freeText: true },
   { list: 'WORK_LOCATION', title: 'Lokasi kerja', hint: 'Pilihan lokasi di Daily Tracker.', freeText: true },
-  { list: 'INTERNAL_PROJECT', title: 'Proyek internal', hint: 'Pekerjaan di luar project TMS (mis. urusan kantor, calon klien); tampil di pilihan proyek Daily Tracker.', freeText: true },
   { list: 'DIVISION', title: 'Divisi', hint: 'Divisi karyawan di profil.', freeText: false },
   { list: 'POSITION', title: 'Jabatan', hint: 'Jabatan karyawan di profil.', freeText: false },
+  { list: 'INTERNAL_PROJECT', title: 'Proyek internal', hint: 'Pekerjaan di luar project TMS (mis. urusan kantor, calon klien); tampil di pilihan proyek Daily Tracker.', freeText: true },
+  { list: 'LEAVE_TYPE', title: 'Jenis cuti', hint: 'Pilihan jenis di form Cuti, beserta aturan hitungnya. Cuti Khusus (kode KHUSUS) tetap wajib memilih alasan menurut UU.', freeText: false },
 ]
+
+/** Daftar yang dibuka bila ?tab= kosong atau tidak dikenal. */
+export const DEFAULT_REFERENCE_LIST: ReferenceList = REFERENCE_LISTS[0].list
 
 export const isReferenceList = (v: string): v is ReferenceList => REFERENCE_LISTS.some((l) => l.list === v)
 
@@ -27,6 +32,34 @@ export type ReferenceRow = {
   description: string | null
   sort_order: number
   archived_at: string | null
+  /** Atribut jenis cuti; null di daftar lain (migrasi 027). */
+  counts_hours?: boolean | null
+  uses_quota?: boolean | null
+  max_days?: number | null
+}
+
+export type LeaveAttrs = { counts_hours: boolean; uses_quota: boolean; max_days: number | null }
+
+export const MAX_DAYS_LIMIT = 366
+
+/** Batas hari per pengajuan dari isian form: kosong = tanpa batas; selain itu bilangan bulat 1..366. */
+export function parseMaxDays(raw: string): { value: number | null } | { error: string } {
+  const t = raw.trim()
+  if (!t) return { value: null }
+  const n = Number(t)
+  if (!/^\d+$/.test(t) || n < 1 || n > MAX_DAYS_LIMIT) return { error: `Batas hari harus bilangan bulat 1 sampai ${MAX_DAYS_LIMIT}, atau kosong.` }
+  return { value: n }
+}
+
+/** Ringkas perubahan atribut untuk activity log; '' bila tidak berubah. */
+export function attrChanges(before: LeaveAttrs, after: LeaveAttrs): string {
+  const yn = (b: boolean) => (b ? 'ya' : 'tidak')
+  const days = (n: number | null) => (n === null ? 'tanpa batas' : `${n} hari`)
+  const out: string[] = []
+  if (before.counts_hours !== after.counts_hours) out.push(`dihitung jam kerja: ${yn(before.counts_hours)} jadi ${yn(after.counts_hours)}`)
+  if (before.uses_quota !== after.uses_quota) out.push(`memotong jatah: ${yn(before.uses_quota)} jadi ${yn(after.uses_quota)}`)
+  if (before.max_days !== after.max_days) out.push(`batas hari: ${days(before.max_days)} jadi ${days(after.max_days)}`)
+  return out.join('; ')
 }
 
 /** Rapikan spasi; dipakai sebelum membandingkan atau menyimpan label/teks bebas. */

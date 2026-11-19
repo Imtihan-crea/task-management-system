@@ -3,7 +3,7 @@
  * Jalankan: npm run test:hr-reference
  */
 import {
-  codeFromLabel, duplicateLabel, groupFreeText, labelError, nextSortOrder, renameError, resolveChoice, type ReferenceRow,
+  attrChanges, codeFromLabel, duplicateLabel, isReferenceList, parseMaxDays, REFERENCE_LISTS, groupFreeText, labelError, nextSortOrder, renameError, resolveChoice, type ReferenceRow,
 } from '../lib/hr/reference'
 
 let ok = 0
@@ -65,6 +65,20 @@ cek('kelompok usulan', groupFreeText([
   { text: 'Rapat vendor', count: 2, lastDate: '2026-11-05' },
   { text: 'Gudang', count: 1, lastDate: '2026-11-02' },
 ])
+
+// Jenis cuti (migrasi 027)
+cek('LEAVE_TYPE adalah daftar', isReferenceList('LEAVE_TYPE'), true)
+cek('tab terakhir = Jenis cuti', REFERENCE_LISTS[REFERENCE_LISTS.length - 1].list, 'LEAVE_TYPE')
+cek('tab: 6 daftar', REFERENCE_LISTS.length, 6)
+cek('max_days kosong = tanpa batas', parseMaxDays(' '), { value: null })
+cek('max_days 5', parseMaxDays('5'), { value: 5 })
+cek('max_days 0 ditolak', 'error' in parseMaxDays('0'), true)
+cek('max_days 367 ditolak', 'error' in parseMaxDays('367'), true)
+cek('max_days desimal ditolak', 'error' in parseMaxDays('2.5'), true)
+cek('max_days teks ditolak', 'error' in parseMaxDays('abc'), true)
+const a0 = { counts_hours: true, uses_quota: false, max_days: null }
+cek('tanpa perubahan atribut', attrChanges(a0, a0), '')
+cek('perubahan atribut tercatat', attrChanges(a0, { counts_hours: false, uses_quota: true, max_days: 3 }), 'dihitung jam kerja: ya jadi tidak; memotong jatah: tidak jadi ya; batas hari: tanpa batas jadi 3 hari')
 
 console.log(`hr-reference: ${ok} lulus, ${gagal} gagal`)
 if (gagal) process.exit(1)

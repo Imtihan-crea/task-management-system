@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useFormAction } from '@/lib/forms/use-form-action'
 import { cancelOwnLeave, decideLeave, submitLeave, type LeaveFormState } from '@/app/actions/leave'
-import { LEAVE_KINDS, SPECIAL_REASONS } from '@/lib/hr/leave'
+import { SPECIAL_KIND, SPECIAL_REASONS, type LeaveType } from '@/lib/hr/leave'
 
 const INITIAL: LeaveFormState = undefined
 const INPUT = 'w-full rounded-lg border px-3 py-2 text-base outline-none focus:border-black dark:border-zinc-700 dark:bg-zinc-800'
@@ -16,21 +16,27 @@ function Status({ state }: { state: LeaveFormState }) {
   return null
 }
 
-export function LeaveRequestForm({ today }: { today: string }) {
+export function LeaveRequestForm({ today, types }: { today: string; types: Pick<LeaveType, 'code' | 'label' | 'description' | 'max_days'>[] }) {
   const [state, formProps, pending] = useFormAction(submitLeave, INITIAL)
   const [kind, setKind] = useState('')
+  const chosen = types.find((t) => t.code === kind)
   return (
     <form {...formProps} className="grid gap-3 sm:grid-cols-3">
       <div>
         <label htmlFor="leave_kind" className={LABEL}>Jenis</label>
         <select id="leave_kind" name="kind" required value={kind} onChange={(e) => setKind(e.target.value)} className={INPUT}>
           <option value="" disabled>Pilih</option>
-          {LEAVE_KINDS.map((k) => <option key={k.value} value={k.value}>{k.label}</option>)}
+          {types.map((t) => <option key={t.code} value={t.code}>{t.label}</option>)}
         </select>
       </div>
-      {kind === 'KHUSUS' && (
+      {chosen && (chosen.description || chosen.max_days) && (
+        <p className="text-sm text-zinc-600 dark:text-zinc-400 sm:col-span-2 sm:self-end">
+          {chosen.description}{chosen.description && chosen.max_days ? ' ' : ''}{chosen.max_days ? `Maks ${chosen.max_days} hari kerja per pengajuan.` : ''}
+        </p>
+      )}
+      {kind === SPECIAL_KIND && (
         <div className="sm:col-span-3">
-          <label htmlFor="leave_special" className={LABEL}>Alasan Cuti Khusus</label>
+          <label htmlFor="leave_special" className={LABEL}>Alasan {chosen?.label ?? 'Cuti Khusus'}</label>
           <select id="leave_special" name="special_reason" required defaultValue="" className={INPUT}>
             <option value="" disabled>Pilih</option>
             {SPECIAL_REASONS.map((r) => (
