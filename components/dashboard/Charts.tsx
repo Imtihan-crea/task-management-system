@@ -3,8 +3,10 @@
  * Menyertakan ringkasan teks untuk screen reader (§31, §67).
  */
 
+// To Do dan Cancelled dulu sama-sama #A6A6A6 (nyaru); kini dibedakan terang/gelap.
 const STATUS_COLORS: Record<string, string> = {
-  TODO: '#A6A6A6',
+  TODO: '#D4D4D8',
+  CANCELLED: '#71717A',
   IN_PROGRESS: '#BE9B5C',
   REVIEW: '#5B8DEF',
   BLOCKED: '#D64545',
@@ -42,7 +44,7 @@ export function StatusDonut({
           .join(', ')}`}
         className="h-32 w-32 shrink-0"
       >
-        <circle cx="70" cy="70" r={R} fill="none" stroke="#E2E2E2" strokeWidth="18" />
+        <circle cx="70" cy="70" r={R} fill="none" strokeWidth="18" className="stroke-zinc-100 dark:stroke-zinc-800" />
         {arcs.map(
           (s) =>
             s.dash > 0 && (

@@ -216,6 +216,11 @@ export async function ProjectGantt({
       </div>
 
       <p className="mb-2 text-center text-sm font-semibold">{monthLabel(cols[0].start)}</p>
+      <ul aria-label="Keterangan warna" className="mb-2 flex flex-wrap justify-center gap-4 text-xs text-zinc-600 dark:text-zinc-400">
+        <li className="flex items-center gap-1.5"><span aria-hidden="true" className="inline-block h-3 w-5 rounded-full bg-kasuat-gold" />Sudah berjalan (progress)</li>
+        <li className="flex items-center gap-1.5"><span aria-hidden="true" className="inline-block h-3 w-5 rounded-full bg-zinc-300 ring-1 ring-inset ring-kasuat-gold dark:bg-zinc-600" />Sisa rencana</li>
+        <li className="flex items-center gap-1.5"><span aria-hidden="true" className="inline-block h-3 w-0.5 bg-red-500" />Hari ini</li>
+      </ul>
 
       {visible.length === 0 ? (
         <p className="text-sm text-zinc-600 dark:text-zinc-400">Tidak ada Project bertanggal pada periode ini.</p>
@@ -255,7 +260,8 @@ export async function ProjectGantt({
                     <div className="relative" style={{ gridColumn: `2 / span ${cols.length}` }}>
                       <div className="relative h-6 rounded-full bg-zinc-100 dark:bg-zinc-800">
                         <div
-                          className="absolute top-0 h-6 overflow-hidden rounded-full bg-kasuat-light-gold"
+                          // Sisa rencana = netral berbingkai emas; sudah berjalan = emas pekat (dulu emas muda vs emas: nyaru, 16 Nov 2026).
+                          className="absolute top-0 h-6 overflow-hidden rounded-full bg-zinc-300 ring-1 ring-inset ring-kasuat-gold dark:bg-zinc-600"
                           style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
                           title={`${p.code} · ${p.progress}%`}
                         >
