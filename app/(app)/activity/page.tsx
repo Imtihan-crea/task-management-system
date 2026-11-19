@@ -16,7 +16,7 @@ export const dynamic = 'force-dynamic'
 const PAGE_SIZE = 25
 
 // meeting + meeting_action_item ditambahkan (audit C7).
-const ENTITY_OPTIONS = ['', 'project', 'workstream', 'task', 'suggestion', 'user', 'meeting', 'meeting_action_item']
+const ENTITY_OPTIONS = ['', 'project', 'workstream', 'task', 'suggestion', 'user', 'meeting', 'meeting_action_item', 'backup']
 const ACTION_OPTIONS = [
   '',
   'TASK_CREATED',
@@ -57,6 +57,8 @@ const ACTION_OPTIONS = [
   'MEETING_ACTION_ITEM_CREATED',
   'MEETING_ACTION_ITEM_UPDATED',
   'MEETING_TASK_CREATED',
+  'BACKUP_SENT',
+  'BACKUP_FAILED',
 ]
 
 function str(v: string | string[] | undefined): string {

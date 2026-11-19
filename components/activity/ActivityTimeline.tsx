@@ -112,6 +112,10 @@ export function describeActivity(entry: Pick<ActivityEntry, 'action' | 'metadata
       return `Lead "${str(m.company_name)}": ${str(m.from_label)} → ${str(m.to_label)}`
     case 'CLIENT_LEAD_NOTE_ADDED':
       return `Catatan ditambahkan pada lead "${str(m.company_name)}"`
+    case 'BACKUP_SENT':
+      return `Backup database dikirim lewat email (${String(m.rows ?? 0)} baris, ${String(m.size_kb ?? 0)} KB)`
+    case 'BACKUP_FAILED':
+      return `Backup database gagal (${str(m.reason)})`
     case 'PERMISSION_CHANGED':
       return m.scope === 'project' ? `Wewenang project ${str(m.project_code)} diubah` : 'Wewenang user diubah'
     default:

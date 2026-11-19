@@ -89,6 +89,13 @@ Catatan: remote `gdrive:` masih memakai client_id bersama rclone yang menurut
 peringatan rclone akan dihentikan selama 2026; buat client_id sendiri agar
 upload tidak berhenti (https://rclone.org/drive/#making-your-own-client-id).
 
+### Backup harian lewat email (dari server)
+
+Selain backup laptop di atas, aplikasi mengirim backup terenkripsi setiap hari
+sekitar 02:00 WIB ke `BACKUP_EMAIL_TO` (Vercel Cron `/api/cron/backup`). Isi
+tabel public + daftar akun login (tanpa password). Cara membuka dan memulihkan:
+`scripts/backup/README.md`.
+
 ### Jadwal yang disarankan
 
 - Sebelum setiap migrasi database atau perubahan besar.

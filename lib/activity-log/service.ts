@@ -70,6 +70,9 @@ export type ActivityAction =
   | 'MEETING_TASK_CREATED'
   | 'MEETING_SYNCED'
   | 'MEETING_SYNC_FAILED'
+  // --- Backup harian ke email (lib/backup). Metadata tanpa alamat/isi data. ---
+  | 'BACKUP_SENT'
+  | 'BACKUP_FAILED'
 
 export type ActivityEntityType =
   | 'project'
@@ -84,6 +87,7 @@ export type ActivityEntityType =
   | 'hr'
   | 'leave'
   | 'client_lead'
+  | 'backup'
   | ''
 
 export type LogActivityInput = {

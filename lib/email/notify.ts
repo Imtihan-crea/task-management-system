@@ -17,6 +17,8 @@ export async function sendEmail(input: {
   to: { email: string; name?: string }[]
   subject: string
   html: string
+  /** Lampiran Brevo: `content` base64. Ekstensi harus ada di daftar Brevo (mis. .txt, .zip). */
+  attachment?: { name: string; content: string }[]
 }): Promise<boolean> {
   const apiKey = process.env.BREVO_API_KEY
   const senderEmail = process.env.BREVO_SENDER_EMAIL
@@ -49,6 +51,7 @@ export async function sendEmail(input: {
           : { messageVersions: to.map((recipient) => ({ to: [recipient] })) }),
         subject: input.subject,
         htmlContent: brandEmailHtml({ title: input.subject, bodyHtml: input.html }),
+        ...(input.attachment ? { attachment: input.attachment } : {}),
       }),
     })
 
