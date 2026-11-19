@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
+import { Combobox } from '@/components/ui/Combobox'
 import { useFormAction } from '@/lib/forms/use-form-action'
 import { saveWorkLog, deleteWorkLog, type TrackerFormState } from '@/app/actions/tracker'
 
@@ -100,7 +101,7 @@ export function WorkLogForm({
 }
 
 /**
- * Ketik atau pilih dari daftar (datalist). Ketikan di luar daftar tetap
+ * Ketik atau pilih dari daftar (Combobox). Ketikan di luar daftar tetap
  * diterima sebagai teks bebas dan menjadi usulan Master Reference.
  */
 function ChoiceInput({
@@ -119,20 +120,7 @@ function ChoiceInput({
   return (
     <div>
       <label htmlFor={id} className={LABEL}>{label}</label>
-      <input
-        id={id}
-        name={id}
-        required
-        list={`${id}-pilihan`}
-        maxLength={maxLength}
-        autoComplete="off"
-        defaultValue={defaultValue ?? ''}
-        aria-describedby={`${id}-hint`}
-        className={INPUT}
-      />
-      <datalist id={`${id}-pilihan`}>
-        {options.map((o) => <option key={o} value={o} />)}
-      </datalist>
+      <Combobox id={id} name={id} required options={options} maxLength={maxLength} defaultValue={defaultValue} describedBy={`${id}-hint`} />
       <p id={`${id}-hint`} className="mt-1 text-xs text-zinc-600 dark:text-zinc-400">Pilih dari daftar, atau ketik bila tidak ada.</p>
     </div>
   )
