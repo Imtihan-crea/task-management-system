@@ -10,6 +10,8 @@ import { LeaveGuide } from '@/components/leave/LeaveGuide'
 import { loadCalendar, loadLeave, loadLeaveTypes, loadRules } from '@/lib/hr/data'
 import { activeTypes, annualBalance, jointQuotaDays, kindLabels } from '@/lib/hr/leave'
 import { todayISO } from '@/lib/utils/dates'
+import { BulkBar, BulkSelectProvider } from '@/components/ui/BulkSelect'
+import { bulkCancelOwnLeave } from '@/app/actions/leave'
 
 /** Cuti milik sendiri: ajukan, lihat status, saldo cuti tahunan, panduan jenis cuti. */
 export default async function LeavePage() {
@@ -53,7 +55,14 @@ export default async function LeavePage() {
       </section>
       <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
         <h2 className="mb-3 text-lg font-bold">Pengajuan saya</h2>
-        <LeaveTable rows={rows} labels={kindLabels(types)} actions={(l) => (l.status === 'PENDING' ? <CancelOwnLeaveButton id={l.id} /> : null)} />
+        <BulkSelectProvider ids={rows.map((l) => l.id)}>
+          <BulkBar
+            noun="pengajuan"
+            actions={[{ key: 'cancel', label: 'Batalkan yang menunggu', run: bulkCancelOwnLeave, danger: true }]}
+            exportHref="/cuti/export"
+          />
+          <LeaveTable rows={rows} labels={kindLabels(types)} selectable={() => true} actions={(l) => (l.status === 'PENDING' ? <CancelOwnLeaveButton id={l.id} /> : null)} />
+        </BulkSelectProvider>
       </section>
       <LeaveGuide types={activeTypes(types)} jointUsesQuota={rules.jointLeaveUsesQuota} />
     </AppShell>

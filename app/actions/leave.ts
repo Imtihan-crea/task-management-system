@@ -11,6 +11,8 @@ import { getAppBaseUrl } from '@/lib/app-url'
 import { leaveDecisionBody } from '@/lib/email/templates'
 import { loadCalendar, loadLeave, loadLeaveTypes } from '@/lib/hr/data'
 import { kindError, kindLabels, leaveDays, overlappingLeave, rangeError, SPECIAL_KIND, SPECIAL_LABEL, type LeaveKind } from '@/lib/hr/leave'
+import { readInput, toForm } from '@/lib/bulk'
+import { bulk } from '@/lib/bulk-server'
 
 export type LeaveFormState = { error?: string; success?: string } | undefined
 
@@ -165,4 +167,23 @@ export async function decideLeave(_prev: LeaveFormState, formData: FormData): Pr
   })
   done()
   return { success: `${label} ${range} ${verb}.` }
+}
+
+/* Aksi massal (19 Nov 2026): tiap pengajuan lewat aksi satuan (izin, larangan memutuskan milik sendiri, log, notifikasi/email sama). */
+export async function bulkCancelOwnLeave(ids: unknown) {
+  return bulk(ids, (id) => cancelOwnLeave(undefined, toForm({ id })), 'dibatalkan')
+}
+
+export async function bulkApproveLeave(ids: unknown) {
+  return bulk(ids, (id) => decideLeave(undefined, toForm({ id, decision: 'approve' })), 'disetujui')
+}
+
+export async function bulkRejectLeave(ids: unknown, input: unknown) {
+  const note = readInput(input, 'decision_note')
+  return bulk(ids, (id) => decideLeave(undefined, toForm({ id, decision: 'reject', decision_note: note })), 'ditolak')
+}
+
+export async function bulkCancelApprovedLeave(ids: unknown, input: unknown) {
+  const note = readInput(input, 'decision_note')
+  return bulk(ids, (id) => decideLeave(undefined, toForm({ id, decision: 'cancel', decision_note: note })), 'dibatalkan')
 }

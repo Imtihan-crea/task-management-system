@@ -5,6 +5,7 @@ import { leaveColumns } from '@/lib/hr/leave-export'
 import { exportInfo } from '@/lib/export/excel'
 import { exportResponse } from '@/lib/export'
 import { todayISO } from '@/lib/utils/dates'
+import { onlySelected, selectedIds } from '@/lib/bulk'
 
 export const dynamic = 'force-dynamic'
 
@@ -12,7 +13,8 @@ export const dynamic = 'force-dynamic'
 export async function GET(request: NextRequest) {
   const profile = await requireProfile()
   const year = todayISO().slice(0, 4)
-  const [rows, types] = await Promise.all([loadLeave({ from: `${Number(year) - 1}-01-01`, to: `${Number(year) + 1}-12-31`, userId: profile.id }), loadLeaveTypes()])
+  const [all, types] = await Promise.all([loadLeave({ from: `${Number(year) - 1}-01-01`, to: `${Number(year) + 1}-12-31`, userId: profile.id }), loadLeaveTypes()])
+  const rows = onlySelected(all, selectedIds(request.nextUrl.searchParams))
   const by = profile.full_name || profile.email
   return exportResponse(request, `Pengajuan Cuti ${by}`, [
     {

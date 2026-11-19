@@ -23,6 +23,8 @@ import { assertActiveUser } from '@/lib/data/assertions'
 import { readLimitedField } from '@/lib/forms/limits'
 import { isValidDateInput } from '@/lib/forms/dates'
 import { suggestionNewBody, suggestionReviewBody } from '@/lib/email/templates'
+import { readInput, toForm } from '@/lib/bulk'
+import { bulk } from '@/lib/bulk-server'
 
 export type SuggestionFormState = {
   error?: string
@@ -614,4 +616,18 @@ async function emitReviewEvent(
       email: null, // email sudah dikirim lewat event APPROVED ke creator
     })
   }
+}
+
+/*
+ * Aksi massal (19 Nov 2026): tiap suggestion lewat reviewSuggestion (izin
+ * review per project, guard PENDING, notifikasi, log sama). Setujui memakai
+ * prioritas/deadline/assignee usulan; yang belum lengkap dilewati.
+ */
+export async function bulkApproveSuggestions(ids: unknown) {
+  return bulk(ids, (id) => reviewSuggestion(undefined, toForm({ id, decision: 'approve' })), 'disetujui')
+}
+
+export async function bulkRejectSuggestions(ids: unknown, input: unknown) {
+  const note = readInput(input, 'review_note')
+  return bulk(ids, (id) => reviewSuggestion(undefined, toForm({ id, decision: 'reject', review_note: note })), 'ditolak')
 }

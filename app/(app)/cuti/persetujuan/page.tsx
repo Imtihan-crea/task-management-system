@@ -11,6 +11,8 @@ import { loadCalendar, loadLeave, loadLeaveTypes, loadRules } from '@/lib/hr/dat
 import { annualBalance, jointQuotaDays, kindLabels, type LeaveRow } from '@/lib/hr/leave'
 import { monthRange } from '@/lib/hr/tracker'
 import { todayISO } from '@/lib/utils/dates'
+import { BulkBar, BulkSelectProvider } from '@/components/ui/BulkSelect'
+import { bulkApproveLeave, bulkCancelApprovedLeave, bulkRejectLeave } from '@/app/actions/leave'
 
 const INPUT = 'rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800'
 
@@ -53,7 +55,18 @@ export default async function LeaveApprovalPage({ searchParams }: { searchParams
 
       <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
         <h2 className="mb-3 text-lg font-bold">Menunggu persetujuan ({pending.length})</h2>
-        <LeaveTable rows={pending} labels={labels} person={person} empty="Tidak ada pengajuan yang menunggu." actions={(l) => (l.user_id === profile.id ? null : <DecideLeaveForm id={l.id} mode="pending" />)} />
+        {/* Pengajuan sendiri tidak bisa dipilih (harus diputuskan penyetuju lain). */}
+        <BulkSelectProvider ids={pending.filter((l) => l.user_id !== profile.id).map((l) => l.id)}>
+          <BulkBar
+            noun="pengajuan"
+            actions={[
+              { key: 'approve', label: 'Setujui', run: bulkApproveLeave, confirm: true },
+              { key: 'reject', label: 'Tolak', run: bulkRejectLeave, danger: true, text: { name: 'decision_note', label: 'Catatan untuk semua', maxLength: 1000 } },
+            ]}
+            exportHref={`/cuti/persetujuan/export?bulan=${month}`}
+          />
+          <LeaveTable rows={pending} labels={labels} person={person} empty="Tidak ada pengajuan yang menunggu." selectable={(l) => l.user_id !== profile.id} actions={(l) => (l.user_id === profile.id ? null : <DecideLeaveForm id={l.id} mode="pending" />)} />
+        </BulkSelectProvider>
       </section>
 
       <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
@@ -65,7 +78,14 @@ export default async function LeaveApprovalPage({ searchParams }: { searchParams
             <button type="submit" className="min-h-[44px] rounded-lg border px-3 py-2 text-sm font-semibold dark:border-zinc-700">Tampilkan</button>
           </form>
         </div>
-        <LeaveTable rows={monthRows} labels={labels} person={person} actions={(l) => (l.status === 'APPROVED' && l.user_id !== profile.id ? <DecideLeaveForm id={l.id} mode="approved" /> : null)} />
+        <BulkSelectProvider ids={monthRows.map((l) => l.id)}>
+          <BulkBar
+            noun="pengajuan"
+            actions={[{ key: 'cancel', label: 'Batalkan yang disetujui', run: bulkCancelApprovedLeave, danger: true, text: { name: 'decision_note', label: 'Catatan untuk semua', maxLength: 1000 } }]}
+            exportHref={`/cuti/persetujuan/export?bulan=${month}`}
+          />
+        <LeaveTable rows={monthRows} labels={labels} person={person} selectable={() => true} actions={(l) => (l.status === 'APPROVED' && l.user_id !== profile.id ? <DecideLeaveForm id={l.id} mode="approved" /> : null)} />
+        </BulkSelectProvider>
       </section>
 
       <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">

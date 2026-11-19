@@ -8,6 +8,8 @@ import { AppShell } from '@/components/layout/AppShell'
 import { formatDate } from '@/lib/utils/dates'
 import { Pagination, paginate, parsePage } from '@/components/ui/Pagination'
 import type { SuggestionListItem, SuggestionStatus } from '@/types/suggestion'
+import { BulkBar, BulkCheckbox, BulkSelectProvider } from '@/components/ui/BulkSelect'
+import { bulkApproveSuggestions, bulkRejectSuggestions } from '@/app/actions/suggestions'
 
 function sanitize(value: string | undefined): string {
   return (value ?? '').replace(/[,()*%]/g, ' ').trim().slice(0, 60)
@@ -181,13 +183,32 @@ export default async function SuggestionsPage({
           Suggestion tidak ditemukan.
         </p>
       ) : (
-        <>
-        <ul className="mt-4 flex flex-col gap-3">
+        <BulkSelectProvider ids={pageItems.map((s) => s.id)}>
+        <BulkBar
+          noun="suggestion"
+          paged={totalPages > 1}
+          actions={
+            reviewScope.all || reviewScope.include.length > 0
+              ? [
+                  { key: 'approve', label: 'Setujui', run: bulkApproveSuggestions, confirm: true },
+                  {
+                    key: 'reject',
+                    label: 'Tolak',
+                    run: bulkRejectSuggestions,
+                    danger: true,
+                    text: { name: 'review_note', label: 'Alasan penolakan (untuk semua)', required: true, maxLength: 2000 },
+                  },
+                ]
+              : []
+          }
+        />
+        <ul className="mt-3 flex flex-col gap-3">
           {pageItems.map((s) => (
-            <li key={s.id}>
+            <li key={s.id} className="flex items-start rounded-2xl bg-white shadow-sm hover:shadow-md dark:bg-zinc-900">
+              <BulkCheckbox id={s.id} label={`${s.code} ${s.title}`} className="mt-2 ml-1" />
               <Link
                 href={`/task-suggestions/${s.id}`}
-                className="block rounded-2xl bg-white p-4 shadow-sm hover:shadow-md dark:bg-zinc-900"
+                className="block min-w-0 flex-1 rounded-2xl py-4 pr-4 pl-1"
               >
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="rounded-md bg-zinc-100 px-1.5 py-0.5 font-mono text-xs dark:bg-zinc-800">
@@ -217,7 +238,7 @@ export default async function SuggestionsPage({
           total={suggestions.length}
           label="suggestion"
         />
-        </>
+        </BulkSelectProvider>
       )}
     </AppShell>
   )
