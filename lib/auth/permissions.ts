@@ -52,6 +52,10 @@ export type Permission =
   | 'reference.manage'
   // Setujui / tolak cuti, izin, sakit (Tahap 2). Tanpa bawaan peran; hr.manage juga boleh.
   | 'leave.approve'
+  // Client Management (pipeline lead, migrasi 025): lihat dan kelola. Bawaan hanya ADMIN;
+  // akun lain diberi lewat Wewenang. clients.manage otomatis boleh melihat.
+  | 'clients.view'
+  | 'clients.manage'
 
 const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ADMIN: [
@@ -85,6 +89,8 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     'meetings.cancel',
     'meetings.manageParticipants',
     'tracker.review',
+    'clients.view',
+    'clients.manage',
   ],
   PROJECT_MANAGER: [
     'profile.viewOwn',

@@ -53,6 +53,10 @@ const GROUPS: { title: string | null; items: Omit<NavItem, 'icon'>[] }[] = [
     ],
   },
   {
+    title: 'KLIEN',
+    items: [{ href: '/clients', label: 'Client Management', permission: 'clients.view' }],
+  },
+  {
     title: 'PEMANTAUAN',
     items: [{ href: '/activity', label: 'Activity Log', permission: null }],
   },
@@ -71,6 +75,7 @@ const GROUPS: { title: string | null; items: Omit<NavItem, 'icon'>[] }[] = [
 const ALL_HREFS = GROUPS.flatMap((g) => g.items.map((i) => i.href))
 
 const ICONS: Record<string, string> = {
+  '/clients': 'M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75',
   '/cuti': 'M8 7V3m8 4V3M4 11h16M5 5h14a1 1 0 011 1v13a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1zm4 10h6',
   '/cuti/persetujuan': 'M9 12l2 2 4-4M5 5h14a1 1 0 011 1v13a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z',
   '/settings/hr': 'M8 7V3m8 4V3M4 11h16M5 5h14a1 1 0 011 1v13a1 1 0 01-1 1H5a1 1 0 01-1-1V6a1 1 0 011-1z',

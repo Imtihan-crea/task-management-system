@@ -103,6 +103,14 @@ export function describeActivity(entry: Pick<ActivityEntry, 'action' | 'metadata
       return `${str(m.kind_label)} ${str(m.start_date)} s/d ${str(m.end_date)} ditolak`
     case 'LEAVE_CANCELLED':
       return `${str(m.kind_label)} ${str(m.start_date)} s/d ${str(m.end_date)} dibatalkan`
+    case 'CLIENT_LEAD_CREATED':
+      return `Lead "${str(m.company_name)}" ditambahkan`
+    case 'CLIENT_LEAD_UPDATED':
+      return `Data lead "${str(m.company_name)}" diubah`
+    case 'CLIENT_LEAD_STAGE_CHANGED':
+      return `Lead "${str(m.company_name)}": ${str(m.from_label)} → ${str(m.to_label)}`
+    case 'CLIENT_LEAD_NOTE_ADDED':
+      return `Catatan ditambahkan pada lead "${str(m.company_name)}"`
     case 'PERMISSION_CHANGED':
       return m.scope === 'project' ? `Wewenang project ${str(m.project_code)} diubah` : 'Wewenang user diubah'
     default:

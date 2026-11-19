@@ -58,6 +58,8 @@ export const PERMISSION_SCOPE: Record<Permission, PermissionScope> = {
   'tracker.review': 'project',
   'reference.manage': 'global',
   'leave.approve': 'global',
+  'clients.view': 'global',
+  'clients.manage': 'global',
 }
 
 /** Hanya Super Admin dan Developer; tidak bisa diberikan ke akun lain. */

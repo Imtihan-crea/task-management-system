@@ -27,6 +27,11 @@ export type ActivityAction =
   | 'LEAVE_APPROVED'
   | 'LEAVE_REJECTED'
   | 'LEAVE_CANCELLED'
+  // --- Client Management (migrasi 025). Metadata tanpa data kontak pribadi. ---
+  | 'CLIENT_LEAD_CREATED'
+  | 'CLIENT_LEAD_UPDATED'
+  | 'CLIENT_LEAD_STAGE_CHANGED'
+  | 'CLIENT_LEAD_NOTE_ADDED'
   | 'PROJECT_CREATED'
   | 'PROJECT_UPDATED'
   | 'PROJECT_PM_ADDED'
@@ -78,6 +83,7 @@ export type ActivityEntityType =
   | 'master_reference'
   | 'hr'
   | 'leave'
+  | 'client_lead'
   | ''
 
 export type LogActivityInput = {

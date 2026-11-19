@@ -71,6 +71,11 @@ export async function managedProjects(userId: string): Promise<{ all: boolean; i
   return { all: scopes.some((s) => s.all), ids: [...new Set(scopes.flatMap((s) => s.include))] }
 }
 
+/** Boleh melihat Client Management: clients.view atau clients.manage. */
+export async function canViewClients(userId: string): Promise<boolean> {
+  return (await hasPermission(userId, 'clients.view')) || (await hasPermission(userId, 'clients.manage'))
+}
+
 /** Penyetuju cuti: izin leave.approve atau hr.manage (keputusan pemilik 16 Nov 2026). */
 export async function canApproveLeave(userId: string): Promise<boolean> {
   return (await hasPermission(userId, 'leave.approve')) || (await hasPermission(userId, 'hr.manage'))

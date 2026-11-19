@@ -35,6 +35,14 @@ export const FIELD_MAX: Record<string, number> = {
   reason: 1000,
   attachment_url: 2000,
   decision_note: 1000,
+  // Client Management (migrasi 025)
+  company_name: 150,
+  contact_name: 120,
+  contact_email: 254,
+  contact_phone: 30,
+  source: 100,
+  lost_reason: 1000,
+  note: 2000,
 }
 
 /** Field lain (id, status, tanggal, dll.) jauh lebih pendek; ini jaring pengaman. */

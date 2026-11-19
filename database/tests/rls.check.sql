@@ -119,6 +119,15 @@ begin
   -- 10. semua policy restrictive terpasang
   select count(*) into n from pg_policy where polname = 'Only active users' and not polpermissive;
   insert into hasil values ('15 policy restrictive terpasang', n = 15, n || ' policy');
+  -- 11. Client Management (025): data pribadi kontak, tanpa akses langsung dari klien
+  foreach t in array array['client_leads', 'client_lead_events'] loop
+    insert into hasil values ('025: RLS aktif ' || t,
+      (select relrowsecurity from pg_class where oid = ('public.' || t)::regclass), null);
+    insert into hasil values ('025: authenticated tanpa SELECT ' || t,
+      not has_table_privilege('authenticated', 'public.' || t, 'select'), null);
+    insert into hasil values ('025: anon tanpa SELECT ' || t,
+      not has_table_privilege('anon', 'public.' || t, 'select'), null);
+  end loop;
 end
 $t$;
 

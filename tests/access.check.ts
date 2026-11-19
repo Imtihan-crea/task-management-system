@@ -93,6 +93,8 @@ cek('scope kosong = tidak ada hasil', applyProjectScope(fakeQuery(), { all: fals
 
 // HR Tahap 1 (16 Nov 2026): izin baru, satu-satunya penjaga karena tulis lewat service role.
 const HR_ONLY: Permission[] = ['hr.view', 'hr.manage', 'reference.manage', 'leave.approve']
+// Client Management (025): bawaan hanya ADMIN, tidak PM/TEAM/VIEWER.
+const CLIENT_PERMS: Permission[] = ['clients.view', 'clients.manage']
 for (const role of ROLES) {
   for (const p of HR_ONLY) {
     cek(`${role} ${p} tanpa aturan = tidak`, decide(ctx(role), p), false)
@@ -101,6 +103,15 @@ for (const role of ROLES) {
   }
   cek(`${role} ${'hr.*'} bisa diberikan lewat Wewenang`, HR_ONLY.every(isGrantable), true)
 }
+for (const p of CLIENT_PERMS) {
+  cek(`ADMIN ${p} dari peran`, decide(ctx('ADMIN'), p), true)
+  for (const role of ['PROJECT_MANAGER', 'TEAM_MEMBER', 'VIEWER'] as const) {
+    cek(`${role} ${p} tanpa aturan = tidak`, decide(ctx(role), p), false)
+    cek(`${role} ${p} diberi = ya`, decide(ctx(role, { overrides: [{ permission: p, projectId: null, granted: true }] }), p), true)
+  }
+  cek(`ADMIN ${p} bisa dicabut`, decide(ctx('ADMIN', { overrides: [{ permission: p, projectId: null, granted: false }] }), p), false)
+}
+cek('clients.* bisa diberikan lewat Wewenang', CLIENT_PERMS.every(isGrantable), true)
 cek('ADMIN tracker.review semua project', [decide(ctx('ADMIN'), 'tracker.review', 'P1'), decide(ctx('ADMIN'), 'tracker.review', 'P2')], [true, true])
 cek('PM tracker.review hanya project kelolaan', [decide(ctx('PROJECT_MANAGER'), 'tracker.review', 'P1'), decide(ctx('PROJECT_MANAGER'), 'tracker.review', 'P2')], [true, false])
 cek('TEAM tracker.review tanpa aturan', decide(ctx('TEAM_MEMBER'), 'tracker.review', 'P1'), false)

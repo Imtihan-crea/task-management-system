@@ -38,6 +38,13 @@ export const PERMISSION_GROUPS: { title: string; items: { permission: Permission
     items: [{ permission: 'meetings.edit', label: 'Kelola meeting (ubah, selesai/batal, peserta)' }],
   },
   {
+    title: 'Client Management',
+    items: [
+      { permission: 'clients.view', label: 'Lihat pipeline lead dan data klien' },
+      { permission: 'clients.manage', label: 'Kelola lead (tambah, ubah, pindah tahap, catatan)' },
+    ],
+  },
+  {
     title: 'HR dan Daily Tracker',
     items: [
       { permission: 'hr.view', label: 'Lihat tracker dan rekap jam semua karyawan' },
