@@ -58,7 +58,7 @@ export default async function LeavePage() {
         <BulkSelectProvider ids={rows.map((l) => l.id)}>
           <BulkBar
             noun="pengajuan"
-            actions={[{ key: 'cancel', label: 'Batalkan yang menunggu', run: bulkCancelOwnLeave, danger: true }]}
+            actions={[{ key: 'cancel', label: 'Batalkan yang menunggu', run: bulkCancelOwnLeave, danger: true, irreversible: true }]}
             exportHref="/cuti/export"
           />
           <LeaveTable rows={rows} labels={kindLabels(types)} selectable={() => true} actions={(l) => (l.status === 'PENDING' ? <CancelOwnLeaveButton id={l.id} /> : null)} />

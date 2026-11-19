@@ -82,8 +82,10 @@ export type BulkActionDef = {
   key: string
   label: string
   run: (ids: string[], input: Record<string, string>) => Promise<BulkResult>
-  /** Merusak / tidak bisa dibatalkan: tombol merah + konfirmasi menyebut jumlah. */
+  /** Aksi berat: tombol merah + konfirmasi menyebut jumlah. */
   danger?: boolean
+  /** Hasilnya tidak bisa dikembalikan (hapus, tolak): konfirmasi menyebutnya. */
+  irreversible?: boolean
   /** Minta konfirmasi walau bukan danger. */
   confirm?: boolean
   /** Pilihan nilai (mis. status baru). */
@@ -272,7 +274,7 @@ export function BulkBar({
               <div className="flex flex-wrap items-center gap-2 md:col-start-3">
                 {(open.danger || open.confirm) && (
                   <p className="basis-full text-sm font-medium text-red-700 md:basis-auto dark:text-red-300">
-                    {open.label} {count} {noun}?{open.danger ? ' Tidak bisa dibatalkan.' : ''}
+                    {open.label} {count} {noun}?{open.irreversible ? ' Tidak bisa dibatalkan.' : ''}
                   </p>
                 )}
                 <button type="submit" disabled={pending || Boolean(missing)} className={open.danger ? `${BTN} bg-red-700 text-white hover:bg-red-800` : BTN_PRIMARY}>

@@ -90,7 +90,7 @@ export default async function MasterReferencePage({ searchParams }: { searchPara
             <tbody>
               {[...activeRows, ...archived].map((r) => (
                 <tr key={r.id} className={`border-b align-top last:border-0 ${r.archived_at ? 'text-zinc-500' : ''}`}>
-                  <td className="py-0"><BulkCheckbox id={r.id} label={r.label} /></td>
+                  <td className="py-0"><div><BulkCheckbox id={r.id} label={r.label} className="-ml-2.5" /></div></td>
                   <td className="py-2 pr-3 font-medium">
                     <div>
                     {r.label}

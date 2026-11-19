@@ -146,7 +146,7 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
           <p className="text-sm text-zinc-600 dark:text-zinc-400">Belum ada aktivitas di tanggal ini.</p>
         ) : (
           <BulkSelectProvider ids={dayLogs.map((l) => l.id)}>
-          <BulkBar noun="aktivitas" actions={[{ key: 'delete', label: 'Hapus', run: bulkDeleteWorkLogs, danger: true }]} />
+          <BulkBar noun="aktivitas" actions={[{ key: 'delete', label: 'Hapus', run: bulkDeleteWorkLogs, danger: true, irreversible: true }]} />
           <div className="scroll-x-hint relative mt-2 overflow-x-auto">
             <table className="w-full text-sm">
               <thead>

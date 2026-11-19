@@ -56,7 +56,7 @@ export default async function WorkstreamsPage({
         <BulkSelectProvider ids={workstreams.map((w) => w.id)}>
           <BulkBar
             noun="workstream"
-            actions={canDelete ? [{ key: 'delete', label: 'Hapus', run: bulkDeleteWorkstreams, danger: true }] : []}
+            actions={canDelete ? [{ key: 'delete', label: 'Hapus', run: bulkDeleteWorkstreams, danger: true, irreversible: true }] : []}
             exportHref={`/workstreams/export${q ? `?q=${encodeURIComponent(q)}` : ''}`}
           />
           <div className="mt-3 hidden scroll-x-hint overflow-x-auto rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 md:block dark:bg-zinc-900">

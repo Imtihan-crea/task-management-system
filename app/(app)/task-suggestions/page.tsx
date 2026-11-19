@@ -196,6 +196,7 @@ export default async function SuggestionsPage({
                     label: 'Tolak',
                     run: bulkRejectSuggestions,
                     danger: true,
+                    irreversible: true,
                     text: { name: 'review_note', label: 'Alasan penolakan (untuk semua)', required: true, maxLength: 2000 },
                   },
                 ]

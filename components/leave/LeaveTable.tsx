@@ -51,7 +51,8 @@ export function LeaveTable({
         <tbody>
           {rows.map((l) => (
             <tr key={l.id} className="border-b align-top last:border-0">
-              {selectable && <td className="py-0">{selectable(l) && <BulkCheckbox id={l.id} label={`${person ? `${person(l)} ` : ''}${labels[l.kind] ?? l.kind} ${range(l)}`} />}</td>}
+              {/* div: di HP sel jadi flex dan anak terakhir melebar; kotak tetap di kiri. */}
+              {selectable && <td className="py-0">{selectable(l) && <div><BulkCheckbox id={l.id} label={`${person ? `${person(l)} ` : ''}${labels[l.kind] ?? l.kind} ${range(l)}`} className="-ml-2.5" /></div>}</td>}
               {person && <td data-label="Nama" className="py-2 pr-3 font-semibold md:font-normal">{person(l)}</td>}
               <td data-label="Jenis" className="py-2 pr-3"><span>{labels[l.kind] ?? l.kind}{l.special_reason && <span className="block text-xs text-zinc-600 dark:text-zinc-400">{SPECIAL_LABEL[l.special_reason] ?? l.special_reason}</span>}</span></td>
               <td data-label="Tanggal" className="py-2 pr-3 whitespace-nowrap">{range(l)}</td>

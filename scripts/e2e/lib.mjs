@@ -185,7 +185,7 @@ export async function appPages(page) {
   }
   const paths = ['/dashboard', '/tasks', '/tasks?view=overdue', '/projects', '/meetings', '/task-suggestions', '/activity', '/users', '/notifications', '/profile', '/settings', '/update-log', '/tasks/new', '/projects/new', '/meetings/new', '/task-suggestions/new', '/users/new',
     // HR (16 Nov 2026); halaman berizin HR terbuka hanya bila pemanggil memakai akun berizin (lihat devPages).
-    '/tracker', '/tracker/rekap', '/tracker/import', '/master-reference', '/settings/hr', '/cuti', '/cuti/persetujuan']
+    '/tracker', '/tracker/rekap', '/tracker/import', '/master-reference', '/settings/hr', '/cuti', '/cuti/persetujuan', '/clients', '/workstreams']
   const proj = await first('/projects', new RegExp(`^/projects/${UUID}$`))
   if (proj) {
     for (const t of ['', '?tab=tasks', '?tab=workstreams', '?tab=meetings', '?tab=tracker', '?tab=activity', '?tab=members', '?tab=settings']) paths.push(proj + t)

@@ -78,7 +78,7 @@ export async function MeetingResults({
       <BulkBar
         noun="meeting"
         // Penyelenggara / PM peserta / pemegang izin; dicek per meeting di server.
-        actions={scope.role === 'VIEWER' ? [] : [{ key: 'cancel', label: 'Batalkan meeting', run: bulkCancelMeetings, danger: true }]}
+        actions={scope.role === 'VIEWER' ? [] : [{ key: 'cancel', label: 'Batalkan meeting', run: bulkCancelMeetings, danger: true, irreversible: true }]}
         exportHref={exportHref}
       />
 

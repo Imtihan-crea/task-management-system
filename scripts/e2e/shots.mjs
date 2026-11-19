@@ -1,7 +1,8 @@
 // Screenshot semua halaman di 4 ukuran (iPhone 390, Android 412, Windows 1366, Mac 1440) + deteksi overflow.
 // Baca-saja (user admin uji dibuat & dihapus). Hasil: OUT (bawaan ~/.cache/taskmgmt-smoke/shots) + result.json.
 // Opsional: VIEWS=iphone,windows (ukuran tertentu), PAGES=/dashboard,/tasks (path persis, tanpa query = semua tab-nya),
-// DARK=1 (mode gelap).
+// DARK=1 (mode gelap). SELECT=N: centang N kotak "Pilih ..." pertama (hanya state di browser, tidak menyimpan apa pun)
+// lalu simpan juga screenshot layar (bukan full page) *_pilih.png supaya bilah aksi massal terlihat.
 import path from 'node:path'
 import fs from 'node:fs'
 import { guard, serviceClient, loadPlaywright, loginAdmin, makeAdminDeveloper, runCleanup, appPages, BASE, OUT_DIR } from './lib.mjs'
@@ -14,6 +15,7 @@ const VIEWS = [
 ]
 const onlyViews = process.env.VIEWS?.split(',')
 const onlyPages = process.env.PAGES?.split(',')
+const SELECT = Number(process.env.SELECT || 0)
 await guard()
 const db = serviceClient()
 const browser = await loadPlaywright().chromium.launch({ headless: true })
@@ -49,7 +51,17 @@ try {
         }))
         const file = p.replace(/[0-9a-f-]{36}/g, 'ID').replace(/[^a-z0-9]+/gi, '_').replace(/^_/, '') + '.png'
         await page.screenshot({ path: path.join(OUT, name, file), fullPage: true })
-        results.push({ view: name, path: p, overflow: r.sw > r.W, sw: r.sw, h: r.h, small: r.small, file })
+        let picked = 0
+        if (SELECT > 0) {
+          const boxes = page.locator('input[type=checkbox][aria-label^="Pilih "]:visible')
+          picked = Math.min(SELECT, await boxes.count())
+          for (let i = 0; i < picked; i++) await boxes.nth(i).check()
+          if (picked) {
+            await page.getByRole('region', { name: 'Aksi untuk item terpilih' }).scrollIntoViewIfNeeded()
+            await page.screenshot({ path: path.join(OUT, name, file.replace(/\.png$/, '_pilih.png')) })
+          }
+        }
+        results.push({ view: name, path: p, overflow: r.sw > r.W, sw: r.sw, h: r.h, small: r.small, file, picked })
       } catch (e) { results.push({ view: name, path: p, error: String(e).slice(0, 120) }) }
     }
     await ctx.close()

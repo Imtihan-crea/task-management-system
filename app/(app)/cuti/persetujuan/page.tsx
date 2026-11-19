@@ -61,7 +61,7 @@ export default async function LeaveApprovalPage({ searchParams }: { searchParams
             noun="pengajuan"
             actions={[
               { key: 'approve', label: 'Setujui', run: bulkApproveLeave, confirm: true },
-              { key: 'reject', label: 'Tolak', run: bulkRejectLeave, danger: true, text: { name: 'decision_note', label: 'Catatan untuk semua', maxLength: 1000 } },
+              { key: 'reject', label: 'Tolak', run: bulkRejectLeave, danger: true, irreversible: true, text: { name: 'decision_note', label: 'Catatan untuk semua', maxLength: 1000 } },
             ]}
             exportHref={`/cuti/persetujuan/export?bulan=${month}`}
           />
@@ -81,7 +81,7 @@ export default async function LeaveApprovalPage({ searchParams }: { searchParams
         <BulkSelectProvider ids={monthRows.map((l) => l.id)}>
           <BulkBar
             noun="pengajuan"
-            actions={[{ key: 'cancel', label: 'Batalkan yang disetujui', run: bulkCancelApprovedLeave, danger: true, text: { name: 'decision_note', label: 'Catatan untuk semua', maxLength: 1000 } }]}
+            actions={[{ key: 'cancel', label: 'Batalkan yang disetujui', run: bulkCancelApprovedLeave, danger: true, irreversible: true, text: { name: 'decision_note', label: 'Catatan untuk semua', maxLength: 1000 } }]}
             exportHref={`/cuti/persetujuan/export?bulan=${month}`}
           />
         <LeaveTable rows={monthRows} labels={labels} person={person} selectable={() => true} actions={(l) => (l.status === 'APPROVED' && l.user_id !== profile.id ? <DecideLeaveForm id={l.id} mode="approved" /> : null)} />
