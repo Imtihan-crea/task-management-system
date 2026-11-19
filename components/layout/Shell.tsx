@@ -1,7 +1,7 @@
 'use client'
 
+import Link from 'next/link'
 import { useState } from 'react'
-import type { UserRole } from '@/types/profile'
 import { Sidebar, SidebarBrand } from '@/components/layout/Sidebar'
 import { PickerOnClick } from '@/components/layout/PickerOnClick'
 import { BellPopover, GlobalSearch, ProfileMenu } from '@/components/layout/Topbar'
@@ -22,13 +22,14 @@ function MenuIcon() {
  * icon). Mobile: drawer overlay. Toggle selalu garis tiga (§4).
  */
 export function Shell({
-  role,
+  roleLabel,
   allowed,
   email,
   name,
   children,
 }: {
-  role: UserRole
+  /** Label peran tampil (Admin, Project Officer, Super Admin, ...). */
+  roleLabel: string
   allowed: string[]
   email: string
   name: string
@@ -100,8 +101,18 @@ export function Shell({
             </button>
             <GlobalSearch />
             <div className="ml-auto flex items-center gap-1">
+              <Link
+                href="/portal"
+                aria-label="Portal, semua aplikasi"
+                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-2 rounded-lg px-2 text-sm font-semibold text-zinc-800 hover:bg-zinc-100 sm:px-3 dark:text-zinc-200 dark:hover:bg-zinc-800"
+              >
+                <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="#BE9B5C" strokeWidth={1.8} strokeLinecap="round" strokeLinejoin="round" className="h-5 w-5">
+                  <path d="M4 4h6v6H4zM14 4h6v6h-6zM4 14h6v6H4zM14 14h6v6h-6z" />
+                </svg>
+                <span className="hidden sm:inline">Portal</span>
+              </Link>
               <BellPopover />
-              <ProfileMenu name={name} email={email} role={role} />
+              <ProfileMenu name={name} email={email} role={roleLabel} />
             </div>
           </div>
         </header>

@@ -29,10 +29,10 @@ export default function Error({
       <div className="flex flex-wrap justify-center gap-2">
         <Button onClick={reset}>Coba lagi</Button>
         <Link
-          href="/dashboard"
+          href="/portal"
           className="inline-flex min-h-[44px] items-center rounded-lg border border-zinc-600 px-6 py-2 text-sm font-semibold text-zinc-100"
         >
-          Kembali ke Dashboard
+          Kembali ke Portal
         </Link>
       </div>
     </main>

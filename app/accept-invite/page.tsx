@@ -174,7 +174,7 @@ export default function AcceptInvitePage() {
   useEffect(() => {
     if (phase !== 'already-active') return
     completeInvite().catch(() => {
-      router.replace('/dashboard')
+      router.replace('/portal')
     })
   }, [phase, router])
 

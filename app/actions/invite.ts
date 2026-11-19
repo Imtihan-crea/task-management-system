@@ -37,5 +37,5 @@ export async function completeInvite() {
   }
 
   revalidatePath('/dashboard')
-  redirect('/dashboard')
+  redirect('/portal')
 }

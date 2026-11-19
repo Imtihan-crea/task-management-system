@@ -72,8 +72,8 @@ export async function updateSession(request: NextRequest) {
   if (!user && isProtected) {
     response = NextResponse.redirect(new URL('/login', request.url))
   } else if (user && isLoginPage) {
-    // Sudah login tapi buka /login -> ke /dashboard
-    response = NextResponse.redirect(new URL('/dashboard', request.url))
+    // Sudah login tapi buka /login -> ke Portal
+    response = NextResponse.redirect(new URL('/portal', request.url))
   } else if (user && !isTokenEntry) {
     // Cek status user. Session aktif harus dianggap tidak valid
     // pada akses berikutnya kalau user sudah di-deactivate (PRD section 21).

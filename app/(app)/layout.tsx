@@ -1,10 +1,8 @@
 import type { ReactNode } from 'react'
 import { requireProfile } from '@/lib/auth/session'
 import { Shell } from '@/components/layout/Shell'
-import { canApproveLeave, canViewClients, hasPermission } from '@/lib/auth/current-access'
-import type { Permission } from '@/lib/auth/permissions'
-
-const MENU_PERMISSIONS: Permission[] = ['projects.view', 'tasks.view', 'meetings.view', 'suggestions.create', 'users.view', 'reference.manage', 'hr.manage']
+import { loadAccess, menuPermissions } from '@/lib/auth/current-access'
+import { roleLabel } from '@/lib/auth/roles'
 
 /**
  * Layout grup (app): shell persisten (sidebar + header tetap mounted
@@ -14,16 +12,11 @@ const MENU_PERMISSIONS: Permission[] = ['projects.view', 'tasks.view', 'meetings
 export default async function AppGroupLayout({ children }: { children: ReactNode }) {
   const profile = await requireProfile()
   // Menu ikut wewenang efektif (peran + aturan per akun), bukan peran saja.
-  const allowed = (
-    await Promise.all(MENU_PERMISSIONS.map(async (p) => ((await hasPermission(profile.id, p)) ? p : null)))
-  ).filter((p): p is Permission => p !== null)
-  // Menu Persetujuan Cuti: leave.approve atau hr.manage.
-  if (!allowed.includes('leave.approve') && (await canApproveLeave(profile.id))) allowed.push('leave.approve')
-  if (await canViewClients(profile.id)) allowed.push('clients.view')
+  const [allowed, access] = await Promise.all([menuPermissions(profile.id), loadAccess(profile.id)])
 
   return (
     <Shell
-      role={profile.role}
+      roleLabel={roleLabel({ role: profile.role, is_super_admin: access.isSuperAdmin, is_developer: access.isDeveloper })}
       allowed={allowed}
       email={profile.email}
       name={profile.full_name || profile.email}

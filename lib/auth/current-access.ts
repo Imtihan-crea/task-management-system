@@ -6,6 +6,8 @@ import { createAdminClient } from '@/lib/supabase/admin'
 import { requireProfile } from '@/lib/auth/session'
 import { decide, projectScope, type AccessContext, type ProjectScope } from '@/lib/auth/access'
 
+import { MENU_PERMISSIONS } from '@/lib/portal/apps'
+
 export { applyProjectScope } from '@/lib/auth/access'
 import type { Permission } from '@/lib/auth/permissions'
 import type { UserRole } from '@/types/profile'
@@ -83,3 +85,18 @@ export async function canViewClients(userId: string): Promise<boolean> {
 export async function canApproveLeave(userId: string): Promise<boolean> {
   return (await hasPermission(userId, 'leave.approve')) || (await hasPermission(userId, 'hr.manage'))
 }
+
+/**
+ * Izin menu (Sidebar dan kartu Portal), sekali per request. Ikut wewenang efektif
+ * (peran + aturan per akun). Persetujuan Cuti dan Clients memakai aturan gabungan di atas.
+ */
+export const menuPermissions = cache(async (userId: string): Promise<string[]> => {
+  const access = await loadAccess(userId)
+  const allowed: string[] = MENU_PERMISSIONS.filter(
+    (p) => p !== 'leave.approve' && p !== 'clients.view' && decide(access, p as Permission)
+  )
+  const [approve, clients] = await Promise.all([canApproveLeave(userId), canViewClients(userId)])
+  if (approve) allowed.push('leave.approve')
+  if (clients) allowed.push('clients.view')
+  return allowed
+})

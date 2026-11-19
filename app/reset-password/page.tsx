@@ -182,7 +182,7 @@ export default function ResetPasswordPage() {
     const { error: signInError } = email
       ? await supabase.auth.signInWithPassword({ email, password })
       : { error: new Error('no email') }
-    router.push(signInError ? '/login' : '/dashboard')
+    router.push(signInError ? '/login' : '/portal')
     router.refresh()
   }
 

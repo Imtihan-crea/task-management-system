@@ -82,7 +82,7 @@ export function LoginForm({ inactiveMessage }: { inactiveMessage?: string }) {
         return
       }
 
-      router.push('/dashboard')
+      router.push('/portal')
       router.refresh()
     } catch {
       setError('Terjadi kesalahan. Silakan coba lagi.')

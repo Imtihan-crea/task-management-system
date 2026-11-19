@@ -54,7 +54,7 @@ export default function RootPage() {
       if (cancelled) return
 
       if (data.session) {
-        router.replace('/dashboard')
+        router.replace('/portal')
       } else {
         router.replace('/login')
       }
