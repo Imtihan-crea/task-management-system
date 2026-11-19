@@ -4,7 +4,8 @@ import { loadReviewLogs } from '@/lib/hr/data'
 import { dailyDataColumns, plain, summaryColumns } from '@/lib/hr/export-columns'
 import { loadRekap, parseMonth, type RekapPerson } from '@/lib/hr/rekap'
 import { breakdown, type Breakdown } from '@/lib/hr/tracker'
-import { excelResponse, exportInfo, type ExcelColumn } from '@/lib/export/excel'
+import { exportInfo, type ExcelColumn } from '@/lib/export/excel'
+import { exportResponse } from '@/lib/export'
 
 export const dynamic = 'force-dynamic'
 
@@ -44,7 +45,7 @@ export async function GET(request: NextRequest) {
   ])
 
   const title = (t: string) => `${t} ${month}${divisi ? ` - ${divisi}` : ''}`
-  return excelResponse(`Rekap Daily Tracker ${month}${divisi ? ` ${divisi}` : ''}`, [
+  return exportResponse(request, `Rekap Daily Tracker ${month}${divisi ? ` ${divisi}` : ''}`, [
     { name: 'Monthly Summary', title: title('MONTHLY SUMMARY'), info, columns: summaryColumns, rows },
     { name: 'Daily Data', title: title('DAILY DATA'), info, columns: dailyDataColumns((id) => divisionOf.get(id) ?? null), rows: activities },
     { name: 'Jam per Proyek', title: title('JAM PER PROYEK'), info, columns: breakdownColumns('Proyek'), rows: perPerson('project_name') },

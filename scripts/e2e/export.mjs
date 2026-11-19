@@ -40,6 +40,14 @@ try {
     catat(bad.length === 0, u, sheets.map((s) => `${s.sheet}:${s.data.length - headerAt(s) - 1} baris`).join(', ') + (bad.length ? ' TATA LETAK SALAH: ' + bad.map((s) => s.sheet) : ''))
   }
 
+  // Format PDF dan Word: berkas terbuka, format tak dikenal ditolak 400.
+  for (const [fmt, type, magic] of [['pdf', 'application/pdf', '%PDF'], ['docx', 'wordprocessingml.document', 'PK']]) {
+    const res = await page.request.get(BASE + `/workstreams/export?format=${fmt}`)
+    const body = await res.body()
+    catat(res.status() === 200 && (res.headers()['content-type'] ?? '').includes(type) && body.subarray(0, magic.length).toString() === magic, `format ${fmt}`, `status ${res.status()}, ${body.length} byte`)
+  }
+  catat((await page.request.get(BASE + '/workstreams/export?format=csv')).status() === 400, 'format tak dikenal ditolak 400')
+
   const anggota = await makeUser(db, 'export-anggota', 'TEAM_MEMBER', 'UJI-E2E Anggota')
   const p2 = await browser.newPage()
   await loginPassword(p2, anggota)

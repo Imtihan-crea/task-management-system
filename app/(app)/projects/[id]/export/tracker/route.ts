@@ -7,7 +7,8 @@ import { loadReviewLogs } from '@/lib/hr/data'
 import { dailyDataColumns } from '@/lib/hr/export-columns'
 import { parseMonth } from '@/lib/hr/rekap'
 import { breakdown, monthRange } from '@/lib/hr/tracker'
-import { excelResponse, exportInfo } from '@/lib/export/excel'
+import { exportInfo } from '@/lib/export/excel'
+import { exportResponse } from '@/lib/export'
 
 export const dynamic = 'force-dynamic'
 
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
 
   const label = `${project.code} - ${project.name}`
   const info = exportInfo(profile.full_name || profile.email, [`Proyek: ${label} · Bulan: ${month}`])
-  return excelResponse(`Daily Tracker ${project.name} ${month}`, [
+  return exportResponse(request, `Daily Tracker ${project.name} ${month}`, [
     { name: 'Daily Data', title: `DAILY DATA ${project.name.toUpperCase()} ${month}`, info, columns: dailyDataColumns((uid) => divisionOf.get(uid) ?? null), rows: sorted },
     {
       name: 'Jam per Orang',
