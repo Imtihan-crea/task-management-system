@@ -51,6 +51,7 @@ cek('PO tidak boleh batalkan / hapus task', [decide(ctx('TEAM_MEMBER'), 'tasks.c
 cek('PM tidak lagi buat / ubah project', [decide(ctx('PROJECT_MANAGER'), 'projects.create'), decide(ctx('PROJECT_MANAGER'), 'projects.edit', 'P1')], [false, false])
 cek('PM dan PO lihat rekap HR + Client Management', [decide(ctx('PROJECT_MANAGER'), 'hr.view'), decide(ctx('TEAM_MEMBER'), 'clients.view')], [true, true])
 cek('Guest tanpa izin kelola apa pun', perms.filter((p) => PERMISSION_SCOPE[p] !== 'role' && decide(ctx('VIEWER'), p, 'P2')), [])
+cek('Guest hanya boleh usul task (selain lihat)', perms.filter((p) => PERMISSION_SCOPE[p] === 'role' && decide(ctx('VIEWER'), p) && !/\.view|viewOwn|editOwn/.test(p)), ['suggestions.create'])
 
 // 1b. Override per akun menang atas bawaan peran: beri dan cabut untuk setiap izin global.
 for (const role of ROLES) {

@@ -30,6 +30,8 @@ cek('suggest PM project ini', canSuggestForProject('PROJECT_MANAGER', { managesP
 cek('suggest PM project lain walau punya task', canSuggestForProject('PROJECT_MANAGER', { managesProject: false, hasAssignedTask: true }), false)
 cek('suggest TM punya task', canSuggestForProject('TEAM_MEMBER', { managesProject: false, hasAssignedTask: true }), true)
 cek('suggest TM tanpa task', canSuggestForProject('TEAM_MEMBER', { managesProject: false, hasAssignedTask: false }), false)
+cek('suggest Guest punya task di project', canSuggestForProject('VIEWER', { managesProject: false, hasAssignedTask: true }), true)
+cek('suggest Guest tanpa task di project', canSuggestForProject('VIEWER', { managesProject: false, hasAssignedTask: false }), false)
 
 /* ---------- removesLastActiveAdmin (Rule 06) ---------- */
 const A = { role: 'ADMIN' as const, status: 'ACTIVE' as const }

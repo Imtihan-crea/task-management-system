@@ -85,6 +85,11 @@ const PM_EXTRA: Permission[] = [
   'suggestions.review',
 ]
 
+// Pengguna luar (sekarang hanya Guest): lihat miliknya + usul task di project tempat ia
+// punya task (keputusan pemilik 19 Nov 2026), tanpa mengubah apa pun lainnya. Peran luar
+// berikutnya (mis. klien brand / investor) bisa memakai dasar yang sama.
+const OUTSIDER: Permission[] = [...BASE, 'suggestions.create']
+
 // shortcut: dokumen COA memberi Guest kelola meeting dan lihat Client Management; ditahan
 // karena Guest = klien/pihak luar (bisa melihat klien lain beserta kontaknya). Menunggu
 // konfirmasi pemilik; untuk menyalakan isi dengan [...MEETING_MANAGE, 'clients.view'].
@@ -109,7 +114,7 @@ const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   ],
   PROJECT_MANAGER: [...STAFF, ...PM_EXTRA],
   TEAM_MEMBER: STAFF,
-  VIEWER: [...BASE, ...GUEST_HELD],
+  VIEWER: [...OUTSIDER, ...GUEST_HELD],
 }
 
 export function can(role: UserRole, permission: Permission): boolean {
@@ -125,6 +130,7 @@ export function isAdmin(role: UserRole): boolean {
  * - meetings.edit ber-scope project: Admin semua, PM project kelolaan,
  *   Project Officer project tempat ia punya task. Organizer meeting tetap
  *   boleh mengelola meeting miliknya (lib/meetings/rules.ts), kecuali Guest.
- * - Guest tidak membuat atau mengelola meeting (lihat GUEST_HELD).
+ * - Guest tidak membuat atau mengelola meeting (lihat GUEST_HELD); Guest hanya boleh
+ *   membuat usulan task (suggestions.create), dibatasi server ke project tempat ia punya task.
  * - Action Item -> Task memakai `tasks.create` (PRD §51 Rule 5).
  */

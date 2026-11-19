@@ -6,36 +6,36 @@
 // Tidak ada klik yang mengirim email ke alamat sungguhan atau membuat link undangan/reset
 // (form "Undang User" dan "Link reset/undangan" sengaja tidak disentuh). Rahasia tidak dicetak.
 //
-// MATRIKS HARAPAN (A = berhak, D = tidak berhak). Diturunkan dari lib/auth/permissions.ts,
+// MATRIKS HARAPAN (A = berhak, D = tidak berhak), bagan wewenang COA (19 Nov 2026). Dari lib/auth/permissions.ts,
 // task-access.ts, project-access.ts, meetings/rules.ts, app/actions/*, docs/rbac-matrix-hasil.md,
 // docs/audit-ui-rbac.md (A2, B1, B6, B8, B13, B14, C20 final).
 // Kolom: ADM = admin, PM = PM project uji, PMX = PM lain (bukan PM project uji),
-// MEM = Team Member assignee (punya task di project uji, peserta meeting uji),
-// MEMX = Team Member lain (bukan assignee), VWR = Viewer (peserta meeting uji).
+// MEM = Project Officer assignee (punya task di project uji, peserta meeting uji),
+// MEMX = Project Officer lain (tanpa task di project uji), VWR = Guest (peserta meeting uji).
 //
 //  aksi                          ADM PM PMX MEM MEMX VWR   dasar
-//  task.buat (project uji)        A   A   D   D   D    D    tasks.create + PM hanya project miliknya
-//  task.ubah (form penuh)         A   A   D   D   D    D    ADMIN / PM pengelola (canFullEdit)
+//  task.buat (project uji)        A   A   D   A   D    D    tasks.create: PM project kelolaan, PO project tempat ia punya task
+//  task.ubah (form penuh)         A   A   D   A   D    D    tasks.edit (scope sama dengan task.buat)
 //  task.status                    A   A   D   A   D    D    canActOnTask (assignee boleh)
 //  task.submit + evidence         A   A   D   A   D    D    canActOnTask + tasks.submitEvidenceOwn
 //  task.batal                     A   A   D   D   D    D    canCancelTask (C20: assignee tidak boleh)
 //  task.hapus                     A   A   D   D   D    D    ADMIN / PM pengelola
-//  proj.buat                      A   A   A   D   D    D    projects.create (PM mana pun)
-//  proj.ubah (settings + PM)      A   A   D   D   D    D    ADMIN / PM project itu
+//  proj.buat                      A   D   D   D   D    D    projects.create (COA: hanya Admin)
+//  proj.ubah (settings + PM)      A   D   D   D   D    D    projects.edit (COA: hanya Admin)
 //  ws.buat / ws.ubah / ws.hapus   A   A   D   D   D    D    canManageProjectFor
-//  sug.buat                       A   A   D   A   D    D    canSuggestForProject (assignee ikut project)
+//  sug.buat                       A   A   D   A   D    D    canSuggestForProject (assignee ikut project; Guest juga, tapi VWR tanpa task di project uji)
 //  sug.approve/revisi/tolak       A   A   D   D   D    D    suggestions.review + scope project
 //  mtg.buat (project uji)         A   A   D   A   D    D    meetings.create + assertCanCreateInProject
-//  mtg.jadwal/selesai/batal       A   A   D   D   D    D    canManageMeetingFull (TM peserta & VWR tidak)
+//  mtg.jadwal/selesai/batal       A   A   D   A   D    D    meetings.edit di project (COA: PO anggota project; Guest tidak)
 //  mtg.agenda/keputusan/action    A   A   D   A   D    D    canManageMeetingContent (TM peserta boleh)
-//  mtg.ai->task                   A   A   D   D   D    D    canCreateTaskFromMeeting (TM tak punya tasks.create)
-//  mtg.+peserta / mtg.-peserta    A   A   D   D   D    D    canManageMeetingFull
+//  mtg.ai->task                   A   A   D   A   D    D    canCreateTaskFromMeeting (tasks.create di project)
+//  mtg.+peserta / mtg.-peserta    A   A   D   A   D    D    canManageMeetingFull (meetings.edit)
 //  user.buat/ubah/status          A   D   D   D   D    D    requireAdmin
 //  profil.nama, notif.dibaca, notif.pref   A A A A A A       semua role (milik sendiri)
 //
 // Pelonggaran yang disengaja (lihat juga laporan): (1) console "Failed to load resource"
 // diabaikan karena muncul dari navigasi 404/redirect yang memang diuji; (2) PM lain (PMX)
-// dianggap "berhak" hanya untuk proj.buat karena membuat project baru bukan hak per-project.
+// tidak lagi membuat project (COA: hanya Admin).
 import crypto from 'node:crypto'
 import {
   guard, serviceClient, loadPlaywright, loginAdmin, loginPassword, makeUser, ensureAdmin,
@@ -47,13 +47,13 @@ const db = serviceClient()
 
 const ROLES = ['ADM', 'PM', 'PMX', 'MEM', 'MEMX', 'VWR']
 const EXP = {
-  'task.buat': 'AADDDD', 'task.ubah': 'AADDDD', 'task.status': 'AADADD', 'task.submit': 'AADADD',
+  'task.buat': 'AADADD', 'task.ubah': 'AADADD', 'task.status': 'AADADD', 'task.submit': 'AADADD',
   'task.batal': 'AADDDD', 'task.hapus': 'AADDDD',
-  'proj.buat': 'AAADDD', 'proj.ubah': 'AADDDD', 'ws.buat': 'AADDDD', 'ws.ubah': 'AADDDD', 'ws.hapus': 'AADDDD',
+  'proj.buat': 'ADDDDD', 'proj.ubah': 'ADDDDD', 'ws.buat': 'AADDDD', 'ws.ubah': 'AADDDD', 'ws.hapus': 'AADDDD',
   'sug.buat': 'AADADD', 'sug.approve': 'AADDDD', 'sug.revisi': 'AADDDD', 'sug.tolak': 'AADDDD',
-  'mtg.buat': 'AADADD', 'mtg.jadwal': 'AADDDD', 'mtg.agenda': 'AADADD', 'mtg.keputusan': 'AADADD',
-  'mtg.action': 'AADADD', 'mtg.ai-task': 'AADDDD', 'mtg.+peserta': 'AADDDD', 'mtg.-peserta': 'AADDDD',
-  'mtg.selesai': 'AADDDD', 'mtg.batal': 'AADDDD',
+  'mtg.buat': 'AADADD', 'mtg.jadwal': 'AADADD', 'mtg.agenda': 'AADADD', 'mtg.keputusan': 'AADADD',
+  'mtg.action': 'AADADD', 'mtg.ai-task': 'AADADD', 'mtg.+peserta': 'AADADD', 'mtg.-peserta': 'AADADD',
+  'mtg.selesai': 'AADADD', 'mtg.batal': 'AADADD',
   'user.buat': 'ADDDDD', 'user.ubah': 'ADDDDD', 'user.status': 'ADDDDD',
   'profil.nama': 'AAAAAA', 'notif.dibaca': 'AAAAAA', 'notif.pref': 'AAAAAA',
 }
@@ -695,7 +695,7 @@ try {
       check(role, a, 'klik terkirim', req, await msgOf(f))
       check(role, a, 'DB: profil TEAM_MEMBER ACTIVE tercatat', u, await msgOf(f))
       const s = await session('ADM-login', { email, password: pw }).catch((e) => ({ err: e }))
-      check(role, a, 'user baru benar-benar bisa login dengan password itu', s.page && /dashboard/.test(s.page.url()), s.err?.message ?? '')
+      check(role, a, 'user baru benar-benar bisa login dengan password itu', s.page && /portal/.test(s.page.url()), s.err?.message ?? '')
       await s.context?.close()
     } else {
       const res = await go(page, '/users/new')

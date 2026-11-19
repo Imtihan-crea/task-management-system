@@ -57,7 +57,7 @@ try {
   await m.getByRole('row').filter({ hasText: 'Izin' }).getByRole('button', { name: 'Batalkan' }).click()
   check('batalkan pengajuan sendiri', await until(async () => (await leaves(member.id)).some((l) => l.kind === 'TANPA_GAJI' && l.status === 'CANCELLED')))
   await m.goto(`${BASE}/cuti/persetujuan`, { waitUntil: 'networkidle' })
-  check('karyawan tanpa izin: persetujuan ditolak', /dashboard/.test(m.url()))
+  check('karyawan tanpa izin: persetujuan ditolak', /portal/.test(m.url()))
   check('notifikasi ke penyetuju', await until(async () => ((await db.from('notifications').select('id').eq('user_id', approver.id).eq('type', 'LEAVE_REQUESTED')).data ?? []).length >= 2))
 
   // Penyetuju

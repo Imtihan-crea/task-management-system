@@ -43,7 +43,9 @@ const COA: [string, Permission[], UserRole[]][] = [
   ['Hapus task', ['tasks.delete'], [A, PM]],
   ['Setujui / tolak usulan task', ['suggestions.review'], [A, PM]],
   // Izin yang tidak disebut COA: tetap seperti sebelumnya.
-  ['Kerja milik sendiri', ['tasks.changeStatusOwn', 'tasks.submitEvidenceOwn', 'suggestions.create', 'meetings.create'], [A, PM, PO]],
+  ['Kerja milik sendiri', ['tasks.changeStatusOwn', 'tasks.submitEvidenceOwn', 'meetings.create'], [A, PM, PO]],
+  // Keputusan pemilik 19 Nov 2026: Guest boleh mengusulkan task (hanya itu).
+  ['Usulkan task', ['suggestions.create'], [A, PM, PO, G]],
   ['Lihat', ['profile.viewOwn', 'profile.editOwn', 'projects.view', 'tasks.view', 'meetings.view'], [A, PM, PO, G]],
   ['Kelola wewenang (hanya Super Admin)', ['permissions.manage'], []],
 ]

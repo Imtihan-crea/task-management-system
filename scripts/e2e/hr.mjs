@@ -54,7 +54,7 @@ try {
     check('PM: komentar tersimpan', await until(async () => ((await db.from('work_log_comments').select('id').eq('work_log_id', log.id)).data ?? []).length === 1))
     check('PM: notifikasi ke pemilik entri', await until(async () => ((await db.from('notifications').select('id').eq('user_id', member.id).eq('type', 'TRACKER_COMMENT')).data ?? []).length === 1))
     await p.goto(`${BASE}/master-reference`, { waitUntil: 'networkidle' })
-    check('PM tanpa reference.manage: Master Reference ditolak', /dashboard/.test(p.url()))
+    check('PM tanpa reference.manage: Master Reference ditolak', /portal/.test(p.url()))
     await c.close()
   }
 

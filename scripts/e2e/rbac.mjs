@@ -4,9 +4,11 @@
 // task-access.ts, project-access.ts, meetings/rules.ts, guard halaman).
 // Ketidaksesuaian hanya DILAPORKAN, tidak diperbaiki. Data berawalan UJI-E2E,
 // dibersihkan di finally. Rahasia tidak pernah dicetak.
+import fs from 'node:fs'
+import path from 'node:path'
 import {
   guard, serviceClient, loadPlaywright, loginAdmin, loginPassword, makeUser,
-  ensureAdmin, runCleanup, writeOut, BASE, PREFIX as P, day,
+  ensureAdmin, runCleanup, writeOut, BASE, OUT_DIR, PREFIX as P, day,
 } from './lib.mjs'
 
 await guard()
@@ -36,31 +38,31 @@ const OPTIONAL = {
 }
 const catOf = (text) => CATS.find(([, re]) => re.test(text.replace(/^\+\s*/, '')))?.[0]
 
-/* ---------- aturan yang dimaksud ---------- */
+/* ---------- aturan yang dimaksud (bagan wewenang COA, 19 Nov 2026) ---------- */
 // Akses: 'ALLOW' | 'DENY' (redirect/404/pesan izin). Aksi: himpunan kategori yang HARUS tampil.
+// MEMBER = Project Officer dengan task di project A (anggota A). VIEWER = Guest tanpa task.
 const only = (allowed, a = []) => Object.fromEntries(ROLES.map((r) => [r, allowed.includes(r) ? { access: 'ALLOW', actions: a } : { access: 'DENY', actions: [] }]))
 function intended(key) {
   const open = (actions = {}) => Object.fromEntries(ROLES.map((r) => [r, { access: 'ALLOW', actions: actions[r] ?? [] }]))
   switch (key) {
-    case 'dashboard': case 'activity': case 'notifications': case 'profile': return open()
-    case 'tasks': return open({ ADMIN: ['add', 'suggest'], PM_A: ['add', 'suggest'], PM_B: ['add', 'suggest'], MEMBER: ['suggest'] })
-    case 'projects': return open({ ADMIN: ['add'], PM_A: ['add'], PM_B: ['add'] })
+    case 'portal': case 'dashboard': case 'activity': case 'notifications': case 'profile': return open()
+    case 'tasks': return open({ ADMIN: ['add', 'suggest'], PM_A: ['add', 'suggest'], PM_B: ['add', 'suggest'], MEMBER: ['add', 'suggest'], VIEWER: ['suggest'] })
+    case 'projects': return open({ ADMIN: ['add'] }) // COA: buat project hanya Admin
     case 'meetings': return open({ ADMIN: ['add'], PM_A: ['add'], PM_B: ['add'], MEMBER: ['add'] })
-    case 'task-suggestions': return open({ ADMIN: ['suggest'], PM_A: ['suggest'], PM_B: ['suggest'], MEMBER: ['suggest'] })
+    case 'task-suggestions': return open({ ADMIN: ['suggest'], PM_A: ['suggest'], PM_B: ['suggest'], MEMBER: ['suggest'], VIEWER: ['suggest'] }) // Guest boleh usul (pemilik 19 Nov)
     case 'tasks/[id]': {
-      const m = only(['ADMIN', 'PM_A', 'MEMBER', 'VIEWER'])
+      const m = only(['ADMIN', 'PM_A', 'MEMBER']) // Guest hanya task miliknya
       m.ADMIN.actions = ['cancel-task', 'delete', 'edit', 'status', 'submit']
       m.PM_A.actions = ['cancel-task', 'delete', 'edit', 'status', 'submit']
-      m.MEMBER.actions = ['status', 'submit'] // C20: Cancel hanya PM/Admin
+      m.MEMBER.actions = ['edit', 'status', 'submit'] // COA: ubah task ya, batal/hapus tidak
       return m
     }
-    case 'tasks/new': return only(['ADMIN', 'PM_A', 'PM_B'], ['add'])
+    case 'tasks/new': return only(['ADMIN', 'PM_A', 'PM_B', 'MEMBER'], ['add'])
     case 'projects/[id]': case 'projects/[id]:tab': case 'projects/[id]:settings': case 'projects/[id]:workstreams': {
-      // admin/PM pemilik: kelola; PM lain & viewer: baca saja; member: hanya bila punya task di project.
-      // Tab selain settings/workstreams: hanya akses yang dibandingkan.
-      const m = open()
+      // Admin/PM: semua project; Project Officer: project tempat ia punya task; Guest tanpa task: tidak.
+      const m = only(['ADMIN', 'PM_A', 'PM_B', 'MEMBER'])
       if (key === 'projects/[id]') { m.ADMIN.actions = m.PM_A.actions = ['suggest']; m.MEMBER.actions = ['suggest'] }
-      if (key === 'projects/[id]:settings') { m.ADMIN.actions = m.PM_A.actions = ['edit', 'suggest']; m.MEMBER.actions = ['suggest'] }
+      if (key === 'projects/[id]:settings') { m.ADMIN.actions = ['edit', 'suggest']; m.PM_A.actions = ['suggest']; m.MEMBER.actions = ['suggest'] }
       if (key === 'projects/[id]:workstreams') { m.ADMIN.actions = m.PM_A.actions = ['add', 'suggest']; m.MEMBER.actions = ['suggest'] }
       if (key === 'projects/[id]:tab') { m.ADMIN.actions = m.PM_A.actions = m.MEMBER.actions = null }
       return m
@@ -70,22 +72,44 @@ function intended(key) {
     case 'meetings/[id]': case 'meetings/[id]:tab': {
       const m = only(['ADMIN', 'PM_A', 'MEMBER'])
       // Tombol jadwal/selesai/batal hanya di halaman utama; tab hanya dibandingkan aksesnya.
+      // COA: Project Officer kelola meeting di project tempat ia punya task.
       const manage = key === 'meetings/[id]' ? ['cancel', 'complete'] : null
       m.ADMIN.actions = manage
       m.PM_A.actions = manage
-      if (!manage) m.MEMBER.actions = null
+      m.MEMBER.actions = manage
       return m
     }
-    case 'task-suggestions/new': return only(['ADMIN', 'PM_A', 'PM_B', 'MEMBER'])
+    case 'task-suggestions/new': return only(['ADMIN', 'PM_A', 'PM_B', 'MEMBER', 'VIEWER'])
     case 'task-suggestions/[id]': {
       const m = only(['ADMIN', 'PM_A', 'MEMBER'])
       m.ADMIN.actions = ['approve']
       m.PM_A.actions = ['approve']
       return m
     }
-    case 'users': case 'users/[id]': case 'users/new': return only(['ADMIN'])
+    case 'users': case 'users/[id]': case 'users/new': case 'projects/new': case 'master-reference': case 'settings/hr': case 'cuti/persetujuan':
+      return only(['ADMIN'], null)
+    case 'tracker/rekap': case 'clients': return only(['ADMIN', 'PM_A', 'PM_B', 'MEMBER'], null)
     default: throw new Error('tidak ada aturan untuk ' + key)
   }
+}
+
+// Kartu Portal per peran (Guest: Client Management ditahan sampai konfirmasi pemilik).
+const ALL_CARDS = ['Project & Task', 'Meeting', 'Daily Tracker & HR', 'Cuti', 'Client Management', 'Admin & Sistem']
+const CARDS = { ADMIN: ALL_CARDS, PM_A: ALL_CARDS, PM_B: ALL_CARDS, MEMBER: ALL_CARDS, VIEWER: ALL_CARDS.filter((c) => c !== 'Client Management') }
+
+const SHOT_DIR = path.join(OUT_DIR, 'portal-shots')
+const SHOT_VIEWS = [
+  { name: 'hp390', opts: { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true, deviceScaleFactor: 2 } },
+  { name: 'laptop1366', opts: { viewport: { width: 1366, height: 768 } } },
+]
+
+/** Kartu aplikasi yang tampil di Portal dibandingkan dengan CARDS[role]. */
+async function portalCards(page, role) {
+  await page.goto(BASE + '/portal', { waitUntil: 'networkidle', timeout: 45000 })
+  const seen = await page.locator('main ul li a .font-heading').allInnerTexts()
+  const want = CARDS[role]
+  const mismatch = JSON.stringify(seen) === JSON.stringify(want) ? [] : [`kartu: seharusnya ${want.join(', ')}; nyata ${seen.join(', ')}`]
+  return { page: 'portal:kartu', path: '/portal', role, observed: seen.join(' | '), actions: [], mismatch, texts: seen }
 }
 
 async function probe(page, role, label, path, ruleKey) {
@@ -153,6 +177,9 @@ try {
     ['task-suggestions', '/task-suggestions'], ['task-suggestions/new', `/task-suggestions/new?project=${pa}`], ['task-suggestions/[id]', `/task-suggestions/${sug}`],
     ['activity', '/activity'], ['users', '/users'], ['users/[id]', `/users/${users.MEMBER.id}`], ['users/new', '/users/new'],
     ['notifications', '/notifications'], ['profile', '/profile'],
+    // Portal dan URL halaman berizin (COA): dibuka langsung, harus ditolak bila tak berizin.
+    ['portal', '/portal'], ['projects/new', '/projects/new'], ['tracker/rekap', '/tracker/rekap'], ['master-reference', '/master-reference'],
+    ['settings/hr', '/settings/hr'], ['cuti/persetujuan', '/cuti/persetujuan'], ['clients', '/clients'],
   ]
 
   // Satu role sekali jalan (RAM terbatas): konteks dibuka lalu ditutup per role.
@@ -164,7 +191,18 @@ try {
     if (role === 'ADMIN') await loginAdmin(db, page)
     else await loginPassword(page, users[role])
     for (const [label, path, ruleKey] of pages) rows.push(await probe(page, role, label, path, ruleKey))
+    rows.push(await portalCards(page, role))
+    // Screenshot Portal per peran (HP dan laptop), memakai sesi yang sama.
+    const state = await c.storageState()
     await c.close()
+    for (const v of SHOT_VIEWS) {
+      const sc = await browser.newContext({ ...v.opts, storageState: state })
+      const sp = await sc.newPage()
+      await sp.goto(BASE + '/portal', { waitUntil: 'networkidle', timeout: 45000 })
+      fs.mkdirSync(SHOT_DIR, { recursive: true })
+      await sp.screenshot({ path: path.join(SHOT_DIR, `portal_${role}_${v.name}.png`), fullPage: true })
+      await sc.close()
+    }
   }
   results.push(...rows)
 } finally {

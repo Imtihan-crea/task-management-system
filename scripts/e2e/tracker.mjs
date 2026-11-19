@@ -49,7 +49,7 @@ try {
   check('lonceng: klik membuka Daily Tracker hari itu', await page.waitForURL(new RegExp(`/tracker\\?tanggal=${today}`), { timeout: 10000 }).then(() => true, () => false), page.url())
   await page.goto(`${BASE}/tracker`, { waitUntil: 'networkidle' })
   await page.getByRole('link', { name: 'Kasuat, ke Dashboard' }).click()
-  check('logo Kasuat membuka Dashboard', await page.waitForURL(/\/dashboard/, { timeout: 10000 }).then(() => true, () => false), page.url())
+  check('logo Kasuat membuka Portal', await page.waitForURL(/\/portal/, { timeout: 10000 }).then(() => true, () => false), page.url())
   await page.goto(`${BASE}/dashboard`, { waitUntil: 'networkidle' })
   check('menu Daily Tracker tampil untuk anggota tim', (await page.getByRole('link', { name: 'Daily Tracker' }).count()) >= 1)
   check('menu Master Reference tidak tampil untuk anggota tim', (await page.getByRole('link', { name: 'Master Reference' }).count()) === 0)
@@ -118,29 +118,29 @@ try {
   await page.goto(`${BASE}/tracker?tanggal=${day(3)}`, { waitUntil: 'networkidle' })
   check('tanggal masa depan di URL jatuh ke hari ini', (await page.inputValue('#work_date')) === today)
 
-  // 8. Anggota tim: rekap & Master Reference ditolak
+  // 8. Project Officer (COA): rekap terbuka, Master Reference ditolak
   await page.goto(`${BASE}/tracker/rekap`, { waitUntil: 'networkidle' })
-  check('anggota tim: rekap ditolak', /dashboard/.test(page.url()))
+  check('Project Officer: rekap terbuka (hr.view bawaan COA)', (await page.getByRole('heading', { name: 'Rekap Daily Tracker' }).count()) === 1)
   await page.goto(`${BASE}/master-reference`, { waitUntil: 'networkidle' })
-  check('anggota tim: Master Reference ditolak', /dashboard/.test(page.url()))
+  check('Project Officer: Master Reference ditolak', /portal/.test(page.url()))
 
-  // 9. Admin biasa: tanpa izin ditolak; setelah diberi bisa
+  // 9. Admin biasa: terbuka dari peran (COA); setelah dicabut per akun ditolak
   {
     const c = await browser.newContext()
     const p = await c.newPage()
     await loginPassword(p, admin)
     await p.goto(`${BASE}/tracker/rekap`, { waitUntil: 'networkidle' })
-    check('admin tanpa hr.view: rekap ditolak', /dashboard/.test(p.url()))
+    check('admin: rekap terbuka dari peran', (await p.getByRole('heading', { name: 'Rekap Daily Tracker' }).count()) === 1)
     await p.goto(`${BASE}/master-reference`, { waitUntil: 'networkidle' })
-    check('admin tanpa reference.manage: Master Reference ditolak', /dashboard/.test(p.url()))
+    check('admin: Master Reference terbuka dari peran', (await p.getByRole('heading', { name: 'Master Reference' }).count()) === 1)
     await db.from('user_permissions').insert([
-      { user_id: admin.id, permission: 'hr.view', project_id: null, granted: true },
-      { user_id: admin.id, permission: 'reference.manage', project_id: null, granted: true },
+      { user_id: admin.id, permission: 'hr.view', project_id: null, granted: false },
+      { user_id: admin.id, permission: 'reference.manage', project_id: null, granted: false },
     ])
     await p.goto(`${BASE}/tracker/rekap`, { waitUntil: 'networkidle' })
-    check('admin diberi hr.view: rekap terbuka', (await p.getByRole('heading', { name: 'Rekap Daily Tracker' }).count()) === 1)
+    check('admin dicabut hr.view: rekap ditolak', /portal/.test(p.url()))
     await p.goto(`${BASE}/master-reference`, { waitUntil: 'networkidle' })
-    check('admin diberi reference.manage: Master Reference terbuka', (await p.getByRole('heading', { name: 'Master Reference' }).count()) === 1)
+    check('admin dicabut reference.manage: Master Reference ditolak', /portal/.test(p.url()))
     await c.close()
   }
 

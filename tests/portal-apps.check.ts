@@ -60,7 +60,7 @@ cek('menu HR PO', menu('TEAM_MEMBER', 'hr'), ['/tracker', '/tracker/rekap'])
 cek('menu HR Guest', menu('VIEWER', 'hr'), ['/tracker'])
 cek('menu Admin & Sistem PM', menu('PROJECT_MANAGER', 'admin'), ['/settings', '/activity', '/update-log'])
 cek('menu Cuti PM', menu('PROJECT_MANAGER', 'cuti'), ['/cuti'])
-cek('menu Project Guest', menu('VIEWER', 'project'), ['/dashboard', '/projects', '/workstreams', '/tasks'])
+cek('menu Project Guest (termasuk usulan task)', menu('VIEWER', 'project'), ['/dashboard', '/projects', '/workstreams', '/tasks', '/task-suggestions'])
 
 // Tanpa izin apa pun: kartu tanpa menu yang boleh dibuka tidak tampil.
 cek('tanpa izin', visibleApps([]).map((a) => a.key), ['project', 'hr', 'cuti', 'admin'])

@@ -100,7 +100,7 @@ export async function loginPassword(page, u) {
   await page.fill('input[type="email"]', u.email)
   await page.fill('input[type="password"]', u.password)
   await page.click('button[type="submit"]')
-  await page.waitForURL(/dashboard/, { timeout: 30000 })
+  await page.waitForURL(/portal/, { timeout: 30000 })
 }
 
 /** Hapus permanen semua data berawalan UJI-E2E (urutan aman FK). Mengembalikan baris log + sisa. */
@@ -183,7 +183,7 @@ export async function appPages(page) {
     const hrefs = await page.locator('a[href]').evaluateAll((as) => as.map((a) => a.getAttribute('href')))
     return hrefs.find((h) => re.test(h ?? ''))
   }
-  const paths = ['/dashboard', '/tasks', '/tasks?view=overdue', '/projects', '/meetings', '/task-suggestions', '/activity', '/users', '/notifications', '/profile', '/settings', '/update-log', '/tasks/new', '/projects/new', '/meetings/new', '/task-suggestions/new', '/users/new',
+  const paths = ['/portal', '/dashboard', '/tasks', '/tasks?view=overdue', '/projects', '/meetings', '/task-suggestions', '/activity', '/users', '/notifications', '/profile', '/settings', '/update-log', '/tasks/new', '/projects/new', '/meetings/new', '/task-suggestions/new', '/users/new',
     // HR (16 Nov 2026); halaman berizin HR terbuka hanya bila pemanggil memakai akun berizin (lihat devPages).
     '/tracker', '/tracker/rekap', '/tracker/import', '/master-reference', '/settings/hr', '/cuti', '/cuti/persetujuan', '/clients', '/workstreams']
   const proj = await first('/projects', new RegExp(`^/projects/${UUID}$`))
