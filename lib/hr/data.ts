@@ -33,22 +33,34 @@ export async function loadCalendar(from: string, to: string): Promise<CalendarDa
   return (data ?? []) as CalendarDay[]
 }
 
-/** Hari kerja + target dikunci untuk bulan 'YYYY-MM'. */
-export async function loadMonthBasis(month: string): Promise<{ workdays: string[]; lockedTarget: number | null; calendar: CalendarDay[] }> {
-  const [from, to] = monthRange(month)
+/** Hari kerja dalam [from, to]; `month` ('YYYY-MM', hanya bila periode = satu bulan penuh) menarik juga target terkunci. */
+export async function loadPeriodBasis(from: string, to: string, month: string | null): Promise<{ workdays: string[]; lockedTarget: number | null; calendar: CalendarDay[] }> {
   const [calendar, target] = await Promise.all([
     loadCalendar(from, to),
-    createAdminClient()
-      .from('hr_month_targets')
-      .select('target_hours')
-      .eq('month', from)
-      .maybeSingle<{ target_hours: number | string }>(),
+    month
+      ? createAdminClient()
+          .from('hr_month_targets')
+          .select('target_hours')
+          .eq('month', `${month}-01`)
+          .maybeSingle<{ target_hours: number | string }>()
+      : Promise.resolve({ data: null }),
   ])
   return {
     workdays: workingDays(from, to, calendar),
     lockedTarget: target.data ? Number(target.data.target_hours) : null,
     calendar,
   }
+}
+
+/** Hari kerja + target dikunci untuk bulan 'YYYY-MM'. */
+export const loadMonthBasis = (month: string) => loadPeriodBasis(...monthRange(month), month)
+
+/** id project -> klien (hanya yang terisi). */
+export async function loadProjectClients(): Promise<Map<string, string>> {
+  const rows = await allRows<{ id: string; client: string | null }>((f, t) =>
+    createAdminClient().from('projects').select('id, client').not('client', 'is', null).order('id').range(f, t)
+  )
+  return new Map(rows.filter((r) => r.client?.trim()).map((r) => [r.id, r.client!.trim()]))
 }
 
 /** Semua pilihan Master Reference (termasuk arsip), urut daftar lalu urutan. */
@@ -92,6 +104,7 @@ type RawLog = LogRow & {
 export async function loadLogs(from: string, to: string, userIds?: string[]): Promise<LogRow[]> {
   const admin = createAdminClient()
   const refs = new Map((await loadReferences(['ACTIVITY_CATEGORY', 'INTERNAL_PROJECT'])).map((r) => [r.id, r.label]))
+  const clients = await loadProjectClients()
   const out: LogRow[] = []
   for (let offset = 0; ; offset += 1000) {
     let q = admin
@@ -112,6 +125,7 @@ export async function loadLogs(from: string, to: string, userIds?: string[]): Pr
         user_id: r.user_id,
         work_date: r.work_date,
         duration_minutes: r.duration_minutes,
+        client: r.project_id ? clients.get(r.project_id) ?? null : null,
         project_name: r.project_id
           ? r.project_name
           : r.internal_project_ref
@@ -164,6 +178,7 @@ export type ReviewLog = {
   category: string
   output: string | null
   location: string | null
+  client: string | null
 }
 
 /**
@@ -185,9 +200,9 @@ export async function loadReviewLogs(filter: { projectId?: string; userId?: stri
     if (filter.userId) q = q.eq('user_id', filter.userId)
     return q
   }
-  const [data, refs] = await Promise.all([allRows<unknown>(page), loadReferences(['ACTIVITY_CATEGORY', 'INTERNAL_PROJECT', 'WORK_LOCATION'])])
+  const [data, refs, clients] = await Promise.all([allRows<unknown>(page), loadReferences(['ACTIVITY_CATEGORY', 'INTERNAL_PROJECT', 'WORK_LOCATION']), loadProjectClients()])
   const label = new Map(refs.map((r) => [r.id, r.label]))
-  type Raw = Omit<ReviewLog, 'person' | 'project'> & {
+  type Raw = Omit<ReviewLog, 'person' | 'project' | 'client'> & {
     project_id: string | null
     project_name: string
     internal_project_ref: string | null
@@ -208,6 +223,7 @@ export async function loadReviewLogs(filter: { projectId?: string; userId?: stri
     detail: r.detail,
     category: r.category_ref ? label.get(r.category_ref) ?? r.category : r.category + FREE_TEXT_MARK,
     output: r.output,
+    client: r.project_id ? clients.get(r.project_id) ?? null : null,
     location: r.location_ref ? label.get(r.location_ref) ?? r.location : r.location,
   }))
 }

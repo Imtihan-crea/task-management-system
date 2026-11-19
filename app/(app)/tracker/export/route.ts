@@ -1,23 +1,37 @@
 import type { NextRequest } from 'next/server'
 import { requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { loadLeave, loadMonthBasis, loadReviewLogs, loadRules } from '@/lib/hr/data'
-import { dailyDataColumns, summaryColumns } from '@/lib/hr/export-columns'
+import { loadLeave, loadPeriodBasis, loadReviewLogs, loadRules } from '@/lib/hr/data'
+import { dailyDataColumns, plain, summaryColumns } from '@/lib/hr/export-columns'
 import { leaveDaysIn, type LeaveRow } from '@/lib/hr/leave'
-import { parseMonth } from '@/lib/hr/rekap'
-import { monthRange, monthlySummary } from '@/lib/hr/tracker'
-import { excelResponse, exportInfo } from '@/lib/export/excel'
+import { parsePeriod, periodSummary } from '@/lib/hr/period'
+import { breakdown, type Breakdown } from '@/lib/hr/tracker'
+import { todayISO } from '@/lib/utils/dates'
+import { excelResponse, exportInfo, type ExcelColumn } from '@/lib/export/excel'
 
 export const dynamic = 'force-dynamic'
 
-/** Daily Tracker milik sendiri sebulan (?bulan=YYYY-MM). Tanpa izin khusus: hanya data akun yang login. */
+const clientColumns: ExcelColumn<Breakdown>[] = [
+  { header: 'Klien', width: 28, value: (r) => plain(r.key) },
+  { header: 'Jam', width: 9, format: '0.00', value: (r) => r.hours },
+  { header: 'Jumlah Aktivitas', width: 10, value: (r) => r.count },
+  { header: '% dari Total Jam', width: 12, format: '0.00', value: (r) => r.percent },
+]
+
+/** Daily Tracker milik sendiri untuk periode terpilih (?periode=minggu|bulan|rentang, ?bulan= lama tetap jalan). Tanpa izin khusus: hanya data akun yang login. */
 export async function GET(request: NextRequest) {
   const profile = await requireProfile()
-  const month = parseMonth(request.nextUrl.searchParams.get('bulan'))
-  const [from, to] = monthRange(month)
+  const sp = request.nextUrl.searchParams
+  const { period, error } = parsePeriod(
+    { periode: sp.get('periode'), minggu: sp.get('minggu'), bulan: sp.get('bulan'), dari: sp.get('dari'), sampai: sp.get('sampai') },
+    todayISO()
+  )
+  if (error) return new Response(error, { status: 400 })
+  const { from, to } = period
+  const label = period.fileLabel
   const [logs, basis, rules, leave, me] = await Promise.all([
     loadReviewLogs({ userId: profile.id, from, to }),
-    loadMonthBasis(month),
+    loadPeriodBasis(from, to, period.month),
     loadRules(to),
     loadLeave({ from, to, userId: profile.id, statuses: ['APPROVED'] }),
     createAdminClient().from('profiles').select('division, position_title').eq('id', profile.id).single<{ division: string | null; position_title: string | null }>(),
@@ -25,19 +39,19 @@ export async function GET(request: NextRequest) {
   const by = profile.full_name || profile.email
   const division = me.data?.division ?? null
   const l = leaveDaysIn(leave as LeaveRow[], from, to, basis.calendar)
-  const s = monthlySummary(
-    logs.map((x) => ({ user_id: x.user_id, work_date: x.work_date, project_name: x.project, category: x.category, duration_minutes: x.duration_minutes })),
-    basis.workdays.length, rules, basis.lockedTarget, l.CUTI + l.IZIN + l.SAKIT)
+  const logRows = logs.map((x) => ({ user_id: x.user_id, work_date: x.work_date, project_name: x.project, category: x.category, duration_minutes: x.duration_minutes, client: x.client }))
+  const s = periodSummary(period, logRows, basis.workdays.length, rules, basis.lockedTarget, l.CUTI + l.IZIN + l.SAKIT)
   const sorted = [...logs].sort((a, b) => a.work_date.localeCompare(b.work_date) || a.start_time.localeCompare(b.start_time))
-  const info = exportInfo(by, [`Bulan: ${month} · Nama: ${by}`])
-  return excelResponse(`Daily Tracker ${by} ${month}`, [
+  const info = exportInfo(by, [`Periode: ${period.label} · Nama: ${by}`])
+  return excelResponse(`Daily Tracker ${by} ${label}`, [
     {
       name: 'Monthly Summary',
-      title: `MONTHLY SUMMARY ${month}`,
+      title: `MONTHLY SUMMARY ${label}`,
       info,
       columns: summaryColumns,
       rows: [{ p: { id: profile.id, full_name: profile.full_name, email: profile.email, division, position_title: me.data?.position_title ?? null }, l, s }],
     },
-    { name: 'Daily Data', title: `DAILY DATA ${month}`, info, columns: dailyDataColumns(() => division), rows: sorted },
+    { name: 'Daily Data', title: `DAILY DATA ${label}`, info, columns: dailyDataColumns(() => division), rows: sorted },
+    { name: 'Jam per Klien', title: `JAM PER KLIEN ${label}`, info, columns: clientColumns, rows: breakdown(logRows, 'client') },
   ])
 }

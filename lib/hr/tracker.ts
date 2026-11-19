@@ -163,21 +163,26 @@ export type LogRow = {
   project_name: string
   category: string
   duration_minutes: number
+  /** Klien dari projects.client; kosong/tak ada = Internal / tanpa klien. */
+  client?: string | null
 }
+
+export const NO_CLIENT = 'Internal / tanpa klien'
 
 export type Breakdown = { key: string; hours: number; count: number; percent: number }
 
 const round2 = (n: number) => Math.round(n * 100) / 100
 
-/** Jam & frekuensi per kunci (proyek / kategori), urut jam terbanyak (sheet Month Track). */
-export function breakdown(logs: LogRow[], key: 'project_name' | 'category'): Breakdown[] {
+/** Jam & frekuensi per kunci (proyek / kategori / klien), urut jam terbanyak (sheet Month Track). */
+export function breakdown(logs: LogRow[], key: 'project_name' | 'category' | 'client'): Breakdown[] {
   const total = logs.reduce((s, l) => s + l.duration_minutes, 0)
   const map = new Map<string, { min: number; count: number }>()
   for (const l of logs) {
-    const cur = map.get(l[key]) ?? { min: 0, count: 0 }
+    const k = key === 'client' ? l.client?.trim() || NO_CLIENT : l[key]
+    const cur = map.get(k) ?? { min: 0, count: 0 }
     cur.min += l.duration_minutes
     cur.count++
-    map.set(l[key], cur)
+    map.set(k, cur)
   }
   return [...map.entries()]
     .map(([k, v]) => ({ key: k, hours: round2(v.min / 60), count: v.count, percent: total ? round2((v.min / total) * 100) : 0 }))

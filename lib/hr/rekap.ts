@@ -1,9 +1,10 @@
 import 'server-only'
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { loadLeave, loadLogs, loadMonthBasis, loadRules } from '@/lib/hr/data'
+import { loadLeave, loadLogs, loadPeriodBasis, loadRules } from '@/lib/hr/data'
 import { leaveDaysIn, type LeaveRow } from '@/lib/hr/leave'
-import { monthRange, monthlySummary, type LogRow } from '@/lib/hr/tracker'
+import { periodSummary, type Period } from '@/lib/hr/period'
+import type { LogRow } from '@/lib/hr/tracker'
 import { todayISO } from '@/lib/utils/dates'
 
 export type RekapPerson = { id: string; full_name: string | null; email: string; division: string | null; position_title: string | null }
@@ -12,9 +13,9 @@ export type RekapPerson = { id: string; full_name: string | null; email: string;
 export const parseMonth = (bulan: string | null | undefined) =>
   /^\d{4}-(0[1-9]|1[0-2])$/.test(bulan ?? '') ? bulan! : todayISO().slice(0, 7)
 
-/** Data Rekap Daily Tracker (halaman dan export memakai yang sama). */
-export async function loadRekap(month: string, divisi?: string | null) {
-  const [from, to] = monthRange(month)
+/** Data Rekap Daily Tracker untuk satu periode (halaman dan export memakai yang sama). */
+export async function loadRekap(period: Period, divisi?: string | null) {
+  const { from, to } = period
   const [peopleRes, logs, basis, rules, leave] = await Promise.all([
     createAdminClient()
       .from('profiles')
@@ -22,7 +23,7 @@ export async function loadRekap(month: string, divisi?: string | null) {
       .eq('status', 'ACTIVE')
       .order('full_name'),
     loadLogs(from, to),
-    loadMonthBasis(month),
+    loadPeriodBasis(from, to, period.month),
     loadRules(to),
     loadLeave({ from, to, statuses: ['APPROVED'] }),
   ])
@@ -33,7 +34,7 @@ export async function loadRekap(month: string, divisi?: string | null) {
   for (const l of logs) byUser.set(l.user_id, [...(byUser.get(l.user_id) ?? []), l])
   const rows = people.map((p) => {
     const l = leaveDaysIn(leave.filter((x) => x.user_id === p.id) as LeaveRow[], from, to, basis.calendar)
-    return { p, l, s: monthlySummary(byUser.get(p.id) ?? [], basis.workdays.length, rules, basis.lockedTarget, l.CUTI + l.IZIN + l.SAKIT) }
+    return { p, l, s: periodSummary(period, byUser.get(p.id) ?? [], basis.workdays.length, rules, basis.lockedTarget, l.CUTI + l.IZIN + l.SAKIT) }
   })
   return { from, to, everyone, divisions, people, byUser, rows, basis, rules }
 }
