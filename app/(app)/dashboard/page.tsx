@@ -31,14 +31,19 @@ async function RecentActivity() {
     .from('activity_logs')
     .select('*')
     .order('created_at', { ascending: false })
-    .limit(8)
+    .limit(6)
 
   const entries = (data ?? []) as ActivityEntry[]
   const actorNames = await resolveActorNames(entries)
 
   return (
-    <section className="mt-6 rounded-2xl bg-white p-4 shadow dark:bg-zinc-900">
-      <h2 className="mb-3 text-lg font-bold">Activity Terbaru</h2>
+    <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900">
+      <div className="mb-2 flex items-center justify-between gap-2">
+        <h2 className="text-base font-bold">Activity Terbaru</h2>
+        <Link href="/activity" className="inline-flex min-h-[44px] items-center text-sm font-semibold text-kasuat-deep-gold hover:underline">
+          Lihat semua
+        </Link>
+      </div>
       <ActivityTimeline entries={entries} actorNames={actorNames} />
     </section>
   )
@@ -78,7 +83,7 @@ export default async function DashboardPage({
         </p>
       )}
 
-      <h1 className="text-xl font-bold">
+      <h1 className="font-heading text-xl font-bold">
         Selamat datang, {profile.full_name || profile.email} 👋
       </h1>
       <p className="mt-0.5 text-sm text-zinc-600 dark:text-zinc-400">
@@ -87,7 +92,7 @@ export default async function DashboardPage({
 
       {(isAdmin || isPM) && (
         <Suspense
-          fallback={<div className="mt-4 h-24 animate-pulse rounded-2xl bg-zinc-100 dark:bg-zinc-800" />}
+          fallback={<div className="mt-4 h-11 animate-pulse rounded-2xl bg-zinc-100 md:h-24 dark:bg-zinc-800" />}
         >
           <FilterSection filters={filters} />
         </Suspense>
@@ -95,13 +100,13 @@ export default async function DashboardPage({
 
       <Suspense
         key={`kpi-${sectionKey}`}
-        fallback={<div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">{[0, 1, 2, 3].map((i) => (<div key={i} className="h-20 animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-800" />))}</div>}
+        fallback={<div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">{[0, 1, 2, 3].map((i) => (<div key={i} className="h-[84px] animate-pulse rounded-xl bg-zinc-100 dark:bg-zinc-800" />))}</div>}
       >
         <KpiSection userId={profile.id} role={role} filters={filters} />
       </Suspense>
 
-      <section className="mt-6 rounded-2xl bg-white p-4 shadow dark:bg-zinc-900">
-        <h2 className="mb-3 text-lg font-bold">Timeline Project (Gantt Chart)</h2>
+      <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900">
+        <h2 className="mb-2 text-base font-bold">Timeline Project (Gantt Chart)</h2>
         <Suspense
           key={`gantt-${ganttView}-${gOffset}-${filters.project}`}
           fallback={<SkeletonGantt rows={5} />}
@@ -137,9 +142,9 @@ export default async function DashboardPage({
       </Suspense>
 
       <div className="mt-6 flex flex-wrap gap-2">
-        <Link href="/projects" className="inline-flex min-h-[40px] items-center rounded-lg border px-4 py-2 text-sm font-semibold">Projects</Link>
-        <Link href="/tasks" className="inline-flex min-h-[40px] items-center rounded-lg border px-4 py-2 text-sm font-semibold">Tasks</Link>
-        <Link href="/tasks?view=mine" className="inline-flex min-h-[40px] items-center rounded-lg border px-4 py-2 text-sm font-semibold">
+        <Link href="/projects" className="inline-flex min-h-[44px] items-center rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold dark:border-zinc-700 dark:bg-transparent">Projects</Link>
+        <Link href="/tasks" className="inline-flex min-h-[44px] items-center rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold dark:border-zinc-700 dark:bg-transparent">Tasks</Link>
+        <Link href="/tasks?view=mine" className="inline-flex min-h-[44px] items-center rounded-lg border border-zinc-300 bg-white px-4 py-2 text-sm font-semibold dark:border-zinc-700 dark:bg-transparent">
           Task Saya
         </Link>
       </div>

@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { appDateOf, daysFromTodayISO, isOverdue, todayISO } from '@/lib/utils/dates'
 import { PriorityBadge, TaskStatusBadge, OverdueBadge } from '@/components/ui/Badges'
-import { KpiCard } from '@/components/ui/primitives'
+import { FIELD, FIELD_LABEL, FILTER_GRID, FilterPanel, KpiCard, SUBMIT } from '@/components/ui/primitives'
 import { PriorityBars, StatusDonut } from '@/components/dashboard/Charts'
 import {
   getDashboardProjects,
@@ -19,13 +19,10 @@ type Ctx = {
   filters: DashboardFilters
 }
 
-function KpiLink({ label, value, href }: { label: string; value: number | string; href: string }) {
+function KpiLink({ label, value, href, hint }: { label: string; value: number | string; href: string; hint?: string }) {
   return (
-    <Link
-      href={href}
-      className="rounded-xl transition-transform hover:scale-[1.02] focus-visible:outline-2 focus-visible:outline-kasuat-gold"
-    >
-      <KpiCard label={label} value={value} />
+    <Link href={href} className="block rounded-xl transition-shadow hover:shadow-md">
+      <KpiCard label={label} value={value} hint={hint} />
     </Link>
   )
 }
@@ -66,20 +63,15 @@ export async function KpiSection({ userId, role, filters }: Ctx & { filters: Das
   const firstThisMonth = `${todayISO().slice(0, 7)}-01`
   const newProjects = projects.filter((p) => appDateOf(p.created_at) >= firstThisMonth).length
   const newTasks = tasks.filter((t) => appDateOf(t.created_at) >= firstThisMonth).length
+  const pct = (n: number) => `${tasks.length === 0 ? 0 : Math.round((n / tasks.length) * 100)}%`
 
   return (
     <>
       <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <KpiLink label="Total Project" value={projects.length} href="/projects" />
-        <KpiLink label="Total Task" value={tasks.length} href="/tasks" />
-        <KpiLink label="Task Berjalan" value={ongoing.length} href="/tasks?view=ongoing" />
-        <KpiLink label="Task Overdue" value={overdue.length} href="/tasks?view=overdue" />
-      </div>
-      <div className="mt-3 grid grid-cols-2 gap-3 text-xs text-zinc-600 dark:text-zinc-400 sm:grid-cols-4">
-        <p>+{newProjects} dari bulan lalu</p>
-        <p>+{newTasks} dari bulan lalu</p>
-        <p>{tasks.length === 0 ? '0%' : Math.round((ongoing.length / tasks.length) * 100)}% dari total</p>
-        <p>{tasks.length === 0 ? '0%' : Math.round((overdue.length / tasks.length) * 100)}% dari total</p>
+        <KpiLink label="Total Project" value={projects.length} href="/projects" hint={`+${newProjects} bulan ini`} />
+        <KpiLink label="Total Task" value={tasks.length} href="/tasks" hint={`+${newTasks} bulan ini`} />
+        <KpiLink label="Task Berjalan" value={ongoing.length} href="/tasks?view=ongoing" hint={`${pct(ongoing.length)} dari total`} />
+        <KpiLink label="Task Overdue" value={overdue.length} href="/tasks?view=overdue" hint={`${pct(overdue.length)} dari total`} />
       </div>
       {role === 'ADMIN' && <AdminUserKpis />}
     </>
@@ -107,10 +99,10 @@ async function AdminUserKpis() {
   ])
   return (
     <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-      <KpiLink label="TOTAL USER" value={invited + active + inactive} href="/users" />
-      <KpiLink label="INVITED" value={invited} href="/users" />
-      <KpiLink label="INACTIVE" value={inactive} href="/users" />
-      <KpiLink label="SUGGESTION PENDING" value={pendingSuggestions ?? 0} href="/task-suggestions?status=PENDING" />
+      <KpiLink label="Total User" value={invited + active + inactive} href="/users" />
+      <KpiLink label="User Diundang" value={invited} href="/users" />
+      <KpiLink label="User Nonaktif" value={inactive} href="/users" />
+      <KpiLink label="Suggestion Pending" value={pendingSuggestions ?? 0} href="/task-suggestions?status=PENDING" />
     </div>
   )
 }
@@ -138,12 +130,12 @@ export async function ChartsSection({ userId, role, filters }: Ctx & { filters: 
 
   return (
     <div className="mt-6 grid gap-6 lg:grid-cols-2">
-      <section className="rounded-2xl bg-white p-4 shadow dark:bg-zinc-900">
-        <h2 className="mb-3 text-lg font-bold">Task per Status</h2>
+      <section className="rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900">
+        <h2 className="mb-2 text-base font-bold">Task per Status</h2>
         <StatusDonut segments={donutSegments} />
       </section>
-      <section className="rounded-2xl bg-white p-4 shadow dark:bg-zinc-900">
-        <h2 className="mb-3 text-lg font-bold">Task per Prioritas</h2>
+      <section className="rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900">
+        <h2 className="mb-2 text-base font-bold">Task per Prioritas</h2>
         <PriorityBars items={prioritySummary} />
       </section>
     </div>
@@ -155,7 +147,9 @@ function MiniList({
   empty,
   projectNames,
   assigneeNames,
+  hideOverdue = false,
 }: {
+  hideOverdue?: boolean
   items: { id: string; code: string; title: string; project_id: string; assignee_id: string; priority: TaskPriority; status: TaskStatus; deadline: string }[]
   empty: string
   projectNames: Record<string, string>
@@ -165,28 +159,26 @@ function MiniList({
     return <p className="text-sm text-zinc-600 dark:text-zinc-400">{empty}</p>
   }
   return (
-    <ul className="flex flex-col gap-2">
+    <ul className="-mx-2 divide-y divide-zinc-100 dark:divide-zinc-800">
       {items.map((t) => (
         <li key={t.id}>
           <Link
             href={`/tasks/${t.id}`}
-            className="flex flex-wrap items-center justify-between gap-2 rounded-xl border p-3 hover:bg-zinc-50 dark:border-zinc-700 dark:hover:bg-zinc-800"
+            className="flex min-h-[44px] items-start justify-between gap-3 rounded-lg px-2 py-2.5 hover:bg-zinc-50 dark:hover:bg-zinc-800"
           >
             <div className="min-w-0">
               <p className="truncate text-sm font-medium">
-                <span className="mr-2 rounded-md bg-zinc-100 px-1.5 py-0.5 font-mono text-xs dark:bg-zinc-800">
-                  {t.code}
-                </span>
+                <span className="mr-1.5 font-mono text-xs text-zinc-600 dark:text-zinc-400">{t.code}</span>
                 {t.title}
               </p>
               <p className="truncate text-xs text-zinc-600 dark:text-zinc-400">
                 {projectNames[t.project_id] ?? '-'} &middot; {assigneeNames[t.assignee_id] ?? '-'}
               </p>
             </div>
-            <div className="flex shrink-0 flex-wrap items-center gap-1.5">
-              <PriorityBadge priority={t.priority} />
+            <div className="flex shrink-0 flex-col items-end gap-1">
               <TaskStatusBadge status={t.status} />
-              {isOverdue(t.deadline, t.status) && <OverdueBadge />}
+              {t.priority === 'HIGH' && <PriorityBadge priority={t.priority} />}
+              {!hideOverdue && isOverdue(t.deadline, t.status) && <OverdueBadge />}
             </div>
           </Link>
         </li>
@@ -213,16 +205,16 @@ export async function UpcomingSection({ userId, role, filters }: Ctx & { filters
 
   return (
     <div className="mt-6 grid gap-6 lg:grid-cols-3 [&>*]:min-w-0">
-      <section className="rounded-2xl bg-white p-4 shadow dark:bg-zinc-900">
-        <h2 className="mb-3 text-lg font-bold">Task Terdekat (7 hari)</h2>
+      <section className="rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900">
+        <h2 className="mb-2 text-base font-bold">Task Terdekat (7 hari)</h2>
         <MiniList items={upcoming} empty="Tidak ada task dalam 7 hari ke depan." projectNames={projectNames} assigneeNames={assigneeNames} />
       </section>
-      <section className="rounded-2xl bg-white p-4 shadow dark:bg-zinc-900">
-        <h2 className="mb-3 text-lg font-bold">Overdue</h2>
-        <MiniList items={overdue} empty="Tidak ada task overdue." projectNames={projectNames} assigneeNames={assigneeNames} />
+      <section className="rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900">
+        <h2 className="mb-2 text-base font-bold">Overdue</h2>
+        <MiniList hideOverdue items={overdue} empty="Tidak ada task overdue." projectNames={projectNames} assigneeNames={assigneeNames} />
       </section>
-      <section className="rounded-2xl bg-white p-4 shadow dark:bg-zinc-900">
-        <h2 className="mb-3 text-lg font-bold">Blocked</h2>
+      <section className="rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900">
+        <h2 className="mb-2 text-base font-bold">Blocked</h2>
         <MiniList items={blocked} empty="Tidak ada task blocked." projectNames={projectNames} assigneeNames={assigneeNames} />
       </section>
     </div>
@@ -246,18 +238,22 @@ export async function WorkloadSection({ userId, role, filters }: Ctx & { filters
     .map(([id, count]) => ({ id, name: assigneeNames[id] ?? '-', count }))
     .sort((a, b) => b.count - a.count)
     .slice(0, 10)
+  const max = workload[0]?.count ?? 1
 
   return (
-    <section className="mt-6 rounded-2xl bg-white p-4 shadow dark:bg-zinc-900">
-      <h2 className="mb-3 text-lg font-bold">Workload (task terbuka per Assignee)</h2>
+    <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900">
+      <h2 className="mb-2 text-base font-bold">Workload <span className="text-sm font-normal text-zinc-600 dark:text-zinc-400">(task terbuka per assignee)</span></h2>
       {workload.length === 0 ? (
         <p className="text-sm text-zinc-600 dark:text-zinc-400">Tidak ada task terbuka.</p>
       ) : (
-        <ul className="flex flex-col gap-2">
+        <ul className="grid gap-x-8 gap-y-2.5 md:grid-cols-2">
           {workload.map((w) => (
-            <li key={w.id} className="flex items-center justify-between rounded-xl border px-4 py-2.5 dark:border-zinc-700">
-              <span className="text-sm font-medium">{w.name}</span>
-              <span className="text-lg font-bold">{w.count}</span>
+            <li key={w.id} className="grid grid-cols-[minmax(0,9rem)_1fr_2rem] items-center gap-3 text-sm">
+              <span className="truncate font-medium">{w.name}</span>
+              <span aria-hidden="true" className="h-2 overflow-hidden rounded-full bg-zinc-100 dark:bg-zinc-800">
+                <span className="block h-full rounded-full bg-kasuat-gold" style={{ width: `${(w.count / max) * 100}%` }} />
+              </span>
+              <span className="text-right font-semibold tabular-nums">{w.count}</span>
             </li>
           ))}
         </ul>
@@ -281,10 +277,11 @@ export async function FilterSection({ filters }: { filters: DashboardFilters }) 
   const users = (usersRes.data ?? []) as { id: string; full_name: string | null; email: string }[]
 
   return (
-    <form method="get" className="mt-4 flex flex-col gap-3 rounded-2xl bg-white p-4 shadow sm:flex-row sm:items-end sm:flex-wrap dark:bg-zinc-900">
+    <FilterPanel active={[filters.project, filters.assignee, filters.status, filters.priority].filter(Boolean).length}>
+    <form method="get" className={FILTER_GRID}>
       <div>
-        <label htmlFor="f-project" className="mb-1 block text-sm font-medium">Project</label>
-        <select id="f-project" name="project" defaultValue={filters.project} className="min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800">
+        <label htmlFor="f-project" className={FIELD_LABEL}>Project</label>
+        <select id="f-project" name="project" defaultValue={filters.project} className={FIELD}>
           <option value="">Semua</option>
           {projects.map((p) => (
             <option key={p.id} value={p.id}>{p.code} · {p.name}</option>
@@ -292,8 +289,8 @@ export async function FilterSection({ filters }: { filters: DashboardFilters }) 
         </select>
       </div>
       <div>
-        <label htmlFor="f-assignee" className="mb-1 block text-sm font-medium">Assignee</label>
-        <select id="f-assignee" name="assignee" defaultValue={filters.assignee} className="min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800">
+        <label htmlFor="f-assignee" className={FIELD_LABEL}>Assignee</label>
+        <select id="f-assignee" name="assignee" defaultValue={filters.assignee} className={FIELD}>
           <option value="">Semua</option>
           {users.map((u) => (
             <option key={u.id} value={u.id}>{u.full_name || u.email}</option>
@@ -301,8 +298,8 @@ export async function FilterSection({ filters }: { filters: DashboardFilters }) 
         </select>
       </div>
       <div>
-        <label htmlFor="f-status" className="mb-1 block text-sm font-medium">Status</label>
-        <select id="f-status" name="status" defaultValue={filters.status} className="min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800">
+        <label htmlFor="f-status" className={FIELD_LABEL}>Status</label>
+        <select id="f-status" name="status" defaultValue={filters.status} className={FIELD}>
           <option value="">Semua</option>
           {(['TODO', 'IN_PROGRESS', 'REVIEW', 'BLOCKED', 'DONE', 'CANCELLED'] as const).map((s) => (
             <option key={s} value={s}>{s.replace('_', ' ')}</option>
@@ -310,18 +307,19 @@ export async function FilterSection({ filters }: { filters: DashboardFilters }) 
         </select>
       </div>
       <div>
-        <label htmlFor="f-priority" className="mb-1 block text-sm font-medium">Prioritas</label>
-        <select id="f-priority" name="priority" defaultValue={filters.priority} className="min-h-[44px] rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800">
+        <label htmlFor="f-priority" className={FIELD_LABEL}>Prioritas</label>
+        <select id="f-priority" name="priority" defaultValue={filters.priority} className={FIELD}>
           <option value="">Semua</option>
           {(['HIGH', 'MEDIUM', 'LOW'] as const).map((p) => (
             <option key={p} value={p}>{p}</option>
           ))}
         </select>
       </div>
-      <button type="submit" className="min-h-[44px] rounded-lg bg-kasuat-gold px-5 py-2 font-semibold text-kasuat-black">
+      <button type="submit" className={SUBMIT}>
         Terapkan
       </button>
     </form>
+    </FilterPanel>
   )
 }
 
@@ -359,8 +357,8 @@ export async function SuggestionsSection({
   )
 
   return (
-    <section className="mt-6 rounded-2xl bg-white p-4 shadow dark:bg-zinc-900">
-      <h2 className="mb-3 text-lg font-bold">Pending Suggestions ({items.length})</h2>
+    <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900">
+      <h2 className="mb-2 text-base font-bold">Pending Suggestions ({items.length})</h2>
       {items.length === 0 ? (
         <p className="text-sm text-zinc-600 dark:text-zinc-400">Tidak ada Suggestion PENDING.</p>
       ) : (

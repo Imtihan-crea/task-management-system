@@ -181,7 +181,7 @@ export async function ProjectGantt({
               href={baseParams(offset, v)}
               role="tab"
               aria-selected={view === v}
-              className={`inline-flex min-h-[36px] items-center rounded-lg px-3 py-1 text-sm font-medium ${
+              className={`inline-flex min-h-[44px] items-center rounded-lg px-3 py-1 text-sm font-medium ${
                 view === v
                   ? 'bg-kasuat-gold text-kasuat-black'
                   : 'border border-zinc-300 dark:border-zinc-700'
@@ -195,20 +195,20 @@ export async function ProjectGantt({
           <Link
             href={baseParams(offset - 1, view)}
             aria-label="Periode sebelumnya"
-            className="inline-flex min-h-[36px] min-w-[36px] items-center justify-center rounded-lg border border-zinc-300 dark:border-zinc-700"
+            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-zinc-300 dark:border-zinc-700"
           >
             ‹
           </Link>
           <Link
             href={baseParams(0, view)}
-            className="inline-flex min-h-[36px] items-center rounded-lg border border-zinc-300 px-3 text-sm font-semibold dark:border-zinc-700"
+            className="inline-flex min-h-[44px] items-center rounded-lg border border-zinc-300 px-3 text-sm font-semibold dark:border-zinc-700"
           >
             Hari Ini
           </Link>
           <Link
             href={baseParams(offset + 1, view)}
             aria-label="Periode berikutnya"
-            className="inline-flex min-h-[36px] min-w-[36px] items-center justify-center rounded-lg border border-zinc-300 dark:border-zinc-700"
+            className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-zinc-300 dark:border-zinc-700"
           >
             ›
           </Link>
@@ -220,7 +220,7 @@ export async function ProjectGantt({
       {visible.length === 0 ? (
         <p className="text-sm text-zinc-600 dark:text-zinc-400">Tidak ada Project bertanggal pada periode ini.</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="scroll-x-hint overflow-x-auto">
           <div className="min-w-[560px]">
             <div
               className="grid gap-1"
@@ -384,7 +384,7 @@ async function ProjectTaskGantt({
           kembali ke global
         </Link>
       </p>
-      <div className="overflow-x-auto">
+      <div className="scroll-x-hint overflow-x-auto">
         <div className="min-w-[560px]">
           <div
             className="grid gap-1"
