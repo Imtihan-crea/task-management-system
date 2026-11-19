@@ -3,7 +3,7 @@ import { requirePermission } from '@/lib/auth/current-access'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { AppShell } from '@/components/layout/AppShell'
 import { PageHeader } from '@/components/ui/primitives'
-import { CalendarAddForm, CalendarRemoveButton, MonthTargetForm, RulesForm } from '@/components/hr/HrSettingsForms'
+import { CalendarAddForm, CalendarRemoveButton, HolidayImportButton, MonthTargetForm, RulesForm } from '@/components/hr/HrSettingsForms'
 import { loadRules } from '@/lib/hr/data'
 import { monthRange, workingDays } from '@/lib/hr/tracker'
 import { formatDate, todayISO } from '@/lib/utils/dates'
@@ -54,6 +54,7 @@ export default async function HrSettingsPage({ searchParams }: { searchParams: P
           </nav>
         </div>
         <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-400">Hari kerja = Senin–Jumat, dikurangi libur, ditambah hari kerja pengganti.</p>
+        <HolidayImportButton year={year} />
         <CalendarAddForm />
         {calendarRows.length === 0 ? (
           <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400">Belum ada libur tercatat untuk {year}.</p>

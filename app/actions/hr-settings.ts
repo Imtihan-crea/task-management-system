@@ -7,6 +7,7 @@ import { logActivity } from '@/lib/activity-log/service'
 import { readLimitedField } from '@/lib/forms/limits'
 import { loadRules } from '@/lib/hr/data'
 import { rulesError, type TrackerRules } from '@/lib/hr/tracker'
+import { HOLIDAY_FEED_URL, newHolidays, parseHolidayFeed, type FeedHoliday } from '@/lib/hr/holidays'
 
 /** Pengaturan HR (migrasi 021): aturan jam berversi, kalender kerja, target bulanan dikunci. Izin hr.manage. */
 
@@ -104,6 +105,48 @@ export async function removeCalendarDay(_prev: HrSettingsState, formData: FormDa
   })
   done()
   return { success: `${day} dihapus dari kalender.` }
+}
+
+/** Ambil libur nasional + cuti bersama setahun dari data publik; tanggal yang sudah diisi HR tidak ditimpa. */
+export async function importNationalHolidays(_prev: HrSettingsState, formData: FormData): Promise<HrSettingsState> {
+  const actor = await requirePermission('hr.manage')
+  const year = readLimitedField(formData, 'year')
+  if (!/^20\d{2}$/.test(year)) return { error: 'Tahun tidak valid.' }
+
+  let feed: FeedHoliday[]
+  try {
+    const res = await fetch(HOLIDAY_FEED_URL, { cache: 'no-store', signal: AbortSignal.timeout(10_000) })
+    if (!res.ok) throw new Error(`HTTP ${res.status}`)
+    feed = parseHolidayFeed(await res.json(), year)
+  } catch (e) {
+    console.error('importNationalHolidays fetch failed:', e instanceof Error ? e.message : e)
+    return { error: 'Sumber libur nasional tidak bisa dihubungi. Coba lagi nanti atau isi manual.' }
+  }
+  if (!feed.length) return { error: `Data libur ${year} belum tersedia di sumber. Isi manual dulu.` }
+
+  const admin = createAdminClient()
+  const { data: existing, error: readErr } = await admin.from('work_calendar').select('day').gte('day', `${year}-01-01`).lte('day', `${year}-12-31`)
+  if (readErr) return { error: 'Gagal membaca kalender. Silakan coba lagi.' }
+  const toAdd = newHolidays(feed, (existing ?? []).map((r) => r.day as string))
+  if (!toAdd.length) return { success: `Semua ${feed.length} libur ${year} sudah ada di kalender.` }
+
+  const { error } = await admin
+    .from('work_calendar')
+    .insert(toAdd.map((h) => ({ day: h.day, kind: 'HOLIDAY', name: h.name, created_by: actor.id })))
+  if (error) {
+    console.error('importNationalHolidays insert failed:', error.message)
+    return { error: 'Gagal menyimpan. Silakan coba lagi.' }
+  }
+  await logActivity({
+    actorUserId: actor.id,
+    action: 'HR_CALENDAR_CHANGED',
+    entityType: 'hr',
+    entityId: `calendar:${year}`,
+    metadata: { year, imported: toAdd.length, days: toAdd.map((h) => h.day) },
+  })
+  done()
+  const skipped = feed.length - toAdd.length
+  return { success: `${toAdd.length} libur ${year} ditambahkan${skipped ? `; ${skipped} tanggal sudah ada dan tidak diubah` : ''}.` }
 }
 
 /** Kunci target jam bulanan (hours kosong = lepas kunci, kembali ke hari kerja × jam/hari). */

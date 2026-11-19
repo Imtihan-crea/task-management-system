@@ -1,7 +1,7 @@
 'use client'
 
 import { useFormAction } from '@/lib/forms/use-form-action'
-import { addCalendarDay, removeCalendarDay, saveHrRules, setMonthTarget, type HrSettingsState } from '@/app/actions/hr-settings'
+import { addCalendarDay, importNationalHolidays, removeCalendarDay, saveHrRules, setMonthTarget, type HrSettingsState } from '@/app/actions/hr-settings'
 import type { TrackerRules } from '@/lib/hr/tracker'
 
 const INITIAL: HrSettingsState = undefined
@@ -83,6 +83,18 @@ export function CalendarAddForm() {
       </div>
       <button type="submit" disabled={pending} className={BTN}>{pending ? 'Menyimpan...' : 'Tambah'}</button>
       <div className="sm:col-span-4"><Status state={state} /></div>
+    </form>
+  )
+}
+
+export function HolidayImportButton({ year }: { year: string }) {
+  const [state, formProps, pending] = useFormAction(importNationalHolidays, INITIAL)
+  return (
+    <form {...formProps} className="mb-3 flex flex-wrap items-center gap-3">
+      <input type="hidden" name="year" value={year} />
+      <button type="submit" disabled={pending} className={BTN}>{pending ? 'Mengambil...' : `Ambil libur nasional ${year}`}</button>
+      <span className="text-sm text-zinc-600 dark:text-zinc-400">Termasuk cuti bersama. Tanggal yang sudah ada tidak diubah; sesudahnya tetap bisa ditambah atau dihapus.</span>
+      <Status state={state} />
     </form>
   )
 }

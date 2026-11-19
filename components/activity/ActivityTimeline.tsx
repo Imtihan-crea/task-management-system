@@ -87,6 +87,7 @@ export function describeActivity(entry: Pick<ActivityEntry, 'action' | 'metadata
     case 'HR_RULES_CHANGED':
       return `Aturan jam kerja diubah (berlaku ${str(m.effective_from)})`
     case 'HR_CALENDAR_CHANGED':
+      if (m.imported) return `${String(m.imported)} libur nasional ${str(m.year)} diambil dari internet`
       return m.removed ? `Kalender ${str(m.day)} dihapus` : `Kalender ${str(m.day)}: ${str(m.name)}`
     case 'HR_TARGET_CHANGED':
       return m.target_hours ? `Target jam ${str(m.month)} dikunci ${String(m.target_hours)} jam` : `Kunci target jam ${str(m.month)} dilepas`
