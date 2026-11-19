@@ -34,25 +34,25 @@ export function Combobox({
   const [active, setActive] = useState(-1)
   const activeRef = useRef<HTMLLIElement>(null)
   const inputRef = useRef<HTMLInputElement>(null)
-  const defaultRef = useRef(defaultValue)
-  defaultRef.current = defaultValue
+
+  // defaultValue berganti (mis. pindah ke entri lain yang diedit) = ikut diganti, seperti input tak terkendali.
+  const [prevDefault, setPrevDefault] = useState(defaultValue)
+  if (defaultValue !== prevDefault) {
+    setPrevDefault(defaultValue)
+    setValue(defaultValue)
+    setTyped(false)
+  }
 
   // Input dikendalikan state, jadi form.reset() (useFormAction sesudah simpan) tidak mengosongkannya sendiri.
   useEffect(() => {
     const form = inputRef.current?.form
     if (!form) return
     const onReset = () => {
-      setValue(defaultRef.current)
+      setValue(defaultValue)
       setTyped(false)
     }
     form.addEventListener('reset', onReset)
     return () => form.removeEventListener('reset', onReset)
-  }, [])
-
-  // defaultValue berganti (mis. pindah ke entri lain yang diedit) = ikut diganti, seperti input tak terkendali.
-  useEffect(() => {
-    setValue(defaultValue)
-    setTyped(false)
   }, [defaultValue])
 
   const shown = typed ? filterOptions(options, value) : options
