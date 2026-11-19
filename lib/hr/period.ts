@@ -122,5 +122,8 @@ export function periodSummary(
   leaveDays: number
 ): MonthlySummary {
   const s = monthlySummary(logs, workdays, rules, period.month ? lockedTarget : null, leaveDays)
-  return period.mode === 'minggu' ? { ...s, status: weeklyStatus(s.totalHours, rules) } : s
+  if (period.mode !== 'minggu') return s
+  // Ambang mingguan HR berlaku untuk minggu 5 hari kerja; minggu berlibur/cuti diskalakan ke hari kerja efektifnya.
+  const scale = s.targetHours / rules.hoursPerDay / 5
+  return scale > 0 ? { ...s, status: weeklyStatus(s.totalHours / scale, rules) } : s
 }

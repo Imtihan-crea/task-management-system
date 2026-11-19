@@ -8,14 +8,16 @@ const INPUT = 'rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:b
  * Form GET biasa: field yang dipakai ditentukan oleh pilihan "Periode".
  * `base` = path halaman, `keep` = parameter lain yang dipertahankan (mis. divisi).
  */
-export function PeriodFilter({ period, error, base, keep = {}, children }: {
+export function PeriodFilter({ period, error, base, keep = {}, navKeep = {}, children }: {
   period: Period
   error: string | null
   base: string
   keep?: Record<string, string>
+  /** Parameter yang hanya ikut tautan sebelum/sesudah (sudah ada sebagai field di `children`, mis. divisi). */
+  navKeep?: Record<string, string>
   children?: React.ReactNode
 }) {
-  const href = (q: Record<string, string>) => `${base}?${new URLSearchParams({ ...keep, ...q }).toString()}`
+  const href = (q: Record<string, string>) => `${base}?${new URLSearchParams({ ...keep, ...navKeep, ...q }).toString()}`
   return (
     <div className="mt-4">
       <form className="flex flex-wrap items-end gap-3">
@@ -30,7 +32,7 @@ export function PeriodFilter({ period, error, base, keep = {}, children }: {
         </div>
         <div>
           <label htmlFor="minggu" className="mb-1 block text-sm font-medium">Minggu</label>
-          <input id="minggu" name="minggu" type="week" defaultValue={period.mode === 'minggu' ? period.query.minggu : ''} className={INPUT} />
+          <input id="minggu" name="minggu" type="week" placeholder="2026-W47" pattern="\d{4}-W\d{2}" title="Bentuk tahun-W-minggu, mis. 2026-W47" defaultValue={period.mode === 'minggu' ? period.query.minggu : ''} className={INPUT} />
         </div>
         <div>
           <label htmlFor="bulan" className="mb-1 block text-sm font-medium">Bulan</label>

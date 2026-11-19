@@ -103,8 +103,8 @@ type RawLog = LogRow & {
  */
 export async function loadLogs(from: string, to: string, userIds?: string[]): Promise<LogRow[]> {
   const admin = createAdminClient()
-  const refs = new Map((await loadReferences(['ACTIVITY_CATEGORY', 'INTERNAL_PROJECT'])).map((r) => [r.id, r.label]))
-  const clients = await loadProjectClients()
+  const [refList, clients] = await Promise.all([loadReferences(['ACTIVITY_CATEGORY', 'INTERNAL_PROJECT']), loadProjectClients()])
+  const refs = new Map(refList.map((r) => [r.id, r.label]))
   const out: LogRow[] = []
   for (let offset = 0; ; offset += 1000) {
     let q = admin

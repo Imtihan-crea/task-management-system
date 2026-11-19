@@ -61,6 +61,8 @@ cek('bulan penuh memakai target terkunci', periodSummary(bulanPenuh, logs, 20, D
 cek('cuti mengurangi target bila aturan menyala', periodSummary(r.period, logs, wd, { ...DEFAULT_RULES, leaveReducesTarget: true }, null, 2).targetHours, 56)
 const minggu = p({ periode: 'minggu', minggu: '2026-W47' }).period
 cek('minggu memakai ambang mingguan (36 jam = SESUAI bukan KURANG)', periodSummary(minggu, [log('2026-11-16', 36 * 60)], 5, DEFAULT_RULES, 999, 0).status, 'SESUAI')
+cek('minggu 3 hari kerja, 3x8 jam = SESUAI (bukan KURANG)', periodSummary(minggu, [log('2026-11-16', 8 * 60), log('2026-11-17', 8 * 60), log('2026-11-18', 8 * 60)], 3, DEFAULT_RULES, null, 0).status, 'SESUAI')
+cek('minggu 3 hari kerja, 15 jam = KURANG', periodSummary(minggu, [log('2026-11-16', 15 * 60)], 3, DEFAULT_RULES, null, 0).status, 'KURANG')
 cek('rentang 5 hari kerja: 36 jam >= 5x7 = SESUAI', periodSummary(r.period, [log('2026-11-02', 36 * 60)], 5, DEFAULT_RULES, null, 0).status, 'SESUAI')
 
 // Pengelompokan klien

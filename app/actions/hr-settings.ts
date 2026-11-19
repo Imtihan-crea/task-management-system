@@ -132,7 +132,8 @@ export async function importNationalHolidays(_prev: HrSettingsState, formData: F
 
   const { error } = await admin
     .from('work_calendar')
-    .insert(toAdd.map((h) => ({ day: h.day, kind: 'HOLIDAY', name: h.name, created_by: actor.id })))
+    // ignoreDuplicates: tanggal yang diisi HR bersamaan tidak menggagalkan seluruh impor dan tidak ditimpa.
+    .upsert(toAdd.map((h) => ({ day: h.day, kind: 'HOLIDAY', name: h.name, created_by: actor.id })), { onConflict: 'day', ignoreDuplicates: true })
   if (error) {
     console.error('importNationalHolidays insert failed:', error.message)
     return { error: 'Gagal menyimpan. Silakan coba lagi.' }

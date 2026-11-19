@@ -51,7 +51,7 @@ export default async function TrackerRekapPage({
         }
       />
 
-      <PeriodFilter period={period} error={error} base="/tracker/rekap" keep={sp.orang ? { orang: sp.orang } : {}}>
+      <PeriodFilter period={period} error={error} base="/tracker/rekap" keep={sp.orang ? { orang: sp.orang } : {}} navKeep={sp.divisi ? { divisi: sp.divisi } : {}}>
         <div>
           <label htmlFor="divisi" className="mb-1 block text-sm font-medium">Divisi</label>
           <select id="divisi" name="divisi" defaultValue={sp.divisi ?? ''} className="rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800">

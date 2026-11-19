@@ -3,6 +3,19 @@ import autoTable from 'jspdf-autotable'
 import type { ExcelSheet } from '@/lib/export/excel'
 import { textTable } from '@/lib/export/table'
 
+// Font bawaan jsPDF (helvetica) hanya kenal WinAnsi: Latin-1 + karakter berikut. Selain itu diganti supaya tidak jadi huruf rusak.
+const WIN_ANSI_EXTRA = '€‚ƒ„…†‡ˆ‰Š‹ŒŽ‘’“”•–—˜™š›œžŸ'
+const SWAP: Record<string, string> = { '→': '->', '←': '<-', '≥': '>=', '≤': '<=', '≠': '!=', '✓': 'v', '✔': 'v', '✗': 'x', '−': '-' }
+
+/** Teks aman untuk font standar PDF; karakter di luar WinAnsi (emoji, aksara non-Latin) jadi '?'. */
+export function pdfSafe(text: string): string {
+  let out = ''
+  for (const ch of text.normalize('NFC')) {
+    out += SWAP[ch] ?? (ch.codePointAt(0)! <= 0xff || WIN_ANSI_EXTRA.includes(ch) ? ch : '?')
+  }
+  return out
+}
+
 const NAVY: [number, number, number] = [0x1f, 0x38, 0x64]
 const MARGIN = 28
 
@@ -14,15 +27,15 @@ export function pdfBuffer(sheets: ExcelSheet<any>[]): Buffer {
     if (i > 0) doc.addPage()
     let y = MARGIN + 6
     doc.setFont('helvetica', 'bold').setFontSize(14).setTextColor(0)
-    doc.text(s.title, MARGIN, y)
+    doc.text(pdfSafe(s.title), MARGIN, y)
     doc.setFont('helvetica', 'normal').setFontSize(9).setTextColor(89)
-    for (const line of s.info ?? []) doc.text(line, MARGIN, (y += 13))
+    for (const line of s.info ?? []) doc.text(pdfSafe(line), MARGIN, (y += 13))
     const { head, body } = textTable(s)
     // Tabel lebar: makin banyak kolom, makin kecil huruf.
     const fontSize = head.length > 12 ? 6 : head.length > 8 ? 7 : 8
     autoTable(doc, {
-      head: [head],
-      body,
+      head: [head.map(pdfSafe)],
+      body: body.map((r) => r.map(pdfSafe)),
       startY: y + 10,
       margin: { left: MARGIN, right: MARGIN, bottom: MARGIN },
       showHead: 'everyPage',

@@ -6,6 +6,7 @@ import { unzipSync } from 'fflate'
 import { exportResponse } from '../lib/export'
 import { excelDate, hoursOf } from '../lib/export/excel'
 import { cellText } from '../lib/export/table'
+import { pdfSafe } from '../lib/export/pdf'
 
 let ok = 0
 let gagal = 0
@@ -35,6 +36,9 @@ cek('tanggal dd/mm/yyyy', cellText(excelDate('2026-11-03')), '03/11/2026')
 cek('angka ikut format 2 desimal', cellText(1.5, '0.00'), '1,50')
 cek('angka bulat tanpa format', cellText(3), '3')
 cek('kosong', cellText(null), '')
+cek('pdf: Latin-1 & WinAnsi tetap', pdfSafe('Rapat é – “ok” €'), 'Rapat é – “ok” €')
+cek('pdf: panah & tanda diganti', pdfSafe('A → B ≥ 8 ✓'), 'A -> B >= 8 v')
+cek('pdf: emoji & aksara lain jadi ?', pdfSafe('Selesai 🎉 日本'), 'Selesai ? ??')
 
 ;(async () => {
   const xlsx = await exportResponse(req(), 'Uji', [sheet])
