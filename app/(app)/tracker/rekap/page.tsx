@@ -1,16 +1,13 @@
 import Link from 'next/link'
 import { requirePermission } from '@/lib/auth/current-access'
-import { createAdminClient } from '@/lib/supabase/admin'
 import { AppShell } from '@/components/layout/AppShell'
 import { PageHeader } from '@/components/ui/primitives'
-import { loadComments, loadLeave, loadLogs, loadMonthBasis, loadReviewLogs, loadRules } from '@/lib/hr/data'
-import { leaveDaysIn, type LeaveRow } from '@/lib/hr/leave'
+import { loadComments, loadReviewLogs } from '@/lib/hr/data'
+import { loadRekap, parseMonth } from '@/lib/hr/rekap'
+import { ExportLink } from '@/components/export/ExportLink'
 import { ReviewLogList } from '@/components/tracker/ReviewLogList'
 import { hasPermission } from '@/lib/auth/current-access'
-import { STATUS_LABEL, breakdown, monthRange, monthlySummary, type Breakdown } from '@/lib/hr/tracker'
-import { todayISO } from '@/lib/utils/dates'
-
-type Person = { id: string; full_name: string | null; email: string; division: string | null; position_title: string | null }
+import { STATUS_LABEL, breakdown, type Breakdown } from '@/lib/hr/tracker'
 
 const num = (n: number) => n.toLocaleString('id-ID', { maximumFractionDigits: 2 })
 const INPUT = 'rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800'
@@ -56,29 +53,8 @@ export default async function TrackerRekapPage({
   const viewer = await requirePermission('hr.view')
   const canManageHr = await hasPermission(viewer.id, 'hr.manage')
   const sp = await searchParams
-  const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(sp.bulan ?? '') ? sp.bulan! : todayISO().slice(0, 7)
-  const [from, to] = monthRange(month)
-
-  const [peopleRes, logs, basis, rules, leave] = await Promise.all([
-    createAdminClient()
-      .from('profiles')
-      .select('id, full_name, email, division, position_title')
-      .eq('status', 'ACTIVE')
-      .order('full_name'),
-    loadLogs(from, to),
-    loadMonthBasis(month),
-    loadRules(to),
-    loadLeave({ from, to, statuses: ['APPROVED'] }),
-  ])
-  const everyone = (peopleRes.data ?? []) as Person[]
-  const divisions = [...new Set(everyone.map((p) => p.division).filter((d): d is string => !!d))].sort()
-  const people = sp.divisi ? everyone.filter((p) => p.division === sp.divisi) : everyone
-  const byUser = new Map<string, typeof logs>()
-  for (const l of logs) byUser.set(l.user_id, [...(byUser.get(l.user_id) ?? []), l])
-  const rows = people.map((p) => {
-    const l = leaveDaysIn(leave.filter((x) => x.user_id === p.id) as LeaveRow[], from, to, basis.calendar)
-    return { p, l, s: monthlySummary(byUser.get(p.id) ?? [], basis.workdays.length, rules, basis.lockedTarget, l.CUTI + l.IZIN + l.SAKIT) }
-  })
+  const month = parseMonth(sp.bulan)
+  const { from, to, everyone, divisions, byUser, rows, basis, rules } = await loadRekap(month, sp.divisi)
   const focus = sp.orang ? everyone.find((p) => p.id === sp.orang) : undefined
   const focusLogs = focus ? byUser.get(focus.id) ?? [] : []
   const focusEntries = focus ? await loadReviewLogs({ userId: focus.id, from, to }) : []
@@ -92,12 +68,15 @@ export default async function TrackerRekapPage({
         title="Rekap Daily Tracker"
         subtitle={`Hari kerja ${basis.workdays.length}, target ${basis.lockedTarget ?? basis.workdays.length * rules.hoursPerDay} jam${basis.lockedTarget ? ' (dikunci HR)' : ''}.`}
         actions={
-          canManageHr ? (
-            <div className="flex gap-3 text-sm font-semibold">
-              <Link href="/tracker/import" className="text-kasuat-deep-gold hover:underline">Import histori Excel</Link>
-              <Link href="/settings/hr" className="text-kasuat-deep-gold hover:underline">Pengaturan HR</Link>
-            </div>
-          ) : undefined
+          <div className="flex flex-wrap items-center gap-3 text-sm font-semibold">
+            <ExportLink href={`/tracker/rekap/export?${qs({})}`} />
+            {canManageHr && (
+              <>
+                <Link href="/tracker/import" className="text-kasuat-deep-gold hover:underline">Import histori Excel</Link>
+                <Link href="/settings/hr" className="text-kasuat-deep-gold hover:underline">Pengaturan HR</Link>
+              </>
+            )}
+          </div>
         }
       />
 

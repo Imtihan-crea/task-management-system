@@ -31,6 +31,7 @@
     "test:project-access": "tsx tests/project-access.check.ts",
     "emails:render": "tsx scripts/render-emails.ts",
     "e2e:smoke": "node scripts/e2e/smoke.mjs",
+    "e2e:export": "node scripts/e2e/export.mjs",
     "e2e:write": "node scripts/e2e/write-flow.mjs",
     "e2e:cleanup": "node scripts/e2e/cleanup.mjs",
     "e2e:ws-delete": "node scripts/e2e/ws-delete.mjs",
@@ -53,6 +54,8 @@
     "test:super-admin": "tsx tests/super-admin.check.ts",
     "test:access": "tsx tests/access.check.ts",
     "test:hr-tracker": "tsx tests/hr-tracker.check.ts",
+    "test:export-excel": "tsx tests/export-excel.check.ts",
+    "test:export-lists": "tsx tests/export-lists.check.ts",
     "test:hr-reference": "tsx tests/hr-reference.check.ts",
     "test:hr-import": "tsx tests/hr-import.check.ts",
     "test:hr-employee": "tsx tests/hr-employee.check.ts",
@@ -61,7 +64,7 @@
     "test:user-status": "tsx tests/user-status.check.ts",
     "check:secrets": "node scripts/check-secrets.mjs",
     "test:db": "tsx tests/postgrest-or.check.ts",
-    "test:logic": "npm run test:time && npm run test:dates && npm run test:rules && npm run test:email && npm run test:layout && npm run test:digest && npm run test:task && npm run test:auth && npm run test:canonical && npm run test:cron && npm run test:permissions && npm run test:alert && npm run test:task-access && npm run test:project-access && npm run test:user-status && npm run test:limits && npm run test:paginate && npm run test:filter-values && npm run test:ws-code && npm run test:import && npm run test:super-admin && npm run test:access && npm run test:hr-tracker && npm run test:hr-reference && npm run test:hr-import && npm run test:hr-employee && npm run test:hr-reminder && npm run test:hr-leave && npm run check:secrets"
+    "test:logic": "npm run test:time && npm run test:dates && npm run test:rules && npm run test:email && npm run test:layout && npm run test:digest && npm run test:task && npm run test:auth && npm run test:canonical && npm run test:cron && npm run test:permissions && npm run test:alert && npm run test:task-access && npm run test:project-access && npm run test:user-status && npm run test:limits && npm run test:paginate && npm run test:filter-values && npm run test:ws-code && npm run test:import && npm run test:super-admin && npm run test:access && npm run test:hr-tracker && npm run test:hr-reference && npm run test:hr-import && npm run test:hr-employee && npm run test:hr-reminder && npm run test:hr-leave && npm run test:export-excel && npm run test:export-lists && npm run check:secrets"
   },
   "dependencies": {
     "@sentry/nextjs": "11.11.0",
@@ -72,7 +75,8 @@
     "react": "19.2.8",
     "react-dom": "19.2.8",
     "read-excel-file": "^9.3.17",
-    "server-only": "^0.0.1"
+    "server-only": "^0.0.1",
+    "write-excel-file": "^4.1.1"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4.3.5",

@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { requireProfile } from '@/lib/auth/session'
 import { can } from '@/lib/auth/permissions'
-import { getMeetingScope, type MeetingFilters } from '@/lib/data/meetings'
+import { getMeetingScope } from '@/lib/data/meetings'
 import { AppShell } from '@/components/layout/AppShell'
 import { ButtonLink, PageHeader } from '@/components/ui/primitives'
 import { SkeletonCards, SkeletonRows, SkeletonTable } from '@/components/ui/Skeleton'
@@ -9,16 +9,8 @@ import { MeetingFilterForm } from '@/components/meetings/MeetingFilterForm'
 import { MeetingKpis } from '@/components/meetings/MeetingKpis'
 import { MeetingResults } from '@/components/meetings/MeetingResults'
 import { MeetingTabs } from '@/components/meetings/MeetingTabs'
-import { parseMeetingTab } from '@/types/meeting'
-
-function sanitize(value: string | undefined): string {
-  return (value ?? '').replace(/[,()*%]/g, ' ').trim().slice(0, 60)
-}
-
-function sanitizeDate(value: string | undefined): string {
-  const v = (value ?? '').trim().slice(0, 10)
-  return /^\d{4}-\d{2}-\d{2}$/.test(v) ? v : ''
-}
+import { parseMeetingFilters } from '@/lib/meetings/filters'
+import { ExportLink } from '@/components/export/ExportLink'
 
 export default async function MeetingsPage({
   searchParams,
@@ -31,19 +23,8 @@ export default async function MeetingsPage({
   const params = await searchParams
   const str = (v: string | string[] | undefined) => (typeof v === 'string' ? v : '')
 
-  const rawTab = str(params.tab)
-  const tab = parseMeetingTab(rawTab || undefined)
-
-  const filters: MeetingFilters = {
-    tab,
-    q: sanitize(str(params.q)),
-    project: str(params.project),
-    type: str(params.type),
-    status: str(params.status),
-    organizer: str(params.organizer),
-    dateFrom: sanitizeDate(str(params.from)),
-    dateTo: sanitizeDate(str(params.to)),
-  }
+  const filters = parseMeetingFilters((k) => str(params[k]))
+  const tab = filters.tab
 
   // Param URL yang dipertahankan saat pindah tab (tanpa `tab`).
   const tabBase: Record<string, string> = {}
@@ -55,6 +36,9 @@ export default async function MeetingsPage({
   if (filters.dateFrom) tabBase.from = filters.dateFrom
   if (filters.dateTo) tabBase.to = filters.dateTo
 
+  const exportParams = new URLSearchParams(tabBase)
+  exportParams.set('tab', tab)
+
   const resultsKey = JSON.stringify({ ...filters, user: profile.id })
   const scope = await getMeetingScope(profile.id, profile.role)
 
@@ -63,7 +47,12 @@ export default async function MeetingsPage({
       <PageHeader
         title="Meetings"
         subtitle="Pusat kontrol operasional untuk semua meeting."
-        actions={canCreate ? <ButtonLink href="/meetings/new">+ Buat Meeting</ButtonLink> : undefined}
+        actions={
+          <>
+            <ExportLink href={`/meetings/export?${exportParams}`} />
+            {canCreate && <ButtonLink href="/meetings/new">+ Buat Meeting</ButtonLink>}
+          </>
+        }
       />
 
       {/* KPI: boundary sendiri */}

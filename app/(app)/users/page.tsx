@@ -1,14 +1,12 @@
 import Link from 'next/link'
 import { requirePermission } from '@/lib/auth/current-access'
-import { createAdminClient } from '@/lib/supabase/admin'
-import { isUserRole, isUserStatus, ROLE_LABELS, STATUS_LABELS, USER_ROLES, USER_STATUSES } from '@/lib/auth/roles'
+import { buildUserQuery, parseUserFilters, type UserListRow } from '@/lib/data/user-list'
+import { ROLE_LABELS, STATUS_LABELS, USER_ROLES, USER_STATUSES } from '@/lib/auth/roles'
+import { ExportLink } from '@/components/export/ExportLink'
 import { AppShell } from '@/components/layout/AppShell'
 import { ButtonLink, PageHeader } from '@/components/ui/primitives'
 import { StatusToggleForm } from '@/components/users/UserForms'
-import type { ProfileListItem } from '@/types/profile'
 import { formatDate } from '@/lib/utils/dates'
-
-type SortKey = 'created_at' | 'full_name' | 'status' | 'role'
 
 const SORT_OPTIONS: { value: string; label: string }[] = [
   { value: 'created_at.desc', label: 'Tanggal Dibuat (terbaru)' },
@@ -19,19 +17,6 @@ const SORT_OPTIONS: { value: string; label: string }[] = [
   { value: 'role.asc', label: 'Role (A-Z)' },
 ]
 
-function parseSort(value: string | undefined): { key: SortKey; ascending: boolean } {
-  const [rawKey, rawDir] = (value ?? 'created_at.desc').split('.')
-  const key = (['created_at', 'full_name', 'status', 'role'] as string[]).includes(rawKey)
-    ? (rawKey as SortKey)
-    : 'created_at'
-  return { key, ascending: rawDir === 'asc' }
-}
-
-/** Bersihkan input search supaya aman untuk sintaks or() PostgREST. */
-function sanitizeSearch(value: string | undefined): string {
-  return (value ?? '').replace(/[,()*%]/g, ' ').trim().slice(0, 60)
-}
-
 export default async function UsersPage({
   searchParams,
 }: {
@@ -40,31 +25,17 @@ export default async function UsersPage({
   const viewer = await requirePermission('users.view')
 
   const params = await searchParams
-  const q = sanitizeSearch(
-    typeof params.q === 'string' ? params.q : undefined
-  )
-  const roleFilter =
-    typeof params.role === 'string' && isUserRole(params.role) ? params.role : ''
-  const statusFilter =
-    typeof params.status === 'string' && isUserStatus(params.status) ? params.status : ''
-  const { key: sortKey, ascending } = parseSort(
-    typeof params.sort === 'string' ? params.sort : undefined
-  )
+  const filters = parseUserFilters((k) => (typeof params[k] === 'string' ? (params[k] as string) : undefined))
+  const { q, role: roleFilter, status: statusFilter, sortKey, ascending } = filters
 
-  const admin = createAdminClient()
-  let query = admin
-    .from('profiles')
-    .select('id, full_name, email, role, status, created_at, is_super_admin, is_developer')
-    .order(sortKey, { ascending })
-    .is('deleted_at', null) // akun dihapus disembunyikan; riwayatnya tetap
-    .limit(200)
+  const { data, error } = await buildUserQuery(filters).limit(200)
+  const users = (data ?? []) as UserListRow[]
 
-  if (q) query = query.or(`full_name.ilike.%${q}%,email.ilike.%${q}%`)
-  if (roleFilter) query = query.eq('role', roleFilter)
-  if (statusFilter) query = query.eq('status', statusFilter)
-
-  const { data, error } = await query
-  const users = (data ?? []) as (ProfileListItem & { is_super_admin: boolean; is_developer: boolean })[]
+  const exportParams = new URLSearchParams()
+  if (q) exportParams.set('q', q)
+  if (roleFilter) exportParams.set('role', roleFilter)
+  if (statusFilter) exportParams.set('status', statusFilter)
+  exportParams.set('sort', `${sortKey}.${ascending ? 'asc' : 'desc'}`)
 
   return (
     <AppShell>
@@ -72,7 +43,10 @@ export default async function UsersPage({
         title="Manajemen User"
         subtitle="Kelola user, role, dan status. Hanya ADMIN yang bisa akses halaman ini."
         actions={
-          <ButtonLink href="/users/new">+ Tambah User</ButtonLink>
+          <>
+            <ExportLink href={`/users/export?${exportParams}`} />
+            <ButtonLink href="/users/new">+ Tambah User</ButtonLink>
+          </>
         }
       />
 

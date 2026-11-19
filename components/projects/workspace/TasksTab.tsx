@@ -1,23 +1,9 @@
 import Link from 'next/link'
-import { allRows } from '@/lib/utils/paginate'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { loadProjectTasks, type ProjectTaskRow } from '@/lib/data/project-tasks'
+import { ExportLink } from '@/components/export/ExportLink'
 import { PriorityBadge, TaskStatusBadge, OverdueBadge } from '@/components/ui/Badges'
 import { showsOverdueBadge } from '@/lib/utils/dates'
-import type { TaskStatus } from '@/types/task'
 import type { UserRole } from '@/types/profile'
-
-type TaskRow = {
-  id: string
-  code: string
-  title: string
-  workstream_id: string | null
-  assignee_id: string
-  priority: 'LOW' | 'MEDIUM' | 'HIGH'
-  status: TaskStatus
-  deadline: string
-  completed_at: string | null
-  cancelled_at: string | null
-}
 
 export async function TasksTab({
   projectId,
@@ -31,76 +17,33 @@ export async function TasksTab({
   /** Audit B1: daftar dan link mengikuti aturan baca /tasks/[id]. */
   viewer: { id: string; role: UserRole; managesProject: boolean }
 }) {
-  const admin = createAdminClient()
-
-  let taskQuery = admin
-    .from('tasks')
-    .select('id, code, title, workstream_id, assignee_id, priority, status, deadline, completed_at, cancelled_at')
-    .eq('project_id', projectId)
-    .eq('is_deleted', false)
-  // TEAM_MEMBER hanya task miliknya (sama dengan /tasks).
-  if (viewer.role === 'TEAM_MEMBER' && !viewer.managesProject) taskQuery = taskQuery.eq('assignee_id', viewer.id)
-  // Urutan dipasang sekali: builder PostgREST mutable, .order di dalam callback menumpuk per halaman.
-  const orderedTasks = taskQuery.order('deadline', { ascending: true }).order('id')
-  // PM project lain hanya bisa membuka task yang di-assign kepadanya.
+  const { wsList, wsNames, assigneeNames, visibleTasks } = await loadProjectTasks(projectId, viewer, filters)
+  const exportParams = new URLSearchParams()
+  if (filters.ws) exportParams.set('ws', filters.ws)
+  if (filters.status) exportParams.set('status', filters.status)
+  if (filters.priority) exportParams.set('priority', filters.priority)
+  const exportQs = exportParams.toString()
   const rowCls =
     'flex flex-col gap-1 rounded-xl border p-3 sm:flex-row sm:items-center sm:justify-between dark:border-zinc-700'
-  const canOpen = (t: TaskRow) =>
+  // PM project lain hanya bisa membuka task yang di-assign kepadanya.
+  const canOpen = (t: ProjectTaskRow) =>
     viewer.role !== 'PROJECT_MANAGER' || viewer.managesProject || t.assignee_id === viewer.id
-
-  const [{ data: workstreams }, tasks] = await Promise.all([
-    admin
-      .from('workstreams')
-      .select('id, code, name')
-      .eq('project_id', projectId)
-      .order('created_at', { ascending: true }),
-    allRows<TaskRow>((from, to) => orderedTasks.range(from, to)),
-  ])
-
-  const wsList = (workstreams ?? []) as { id: string; code: string; name: string }[]
-  const wsNames = Object.fromEntries(wsList.map((w) => [w.id, `${w.code} · ${w.name}`]))
-
-  const assigneeIds = [...new Set(tasks.map((t) => t.assignee_id))]
-  let assigneeNames: Record<string, string> = {}
-  if (assigneeIds.length > 0) {
-    const { data: users } = await admin
-      .from('profiles')
-      .select('id, full_name, email')
-      .in('id', assigneeIds)
-    assigneeNames = Object.fromEntries(
-      ((users ?? []) as { id: string; full_name: string | null; email: string }[]).map((u) => [
-        u.id,
-        u.full_name || u.email,
-      ])
-    )
-  }
-
-  const visibleTasks = tasks
-    .filter(
-      (t) =>
-        (!filters.ws || t.workstream_id === filters.ws) &&
-        (!filters.status || t.status === filters.status) &&
-        (!filters.priority || t.priority === filters.priority)
-    )
-    .sort((a, b) => {
-      const aClosed = a.status === 'DONE' || a.status === 'CANCELLED' ? 1 : 0
-      const bClosed = b.status === 'DONE' || b.status === 'CANCELLED' ? 1 : 0
-      if (aClosed !== bClosed) return aClosed - bClosed
-      return a.deadline < b.deadline ? -1 : a.deadline > b.deadline ? 1 : 0
-    })
 
   return (
     <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-bold">Tasks ({visibleTasks.length})</h2>
-        {canCreate && (
-          <Link
-            href={`/tasks/new?project=${projectId}`}
-            className="inline-flex min-h-[44px] items-center rounded-lg bg-kasuat-gold px-4 py-2 text-sm font-semibold text-kasuat-black"
-          >
-            + Tambah Task
-          </Link>
-        )}
+        <div className="flex flex-wrap items-center gap-2">
+          <ExportLink href={`/projects/${projectId}/export/tasks${exportQs ? `?${exportQs}` : ''}`} />
+          {canCreate && (
+            <Link
+              href={`/tasks/new?project=${projectId}`}
+              className="inline-flex min-h-[44px] items-center rounded-lg bg-kasuat-gold px-4 py-2 text-sm font-semibold text-kasuat-black"
+            >
+              + Tambah Task
+            </Link>
+          )}
+        </div>
       </div>
 
       <form method="get" className="mt-3 flex flex-col gap-2 sm:flex-row sm:items-end">

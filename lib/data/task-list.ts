@@ -26,6 +26,7 @@ type TaskColumns = Pick<
   | 'assignee_id'
   | 'priority'
   | 'status'
+  | 'start_date'
   | 'deadline'
   | 'completed_at'
   | 'cancelled_at'
@@ -54,7 +55,7 @@ export type TaskScope = {
 const TASK_SELECT =
   'id, code, title, project_id, workstream_id, assignee_id, ' +
   'assignee:profiles!tasks_assignee_id_fkey(id, full_name, email), ' +
-  'priority, status, deadline, completed_at, cancelled_at, created_at, updated_at'
+  'priority, status, start_date, deadline, completed_at, cancelled_at, created_at, updated_at'
 
 /** Nama tampilan assignee: nama lengkap, fallback ke email. */
 export function assigneeName(a: TaskAssignee | null | undefined): string {

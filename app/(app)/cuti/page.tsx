@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { requireProfile } from '@/lib/auth/session'
 import { canApproveLeave } from '@/lib/auth/current-access'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { ExportLink } from '@/components/export/ExportLink'
 import { AppShell } from '@/components/layout/AppShell'
 import { KpiCard, PageHeader } from '@/components/ui/primitives'
 import { CancelOwnLeaveButton, LeaveRequestForm } from '@/components/leave/LeaveForms'
@@ -28,7 +29,12 @@ export default async function LeavePage() {
       <PageHeader
         title="Cuti, Izin & Sakit"
         subtitle="Ajukan dari sini; penyetuju akan menerima notifikasi."
-        actions={isApprover ? <Link href="/cuti/persetujuan" className="text-sm font-semibold text-kasuat-deep-gold hover:underline">Persetujuan</Link> : undefined}
+        actions={
+          <div className="flex flex-wrap items-center gap-3">
+            {isApprover && <Link href="/cuti/persetujuan" className="text-sm font-semibold text-kasuat-deep-gold hover:underline">Persetujuan</Link>}
+            <ExportLink href="/cuti/export" />
+          </div>
+        }
       />
       <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">
         <KpiCard label={`Hak cuti ${year}`} value={balance.quota ?? 'Belum diisi HR'} />

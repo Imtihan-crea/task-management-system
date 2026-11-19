@@ -2,6 +2,7 @@ import Link from 'next/link'
 import { requireProfile } from '@/lib/auth/session'
 import { hasPermission } from '@/lib/auth/current-access'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { ExportLink } from '@/components/export/ExportLink'
 import { AppShell } from '@/components/layout/AppShell'
 import { KpiCard, PageHeader } from '@/components/ui/primitives'
 import { WorkLogForm, DeleteWorkLogButton, type WorkLogValues } from '@/components/tracker/WorkLogForm'
@@ -85,11 +86,14 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
         title="Daily Tracker"
         subtitle="Catat setiap ganti pekerjaan, jangan ditunda sampai akhir hari."
         actions={
-          canRekap ? (
-            <Link href="/tracker/rekap" className="text-sm font-semibold text-kasuat-deep-gold hover:underline">
-              Rekap semua karyawan
-            </Link>
-          ) : undefined
+          <div className="flex flex-wrap items-center gap-3">
+            {canRekap && (
+              <Link href="/tracker/rekap" className="text-sm font-semibold text-kasuat-deep-gold hover:underline">
+                Rekap semua karyawan
+              </Link>
+            )}
+            <ExportLink href={`/tracker/export?bulan=${month}`} />
+          </div>
         }
       />
 

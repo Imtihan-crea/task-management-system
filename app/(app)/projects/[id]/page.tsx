@@ -80,6 +80,7 @@ export default async function ProjectDetailPage({
   // Izin per akun tracker.review / hr.view juga membuka halaman project (review 16 Nov 2026).
   const hasGrantHere = canEditProject || canManageWorkstream || canCreateTask || canEditTask || canSeeTracker
 
+  // Aturan yang sama ada di projectTaskViewer (lib/data/project-tasks.ts) untuk export; ubah keduanya.
   if (profile.role === 'TEAM_MEMBER' && !hasGrantHere) {
     const { count: involved } = await admin
       .from('tasks')

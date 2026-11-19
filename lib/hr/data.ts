@@ -163,6 +163,7 @@ export type ReviewLog = {
   detail: string | null
   category: string
   output: string | null
+  location: string | null
 }
 
 /**
@@ -173,7 +174,7 @@ export async function loadReviewLogs(filter: { projectId?: string; userId?: stri
   const page = (from: number, to: number) => {
     let q = createAdminClient()
       .from('work_logs')
-      .select('id, user_id, work_date, start_time, end_time, duration_minutes, project_id, project_name, internal_project_ref, activity, detail, category, category_ref, output, person:profiles!work_logs_user_id_fkey(full_name, email)')
+      .select('id, user_id, work_date, start_time, end_time, duration_minutes, project_id, project_name, internal_project_ref, activity, detail, category, category_ref, output, location, location_ref, person:profiles!work_logs_user_id_fkey(full_name, email)')
       .gte('work_date', filter.from)
       .lte('work_date', filter.to)
       .order('work_date', { ascending: false })
@@ -184,13 +185,14 @@ export async function loadReviewLogs(filter: { projectId?: string; userId?: stri
     if (filter.userId) q = q.eq('user_id', filter.userId)
     return q
   }
-  const [data, refs] = await Promise.all([allRows<unknown>(page), loadReferences(['ACTIVITY_CATEGORY', 'INTERNAL_PROJECT'])])
+  const [data, refs] = await Promise.all([allRows<unknown>(page), loadReferences(['ACTIVITY_CATEGORY', 'INTERNAL_PROJECT', 'WORK_LOCATION'])])
   const label = new Map(refs.map((r) => [r.id, r.label]))
   type Raw = Omit<ReviewLog, 'person' | 'project'> & {
     project_id: string | null
     project_name: string
     internal_project_ref: string | null
     category_ref: string | null
+    location_ref: string | null
     person: { full_name: string | null; email: string } | null
   }
   return ((data ?? []) as unknown as Raw[]).map((r) => ({
@@ -206,6 +208,7 @@ export async function loadReviewLogs(filter: { projectId?: string; userId?: stri
     detail: r.detail,
     category: r.category_ref ? label.get(r.category_ref) ?? r.category : r.category + FREE_TEXT_MARK,
     output: r.output,
+    location: r.location_ref ? label.get(r.location_ref) ?? r.location : r.location,
   }))
 }
 

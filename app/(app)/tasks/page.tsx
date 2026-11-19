@@ -9,10 +9,8 @@ import { TaskTabs, parseTaskTab } from '@/components/tasks/TaskTabs'
 import { TaskResults } from '@/components/tasks/TaskResults'
 import { TaskFilterForm } from '@/components/tasks/TaskFilterForm'
 import { parsePage } from '@/components/ui/Pagination'
-
-function sanitize(value: string | undefined): string {
-  return (value ?? '').replace(/[,()*%]/g, ' ').trim().slice(0, 60)
-}
+import { ExportLink } from '@/components/export/ExportLink'
+import { sanitizeTaskSearch } from '@/lib/data/task-results'
 
 export default async function TasksPage({
   searchParams,
@@ -26,7 +24,7 @@ export default async function TasksPage({
   const params = await searchParams
   const str = (v: string | string[] | undefined) => (typeof v === 'string' ? v : '')
 
-  const q = sanitize(str(params.q))
+  const q = sanitizeTaskSearch(str(params.q))
   const tab = parseTaskTab(str(params.view))
   const fProject = str(params.project)
   const fWorkstream = str(params.workstream)
@@ -44,6 +42,11 @@ export default async function TasksPage({
   if (fDeadline) tabBase.deadline = fDeadline
   if (sort !== 'deadline.asc') tabBase.sort = sort
 
+  const exportParams = new URLSearchParams(tabBase)
+  if (tab !== 'all') exportParams.set('view', tab)
+  if (fStatus) exportParams.set('status', fStatus)
+  const exportQs = exportParams.toString()
+
   const resultsKey = JSON.stringify({ q, tab, fProject, fWorkstream, fStatus, fPriority, fDeadline, sort, page, user: profile.id })
 
   return (
@@ -53,6 +56,7 @@ export default async function TasksPage({
         subtitle="Kelola semua task, pantau progress, dan pastikan semua selesai tepat waktu."
         actions={
           <>
+            <ExportLink href={`/tasks/export${exportQs ? `?${exportQs}` : ''}`} />
             {canCreate && <ButtonLink href="/tasks/new">+ Tambah Task</ButtonLink>}
             {canCreate && (
               <ButtonLink href="/tasks/import" variant="secondary">

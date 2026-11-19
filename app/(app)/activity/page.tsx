@@ -1,7 +1,7 @@
 import { Suspense } from 'react'
 import { requireProfile } from '@/lib/auth/session'
-import { createClient } from '@/lib/supabase/server'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { activityPager, type ActivityFilters } from '@/lib/data/activity-list'
+import { ExportLink } from '@/components/export/ExportLink'
 import { AppShell } from '@/components/layout/AppShell'
 import { Tabs } from '@/components/ui/Tabs'
 import { SkeletonRows } from '@/components/ui/Skeleton'
@@ -63,16 +63,6 @@ function str(v: string | string[] | undefined): string {
   return typeof v === 'string' ? v : ''
 }
 
-export type ActivityFilters = {
-  entity: string
-  action: string
-  actor: string
-  from: string
-  to: string
-  project: string
-  page: number
-}
-
 /**
  * Hasil activity: fetch sendiri supaya Suspense boundary benar-benar
  * memisahkan loading timeline dari header/filter (§12, §13).
@@ -82,42 +72,8 @@ async function ActivityResults({ filters }: { filters: ActivityFilters }) {
   const { entity, action, actor, from, to, project, page } = filters
   const offset = (page - 1) * PAGE_SIZE
 
-  const supabase = await createClient()
-  let query = supabase
-    .from('activity_logs')
-    .select('*', { count: 'exact' })
-    .order('created_at', { ascending: false })
-    .range(offset, offset + PAGE_SIZE - 1)
-
-  // Audit B17: filter actor di query (sebelum paginasi), bukan setelahnya.
-  if (actor) {
-    // PostgREST juga memakai * sebagai wildcard ilike.
-    const like = `%${actor.replace(/[\\%_*]/g, (c) => `\\${c}`)}%`
-    const admin = createAdminClient()
-    const [{ data: byName }, { data: byEmail }] = await Promise.all([
-      admin.from('profiles').select('id').ilike('full_name', like).limit(200),
-      admin.from('profiles').select('id').ilike('email', like).limit(200),
-    ])
-    const ids = [
-      ...new Set([...(byName ?? []), ...(byEmail ?? [])].map((r) => (r as { id: string }).id)),
-    ]
-    const system = 'system'.includes(actor.toLowerCase())
-    if (ids.length > 0) {
-      query = system
-        ? query.or(`actor_user_id.in.(${ids.join(',')}),actor_user_id.is.null`)
-        : query.in('actor_user_id', ids)
-    } else {
-      query = system ? query.is('actor_user_id', null) : query.eq('id', '00000000-0000-0000-0000-000000000000')
-    }
-  }
-  if (entity) query = query.eq('entity_type', entity)
-  if (action) query = query.eq('action', action)
-  if (project) query = query.eq('project_id', project)
-  // Tanggal filter = hari kalender WIB (audit C14), bukan UTC.
-  if (from) query = query.gte('created_at', `${from}T00:00:00+07:00`)
-  if (to) query = query.lte('created_at', `${to}T23:59:59.999+07:00`)
-
-  const { data, error, count } = await query
+  const pager = await activityPager(filters)
+  const { data, error, count } = await pager(offset, offset + PAGE_SIZE - 1)
   const entries = (data ?? []) as ActivityEntry[]
   const total = count ?? 0
 
@@ -197,13 +153,22 @@ export default async function ActivityPage({
     page,
   }
   const resultsKey = JSON.stringify(filters)
+  const exportParams = new URLSearchParams()
+  for (const [k, v] of Object.entries({ entity: fEntity, action: fAction, actor: fActor, from: fFrom, to: fTo, project: fProject })) {
+    if (v) exportParams.set(k, v)
+  }
 
   return (
     <AppShell>
-      <h1 className="text-2xl font-bold">Activity Log</h1>
-      <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
-        Riwayat aktivitas penting di seluruh sistem.
-      </p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h1 className="text-2xl font-bold">Activity Log</h1>
+          <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
+            Riwayat aktivitas penting di seluruh sistem.
+          </p>
+        </div>
+        <ExportLink href={`/activity/export?${exportParams}`} />
+      </div>
 
       <div className="mt-4">
         <Tabs

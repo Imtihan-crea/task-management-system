@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { ExportLink } from '@/components/export/ExportLink'
 import { ReviewLogList } from '@/components/tracker/ReviewLogList'
 import { loadComments, loadReviewLogs } from '@/lib/hr/data'
 import { breakdown, monthRange } from '@/lib/hr/tracker'
@@ -29,9 +30,10 @@ export async function TrackerTab({ projectId, month }: { projectId: string; mont
     <section className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-bold">Daily Tracker {month}</h2>
-        <nav aria-label="Pilih bulan" className="flex gap-3 text-sm font-semibold">
+        <nav aria-label="Pilih bulan" className="flex flex-wrap items-center gap-3 text-sm font-semibold">
           <Link href={href(shiftMonth(month, -1))} className="text-kasuat-deep-gold hover:underline">Bulan sebelumnya</Link>
           <Link href={href(shiftMonth(month, 1))} className="text-kasuat-deep-gold hover:underline">Bulan berikutnya</Link>
+          <ExportLink href={`/projects/${projectId}/export/tracker?bulan=${month}`} />
         </nav>
       </div>
       <div className="grid gap-6 lg:grid-cols-2">

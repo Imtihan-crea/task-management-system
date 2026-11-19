@@ -1,14 +1,9 @@
 import Link from 'next/link'
 import { requireProfile } from '@/lib/auth/session'
-import { managedProjects } from '@/lib/auth/current-access'
-import { createAdminClient } from '@/lib/supabase/admin'
+import { loadWorkstreams, sanitizeWorkstreamSearch } from '@/lib/data/workstream-list'
+import { ExportLink } from '@/components/export/ExportLink'
 import { AppShell } from '@/components/layout/AppShell'
 import { PageHeader, EmptyState } from '@/components/ui/primitives'
-import { allRows } from '@/lib/utils/paginate'
-
-function sanitize(value: string | undefined): string {
-  return (value ?? '').replace(/[,()*%]/g, ' ').trim().slice(0, 60)
-}
 
 export default async function WorkstreamsPage({
   searchParams,
@@ -18,87 +13,16 @@ export default async function WorkstreamsPage({
   const profile = await requireProfile()
   const params = await searchParams
   const qRaw = typeof params.q === 'string' ? params.q : ''
-  const q = sanitize(qRaw).toLowerCase()
+  const q = sanitizeWorkstreamSearch(qRaw).toLowerCase()
 
-  const admin = createAdminClient()
-  const role = profile.role
-
-  // Scope mengikuti project scope (§18 PRD 08-09 + §34 PRD 03-04).
-  let projectIds: string[] | null = null
-  const granted = role === 'PROJECT_MANAGER' || role === 'TEAM_MEMBER' ? await managedProjects(profile.id) : null
-  if (granted?.all) {
-    projectIds = null
-  } else if (role === 'PROJECT_MANAGER') {
-    // Project kelolaan + yang diberi lewat aturan per akun.
-    projectIds = granted!.ids
-  } else if (role === 'TEAM_MEMBER') {
-    const { data: myTasks } = await admin
-      .from('tasks')
-      .select('project_id')
-      .eq('assignee_id', profile.id)
-      .eq('is_deleted', false)
-      .limit(1000)
-    projectIds = [
-      ...new Set([...((myTasks ?? []) as { project_id: string }[]).map((t) => t.project_id), ...granted!.ids]),
-    ]
-  }
-
-  let wsQuery = admin
-    .from('workstreams')
-    .select('id, project_id, code, name, description, created_at')
-    .order('created_at', { ascending: false })
-    .limit(500)
-  if (projectIds !== null) {
-    wsQuery =
-      projectIds.length > 0
-        ? wsQuery.in('project_id', projectIds)
-        : wsQuery.eq('project_id', '00000000-0000-0000-0000-000000000000')
-  }
-  if (q) wsQuery = wsQuery.ilike('name', `%${q}%`)
-
-  const [{ data: wsData }, { data: projData }] = await Promise.all([
-    wsQuery,
-    admin.from('projects').select('id, code, name').limit(500),
-  ])
-
-  const workstreams = (wsData ?? []) as {
-    id: string
-    project_id: string
-    code: string
-    name: string
-    description: string | null
-    created_at: string
-  }[]
-  const projectNames = Object.fromEntries(
-    ((projData ?? []) as { id: string; code: string; name: string }[]).map((p) => [
-      p.id,
-      `${p.code} · ${p.name}`,
-    ])
-  )
-
-  // Task count per workstream (satu query agregat ringan).
-  const wsIds = workstreams.map((w) => w.id)
-  const taskCounts: Record<string, number> = {}
-  if (wsIds.length > 0) {
-    const tasks = await allRows<{ workstream_id: string | null }>((from, to) =>
-      admin
-        .from('tasks')
-        .select('workstream_id')
-        .in('workstream_id', wsIds)
-        .eq('is_deleted', false)
-        .order('id')
-        .range(from, to)
-    )
-    for (const t of tasks) {
-      if (t.workstream_id) taskCounts[t.workstream_id] = (taskCounts[t.workstream_id] ?? 0) + 1
-    }
-  }
+  const { workstreams, projectNames, taskCounts } = await loadWorkstreams(profile, q)
 
   return (
     <AppShell>
       <PageHeader
         title="Workstreams"
         subtitle={`${workstreams.length} workstream`}
+        actions={<ExportLink href={`/workstreams/export${q ? `?q=${encodeURIComponent(q)}` : ''}`} />}
       />
 
       <form method="get" className="mt-4 flex flex-col gap-3 rounded-2xl bg-white p-4 shadow sm:flex-row sm:items-end dark:bg-zinc-900">

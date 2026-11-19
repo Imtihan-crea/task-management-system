@@ -1,0 +1,27 @@
+import type { NextRequest } from 'next/server'
+import { requireProfile } from '@/lib/auth/session'
+import { loadWorkstreams, sanitizeWorkstreamSearch } from '@/lib/data/workstream-list'
+import { excelResponse, exportInfo, type ExcelColumn } from '@/lib/export/excel'
+import { wibDate } from '@/lib/export/task-columns'
+import { todayISO } from '@/lib/utils/dates'
+
+export const dynamic = 'force-dynamic'
+
+/** Daftar Workstreams -> Excel. Cakupan project & pencarian sama dengan halaman /workstreams. */
+export async function GET(request: NextRequest) {
+  const profile = await requireProfile()
+  const q = sanitizeWorkstreamSearch(request.nextUrl.searchParams.get('q') ?? '').toLowerCase()
+  const { workstreams, projectNames, taskCounts } = await loadWorkstreams(profile, q)
+
+  type Row = (typeof workstreams)[number]
+  const columns: ExcelColumn<Row>[] = [
+    { header: 'Kode', width: 10, value: (w) => w.code },
+    { header: 'Nama', width: 36, value: (w) => w.name },
+    { header: 'Project', width: 30, value: (w) => projectNames[w.project_id] ?? '' },
+    { header: 'Deskripsi', width: 44, value: (w) => w.description },
+    { header: 'Jumlah Task', width: 10, value: (w) => taskCounts[w.id] ?? 0 },
+    { header: 'Dibuat', width: 12, value: (w) => wibDate(w.created_at) },
+  ]
+  const info = exportInfo(profile.full_name || profile.email, [`${workstreams.length} workstream`, ...(q ? [`Cari: ${q}`] : [])])
+  return excelResponse(`Workstreams ${todayISO()}`, [{ name: 'Workstreams', title: 'DAFTAR WORKSTREAMS', info, columns, rows: workstreams }])
+}

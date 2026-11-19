@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation'
 import { requireProfile } from '@/lib/auth/session'
 import { canApproveLeave } from '@/lib/auth/current-access'
 import { createAdminClient } from '@/lib/supabase/admin'
+import { ExportLink } from '@/components/export/ExportLink'
 import { AppShell } from '@/components/layout/AppShell'
 import { PageHeader } from '@/components/ui/primitives'
 import { DecideLeaveForm } from '@/components/leave/LeaveForms'
@@ -40,7 +41,11 @@ export default async function LeaveApprovalPage({ searchParams }: { searchParams
 
   return (
     <AppShell>
-      <PageHeader title="Persetujuan Cuti, Izin & Sakit" subtitle="Pengajuan sendiri harus diputuskan penyetuju lain." />
+      <PageHeader
+        title="Persetujuan Cuti, Izin & Sakit"
+        subtitle="Pengajuan sendiri harus diputuskan penyetuju lain."
+        actions={<ExportLink href={`/cuti/persetujuan/export?bulan=${month}`} />}
+      />
 
       <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
         <h2 className="mb-3 text-lg font-bold">Menunggu persetujuan ({pending.length})</h2>
