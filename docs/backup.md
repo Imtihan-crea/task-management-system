@@ -89,6 +89,13 @@ Catatan: remote `gdrive:` masih memakai client_id bersama rclone yang menurut
 peringatan rclone akan dihentikan selama 2026; buat client_id sendiri agar
 upload tidak berhenti (https://rclone.org/drive/#making-your-own-client-id).
 
+### Backup harian lewat email (dari server)
+
+Selain backup laptop di atas, aplikasi mengirim backup terenkripsi setiap hari
+sekitar 02:00 WIB ke `BACKUP_EMAIL_TO` (Vercel Cron `/api/cron/backup`). Isi
+tabel public + akun login lengkap dengan hash password (`auth.users`, `auth.identities`), env aplikasi, jadwal pg_cron, policy/fungsi/trigger, dan storage kecil (butuh migrasi 028). Cara membuka dan memulihkan:
+`scripts/backup/README.md`.
+
 ### Jadwal yang disarankan
 
 - Sebelum setiap migrasi database atau perubahan besar.
@@ -124,7 +131,7 @@ Kenapa ada `pre-restore.sql` dan `post-restore.sql` (ditemukan saat uji):
 Sesudah restore:
 1. Verifikasi ke project baru (ganti URL sementara):
    `NEXT_PUBLIC_SUPABASE_URL=https://<ref-baru>.supabase.co npm run test:rls`
-   (harus 26 lulus) dan `... npm run db:status` (harus SINKRON).
+   (harus 44 lulus) dan `... npm run db:status` (harus SINKRON).
 2. Arahkan env Vercel (`NEXT_PUBLIC_SUPABASE_URL`, anon key, service role key)
    ke project baru, lalu redeploy.
 3. Atur ulang Auth: matikan signup publik, Site URL dan Redirect URL

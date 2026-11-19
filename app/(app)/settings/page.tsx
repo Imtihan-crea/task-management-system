@@ -6,6 +6,12 @@ import { AppShell } from '@/components/layout/AppShell'
 import { PreferencesForm } from '@/components/notifications/NotificationComponents'
 import { PageHeader } from '@/components/ui/primitives'
 import type { NotificationPreferences } from '@/types/notification'
+import { loadAccess } from '@/lib/auth/current-access'
+import { isTopLevel } from '@/lib/auth/access'
+import { BackupNowButton } from '@/components/settings/BackupNowButton'
+
+// Server action backup (tombol Super Admin/Developer) butuh lebih dari batas bawaan.
+export const maxDuration = 60
 
 const DEFAULT_PREFS = {
   email_enabled: true,
@@ -19,6 +25,7 @@ const DEFAULT_PREFS = {
 export default async function SettingsPage() {
   const profile = await requireProfile()
   const admin = createAdminClient()
+  const topLevel = isTopLevel(await loadAccess(profile.id))
 
   const { data: prefs } = await admin
     .from('notification_preferences')
@@ -68,6 +75,17 @@ export default async function SettingsPage() {
           initial={{ user_id: profile.id, ...(prefs ?? DEFAULT_PREFS) }}
         />
       </section>
+
+      {topLevel && (
+        <section id="backup" className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+          <h2 className="mb-2 text-lg font-bold">Backup database</h2>
+          <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-400">
+            Backup terenkripsi dikirim otomatis setiap hari antara pukul 02.00 dan 03.00 WIB ke email penerima backup.
+            Tombol ini mengirim backup tambahan saat ini juga. Riwayatnya tercatat di Activity.
+          </p>
+          <BackupNowButton />
+        </section>
+      )}
     </AppShell>
   )
 }

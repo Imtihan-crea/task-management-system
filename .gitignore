@@ -46,3 +46,6 @@ next-env.d.ts
 
 # cache Supabase CLI (link project lokal)
 /supabase/.temp/
+
+# berkas backup terenkripsi (lib/backup); jangan pernah di-commit
+*.tmsbak*
