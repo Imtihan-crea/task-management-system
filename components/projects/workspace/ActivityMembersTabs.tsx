@@ -21,7 +21,7 @@ export async function ActivityTab({ projectId }: { projectId: string }) {
   const activityActors = await resolveActorNames(projectActivity)
 
   return (
-    <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+    <section className="rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
       <h2 className="mb-3 text-lg font-bold">Activity Project</h2>
       <ActivityTimeline entries={projectActivity} actorNames={activityActors} />
     </section>
@@ -60,7 +60,7 @@ export async function MembersTab({ projectId }: { projectId: string }) {
   }
 
   return (
-    <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+    <section className="rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
       <h2 className="mb-3 text-lg font-bold">Anggota ({members.length})</h2>
       {members.length === 0 ? (
         <p className="text-sm text-zinc-600 dark:text-zinc-400">Belum ada anggota.</p>

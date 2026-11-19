@@ -97,7 +97,7 @@ export default async function NewMeetingPage({
     <AppShell>
       <Link
         href={lockedProject ? `/projects/${lockedProject.id}?tab=meetings` : '/meetings'}
-        className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline"
+        className="inline-flex min-h-[44px] items-center text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline"
       >
         &larr; Kembali ke {lockedProject ? `${lockedProject.code} · ${lockedProject.name}` : 'Meetings'}
       </Link>
@@ -108,7 +108,7 @@ export default async function NewMeetingPage({
         </p>
       )}
 
-      <div className="mt-4 rounded-2xl bg-white p-4 shadow dark:bg-zinc-900">
+      <div className="mt-4 rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900">
         <MeetingForm
           projects={projects}
           users={users}

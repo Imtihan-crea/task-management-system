@@ -33,7 +33,7 @@ export default async function ProfilePage() {
       </p>
 
       <div className="mt-4 flex flex-col gap-6 lg:flex-row lg:items-start">
-        <section className="flex-1 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+        <section className="flex-1 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
           <h2 className="mb-2 text-lg font-bold">Akun</h2>
           <dl>
             <Row label="Email" value={profile.email} />
@@ -46,7 +46,7 @@ export default async function ProfilePage() {
           </dl>
         </section>
 
-        <section id="edit-name" className="flex-1 rounded-2xl bg-white p-5 shadow scroll-mt-20 dark:bg-zinc-900">
+        <section id="edit-name" className="flex-1 rounded-2xl bg-white p-4 shadow-sm sm:p-5 scroll-mt-20 dark:bg-zinc-900">
           <h2 className="mb-4 text-lg font-bold">Ubah Nama</h2>
           <EditOwnNameForm fullName={profile.full_name ?? ''} />
         </section>

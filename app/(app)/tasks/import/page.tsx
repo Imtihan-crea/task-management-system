@@ -24,7 +24,7 @@ export default async function ImportTasksPage({
 
   return (
     <AppShell>
-      <Link href="/tasks" className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline">
+      <Link href="/tasks" className="inline-flex min-h-[44px] items-center text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline">
         &larr; Kembali ke Tasks
       </Link>
       <h1 className="mt-2 text-2xl font-bold">Import Task dari Excel</h1>
@@ -47,7 +47,7 @@ export default async function ImportTasksPage({
         </ul>
       </div>
 
-      <div className="mt-4 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+      <div className="mt-4 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
         <ImportTimelineForm
           projects={(projects ?? []) as { id: string; code: string; name: string }[]}
           users={users}

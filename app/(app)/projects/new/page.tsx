@@ -13,12 +13,12 @@ export default async function NewProjectPage({ searchParams }: { searchParams: P
 
   return (
     <AppShell>
-      <Link href="/projects" className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline">
+      <Link href="/projects" className="inline-flex min-h-[44px] items-center text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline">
         &larr; Kembali ke Projects
       </Link>
       <h1 className="mt-2 text-xl font-bold">Buat Project</h1>
 
-      <div className="mt-4 rounded-2xl bg-white p-4 shadow dark:bg-zinc-900">
+      <div className="mt-4 rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900">
         <ProjectForm mode="create" managers={managers} initial={{ client: initialClient }} />
       </div>
     </AppShell>

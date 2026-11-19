@@ -131,7 +131,7 @@ export default async function TaskDetailPage({
 
   return (
     <AppShell>
-      <Link href="/tasks" className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline">
+      <Link href="/tasks" className="inline-flex min-h-[44px] items-center text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline">
         &larr; Kembali ke Tasks
       </Link>
 
@@ -146,7 +146,7 @@ export default async function TaskDetailPage({
       </div>
 
       <div className="mt-4 grid gap-6 lg:grid-cols-2 lg:items-start">
-        <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+        <section className="rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
           <h2 className="mb-2 text-lg font-bold">Detail Task</h2>
           <dl>
             <Row label="Project" value={project ? `${project.code} · ${project.name}` : '-'} />
@@ -240,7 +240,7 @@ export default async function TaskDetailPage({
         </section>
 
         {canFullEdit && (
-          <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+          <section className="rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
             <h2 className="mb-4 text-lg font-bold">Ubah Task</h2>
             <TaskForm
               mode="edit"

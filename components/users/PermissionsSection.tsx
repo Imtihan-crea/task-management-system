@@ -13,7 +13,7 @@ export async function PermissionsSection({
 }) {
   if (user.is_super_admin || user.is_developer) {
     return (
-      <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+      <section className="rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
         <h2 className="text-lg font-bold">Wewenang</h2>
         <p className="mt-2 text-sm">{user.is_super_admin ? 'Super Admin' : 'Developer'} selalu punya semua izin.</p>
       </section>
@@ -47,7 +47,7 @@ export async function PermissionsSection({
   const projectRules = rules.filter((r) => r.project_id !== null)
 
   return (
-    <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+    <section className="rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
       <h2 className="text-lg font-bold">Wewenang</h2>
       <p className="mt-1 text-sm text-zinc-600 dark:text-zinc-400">
         Peran menjadi paket awal. &quot;Beri&quot; atau &quot;Cabut&quot; berlaku untuk akun ini saja. Izin project dari

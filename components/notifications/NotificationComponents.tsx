@@ -26,7 +26,7 @@ export function NotificationList({ items }: { items: NotificationItem[] }) {
       {items.map((n) => (
         <li
           key={n.id}
-          className={`rounded-2xl bg-white p-4 shadow dark:bg-zinc-900 ${n.is_read ? 'opacity-70' : ''}`}
+          className={`rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900 ${n.is_read ? 'opacity-70' : ''}`}
         >
           <div className="flex items-start gap-3">
             <span aria-hidden="true" className="mt-0.5">

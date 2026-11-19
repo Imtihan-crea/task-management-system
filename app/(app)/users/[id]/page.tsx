@@ -73,7 +73,7 @@ export default async function UserDetailPage({
     <AppShell>
       <Link
         href="/users"
-        className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline"
+        className="inline-flex min-h-[44px] items-center text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline"
       >
         &larr; Kembali ke Users
       </Link>
@@ -81,7 +81,7 @@ export default async function UserDetailPage({
       <h1 className="mt-2 text-2xl font-bold">Detail User</h1>
 
       <div className="mt-4 flex flex-col gap-6 lg:flex-row lg:items-start">
-        <section className="flex-1 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+        <section className="flex-1 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
           <dl>
             <Row label="Nama Lengkap" value={profile.full_name || '-'} />
             <Row label="Email" value={profile.email} />
@@ -111,7 +111,7 @@ export default async function UserDetailPage({
         </section>
 
         {!profile.deleted_at && (
-          <section className="flex-1 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+          <section className="flex-1 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
             <h2 className="mb-4 text-lg font-bold">Ubah User</h2>
             <EditUserForm user={profile} isSelf={viewer.id === profile.id} />
           </section>
@@ -119,7 +119,7 @@ export default async function UserDetailPage({
       </div>
 
       {(canViewHr || canManageHr) && !profile.deleted_at && (
-        <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+        <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
           <h2 className="mb-4 text-lg font-bold">Data Karyawan</h2>
           <EmployeeProfileForm
             userId={profile.id}
@@ -132,7 +132,7 @@ export default async function UserDetailPage({
       )}
 
       {canManagePermissions && !profile.deleted_at && (
-        <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+        <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
           <h2 className="mb-4 text-lg font-bold">Tindakan Super Admin</h2>
           <TopActionForms
             user={profile}

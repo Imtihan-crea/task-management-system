@@ -112,7 +112,7 @@ export default async function MeetingDetailPage({
 
   return (
     <AppShell>
-      <Link href="/meetings" className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline">
+      <Link href="/meetings" className="inline-flex min-h-[44px] items-center text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline">
         &larr; Kembali ke Meetings
       </Link>
 

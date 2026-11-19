@@ -30,7 +30,7 @@ export default async function SettingsPage() {
     <AppShell>
       <PageHeader title="Pengaturan" subtitle="Pengaturan akun dan notifikasi." />
 
-      <section className="mt-4 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+      <section className="mt-4 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
         <h2 className="mb-2 text-lg font-bold">Akun</h2>
         <dl>
           <div className="flex flex-col gap-0.5 border-b py-2.5 last:border-0 sm:flex-row sm:justify-between sm:gap-4">
@@ -59,7 +59,7 @@ export default async function SettingsPage() {
         </p>
       </section>
 
-      <section id="preferences" className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+      <section id="preferences" className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
         <h2 className="mb-2 text-lg font-bold">Preferensi Email</h2>
         <p className="mb-4 text-sm text-zinc-600 dark:text-zinc-400">
           Notifications di dalam aplikasi selalu muncul. Email dapat dimatikan di sini.

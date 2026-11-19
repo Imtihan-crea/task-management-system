@@ -178,7 +178,7 @@ export function MeetingForm({
           {users.map((u) => (
             <label
               key={u.id}
-              className="flex min-h-[40px] cursor-pointer items-center gap-3 rounded-lg px-2 hover:bg-zinc-50 dark:hover:bg-zinc-800"
+              className="flex min-h-[44px] cursor-pointer items-center gap-3 rounded-lg px-2 hover:bg-zinc-50 dark:hover:bg-zinc-800"
             >
               <input
                 type="checkbox"

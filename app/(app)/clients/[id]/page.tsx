@@ -11,7 +11,7 @@ import { getActiveUsers } from '@/lib/data/users'
 import { displayName } from '@/lib/data/user-options'
 import { formatDateTime } from '@/lib/utils/dates'
 
-const CARD = 'mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900'
+const CARD = 'mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900'
 
 export default async function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const profile = await requireProfile()
@@ -30,7 +30,7 @@ export default async function LeadDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <AppShell>
-      <Link href="/clients" className="text-sm font-medium text-zinc-600 hover:underline dark:text-zinc-400">&larr; Kembali ke Client Management</Link>
+      <Link href="/clients" className="inline-flex min-h-[44px] items-center text-sm font-medium text-zinc-600 hover:underline dark:text-zinc-400">&larr; Kembali ke Client Management</Link>
       <div className="mt-2">
         <PageHeader
           title={lead.company_name}

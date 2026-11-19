@@ -98,7 +98,7 @@ export default async function SuggestionDetailPage({
 
   return (
     <AppShell>
-      <Link href="/task-suggestions" className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline">
+      <Link href="/task-suggestions" className="inline-flex min-h-[44px] items-center text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline">
         &larr; Kembali ke Suggestions
       </Link>
 
@@ -110,7 +110,7 @@ export default async function SuggestionDetailPage({
       </div>
 
       <div className="mt-4 grid gap-6 lg:grid-cols-2 lg:items-start">
-        <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+        <section className="rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
           <h2 className="mb-2 text-lg font-bold">Detail Suggestion</h2>
           <dl>
             <Row label="Project" value={project ? `${project.code} · ${project.name}` : '-'} />
@@ -158,7 +158,7 @@ export default async function SuggestionDetailPage({
 
         <div className="flex flex-col gap-6">
           {canReview && (
-            <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+            <section className="rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
               <h2 className="mb-4 text-lg font-bold">Review Suggestion</h2>
               <ReviewForm
                 id={suggestion.id}
@@ -171,7 +171,7 @@ export default async function SuggestionDetailPage({
           )}
 
           {canResubmit && (
-            <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+            <section className="rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
               <h2 className="mb-4 text-lg font-bold">Perbaiki & Submit Ulang</h2>
               <ResubmitForm
                 id={suggestion.id}

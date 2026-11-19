@@ -29,7 +29,7 @@ export default async function UpdateLogPage() {
         {UPDATE_LOG.map((entry, i) => (
           <section
             key={`${entry.date}-${entry.version ?? i}`}
-            className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900"
+            className="rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900"
           >
             <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
               <h2 className="text-lg font-bold">{entry.title ?? formatDate(entry.date)}</h2>

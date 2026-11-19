@@ -62,7 +62,7 @@ export async function OverviewTab({ projectId }: { projectId: string }) {
 
   return (
     <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
-      <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+      <section className="rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
         <h2 className="mb-2 text-lg font-bold">Detail Project</h2>
         <dl>
           <Row label="Project ID" value={project.code} />
@@ -75,7 +75,7 @@ export async function OverviewTab({ projectId }: { projectId: string }) {
         </dl>
       </section>
 
-      <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+      <section className="rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
         <h2 className="mb-2 text-lg font-bold">Progress Project</h2>
         <div className="flex items-center gap-3">
           <span className="rounded-md bg-zinc-100 px-2 py-1 font-mono text-sm dark:bg-zinc-800">

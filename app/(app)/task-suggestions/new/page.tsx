@@ -46,7 +46,7 @@ export default async function NewSuggestionPage({
 
   return (
     <AppShell>
-      <Link href="/task-suggestions" className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline">
+      <Link href="/task-suggestions" className="inline-flex min-h-[44px] items-center text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline">
         &larr; Kembali ke Suggestions
       </Link>
       <h1 className="mt-2 text-2xl font-bold">Usulkan Task</h1>
@@ -59,7 +59,7 @@ export default async function NewSuggestionPage({
           Tidak ada Project yang tersedia. Anda hanya dapat mengusulkan Task untuk Project yang Anda ikuti.
         </p>
       ) : (
-        <div className="mt-4 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+        <div className="mt-4 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
           <SuggestionForm
             projects={projects}
             workstreams={(workstreams ?? []) as { id: string; project_id: string; code: string; name: string }[]}

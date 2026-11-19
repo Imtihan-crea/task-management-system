@@ -73,7 +73,7 @@ export async function OverviewSection({
 
   return (
     <div className="grid gap-6 lg:grid-cols-2 lg:items-start">
-      <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+      <section className="rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
         <h2 className="mb-2 text-lg font-bold">Detail Meeting</h2>
         <dl>
           <Row label="Project" value={project ? `${project.code} · ${project.name}` : 'Global (tanpa project)'} />
@@ -107,7 +107,7 @@ export async function OverviewSection({
       </section>
 
       <div className="flex flex-col gap-6">
-        <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+        <section className="rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
           <h2 className="mb-2 text-lg font-bold">Peserta ({participants.length})</h2>
           {participants.length === 0 ? (
             <p className="text-sm text-zinc-600 dark:text-zinc-400">Belum ada peserta.</p>
@@ -134,7 +134,7 @@ export async function OverviewSection({
         </section>
 
         {editable && (
-          <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+          <section className="rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
             <h2 className="mb-4 text-lg font-bold">Ubah Meeting</h2>
             <MeetingEditForm
               meeting={meeting}
@@ -163,7 +163,7 @@ export async function AgendaSection({
   const ids = items.map((a) => a.id)
 
   return (
-    <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+    <section className="rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
       <h2 className="mb-3 text-lg font-bold">Agenda ({items.length})</h2>
       {items.length === 0 ? (
         <p className="text-sm text-zinc-600 dark:text-zinc-400">Belum ada Agenda.</p>
@@ -214,7 +214,7 @@ export function NotesSection({
   canContent: boolean
 }) {
   return (
-    <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+    <section className="rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
       <h2 className="mb-3 text-lg font-bold">Notes</h2>
       {canContent ? (
         <NotesForm meetingId={meetingId} initial={notes} />
@@ -239,7 +239,7 @@ export async function DecisionsSection({
   const items = await fetchMeetingDecisions(meetingId)
 
   return (
-    <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+    <section className="rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
       <h2 className="mb-3 text-lg font-bold">Decisions ({items.length})</h2>
       {items.length === 0 ? (
         <p className="text-sm text-zinc-600 dark:text-zinc-400">Belum ada Decision yang dicatat.</p>
@@ -308,7 +308,7 @@ export async function ActionsSection({
   const openCount = items.filter((a) => a.status === 'OPEN' || a.status === 'IN_PROGRESS').length
 
   return (
-    <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+    <section className="rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
       <h2 className="mb-3 text-lg font-bold">
         Action Items ({items.length}
         {openCount > 0 ? ` · ${openCount} terbuka` : ''})
@@ -378,7 +378,7 @@ export async function MeetingActivitySection({ meetingId }: { meetingId: string 
   const actorNames = await resolveActorNames(entries)
 
   return (
-    <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+    <section className="rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
       <h2 className="mb-3 text-lg font-bold">Activity</h2>
       {entries.length === 0 ? (
         <p className="text-sm text-zinc-600 dark:text-zinc-400">Belum ada Activity.</p>

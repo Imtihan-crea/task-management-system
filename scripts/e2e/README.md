@@ -34,6 +34,8 @@ npm run e2e:a3       # ganti password paksa + link reset (audit A3)
 npm run e2e:manual-f # uji manual audit bagian F (A2, A4, A5, A6, A8, A12) + PM tidak bisa memindah task ke project lain
 npm run e2e:roles    # klik nyata 31 aksi x 6 role (Admin, PM, PM lain, assignee, member lain, Viewer): berhak -> DB berubah; tidak berhak -> tombol tidak ada + server action diputar ulang ditolak
 npm run e2e:cleanup   # hapus sisa data UJI-E2E (jika run terputus)
+node scripts/e2e/shots.mjs  # baca-saja: screenshot semua halaman di 390/412/1366/1440 + result.json (overflow horizontal, target sentuh < 44px).
+                            # OUT=folder (bawaan ~/.cache/taskmgmt-smoke/shots), VIEWS=iphone,windows, PAGES=/dashboard,/tasks, DARK=1
 ```
 
 Hentikan server setelah selesai (cek cwd proses sebelum `kill`):

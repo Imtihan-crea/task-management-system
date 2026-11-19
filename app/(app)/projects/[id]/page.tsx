@@ -161,7 +161,7 @@ export default async function ProjectDetailPage({
 
   return (
     <AppShell>
-      <Link href="/projects" className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline">
+      <Link href="/projects" className="inline-flex min-h-[44px] items-center text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline">
         &larr; Kembali ke Projects
       </Link>
 
@@ -256,7 +256,7 @@ export default async function ProjectDetailPage({
       </div>
       {/* SUGGESTIONS ringkas — entry point kontekstual per project */}
       {(can(profile.role, 'suggestions.create') || canEditThis) && (
-        <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+        <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
           <div className="flex flex-wrap items-center justify-between gap-2">
             <h2 className="text-lg font-bold">Suggestions</h2>
             {canSuggestHere && (

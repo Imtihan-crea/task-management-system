@@ -33,7 +33,7 @@ export async function WorkstreamsTab({
   const taskList = (tasks ?? []) as { id: string; workstream_id: string | null }[]
 
   return (
-    <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+    <section className="rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
       <h2 className="text-lg font-bold">Workstreams ({wsList.length})</h2>
       {wsList.length === 0 ? (
         <p className="mt-2 text-sm text-zinc-600 dark:text-zinc-400">Belum ada Workstream.</p>
@@ -66,7 +66,7 @@ export async function WorkstreamsTab({
                 </div>
                 {canManage && (
                   <details className="mt-2">
-                    <summary className="cursor-pointer text-sm font-medium text-zinc-600 dark:text-zinc-400">
+                    <summary className="inline-flex min-h-[44px] cursor-pointer items-center text-sm font-medium text-zinc-600 dark:text-zinc-400">
                       Ubah
                     </summary>
                     <div className="mt-2">

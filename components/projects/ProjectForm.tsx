@@ -178,7 +178,7 @@ export function ProjectForm({
   const values = initial ?? {}
 
   return (
-    <section className="rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+    <section className="rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
       <h2 className="text-lg font-bold">
         {mode === 'create' ? 'Buat Project' : 'Ubah Project'}
       </h2>

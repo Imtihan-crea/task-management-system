@@ -9,7 +9,7 @@ export default async function AddUserPage() {
 
   return (
     <AppShell>
-      <Link href="/users" className="text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline">
+      <Link href="/users" className="inline-flex min-h-[44px] items-center text-sm font-medium text-zinc-600 dark:text-zinc-400 hover:underline">
         &larr; Kembali ke Users
       </Link>
       <h1 className="mt-2 text-xl font-bold">Tambah User</h1>

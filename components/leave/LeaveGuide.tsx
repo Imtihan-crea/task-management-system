@@ -23,7 +23,7 @@ export function LeaveGuide({ types, jointUsesQuota }: { types: LeaveType[]; join
   const counted = types.filter((t) => t.counts_hours).map((t) => t.label)
   const notCounted = types.filter((t) => !t.counts_hours).map((t) => t.label)
   return (
-    <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+    <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
       <details>
         <summary className="min-h-[44px] cursor-pointer text-lg font-bold">Panduan jenis cuti</summary>
         <div className="mt-3 space-y-4 text-sm leading-relaxed">
