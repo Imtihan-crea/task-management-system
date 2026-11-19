@@ -40,7 +40,7 @@ export const PORTAL_APPS: PortalApp[] = [
   {
     key: 'cuti',
     title: 'Cuti',
-    description: 'Ajukan cuti, izin, atau sakit dan pantau statusnya.',
+    description: 'Ajukan cuti dan pantau statusnya.',
     items: [
       { href: '/cuti', label: 'Cuti', permission: null },
       { href: '/cuti/persetujuan', label: 'Persetujuan Cuti', permission: 'leave.approve' },
