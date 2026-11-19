@@ -8,6 +8,14 @@ import { BellPopover, GlobalSearch, ProfileMenu } from '@/components/layout/Topb
 
 const STORAGE_KEY = 'kasuat.sidebar.collapsed'
 
+function MenuIcon() {
+  return (
+    <svg aria-hidden="true" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={2} strokeLinecap="round" className="h-5 w-5">
+      <path d="M4 6h16M4 12h16M4 18h16" />
+    </svg>
+  )
+}
+
 /**
  * Persistent application shell (§5): sidebar + header tetap mounted
  * saat content berubah. Desktop: sidebar persisten (expanded/collapsed
@@ -78,20 +86,20 @@ export function Shell({
               aria-label={collapsed ? 'Perluas navigasi' : 'Ciutkan navigasi'}
               aria-expanded={!collapsed}
               title={collapsed ? 'Perluas navigasi' : 'Ciutkan navigasi'}
-              className="hidden min-h-[40px] min-w-[40px] items-center justify-center rounded-lg border border-zinc-300 text-lg lg:inline-flex dark:border-zinc-700"
+              className="hidden min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-zinc-600 hover:bg-zinc-100 hover:text-kasuat-black lg:inline-flex dark:text-zinc-400 dark:hover:bg-zinc-800 dark:hover:text-zinc-100"
             >
-              <span aria-hidden="true">☰</span>
+              <MenuIcon />
             </button>
             <button
               type="button"
               onClick={() => setDrawer(true)}
               aria-label="Buka navigasi"
-              className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg border border-zinc-300 text-lg lg:hidden dark:border-zinc-700"
+              className="-ml-1 inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-zinc-800 hover:bg-zinc-100 lg:hidden dark:text-zinc-200 dark:hover:bg-zinc-800"
             >
-              <span aria-hidden="true">☰</span>
+              <MenuIcon />
             </button>
             <GlobalSearch />
-            <div className="ml-auto flex items-center gap-2">
+            <div className="ml-auto flex items-center gap-1">
               <BellPopover />
               <ProfileMenu name={name} email={email} role={role} />
             </div>
@@ -124,7 +132,7 @@ export function Shell({
                 type="button"
                 onClick={() => setDrawer(false)}
                 aria-label="Tutup navigasi"
-                className="inline-flex min-h-[40px] min-w-[40px] items-center justify-center rounded-lg text-zinc-200"
+                className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg text-zinc-200"
               >
                 <span aria-hidden="true">✕</span>
               </button>

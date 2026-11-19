@@ -14,6 +14,8 @@ export function Popover({
   nameFromContent = false,
   open: openProp,
   onOpenChange,
+  bare = false,
+  panelClassName = 'w-80',
 }: {
   label: string
   button: ReactNode
@@ -24,6 +26,9 @@ export function Popover({
   /** Opsional: kendalikan buka/tutup dari luar (mis. muat data saat dibuka). */
   open?: boolean
   onOpenChange?: (open: boolean) => void
+  /** Tombol tanpa bingkai (ikon di topbar). */
+  bare?: boolean
+  panelClassName?: string
 }) {
   const [innerOpen, setInnerOpen] = useState(false)
   const open = openProp ?? innerOpen
@@ -66,7 +71,9 @@ export function Popover({
         aria-expanded={open}
         aria-controls={panelId}
         onClick={() => setOpen((v) => !v)}
-        className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-lg border border-zinc-300 px-3 py-2 text-sm font-medium text-zinc-800 hover:bg-zinc-100 dark:border-zinc-700 dark:text-zinc-200 dark:hover:bg-zinc-800"
+        className={`inline-flex min-h-[44px] min-w-[44px] items-center justify-center gap-1.5 rounded-lg text-sm font-medium text-zinc-800 hover:bg-zinc-100 dark:text-zinc-200 dark:hover:bg-zinc-800 ${
+          bare ? 'px-2' : 'w-full border border-zinc-300 bg-white px-3 py-2 font-semibold dark:border-zinc-700 dark:bg-transparent'
+        }`}
       >
         {button}
       </button>
@@ -75,7 +82,7 @@ export function Popover({
           id={panelId}
           role="dialog"
           aria-label={label}
-          className={`absolute z-50 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900 ${
+          className={`absolute z-50 mt-2 ${panelClassName} max-w-[calc(100vw-2rem)] rounded-2xl border border-zinc-200 bg-white shadow-lg dark:border-zinc-700 dark:bg-zinc-900 ${
             align === 'right' ? 'right-0' : 'left-0'
           }`}
         >

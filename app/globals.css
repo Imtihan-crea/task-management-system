@@ -51,3 +51,165 @@ h2,
 h3 {
   font-family: var(--font-heading), sans-serif;
 }
+
+@layer base {
+  /* Tailwind v4: `border` tanpa warna = currentColor (garis hitam tebal di mana-mana). Kembalikan ke
+     garis abu ringan; kontrol form tetap >= 3:1 terhadap latar supaya batasnya terlihat. */
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    border-color: #d4d4d8;
+  }
+  input:not([type='checkbox']):not([type='radio']),
+  select,
+  textarea {
+    border-color: #71717a;
+  }
+  @media (prefers-color-scheme: dark) {
+    *,
+    ::after,
+    ::before,
+    ::backdrop,
+    ::file-selector-button {
+      border-color: #3f3f46;
+    }
+    input:not([type='checkbox']):not([type='radio']),
+    select,
+    textarea {
+      border-color: #52525b;
+    }
+  }
+
+  /* Target sentuh minimal 44px untuk semua field; kotak centang memakai labelnya sebagai target. */
+  input:not([type='checkbox']):not([type='radio']):not([type='hidden']),
+  select {
+    min-height: 2.75rem;
+  }
+  label:has(> input[type='checkbox']),
+  label:has(> input[type='radio']),
+  input[type='checkbox'] + label,
+  input[type='radio'] + label {
+    min-height: 2.75rem;
+    align-items: center;
+  }
+
+  /* Fokus keyboard terlihat di semua elemen (emas tua: kontras >= 3:1 di putih, emas utama di mode gelap). */
+  :focus-visible {
+    outline: 2px solid var(--kasuat-deep-gold);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Petunjuk bisa digeser: bayangan muncul di tepi yang masih punya isi (CSS saja, tanpa JS). */
+  .scroll-x-hint {
+    --hint-bg: #fff;
+    --hint-shadow: rgb(0 0 0 / 0.16);
+    background:
+      linear-gradient(to right, var(--hint-bg) 30%, transparent) left center / 2.5rem 100% no-repeat local,
+      linear-gradient(to left, var(--hint-bg) 30%, transparent) right center / 2.5rem 100% no-repeat local,
+      radial-gradient(farthest-side at 0 50%, var(--hint-shadow), transparent) left center / 0.9rem 100% no-repeat scroll,
+      radial-gradient(farthest-side at 100% 50%, var(--hint-shadow), transparent) right center / 0.9rem 100% no-repeat scroll,
+      var(--hint-bg);
+  }
+  /* Di atas latar halaman (bukan kartu): ikuti warna latar Shell (off-white di HP, zinc-50 di panel laptop). */
+  .scroll-x-hint.hint-page {
+    --hint-bg: var(--kasuat-off-white);
+  }
+  @media (min-width: 64rem) {
+    .scroll-x-hint.hint-page {
+      --hint-bg: #fafafa;
+    }
+  }
+  @media (prefers-color-scheme: dark) {
+    .scroll-x-hint {
+      --hint-bg: #18181b;
+      --hint-shadow: rgb(255 255 255 / 0.14);
+    }
+    .scroll-x-hint.hint-page {
+      --hint-bg: #000;
+    }
+  }
+  @media (prefers-color-scheme: dark) and (min-width: 64rem) {
+    .scroll-x-hint.hint-page {
+      --hint-bg: #09090b;
+    }
+  }
+
+}
+
+/* Form periode Daily Tracker: tampilkan hanya field milik periode terpilih (CSS :has, jalan tanpa JS). */
+.period-form:has(select[name='periode'] option[value='minggu']:checked) [data-period]:not([data-period='minggu']),
+.period-form:has(select[name='periode'] option[value='bulan']:checked) [data-period]:not([data-period='bulan']),
+.period-form:has(select[name='periode'] option[value='rentang']:checked) [data-period]:not([data-period='rentang']) {
+  display: none;
+}
+
+/* Tabel bertumpuk di HP: tiap baris jadi kartu, judul kolom dari data-label. Tanpa lapisan (unlayered) supaya
+   mengalahkan utilitas padding/teks di sel. Di md ke atas tetap tabel biasa. */
+@media (max-width: 47.99rem) {
+  .stack-table thead {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
+  .stack-table,
+  .stack-table tbody,
+  .stack-table tr,
+  .stack-table td {
+    display: block;
+    width: 100%;
+  }
+  .stack-table tr {
+    padding: 0.625rem 0;
+  }
+  .stack-table td {
+    display: flex;
+    gap: 0.75rem;
+    padding: 0.125rem 0;
+    text-align: left;
+    white-space: normal;
+    min-width: 0;
+  }
+  .stack-table td:empty {
+    display: none;
+  }
+  .stack-table td[data-label]::before {
+    content: attr(data-label);
+    flex: 0 0 6.5rem;
+    font-size: 0.75rem;
+    line-height: 1.25rem;
+    font-weight: 500;
+    color: #52525b;
+  }
+  .stack-table td > * {
+    min-width: 0;
+  }
+  .stack-table td > :last-child {
+    flex: 1 1 auto;
+  }
+}
+@media (max-width: 47.99rem) and (prefers-color-scheme: dark) {
+  .stack-table td[data-label]::before {
+    color: #a1a1aa;
+  }
+}
+
+/* Panel filter: tombol "Filter" hanya di HP; di laptop isinya selalu tampil. Tanpa lapisan supaya mengalahkan
+   utilitas `flex` di <summary>. Browser lama tanpa ::details-content tetap memakai tombol lipat. */
+@media (min-width: 48rem) {
+  @supports selector(::details-content) {
+    details.filter-panel > summary {
+      display: none;
+    }
+    details.filter-panel::details-content {
+      content-visibility: visible;
+      display: block;
+    }
+  }
+}

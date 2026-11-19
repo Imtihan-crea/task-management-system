@@ -53,6 +53,7 @@ export function BellPopover() {
       open={open}
       onOpenChange={setOpen}
       label="Notifications"
+      bare
       button={
         <span className="relative inline-flex items-center">
           <svg
@@ -156,6 +157,7 @@ export function ProfileMenu({
     <Popover
       label="Menu profil"
       nameFromContent
+      bare
       button={
         <span className="flex items-center gap-2">
           <span aria-hidden="true" className="flex h-8 w-8 items-center justify-center rounded-full bg-kasuat-gold text-xs font-bold text-kasuat-black">
@@ -246,7 +248,7 @@ export function GlobalSearch() {
         value={value}
         onChange={(e) => onChange(e.target.value)}
         placeholder="Cari project, task, atau apapun...  (Ctrl+K)"
-        className="h-10 w-full max-w-md rounded-lg border border-zinc-700 bg-zinc-800 px-3 text-sm text-zinc-100 placeholder:text-zinc-500"
+        className="h-10 w-full max-w-md rounded-lg border border-zinc-200 bg-zinc-100 px-3 text-sm text-zinc-900 placeholder:text-zinc-600 dark:border-zinc-700 dark:bg-zinc-800 dark:text-zinc-100 dark:placeholder:text-zinc-400"
       />
     </form>
   )

@@ -1,29 +1,30 @@
 import type { ProjectStatus } from '@/types/project'
 import type { TaskPriority, TaskStatus } from '@/types/task'
 
-const BASE = 'inline-flex min-h-[28px] items-center rounded-full border px-2 py-0.5 text-xs font-semibold'
+// Pil berwarna lembut tanpa bingkai: tetap terbaca (teks >= 4.5:1) tanpa membuat baris terasa berat.
+const BASE = 'inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold leading-5'
 
 const TASK_STATUS_STYLE: Record<TaskStatus, string> = {
-  TODO: 'border-zinc-300 text-zinc-600 dark:border-zinc-600 dark:text-zinc-300',
-  IN_PROGRESS: 'border-blue-400 text-blue-600 dark:text-blue-300',
-  REVIEW: 'border-amber-400 text-amber-600 dark:text-amber-300',
-  BLOCKED: 'border-red-500 text-red-700 dark:text-red-300',
-  DONE: 'border-green-600 text-green-700 dark:text-green-300',
-  CANCELLED: 'border-zinc-500 text-zinc-600 dark:border-zinc-500 dark:text-zinc-400',
+  TODO: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
+  IN_PROGRESS: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
+  REVIEW: 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
+  BLOCKED: 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300',
+  DONE: 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300',
+  CANCELLED: 'bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400',
 }
 
 const PRIORITY_STYLE: Record<TaskPriority, string> = {
-  LOW: 'border-zinc-300 text-zinc-600 dark:border-zinc-600 dark:text-zinc-300',
-  MEDIUM: 'border-blue-400 text-blue-600 dark:text-blue-300',
-  HIGH: 'border-red-500 text-red-700 dark:text-red-300',
+  LOW: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
+  MEDIUM: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
+  HIGH: 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300',
 }
 
 const PROJECT_STATUS_STYLE: Record<ProjectStatus, string> = {
-  PLANNING: 'border-zinc-300 text-zinc-600 dark:border-zinc-600 dark:text-zinc-300',
-  ACTIVE: 'border-blue-400 text-blue-600 dark:text-blue-300',
-  ON_HOLD: 'border-amber-400 text-amber-600 dark:text-amber-300',
-  COMPLETED: 'border-green-600 text-green-700 dark:text-green-300',
-  CANCELLED: 'border-red-500 text-red-700 dark:text-red-300',
+  PLANNING: 'bg-zinc-100 text-zinc-700 dark:bg-zinc-800 dark:text-zinc-300',
+  ACTIVE: 'bg-blue-50 text-blue-700 dark:bg-blue-950 dark:text-blue-300',
+  ON_HOLD: 'bg-amber-50 text-amber-800 dark:bg-amber-950 dark:text-amber-300',
+  COMPLETED: 'bg-green-50 text-green-700 dark:bg-green-950 dark:text-green-300',
+  CANCELLED: 'bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300',
 }
 
 export function TaskStatusBadge({ status }: { status: TaskStatus }) {
@@ -51,7 +52,7 @@ export function ProjectStatusBadge({ status }: { status: ProjectStatus }) {
 export function OverdueBadge() {
   return (
     <span
-      className={`${BASE} border-red-600 bg-red-50 text-red-700 dark:bg-red-950 dark:text-red-300`}
+      className={`${BASE} bg-red-600 text-white dark:bg-red-700`}
     >
       Overdue
     </span>
