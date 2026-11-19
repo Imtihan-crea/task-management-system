@@ -3,7 +3,8 @@ import { requireProfile } from '@/lib/auth/session'
 import { canViewClients } from '@/lib/auth/current-access'
 import { loadLeads, loadNames, sanitizeLeadSearch, type Lead } from '@/lib/clients/data'
 import { STAGE_LABEL, rupiah } from '@/lib/clients/pipeline'
-import { excelDate, excelResponse, exportInfo, type ExcelColumn } from '@/lib/export/excel'
+import { excelDate, exportInfo, type ExcelColumn } from '@/lib/export/excel'
+import { exportResponse } from '@/lib/export'
 import { todayISO } from '@/lib/utils/dates'
 
 export const dynamic = 'force-dynamic'
@@ -37,5 +38,5 @@ export async function GET(request: NextRequest) {
     ...(f.stage ? [`Tahap: ${STAGE_LABEL[f.stage as keyof typeof STAGE_LABEL] ?? f.stage}`] : []),
     ...(f.q ? [`Cari: ${f.q}`] : []),
   ])
-  return excelResponse(`Client Management ${todayISO()}`, [{ name: 'Lead', title: 'DAFTAR LEAD CLIENT MANAGEMENT', info, columns, rows }])
+  return exportResponse(request, `Client Management ${todayISO()}`, [{ name: 'Lead', title: 'DAFTAR LEAD CLIENT MANAGEMENT', info, columns, rows }])
 }
