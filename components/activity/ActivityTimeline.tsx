@@ -83,6 +83,7 @@ export function describeActivity(entry: Pick<ActivityEntry, 'action' | 'metadata
     case 'REFERENCE_RESTORED':
       return `Pilihan "${str(m.label)}" diaktifkan lagi`
     case 'REFERENCE_PROMOTED':
+      if (m.undone) return `Gabungan "${str(m.text)}" ke "${str(m.label)}" dibatalkan`
       return `Teks bebas "${str(m.text)}" dikukuhkan sebagai "${str(m.label)}"`
     case 'HR_RULES_CHANGED':
       return `Aturan jam kerja diubah (berlaku ${str(m.effective_from)})`
