@@ -61,7 +61,7 @@ export function EditReferenceForm({ id, label, description, attrs }: { id: strin
   const [state, formProps, pending] = useFormAction(updateReference, INITIAL)
   return (
     <details className="mt-1">
-      <summary className="cursor-pointer text-sm font-semibold text-kasuat-deep-gold">Ubah</summary>
+      <summary className="inline-flex min-h-[44px] cursor-pointer items-center text-sm font-semibold text-kasuat-deep-gold">Ubah</summary>
       <form {...formProps} className="mt-2 grid gap-2">
         <input type="hidden" name="id" value={id} />
         <label className="text-sm font-medium" htmlFor={`edit-label-${id}`}>Label (hanya boleh ditambah)</label>

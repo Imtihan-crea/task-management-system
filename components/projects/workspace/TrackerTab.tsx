@@ -31,8 +31,8 @@ export async function TrackerTab({ projectId, month }: { projectId: string; mont
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="text-lg font-bold">Daily Tracker {month}</h2>
         <nav aria-label="Pilih bulan" className="flex flex-wrap items-center gap-3 text-sm font-semibold">
-          <Link href={href(shiftMonth(month, -1))} className="text-kasuat-deep-gold hover:underline">Bulan sebelumnya</Link>
-          <Link href={href(shiftMonth(month, 1))} className="text-kasuat-deep-gold hover:underline">Bulan berikutnya</Link>
+          <Link href={href(shiftMonth(month, -1))} className="inline-flex min-h-[44px] items-center text-kasuat-deep-gold hover:underline">Bulan sebelumnya</Link>
+          <Link href={href(shiftMonth(month, 1))} className="inline-flex min-h-[44px] items-center text-kasuat-deep-gold hover:underline">Bulan berikutnya</Link>
           <ExportLink href={`/projects/${projectId}/export/tracker?bulan=${month}`} />
         </nav>
       </div>
@@ -41,7 +41,7 @@ export async function TrackerTab({ projectId, month }: { projectId: string; mont
           { title: 'Jam per orang', key: 'Nama', rows: perPerson },
           { title: 'Jam per kategori', key: 'Kategori', rows: perCategory },
         ].map((t) => (
-          <div key={t.title} className="rounded-2xl bg-white p-4 shadow dark:bg-zinc-900">
+          <div key={t.title} className="rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900">
             <h3 className="mb-2 font-semibold">{t.title}</h3>
             {t.rows.length === 0 ? (
               <p className="text-sm text-zinc-600 dark:text-zinc-400">Tidak ada data.</p>
@@ -70,7 +70,7 @@ export async function TrackerTab({ projectId, month }: { projectId: string; mont
           </div>
         ))}
       </div>
-      <div className="rounded-2xl bg-white p-4 shadow dark:bg-zinc-900">
+      <div className="rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900">
         <h3 className="mb-2 font-semibold">Aktivitas ({logs.length})</h3>
         <ReviewLogList logs={logs} comments={comments} showPerson showProject={false} />
       </div>

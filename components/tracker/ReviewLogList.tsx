@@ -32,7 +32,7 @@ export function ReviewLogList({
 }) {
   if (!logs.length) return <p className="text-sm text-zinc-600 dark:text-zinc-400">Belum ada aktivitas.</p>
   return (
-    <div className="overflow-x-auto">
+    <div className="scroll-x-hint overflow-x-auto">
       <table className="w-full text-sm">
         <thead>
           <tr className="border-b text-left text-zinc-600 dark:text-zinc-400">

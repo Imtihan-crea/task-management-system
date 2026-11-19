@@ -1,10 +1,9 @@
-import Link from 'next/link'
 import { requireProfile } from '@/lib/auth/session'
 import { canApproveLeave } from '@/lib/auth/current-access'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ExportLink } from '@/components/export/ExportLink'
 import { AppShell } from '@/components/layout/AppShell'
-import { KpiCard, PageHeader } from '@/components/ui/primitives'
+import { ButtonLink, KpiCard, PageHeader } from '@/components/ui/primitives'
 import { CancelOwnLeaveButton, LeaveRequestForm } from '@/components/leave/LeaveForms'
 import { LeaveTable } from '@/components/leave/LeaveTable'
 import { LeaveGuide } from '@/components/leave/LeaveGuide'
@@ -34,25 +33,25 @@ export default async function LeavePage() {
         title="Cuti"
         subtitle="Ajukan dari sini; penyetuju akan menerima notifikasi."
         actions={
-          <div className="flex flex-wrap items-center gap-3">
-            {isApprover && <Link href="/cuti/persetujuan" className="text-sm font-semibold text-kasuat-deep-gold hover:underline">Persetujuan</Link>}
+          <>
+            {isApprover && <ButtonLink href="/cuti/persetujuan" variant="secondary">Persetujuan</ButtonLink>}
             <ExportLink href="/cuti/export" />
-          </div>
+          </>
         }
       />
-      <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-5">
+      <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-5 [&>:last-child]:col-span-2 sm:[&>:last-child]:col-span-1">
         <KpiCard label={`Hak cuti tahunan ${year}`} value={balance.quota ?? 'Belum diisi HR'} />
         <KpiCard label="Jatah terpakai" value={balance.taken} />
         <KpiCard label={`Cuti bersama (${rules.jointLeaveUsesQuota ? 'memotong' : 'tidak memotong'})`} value={balance.joint} />
         <KpiCard label="Cuti menunggu persetujuan" value={balance.pending} />
         <KpiCard label="Sisa cuti" value={balance.remaining ?? '-'} />
       </div>
-      <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+      <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
         <h2 className="mb-1 text-lg font-bold">Ajukan</h2>
         <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-400">Hanya hari kerja yang dihitung (akhir pekan dan libur di kalender tidak). {quotaNames.length ? `Yang memotong saldo: ${quotaNames.join(', ')}${rules.jointLeaveUsesQuota ? ' dan cuti bersama' : ''}.` : rules.jointLeaveUsesQuota ? 'Hanya cuti bersama yang memotong saldo.' : 'Tidak ada jenis yang memotong saldo.'} Baca panduan di bawah sebelum memilih jenis.</p>
         <LeaveRequestForm today={today} types={activeTypes(types).map((t) => ({ code: t.code, label: t.label, description: t.description, max_days: t.max_days }))} />
       </section>
-      <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+      <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
         <h2 className="mb-3 text-lg font-bold">Pengajuan saya</h2>
         <LeaveTable rows={rows} labels={kindLabels(types)} actions={(l) => (l.status === 'PENDING' ? <CancelOwnLeaveButton id={l.id} /> : null)} />
       </section>

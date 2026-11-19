@@ -4,7 +4,7 @@ import { hasPermission } from '@/lib/auth/current-access'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ExportLink } from '@/components/export/ExportLink'
 import { AppShell } from '@/components/layout/AppShell'
-import { KpiCard, PageHeader } from '@/components/ui/primitives'
+import { ButtonLink, KpiCard, PageHeader } from '@/components/ui/primitives'
 import { WorkLogForm, DeleteWorkLogButton, type WorkLogValues } from '@/components/tracker/WorkLogForm'
 import { FREE_TEXT_MARK, loadComments, loadLeave, loadLeaveTypes, loadLogs, loadMonthBasis, loadPeriodBasis, loadReferences, loadRules, loadTrackerProjects } from '@/lib/hr/data'
 import { parsePeriod, periodSummary } from '@/lib/hr/period'
@@ -97,14 +97,14 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
         title="Daily Tracker"
         subtitle="Catat setiap ganti pekerjaan, jangan ditunda sampai akhir hari."
         actions={
-          <div className="flex flex-wrap items-center gap-3">
+          <>
             {canRekap && (
-              <Link href="/tracker/rekap" className="text-sm font-semibold text-kasuat-deep-gold hover:underline">
+              <ButtonLink href="/tracker/rekap" variant="secondary">
                 Rekap semua karyawan
-              </Link>
+              </ButtonLink>
             )}
             <ExportLink href={`/tracker/export?${pq}`} />
-          </div>
+          </>
         }
       />
 
@@ -115,7 +115,7 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
         <KpiCard label="Efektivitas bulan ini" value={`${summary.effectiveness.toLocaleString('id-ID')}%`} />
       </div>
 
-      <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+      <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
         <h2 className="mb-3 text-lg font-bold">{editing ? 'Ubah aktivitas' : 'Catat aktivitas'}</h2>
         <WorkLogForm
           // Jangan ikutkan jumlah entri di key: remount menghapus pesan sukses.
@@ -130,20 +130,20 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
         />
       </section>
 
-      <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+      <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-bold">Aktivitas {formatDate(date)}</h2>
           <nav aria-label="Pilih tanggal" className="flex gap-3 text-sm font-semibold">
-            <Link href={`/tracker?tanggal=${addDays(date, -1)}&${pq}`} className="text-kasuat-deep-gold hover:underline">Hari sebelumnya</Link>
+            <Link href={`/tracker?tanggal=${addDays(date, -1)}&${pq}`} className="inline-flex min-h-[44px] items-center text-kasuat-deep-gold hover:underline">Hari sebelumnya</Link>
             {date < today && (
-              <Link href={`/tracker?tanggal=${addDays(date, 1)}&${pq}`} className="text-kasuat-deep-gold hover:underline">Hari berikutnya</Link>
+              <Link href={`/tracker?tanggal=${addDays(date, 1)}&${pq}`} className="inline-flex min-h-[44px] items-center text-kasuat-deep-gold hover:underline">Hari berikutnya</Link>
             )}
           </nav>
         </div>
         {dayLogs.length === 0 ? (
           <p className="text-sm text-zinc-600 dark:text-zinc-400">Belum ada aktivitas di tanggal ini.</p>
         ) : (
-          <div className="relative overflow-x-auto">
+          <div className="scroll-x-hint relative overflow-x-auto">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b text-left text-zinc-600 dark:text-zinc-400">
@@ -176,7 +176,7 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
           </div>
         )}
       </section>
-      <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+      <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
         <h2 className="text-lg font-bold">Rekap periode</h2>
         <PeriodFilter period={period} error={periodError} base="/tracker" keep={{ tanggal: date }} />
         <div className="mt-4 grid grid-cols-2 gap-3 lg:grid-cols-4">

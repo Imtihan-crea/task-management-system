@@ -2,7 +2,7 @@ import Link from 'next/link'
 import { requirePermission } from '@/lib/auth/current-access'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { AppShell } from '@/components/layout/AppShell'
-import { PageHeader } from '@/components/ui/primitives'
+import { ButtonLink, PageHeader } from '@/components/ui/primitives'
 import { CalendarAddForm, CalendarRemoveButton, HolidayImportButton, MonthTargetForm, RulesForm } from '@/components/hr/HrSettingsForms'
 import { loadRules } from '@/lib/hr/data'
 import { monthRange, workingDays } from '@/lib/hr/tracker'
@@ -33,10 +33,10 @@ export default async function HrSettingsPage({ searchParams }: { searchParams: P
       <PageHeader
         title="Pengaturan HR"
         subtitle="Aturan jam kerja, kalender libur, dan target jam bulanan untuk Daily Tracker."
-        actions={<Link href="/master-reference" className="text-sm font-semibold text-kasuat-deep-gold hover:underline">Daftar pilihan (Master Reference)</Link>}
+        actions={<ButtonLink href="/master-reference" variant="secondary">Daftar pilihan (Master Reference)</ButtonLink>}
       />
 
-      <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+      <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
         <h2 className="text-lg font-bold">Aturan jam kerja</h2>
         <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-400">
           Perubahan disimpan sebagai versi baru mulai tanggal berlaku; rekap bulan lama tetap memakai aturan versinya.
@@ -45,12 +45,12 @@ export default async function HrSettingsPage({ searchParams }: { searchParams: P
         <RulesForm rules={rules} today={today} />
       </section>
 
-      <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+      <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
           <h2 className="text-lg font-bold">Kalender kerja {year}</h2>
           <nav aria-label="Pilih tahun" className="flex gap-3 text-sm font-semibold">
-            <Link href={`/settings/hr?tahun=${Number(year) - 1}`} className="text-kasuat-deep-gold hover:underline">{Number(year) - 1}</Link>
-            <Link href={`/settings/hr?tahun=${Number(year) + 1}`} className="text-kasuat-deep-gold hover:underline">{Number(year) + 1}</Link>
+            <Link href={`/settings/hr?tahun=${Number(year) - 1}`} className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center text-kasuat-deep-gold hover:underline">{Number(year) - 1}</Link>
+            <Link href={`/settings/hr?tahun=${Number(year) + 1}`} className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center text-kasuat-deep-gold hover:underline">{Number(year) + 1}</Link>
           </nav>
         </div>
         <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-400">Hari kerja = Senin–Jumat, dikurangi libur, ditambah hari kerja pengganti.</p>
@@ -82,10 +82,10 @@ export default async function HrSettingsPage({ searchParams }: { searchParams: P
         )}
       </section>
 
-      <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+      <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
         <h2 className="text-lg font-bold">Target jam bulanan {year}</h2>
         <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-400">Otomatis = hari kerja × {rules.hoursPerDay} jam. Kunci manual bila ada penyesuaian khusus.</p>
-        <div className="relative overflow-x-auto">
+        <div className="scroll-x-hint relative overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-left text-zinc-600 dark:text-zinc-400">

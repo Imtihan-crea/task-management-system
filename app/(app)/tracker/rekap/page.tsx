@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { requirePermission } from '@/lib/auth/current-access'
 import { AppShell } from '@/components/layout/AppShell'
-import { PageHeader } from '@/components/ui/primitives'
+import { ButtonLink, FIELD, FIELD_LABEL, PageHeader } from '@/components/ui/primitives'
 import { loadComments, loadReviewLogs } from '@/lib/hr/data'
 import { loadRekap } from '@/lib/hr/rekap'
 import { parsePeriod } from '@/lib/hr/period'
@@ -39,34 +39,35 @@ export default async function TrackerRekapPage({
         title="Rekap Daily Tracker"
         subtitle={`${period.label}. Hari kerja ${basis.workdays.length}, target ${(period.month && basis.lockedTarget) || basis.workdays.length * rules.hoursPerDay} jam${period.month && basis.lockedTarget ? ' (dikunci HR)' : ''}.`}
         actions={
-          <div className="flex flex-wrap items-center gap-3 text-sm font-semibold">
-            <ExportLink href={`/tracker/rekap/export?${qs({})}`} />
+          <>
             {canManageHr && (
               <>
-                <Link href="/tracker/import" className="text-kasuat-deep-gold hover:underline">Import histori Excel</Link>
-                <Link href="/settings/hr" className="text-kasuat-deep-gold hover:underline">Pengaturan HR</Link>
+                <ButtonLink href="/tracker/import" variant="secondary">Import histori Excel</ButtonLink>
+                <ButtonLink href="/settings/hr" variant="secondary">Pengaturan HR</ButtonLink>
               </>
             )}
-          </div>
+            <ExportLink href={`/tracker/rekap/export?${qs({})}`} />
+          </>
         }
       />
 
       <PeriodFilter period={period} error={error} base="/tracker/rekap" keep={sp.orang ? { orang: sp.orang } : {}} navKeep={sp.divisi ? { divisi: sp.divisi } : {}}>
         <div>
-          <label htmlFor="divisi" className="mb-1 block text-sm font-medium">Divisi</label>
-          <select id="divisi" name="divisi" defaultValue={sp.divisi ?? ''} className="rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800">
+          <label htmlFor="divisi" className={FIELD_LABEL}>Divisi</label>
+          <select id="divisi" name="divisi" defaultValue={sp.divisi ?? ''} className={FIELD}>
             <option value="">Semua</option>
             {divisions.map((d) => <option key={d}>{d}</option>)}
           </select>
         </div>
       </PeriodFilter>
 
-      <section className="mt-6 overflow-x-auto rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+      <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
         <h2 className="mb-3 text-lg font-bold">Ringkasan periode</h2>
-        <table className="w-full text-sm">
+        <div className="scroll-x-hint overflow-x-auto">
+        <table className="w-full whitespace-nowrap text-sm">
           <thead>
             <tr className="border-b text-left text-zinc-600 dark:text-zinc-400">
-              <th className="py-2 pr-3">Nama</th>
+              <th className="sticky left-0 z-10 bg-white py-2 pr-3 dark:bg-zinc-900">Nama</th>
               <th className="py-2 pr-3">Divisi</th>
               <th className="py-2 pr-3 text-right">Total jam</th>
               <th className="py-2 pr-3 text-right">Efektivitas</th>
@@ -82,7 +83,7 @@ export default async function TrackerRekapPage({
           <tbody>
             {rows.map(({ p, s, l }) => (
               <tr key={p.id} className="border-b last:border-0">
-                <td className="py-2 pr-3">
+                <td className="sticky left-0 z-10 bg-white py-2 pr-3 dark:bg-zinc-900">
                   <Link href={`/tracker/rekap?${qs({ orang: p.id })}`} className="font-semibold text-kasuat-deep-gold hover:underline">
                     {p.full_name || p.email}
                   </Link>
@@ -101,15 +102,16 @@ export default async function TrackerRekapPage({
             ))}
           </tbody>
         </table>
+        </div>
       </section>
 
-      <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+      <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
         <h2 className="mb-3 text-lg font-bold">Jam per klien (semua orang di tabel)</h2>
         <BreakdownTable title="Ke klien mana waktu terpakai" keyLabel="Klien" rows={breakdown(allLogs, 'client')} />
       </section>
 
       {focus && (
-        <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+        <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
           <h2 className="mb-3 text-lg font-bold">Rincian {focus.full_name || focus.email}</h2>
           <div className="grid gap-6 lg:grid-cols-2">
             <BreakdownTable title="Jam per klien" keyLabel="Klien" rows={breakdown(focusLogs, 'client')} />

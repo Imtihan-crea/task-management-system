@@ -30,8 +30,8 @@ export function LeaveTable({
 }) {
   if (!rows.length) return <p className="text-sm text-zinc-600 dark:text-zinc-400">{empty}</p>
   return (
-    <div className="relative overflow-x-auto">
-      <table className="w-full text-sm">
+    <div className="scroll-x-hint relative md:overflow-x-auto">
+      <table className="stack-table w-full text-sm">
         <thead>
           <tr className="border-b text-left text-zinc-600 dark:text-zinc-400">
             {person && <th className="py-2 pr-3">Nama</th>}
@@ -46,19 +46,21 @@ export function LeaveTable({
         <tbody>
           {rows.map((l) => (
             <tr key={l.id} className="border-b align-top last:border-0">
-              {person && <td className="py-2 pr-3">{person(l)}</td>}
-              <td className="py-2 pr-3">{labels[l.kind] ?? l.kind}{l.special_reason && <span className="block text-xs text-zinc-600 dark:text-zinc-400">{SPECIAL_LABEL[l.special_reason] ?? l.special_reason}</span>}</td>
-              <td className="py-2 pr-3 whitespace-nowrap">{range(l)}</td>
-              <td className="py-2 pr-3 text-right">{l.days}</td>
-              <td className="py-2 pr-3">
+              {person && <td data-label="Nama" className="py-2 pr-3 font-semibold md:font-normal">{person(l)}</td>}
+              <td data-label="Jenis" className="py-2 pr-3"><span>{labels[l.kind] ?? l.kind}{l.special_reason && <span className="block text-xs text-zinc-600 dark:text-zinc-400">{SPECIAL_LABEL[l.special_reason] ?? l.special_reason}</span>}</span></td>
+              <td data-label="Tanggal" className="py-2 pr-3 whitespace-nowrap">{range(l)}</td>
+              <td data-label="Hari kerja" className="py-2 pr-3 text-right">{l.days}</td>
+              <td data-label="Keterangan" className="py-2 pr-3">
+                <span>
                 {l.reason ?? '-'}
                 {l.attachment_url && (
                   <a href={l.attachment_url} target="_blank" rel="noopener noreferrer" className="ml-2 font-semibold text-kasuat-deep-gold hover:underline">Lampiran</a>
                 )}
-                {l.decision_note && <p className="text-xs text-zinc-600 dark:text-zinc-400">Catatan: {l.decision_note}</p>}
+                {l.decision_note && <span className="block text-xs text-zinc-600 dark:text-zinc-400">Catatan: {l.decision_note}</span>}
+                </span>
               </td>
-              <td className={`py-2 pr-3 font-semibold ${STATUS_TONE[l.status]}`}>{STATUS_LABEL[l.status]}</td>
-              {actions && <td className="min-w-64 py-2">{actions(l)}</td>}
+              <td data-label="Status" className={`py-2 pr-3 font-semibold ${STATUS_TONE[l.status]}`}>{STATUS_LABEL[l.status]}</td>
+              {actions && <td className="py-2 md:min-w-64">{actions(l)}</td>}
             </tr>
           ))}
         </tbody>

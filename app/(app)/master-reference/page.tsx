@@ -39,7 +39,7 @@ export default async function MasterReferencePage({ searchParams }: { searchPara
         title="Master Reference"
         subtitle="Pilihan tidak bisa dihapus, hanya diarsipkan. Label hanya boleh ditambah, tidak diganti. Teks bebas dari staf muncul sebagai usulan."
       />
-      <nav aria-label="Daftar master" className="mt-4 flex gap-1 overflow-x-auto border-b dark:border-zinc-700">
+      <nav aria-label="Daftar master" className="scroll-x-hint hint-page mt-4 flex gap-1 overflow-x-auto border-b [scrollbar-width:none]">
         {REFERENCE_LISTS.map((x) => {
           const current = x.list === l.list
           return (
@@ -47,18 +47,18 @@ export default async function MasterReferencePage({ searchParams }: { searchPara
               key={x.list}
               href={`/master-reference?tab=${x.list}`}
               aria-current={current ? 'page' : undefined}
-              className={`flex min-h-[44px] shrink-0 items-center whitespace-nowrap border-b-2 px-4 text-sm font-semibold ${current ? 'border-kasuat-gold text-kasuat-deep-gold' : 'border-transparent text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white'}`}
+              className={`flex min-h-[44px] shrink-0 items-center whitespace-nowrap border-b-2 px-4 text-sm font-semibold ${current ? 'border-kasuat-deep-gold text-kasuat-black dark:text-zinc-100' : 'border-transparent text-zinc-600 hover:text-black dark:text-zinc-400 dark:hover:text-white'}`}
             >
               {x.title}
             </Link>
           )
         })}
       </nav>
-      <section id={l.list} className="mt-4 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+      <section id={l.list} className="mt-4 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
         <h2 className="text-lg font-bold">{l.title}</h2>
         <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-400">{l.hint}</p>
-        <div className="relative overflow-x-auto">
-          <table className="w-full text-sm">
+        <div className="scroll-x-hint relative md:overflow-x-auto">
+          <table className="stack-table w-full text-sm">
             <thead>
               <tr className="border-b text-left text-zinc-600 dark:text-zinc-400">
                 <th className="py-2 pr-3">Label</th>
@@ -78,6 +78,7 @@ export default async function MasterReferencePage({ searchParams }: { searchPara
               {[...activeRows, ...archived].map((r) => (
                 <tr key={r.id} className={`border-b align-top last:border-0 ${r.archived_at ? 'text-zinc-500' : ''}`}>
                   <td className="py-2 pr-3 font-medium">
+                    <div>
                     {r.label}
                     {r.archived_at && <span className="ml-1 text-xs">(arsip)</span>}
                     {!r.archived_at && (
@@ -88,14 +89,15 @@ export default async function MasterReferencePage({ searchParams }: { searchPara
                         attrs={leave ? { counts_hours: Boolean(r.counts_hours), uses_quota: Boolean(r.uses_quota), max_days: r.max_days ?? null } : undefined}
                       />
                     )}
+                    </div>
                   </td>
-                  <td className="py-2 pr-3 font-mono text-xs">{r.code}</td>
-                  <td className="py-2 pr-3">{r.description ?? '-'}</td>
+                  <td data-label="Kode" className="py-2 pr-3 font-mono text-xs">{r.code}</td>
+                  <td data-label="Penjelasan" className="py-2 pr-3">{r.description ?? '-'}</td>
                   {leave && (
                     <>
-                      <td className="py-2 pr-3">{yn(r.counts_hours)}</td>
-                      <td className="py-2 pr-3">{yn(r.uses_quota)}</td>
-                      <td className="py-2 pr-3">{r.max_days ?? '-'}</td>
+                      <td data-label="Dihitung jam kerja" className="py-2 pr-3">{yn(r.counts_hours)}</td>
+                      <td data-label="Memotong jatah" className="py-2 pr-3">{yn(r.uses_quota)}</td>
+                      <td data-label="Maks hari kerja" className="py-2 pr-3">{r.max_days ?? '-'}</td>
                     </>
                   )}
                   <td className="py-2 whitespace-nowrap">

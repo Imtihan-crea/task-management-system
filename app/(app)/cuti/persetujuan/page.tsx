@@ -51,12 +51,12 @@ export default async function LeaveApprovalPage({ searchParams }: { searchParams
         actions={<ExportLink href={`/cuti/persetujuan/export?bulan=${month}`} />}
       />
 
-      <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+      <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
         <h2 className="mb-3 text-lg font-bold">Menunggu persetujuan ({pending.length})</h2>
         <LeaveTable rows={pending} labels={labels} person={person} empty="Tidak ada pengajuan yang menunggu." actions={(l) => (l.user_id === profile.id ? null : <DecideLeaveForm id={l.id} mode="pending" />)} />
       </section>
 
-      <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+      <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
         <div className="mb-3 flex flex-wrap items-end justify-between gap-3">
           <h2 className="text-lg font-bold">Semua pengajuan {month}</h2>
           <form className="flex items-end gap-2">
@@ -68,10 +68,10 @@ export default async function LeaveApprovalPage({ searchParams }: { searchParams
         <LeaveTable rows={monthRows} labels={labels} person={person} actions={(l) => (l.status === 'APPROVED' && l.user_id !== profile.id ? <DecideLeaveForm id={l.id} mode="approved" /> : null)} />
       </section>
 
-      <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
+      <section className="mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900">
         <h2 className="mb-1 text-lg font-bold">Saldo cuti tahunan {year}</h2>
         <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-400">Hak cuti diisi HR di Data Karyawan (detail user). Sisa = hak − cuti pemotong jatah yang disetujui tahun ini{rules.jointLeaveUsesQuota ? ' − cuti bersama' : ''}.</p>
-        <div className="relative overflow-x-auto">
+        <div className="scroll-x-hint relative overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
               <tr className="border-b text-left text-zinc-600 dark:text-zinc-400">
