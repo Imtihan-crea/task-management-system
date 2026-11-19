@@ -3,6 +3,8 @@ import { can } from '@/lib/auth/permissions'
 import type { UserRole } from '@/types/profile'
 import { MeetingStatusBadge, MeetingTypeBadge } from '@/components/meetings/MeetingBadges'
 import { EmptyState } from '@/components/ui/primitives'
+import { BulkBar, BulkCheckbox, BulkSelectProvider } from '@/components/ui/BulkSelect'
+import { bulkCancelMeetings } from '@/app/actions/meetings'
 import {
   fetchMeetingProjects,
   fetchMeetings,
@@ -26,9 +28,12 @@ import {
 export async function MeetingResults({
   scope,
   filters,
+  exportHref,
 }: {
   scope: MeetingScope
   filters: MeetingFilters
+  /** Route export daftar ini (filter sama), untuk "Export terpilih". */
+  exportHref?: string
 }) {
   const [rows, projects] = await Promise.all([
     fetchMeetings(scope, filters),
@@ -66,16 +71,23 @@ export async function MeetingResults({
   }
 
   return (
-    <>
+    <BulkSelectProvider ids={visible.map((m) => m.id)}>
       <p className="mt-3 text-sm text-zinc-600 dark:text-zinc-400" role="status">
         {visible.length} meeting
       </p>
+      <BulkBar
+        noun="meeting"
+        // Penyelenggara / PM peserta / pemegang izin; dicek per meeting di server.
+        actions={scope.role === 'VIEWER' ? [] : [{ key: 'cancel', label: 'Batalkan meeting', run: bulkCancelMeetings, danger: true }]}
+        exportHref={exportHref}
+      />
 
       {/* Desktop: tabel */}
       <div className="mt-3 hidden scroll-x-hint overflow-x-auto rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 md:block dark:bg-zinc-900">
         <table className="w-full text-left text-sm">
           <thead className="border-b text-xs uppercase text-zinc-600 dark:text-zinc-400">
             <tr>
+              <th scope="col" className="w-12 py-3 pl-2"><span className="sr-only">Pilih</span></th>
               <th scope="col" className="px-4 py-3">ID</th>
               <th scope="col" className="px-4 py-3">Meeting</th>
               <th scope="col" className="px-4 py-3">Project</th>
@@ -98,7 +110,7 @@ export async function MeetingResults({
           <MeetingCard key={m.id} meeting={m} projectName={projectNames[m.project_id ?? ''] ?? 'Global'} />
         ))}
       </ul>
-    </>
+    </BulkSelectProvider>
   )
 }
 
@@ -111,6 +123,7 @@ function MeetingTableRow({
 }) {
   return (
     <tr className="border-b last:border-0">
+      <td className="py-1 pl-2"><BulkCheckbox id={m.id} label={`${m.code} ${m.title}`} /></td>
       <td className="px-4 py-3 font-mono text-xs">{m.code}</td>
       <td className="px-4 py-3">
         <Link href={`/meetings/${m.id}`} className="font-medium hover:underline">
@@ -146,10 +159,11 @@ function MeetingCard({
   projectName: string
 }) {
   return (
-    <li>
+    <li className="flex items-start rounded-2xl bg-white shadow-sm dark:bg-zinc-900">
+      <BulkCheckbox id={m.id} label={`${m.code} ${m.title}`} className="mt-2 ml-1" />
       <Link
         href={`/meetings/${m.id}`}
-        className="block rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900"
+        className="block min-w-0 flex-1 rounded-2xl py-4 pr-4 pl-1"
       >
         <p className="font-semibold">
           <span className="mr-2 rounded-md bg-zinc-100 px-1.5 py-0.5 font-mono text-xs dark:bg-zinc-800">

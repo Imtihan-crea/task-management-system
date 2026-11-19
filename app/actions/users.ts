@@ -17,6 +17,8 @@ import {
   userEditStatusError,
 } from '@/lib/auth/user-status'
 import { readLimitedField } from '@/lib/forms/limits'
+import { toForm } from '@/lib/bulk'
+import { bulk } from '@/lib/bulk-server'
 
 export type UserFormState = {
   error?: string
@@ -962,4 +964,13 @@ export async function deleteUserAccount(_prev: UserFormState, formData: FormData
   revalidatePath('/dashboard')
   const note = await deactivationNote(target.id)
   return { success: `Akun dihapus: tidak bisa login lagi, riwayatnya tetap ada.${note}` }
+}
+
+/* Aksi massal (19 Nov 2026): tiap user lewat setUserStatus (izin, aturan admin terakhir, log sama). */
+export async function bulkActivateUsers(ids: unknown) {
+  return bulk(ids, (id) => setUserStatus(undefined, toForm({ id, status: 'ACTIVE' })), 'diaktifkan')
+}
+
+export async function bulkDeactivateUsers(ids: unknown) {
+  return bulk(ids, (id) => setUserStatus(undefined, toForm({ id, status: 'INACTIVE' })), 'dinonaktifkan')
 }

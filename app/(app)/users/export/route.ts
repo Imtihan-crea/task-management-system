@@ -7,6 +7,7 @@ import { exportResponse } from '@/lib/export'
 import { wibDate } from '@/lib/export/task-columns'
 import { allRows } from '@/lib/utils/paginate'
 import { todayISO } from '@/lib/utils/dates'
+import { onlySelected, selectedIds } from '@/lib/bulk'
 
 export const dynamic = 'force-dynamic'
 
@@ -16,7 +17,8 @@ export async function GET(request: NextRequest) {
   const sp = request.nextUrl.searchParams
   const filters = parseUserFilters((k) => sp.get(k) ?? undefined)
   const query = buildUserQuery(filters).order('id')
-  const users = await allRows<UserListRow>((from, to) => query.range(from, to))
+  const picked = selectedIds(sp)
+  const users = onlySelected(await allRows<UserListRow>((from, to) => query.range(from, to)), picked)
 
   const columns: ExcelColumn<UserListRow>[] = [
     { header: 'Nama', width: 26, value: (u) => u.full_name },
@@ -26,6 +28,7 @@ export async function GET(request: NextRequest) {
     { header: 'Dibuat', width: 12, value: (u) => wibDate(u.created_at) },
   ]
   const f = [
+    picked && 'Hanya baris terpilih',
     filters.q && `Cari: ${filters.q}`,
     filters.role && `Role: ${ROLE_LABELS[filters.role as keyof typeof ROLE_LABELS]}`,
     filters.status && `Status: ${filters.status}`,

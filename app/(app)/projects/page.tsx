@@ -9,6 +9,8 @@ import { formatDate } from '@/lib/utils/dates'
 import { ButtonLink, FIELD, FIELD_LABEL, FILTER_GRID, FilterPanel, PageHeader, SUBMIT } from '@/components/ui/primitives'
 import type { Project, ProjectProgress, ProjectStatus } from '@/types/project'
 import { allRows } from '@/lib/utils/paginate'
+import { BulkBar, BulkCheckbox, BulkSelectProvider } from '@/components/ui/BulkSelect'
+import { bulkSetProjectStatus } from '@/app/actions/projects'
 
 function sanitize(value: string | undefined): string {
   return (value ?? '').replace(/[,()*%]/g, ' ').trim().slice(0, 60)
@@ -61,7 +63,10 @@ export default async function ProjectsPage({
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
   const profile = await requireProfile()
-  const canCreate = await hasPermission(profile.id, 'projects.create')
+  const [canCreate, canEdit] = await Promise.all([
+    hasPermission(profile.id, 'projects.create'),
+    hasPermission(profile.id, 'projects.edit'),
+  ])
 
   const params = await searchParams
   const q = sanitize(typeof params.q === 'string' ? params.q : undefined)
@@ -220,16 +225,33 @@ export default async function ProjectsPage({
           Belum ada Project. {canCreate ? 'Buat Project pertama Anda di bawah.' : ''}
         </p>
       ) : (
-        <ul className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <BulkSelectProvider ids={visibleProjects.map((p) => p.id)}>
+        <BulkBar
+          noun="project"
+          actions={
+            canEdit
+              ? [
+                  {
+                    key: 'status',
+                    label: 'Ubah status',
+                    run: bulkSetProjectStatus,
+                    select: { name: 'status', label: 'Status baru', options: PROJECT_STATUSES.map((s) => ({ value: s, label: s.replace('_', ' ') })) },
+                  },
+                ]
+              : []
+          }
+        />
+        <ul className="mt-3 grid grid-cols-1 gap-3 sm:grid-cols-2">
           {visibleProjects.map((project) => {
             const progress = progressMap[project.id] ?? {
               total: 0, completed: 0, inProgress: 0, blocked: 0, todo: 0, percent: 0,
             }
             return (
-              <li key={project.id}>
+              <li key={project.id} className="flex items-start rounded-2xl bg-white shadow-sm hover:shadow-md dark:bg-zinc-900">
+                <BulkCheckbox id={project.id} label={`${project.code} ${project.name}`} className="mt-2 ml-1 sm:mt-3" />
                 <Link
                   href={`/projects/${project.id}`}
-                  className="block rounded-2xl bg-white p-4 shadow-sm sm:p-5 hover:shadow-md dark:bg-zinc-900"
+                  className="block min-w-0 flex-1 rounded-2xl py-4 pr-4 pl-1 sm:py-5 sm:pr-5"
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="min-w-0">
@@ -275,6 +297,7 @@ export default async function ProjectsPage({
             )
           })}
         </ul>
+        </BulkSelectProvider>
       )}
 
     </AppShell>

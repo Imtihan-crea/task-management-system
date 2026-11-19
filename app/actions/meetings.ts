@@ -35,6 +35,8 @@ import { assertActiveUser, assertWorkstreamInProject } from '@/lib/data/assertio
 import { readLimitedField, readMulti } from '@/lib/forms/limits'
 import { isValidDateInput } from '@/lib/forms/dates'
 import { meetingNoticeBody, meetingInvitationBody, taskAssignedBody } from '@/lib/email/templates'
+import { toForm } from '@/lib/bulk'
+import { bulk } from '@/lib/bulk-server'
 
 export type MeetingFormState = {
   error?: string
@@ -1851,4 +1853,9 @@ export async function createTaskFromActionItem(
   revalidatePath('/tasks')
   revalidatePath(`/tasks/${task.id}`)
   return { success: `Task ${task.code} dibuat dari Action Item.` }
+}
+
+/** Aksi massal (19 Nov 2026): tiap meeting lewat cancelMeeting (izin, notifikasi peserta, log sama). */
+export async function bulkCancelMeetings(ids: unknown) {
+  return bulk(ids, (id) => cancelMeeting(undefined, toForm({ id })), 'dibatalkan')
 }

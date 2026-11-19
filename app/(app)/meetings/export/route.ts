@@ -9,6 +9,7 @@ import { formatTimeRange } from '@/lib/utils/meeting-time'
 import { allRows } from '@/lib/utils/paginate'
 import { ACTION_ITEM_STATUS_LABELS, MEETING_STATUS_LABELS, MEETING_TAB_LABELS, MEETING_TYPE_LABELS, type ActionItemRow, type DecisionRow } from '@/types/meeting'
 import { todayISO } from '@/lib/utils/dates'
+import { onlySelected, selectedIds } from '@/lib/bulk'
 
 export const dynamic = 'force-dynamic'
 
@@ -26,7 +27,8 @@ export async function GET(request: NextRequest) {
 
   const [all, projects] = await Promise.all([fetchMeetings(scope, filters), fetchMeetingProjects()])
   const now = new Date()
-  const meetings = all.filter((r) => matchesMeetingTab(r, filters.tab, now) && matchesMeetingSearch(r, filters.q))
+  const picked = selectedIds(sp)
+  const meetings = onlySelected(all.filter((r) => matchesMeetingTab(r, filters.tab, now) && matchesMeetingSearch(r, filters.q)), picked)
   const projectNames = Object.fromEntries(projects.map((p) => [p.id, `${p.code} · ${p.name}`]))
 
   // Keputusan & action item hanya untuk meeting yang lolos filter (otomatis dalam scope).
@@ -89,6 +91,7 @@ export async function GET(request: NextRequest) {
   ]
 
   const f = [
+    picked && 'Hanya baris terpilih',
     `Tab: ${MEETING_TAB_LABELS[filters.tab]}`,
     filters.q && `Cari: ${filters.q}`,
     filters.project && `Project: ${projectNames[filters.project] ?? filters.project}`,

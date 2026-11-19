@@ -12,6 +12,8 @@ import type { ProjectStatus } from '@/types/project'
 import { readLimitedField, readMulti } from '@/lib/forms/limits'
 import { isValidDateInput } from '@/lib/forms/dates'
 import { projectAssignedBody } from '@/lib/email/templates'
+import { readInput, toForm } from '@/lib/bulk'
+import { bulk } from '@/lib/bulk-server'
 
 function projectAssignedEmail(
   baseUrl: string,
@@ -304,4 +306,37 @@ export async function updateProject(
   revalidatePath(`/projects/${id}`)
   revalidatePath('/dashboard')
   return { success: 'Project berhasil diperbarui.' }
+}
+
+/**
+ * Aksi massal: ubah status project (19 Nov 2026). Tiap project lewat
+ * updateProject dengan isian lain = nilai saat ini (izin, notifikasi, log sama).
+ */
+export async function bulkSetProjectStatus(ids: unknown, input: unknown) {
+  const status = readInput(input, 'status')
+  return bulk(
+    ids,
+    async (id) => {
+      const admin = createAdminClient()
+      const [{ data: p }, { data: pms }] = await Promise.all([
+        admin
+          .from('projects')
+          .select('name, client, description, start_date, end_date')
+          .eq('id', id)
+          .maybeSingle<{ name: string; client: string | null; description: string | null; start_date: string | null; end_date: string | null }>(),
+        admin.from('project_managers').select('user_id').eq('project_id', id),
+      ])
+      if (!p) return { error: 'Project tidak ditemukan.' }
+      return updateProject(
+        undefined,
+        toForm({
+          id,
+          ...p,
+          status,
+          project_manager_ids: ((pms ?? []) as { user_id: string }[]).map((m) => m.user_id),
+        })
+      )
+    },
+    'diperbarui'
+  )
 }

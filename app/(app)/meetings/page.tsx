@@ -91,7 +91,7 @@ export default async function MeetingsPage({
         }
       >
         <div className="mt-1">
-          <MeetingResults scope={scope} filters={filters} />
+          <MeetingResults scope={scope} filters={filters} exportHref={`/meetings/export?${exportParams}`} />
         </div>
       </Suspense>
     </AppShell>

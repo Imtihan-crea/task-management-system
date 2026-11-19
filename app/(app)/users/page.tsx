@@ -1,5 +1,7 @@
 import Link from 'next/link'
-import { requirePermission } from '@/lib/auth/current-access'
+import { hasPermission, requirePermission } from '@/lib/auth/current-access'
+import { BulkBar, BulkCheckbox, BulkSelectProvider, type BulkActionDef } from '@/components/ui/BulkSelect'
+import { bulkActivateUsers, bulkDeactivateUsers } from '@/app/actions/users'
 import { buildUserQuery, parseUserFilters, type UserListRow } from '@/lib/data/user-list'
 import { ROLE_LABELS, STATUS_LABELS, USER_ROLES, USER_STATUSES } from '@/lib/auth/roles'
 import { ExportLink } from '@/components/export/ExportLink'
@@ -30,6 +32,14 @@ export default async function UsersPage({
 
   const { data, error } = await buildUserQuery(filters).limit(200)
   const users = (data ?? []) as UserListRow[]
+  const [canActivate, canDeactivate] = await Promise.all([
+    hasPermission(viewer.id, 'users.activate'),
+    hasPermission(viewer.id, 'users.deactivate'),
+  ])
+  const bulkActions: BulkActionDef[] = [
+    ...(canActivate ? [{ key: 'activate', label: 'Aktifkan', run: bulkActivateUsers, confirm: true }] : []),
+    ...(canDeactivate ? [{ key: 'deactivate', label: 'Nonaktifkan', run: bulkDeactivateUsers, danger: true }] : []),
+  ]
 
   const exportParams = new URLSearchParams()
   if (q) exportParams.set('q', q)
@@ -140,12 +150,14 @@ export default async function UsersPage({
             : 'Belum ada User. Tambahkan User pertama Anda di bawah.'}
         </p>
       ) : (
-        <>
+        <BulkSelectProvider ids={users.map((u) => u.id)}>
+          <BulkBar noun="user" actions={bulkActions} exportHref={`/users/export?${exportParams}`} />
           {/* Desktop: table */}
           <div className="mt-4 hidden scroll-x-hint overflow-x-auto rounded-2xl border border-zinc-200 bg-white dark:border-zinc-800 md:block dark:bg-zinc-900">
             <table className="w-full text-left text-sm">
               <thead className="border-b text-xs uppercase text-zinc-600 dark:text-zinc-400">
                 <tr>
+                  <th scope="col" className="w-12 py-3 pl-2"><span className="sr-only">Pilih</span></th>
                   <th scope="col" className="px-4 py-3">Nama</th>
                   <th scope="col" className="px-4 py-3">Email</th>
                   <th scope="col" className="px-4 py-3">Role</th>
@@ -157,6 +169,7 @@ export default async function UsersPage({
               <tbody>
                 {users.map((user) => (
                   <tr key={user.id} className="border-b last:border-0">
+                    <td className="py-1 pl-2"><BulkCheckbox id={user.id} label={user.full_name || user.email} /></td>
                     <td className="px-4 py-3 font-medium">
                       {user.full_name || '-'}
                     </td>
@@ -199,7 +212,10 @@ export default async function UsersPage({
                 key={user.id}
                 className="rounded-2xl bg-white p-4 shadow-sm dark:bg-zinc-900"
               >
-                <p className="font-semibold">{user.full_name || '-'}</p>
+                <div className="-mt-2 -ml-2 flex items-center gap-1">
+                  <BulkCheckbox id={user.id} label={user.full_name || user.email} />
+                  <p className="min-w-0 font-semibold">{user.full_name || '-'}</p>
+                </div>
                 <p className="break-all text-sm text-zinc-600 dark:text-zinc-400">{user.email}</p>
                 <div className="mt-2 flex flex-wrap gap-2 text-xs">
                   <span className="rounded-full border px-2 py-1">
@@ -235,7 +251,7 @@ export default async function UsersPage({
               </li>
             ))}
           </ul>
-        </>
+        </BulkSelectProvider>
       )}
 
     </AppShell>
