@@ -6,7 +6,8 @@ import { dailyDataColumns, summaryColumns } from '@/lib/hr/export-columns'
 import { leaveDaysIn, type LeaveRow } from '@/lib/hr/leave'
 import { parseMonth } from '@/lib/hr/rekap'
 import { monthRange, monthlySummary } from '@/lib/hr/tracker'
-import { excelResponse, exportInfo } from '@/lib/export/excel'
+import { exportInfo } from '@/lib/export/excel'
+import { exportResponse } from '@/lib/export'
 
 export const dynamic = 'force-dynamic'
 
@@ -30,7 +31,7 @@ export async function GET(request: NextRequest) {
     basis.workdays.length, rules, basis.lockedTarget, l.CUTI + l.IZIN + l.SAKIT)
   const sorted = [...logs].sort((a, b) => a.work_date.localeCompare(b.work_date) || a.start_time.localeCompare(b.start_time))
   const info = exportInfo(by, [`Bulan: ${month} · Nama: ${by}`])
-  return excelResponse(`Daily Tracker ${by} ${month}`, [
+  return exportResponse(request, `Daily Tracker ${by} ${month}`, [
     {
       name: 'Monthly Summary',
       title: `MONTHLY SUMMARY ${month}`,

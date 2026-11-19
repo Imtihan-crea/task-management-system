@@ -2,7 +2,8 @@ import type { NextRequest } from 'next/server'
 import { requireProfile } from '@/lib/auth/session'
 import { activityPager, parseActivityFilters } from '@/lib/data/activity-list'
 import { describeActivity, resolveActorNames, type ActivityEntry } from '@/components/activity/ActivityTimeline'
-import { excelResponse, exportInfo, type ExcelColumn } from '@/lib/export/excel'
+import { exportInfo, type ExcelColumn } from '@/lib/export/excel'
+import { exportResponse } from '@/lib/export'
 import { allRows } from '@/lib/utils/paginate'
 import { todayISO } from '@/lib/utils/dates'
 
@@ -33,5 +34,5 @@ export async function GET(request: NextRequest) {
     filters.to && `Sampai: ${filters.to}`,
   ].filter(Boolean)
   const info = exportInfo(profile.full_name || profile.email, [`${entries.length} entri`, ...(f.length ? [f.join(' · ')] : [])])
-  return excelResponse(`Activity Log ${todayISO()}`, [{ name: 'Activity', title: 'ACTIVITY LOG', info, columns, rows: entries }])
+  return exportResponse(request, `Activity Log ${todayISO()}`, [{ name: 'Activity', title: 'ACTIVITY LOG', info, columns, rows: entries }])
 }

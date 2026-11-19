@@ -1,7 +1,8 @@
 import type { NextRequest } from 'next/server'
 import { requireProfile } from '@/lib/auth/session'
 import { loadProjectTasks, projectTaskViewer } from '@/lib/data/project-tasks'
-import { excelResponse, exportInfo } from '@/lib/export/excel'
+import { exportInfo } from '@/lib/export/excel'
+import { exportResponse } from '@/lib/export'
 import { statusLabel, taskColumns, type ExportTaskRow } from '@/lib/export/task-columns'
 import { todayISO } from '@/lib/utils/dates'
 
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
   ].filter(Boolean)
   const info = exportInfo(profile.full_name || profile.email, [`Project: ${viewer.projectLabel}`, `${rows.length} task`, ...(f.length ? [f.join(' · ')] : [])])
 
-  return excelResponse(`Tasks ${viewer.projectLabel.split(' · ')[0]} ${todayISO()}`, [
+  return exportResponse(request, `Tasks ${viewer.projectLabel.split(' · ')[0]} ${todayISO()}`, [
     { name: 'Tasks', title: `TASKS ${viewer.projectLabel.toUpperCase()}`, info, columns: taskColumns({ withProject: false }), rows },
   ])
 }

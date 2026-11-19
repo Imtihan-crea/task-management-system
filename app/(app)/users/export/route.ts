@@ -2,7 +2,8 @@ import type { NextRequest } from 'next/server'
 import { requirePermission } from '@/lib/auth/current-access'
 import { buildUserQuery, parseUserFilters, type UserListRow } from '@/lib/data/user-list'
 import { ROLE_LABELS, STATUS_LABELS } from '@/lib/auth/roles'
-import { excelResponse, exportInfo, type ExcelColumn } from '@/lib/export/excel'
+import { exportInfo, type ExcelColumn } from '@/lib/export/excel'
+import { exportResponse } from '@/lib/export'
 import { wibDate } from '@/lib/export/task-columns'
 import { allRows } from '@/lib/utils/paginate'
 import { todayISO } from '@/lib/utils/dates'
@@ -30,5 +31,5 @@ export async function GET(request: NextRequest) {
     filters.status && `Status: ${filters.status}`,
   ].filter(Boolean)
   const info = exportInfo(viewer.full_name || viewer.email, [`${users.length} user`, ...(f.length ? [f.join(' · ')] : [])])
-  return excelResponse(`Users ${todayISO()}`, [{ name: 'Users', title: 'DAFTAR USER', info, columns, rows: users }])
+  return exportResponse(request, `Users ${todayISO()}`, [{ name: 'Users', title: 'DAFTAR USER', info, columns, rows: users }])
 }

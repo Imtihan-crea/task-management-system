@@ -3,7 +3,8 @@ import { requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { fetchMeetingProjects, fetchMeetings, getMeetingScope, matchesMeetingSearch, matchesMeetingTab, type MeetingRow } from '@/lib/data/meetings'
 import { parseMeetingFilters } from '@/lib/meetings/filters'
-import { excelDate, excelResponse, exportInfo, type ExcelColumn } from '@/lib/export/excel'
+import { excelDate, exportInfo, type ExcelColumn } from '@/lib/export/excel'
+import { exportResponse } from '@/lib/export'
 import { formatTimeRange } from '@/lib/utils/meeting-time'
 import { allRows } from '@/lib/utils/paginate'
 import { ACTION_ITEM_STATUS_LABELS, MEETING_STATUS_LABELS, MEETING_TAB_LABELS, MEETING_TYPE_LABELS, type ActionItemRow, type DecisionRow } from '@/types/meeting'
@@ -99,7 +100,7 @@ export async function GET(request: NextRequest) {
   ].filter(Boolean)
   const info = exportInfo(profile.full_name || profile.email, [`${meetings.length} meeting`, f.join(' · ')])
 
-  return excelResponse(`Meetings ${todayISO()}`, [
+  return exportResponse(request, `Meetings ${todayISO()}`, [
     { name: 'Meetings', title: 'DAFTAR MEETINGS', info, columns: meetingCols, rows: meetings },
     ...(decisions.length ? [{ name: 'Keputusan', title: 'KEPUTUSAN MEETING', info, columns: decisionCols, rows: decisions }] : []),
     ...(actions.length ? [{ name: 'Tindak Lanjut', title: 'TINDAK LANJUT MEETING', info, columns: actionCols, rows: actions }] : []),

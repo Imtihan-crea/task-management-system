@@ -2,7 +2,8 @@ import type { NextRequest } from 'next/server'
 import { requireProfile } from '@/lib/auth/session'
 import { parseTaskTab } from '@/components/tasks/TaskTabs'
 import { loadTaskResults, parseTaskFilters } from '@/lib/data/task-results'
-import { excelResponse, exportInfo } from '@/lib/export/excel'
+import { exportInfo } from '@/lib/export/excel'
+import { exportResponse } from '@/lib/export'
 import { statusLabel, taskColumns, type ExportTaskRow } from '@/lib/export/task-columns'
 import { todayISO } from '@/lib/utils/dates'
 
@@ -39,7 +40,7 @@ export async function GET(request: NextRequest) {
   ].filter(Boolean)
   const info = exportInfo(profile.full_name || profile.email, [`${rows.length} task`, f.join(' · ')])
 
-  return excelResponse(`Tasks ${todayISO()}`, [
+  return exportResponse(request, `Tasks ${todayISO()}`, [
     { name: 'Tasks', title: 'DAFTAR TASKS', info, columns: taskColumns({ withProject: true }), rows },
   ])
 }

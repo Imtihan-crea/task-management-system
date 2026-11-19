@@ -1,7 +1,8 @@
 import type { NextRequest } from 'next/server'
 import { requireProfile } from '@/lib/auth/session'
 import { loadWorkstreams, sanitizeWorkstreamSearch } from '@/lib/data/workstream-list'
-import { excelResponse, exportInfo, type ExcelColumn } from '@/lib/export/excel'
+import { exportInfo, type ExcelColumn } from '@/lib/export/excel'
+import { exportResponse } from '@/lib/export'
 import { wibDate } from '@/lib/export/task-columns'
 import { todayISO } from '@/lib/utils/dates'
 
@@ -23,5 +24,5 @@ export async function GET(request: NextRequest) {
     { header: 'Dibuat', width: 12, value: (w) => wibDate(w.created_at) },
   ]
   const info = exportInfo(profile.full_name || profile.email, [`${workstreams.length} workstream`, ...(q ? [`Cari: ${q}`] : [])])
-  return excelResponse(`Workstreams ${todayISO()}`, [{ name: 'Workstreams', title: 'DAFTAR WORKSTREAMS', info, columns, rows: workstreams }])
+  return exportResponse(request, `Workstreams ${todayISO()}`, [{ name: 'Workstreams', title: 'DAFTAR WORKSTREAMS', info, columns, rows: workstreams }])
 }

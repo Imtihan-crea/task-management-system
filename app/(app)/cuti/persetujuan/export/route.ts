@@ -6,7 +6,8 @@ import { loadLeave } from '@/lib/hr/data'
 import { leaveColumns } from '@/lib/hr/leave-export'
 import { parseMonth } from '@/lib/hr/rekap'
 import { monthRange } from '@/lib/hr/tracker'
-import { excelResponse, exportInfo } from '@/lib/export/excel'
+import { exportInfo } from '@/lib/export/excel'
+import { exportResponse } from '@/lib/export'
 
 export const dynamic = 'force-dynamic'
 
@@ -21,7 +22,7 @@ export async function GET(request: NextRequest) {
     loadLeave({ from, to }),
   ])
   const info = exportInfo(profile.full_name || profile.email, [`Bulan: ${month}`])
-  return excelResponse(`Pengajuan Cuti Izin Sakit ${month}`, [
+  return exportResponse(request, `Pengajuan Cuti Izin Sakit ${month}`, [
     { name: 'Menunggu Persetujuan', title: 'PENGAJUAN MENUNGGU PERSETUJUAN', info, columns: await leaveColumns(pending), rows: pending },
     { name: 'Semua Pengajuan', title: `SEMUA PENGAJUAN ${month}`, info, columns: await leaveColumns(monthRows), rows: monthRows },
   ])
