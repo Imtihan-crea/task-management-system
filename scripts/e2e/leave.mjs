@@ -65,7 +65,8 @@ try {
   const a = await ac.newPage()
   a.on('dialog', (d) => d.accept())
   await loginPassword(a, approver)
-  await a.goto(`${BASE}/dashboard`, { waitUntil: 'networkidle' })
+  // Portal: menu samping hanya untuk aplikasi yang dibuka; Persetujuan Cuti ada di aplikasi Cuti.
+  await a.goto(`${BASE}/cuti`, { waitUntil: 'networkidle' })
   check('menu Persetujuan Cuti tampil untuk penyetuju', (await a.getByRole('link', { name: 'Persetujuan Cuti' }).count()) === 1)
   await a.goto(`${BASE}/cuti/persetujuan`, { waitUntil: 'networkidle' })
   const pend = a.locator('section').filter({ hasText: 'Menunggu persetujuan' }).getByRole('row').filter({ hasText: `${P} Karyawan Cuti` })
@@ -102,7 +103,7 @@ try {
   check(`saldo sisa = 12 − 2 diambil − ${joint} cuti bersama`, Number.isFinite(joint) && sisa === 12 - 2 - joint, `sisa ${sisa}, cuti bersama ${joint}`)
   await a.goto(`${BASE}/cuti/persetujuan`, { waitUntil: 'networkidle' })
   const bal = a.locator('section').filter({ hasText: 'Saldo cuti tahunan' }).getByRole('row').filter({ hasText: `${P} Karyawan Cuti` })
-  check('tabel saldo penyetuju', /12\s+2\s+0\s+10/.test((await bal.innerText()).replace(/\s+/g, ' ')), await bal.innerText())
+  check('tabel saldo penyetuju (sisa juga dipotong cuti bersama)', new RegExp(`12\\s+2\\s+0\\s+${12 - 2 - joint}\\b`).test((await bal.innerText()).replace(/\s+/g, ' ')), await bal.innerText())
 
   // Batalkan cuti yang sudah disetujui
   await a.goto(`${BASE}/cuti/persetujuan?bulan=${mon.slice(0, 7)}`, { waitUntil: 'networkidle' })

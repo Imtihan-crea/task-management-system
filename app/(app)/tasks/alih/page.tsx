@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { requireProfile } from '@/lib/auth/session'
-import { canApproveLeave, permissionProjects } from '@/lib/auth/current-access'
+import { canApproveLeave, decisionProjects } from '@/lib/auth/current-access'
 import { applyProjectScope } from '@/lib/auth/access'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { AppShell } from '@/components/layout/AppShell'
@@ -41,9 +41,9 @@ export default async function TaskTransfersPage({
   const profile = await requireProfile()
   const sp = await searchParams
   const [lists, users, scope, durations] = await Promise.all([
-    transferLists(profile.id),
+    transferLists(profile),
     transferUsers(),
-    permissionProjects(profile.id, 'tasks.edit'),
+    decisionProjects(profile),
     transferDurations(),
   ])
   const isManager = scope.all || scope.include.length > 0

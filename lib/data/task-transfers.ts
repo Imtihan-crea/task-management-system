@@ -1,7 +1,7 @@
 import 'server-only'
 
 import { createAdminClient } from '@/lib/supabase/admin'
-import { permissionProjects } from '@/lib/auth/current-access'
+import { decisionProjects } from '@/lib/auth/current-access'
 import { getActiveUsers } from '@/lib/data/users'
 import { displayName } from '@/lib/data/user-options'
 import { TRANSFER_COLUMNS, type TransferRow } from '@/lib/tasks/transfers'
@@ -65,9 +65,10 @@ export async function openTransferForTask(taskId: string): Promise<TransferView 
  * Halaman /tasks/alih: `manage` = alih task di project yang ia kelola
  * (pemegang tasks.edit); `mine` = yang melibatkan dirinya; riwayat 50 terakhir.
  */
-export async function transferLists(userId: string): Promise<{ manage: TransferView[]; mine: TransferView[]; history: TransferView[] }> {
+export async function transferLists(profile: { id: string; role: string }): Promise<{ manage: TransferView[]; mine: TransferView[]; history: TransferView[] }> {
   const admin = createAdminClient()
-  const scope = await permissionProjects(userId, 'tasks.edit')
+  const userId = profile.id
+  const scope = await decisionProjects(profile)
   const [{ data: open }, { data: past }] = await Promise.all([
     admin.from('task_transfers').select(COLUMNS).in('status', OPEN_TRANSFER_STATUSES).order('created_at', { ascending: false }).limit(500),
     admin.from('task_transfers').select(COLUMNS).not('status', 'in', `(${OPEN_TRANSFER_STATUSES.join(',')})`).order('updated_at', { ascending: false }).limit(200),

@@ -1,6 +1,6 @@
 import { redirect } from 'next/navigation'
 import { requireProfile } from '@/lib/auth/session'
-import { canApproveLeave, permissionProjects } from '@/lib/auth/current-access'
+import { canApproveLeave, decisionProjects } from '@/lib/auth/current-access'
 import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ExportLink } from '@/components/export/ExportLink'
@@ -35,7 +35,7 @@ export default async function LeaveApprovalPage({ searchParams }: { searchParams
     createAdminClient().from('profiles').select('id, full_name, email, annual_leave_quota, tracker_required, status').is('deleted_at', null).order('full_name'),
     loadLeaveTypes(),
     loadRules(today),
-    permissionProjects(profile.id, 'tasks.edit'),
+    decisionProjects(profile),
   ])
   const labels = kindLabels(types)
   const joint = jointQuotaDays(calendar, rules.jointLeaveUsesQuota)

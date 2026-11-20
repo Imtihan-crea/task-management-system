@@ -20,7 +20,7 @@ import {
 import { getActiveUsers } from '@/lib/data/users'
 import { applyProjectScope, hasPermission, permissionProjects } from '@/lib/auth/current-access'
 import { can } from '@/lib/auth/permissions'
-import { canActOnTask } from '@/lib/auth/task-access'
+import { canActOnTask, isTaskDeciderRole } from '@/lib/auth/task-access'
 import type { Task, TaskStatus } from '@/types/task'
 import { taskStatusLabel } from '@/lib/auth/roles'
 
@@ -73,8 +73,10 @@ export default async function TaskDetailPage({
 
   // Alih task (20 Nov 2026): assignee mengajukan, PM/Admin project langsung mengalihkan.
   const isOpenTask = task.status !== 'DONE' && task.status !== 'CANCELLED'
+  // Pemutus review/alih task: Admin/PM saja (Project Officer bisa ubah task tetapi tetap direview PM).
+  const canDecide = canFullEdit && isTaskDeciderRole(profile.role)
   const openTransfer = await openTransferForTask(task.id)
-  const canTransfer = isOpenTask && (canFullEdit || (isOwner && canChangeStatus))
+  const canTransfer = isOpenTask && (canDecide || (isOwner && canChangeStatus))
   const [transferCandidates, durations] = canTransfer && !openTransfer ? await Promise.all([transferUsers(), transferDurations()]) : [[], []]
 
   const [{ data: project }, { data: workstream }, { data: assignee }, { data: creator }] =
@@ -207,7 +209,7 @@ export default async function TaskDetailPage({
                   </p>
                 </div>
               )
-            ) : task.status === 'REVIEW' && !canFullEdit ? (
+            ) : task.status === 'REVIEW' && !canDecide ? (
               <div className="mt-4 border-t pt-4 dark:border-zinc-700">
                 <p className="text-sm text-zinc-600 dark:text-zinc-400">
                   Task ini sudah diserahkan dan menunggu review PM. PM akan menyetujui atau mengembalikannya.
@@ -228,7 +230,7 @@ export default async function TaskDetailPage({
             />
           </div>
 
-          {task.status === 'REVIEW' && canFullEdit && (
+          {task.status === 'REVIEW' && canDecide && (
             <div className="mt-4 border-t pt-4 dark:border-zinc-700">
               <h3 className="mb-2 text-base font-bold">Review PM</h3>
               <ReviewDecisionForm id={task.id} />
@@ -242,7 +244,7 @@ export default async function TaskDetailPage({
               <div className="mt-4 flex flex-col gap-2 border-t pt-4 sm:flex-row dark:border-zinc-700">
                 {task.status !== 'REVIEW' && (
                   <div className="flex-1">
-                    <SubmitTaskForm id={task.id} toReview={!canFullEdit} />
+                    <SubmitTaskForm id={task.id} toReview={!canDecide} />
                   </div>
                 )}
                 {canCancel && (
@@ -257,17 +259,17 @@ export default async function TaskDetailPage({
             <div className="mt-4 border-t pt-4 dark:border-zinc-700">
               <h3 className="mb-2 text-base font-bold">Alih Task (Backup)</h3>
               {openTransfer ? (
-                <TransferCard t={openTransfer} canManage={canFullEdit} userId={profile.id} />
+                <TransferCard t={openTransfer} canManage={canDecide} userId={profile.id} />
               ) : (
                 <details>
                   <summary className="flex min-h-[44px] cursor-pointer items-center text-sm font-semibold">
-                    {canFullEdit ? 'Alihkan task ini ke consultant lain' : 'Ajukan alih task (cuti, sakit, berhalangan)'}
+                    {canDecide ? 'Alihkan task ini ke consultant lain' : 'Ajukan alih task (cuti, sakit, berhalangan)'}
                   </summary>
                   <div className="mt-2">
                     <TransferRequestForm
                       tasks={[{ id: task.id, code: task.code, title: task.title }]}
                       users={transferCandidates.filter((u) => u.id !== task.assignee_id)}
-                      byManager={canFullEdit}
+                      byManager={canDecide}
                       durations={durations}
                     />
                   </div>

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { requireProfile } from '@/lib/auth/session'
-import { hasPermission } from '@/lib/auth/current-access'
+import { canDecideTasks } from '@/lib/auth/current-access'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
@@ -87,7 +87,7 @@ export async function requestTransfer(_prev: TransferFormState, formData: FormDa
       skipped.push(`${task.code} (sudah ditutup)`)
       continue
     }
-    const manages = await hasPermission(profile.id, 'tasks.edit', task.project_id)
+    const manages = await canDecideTasks(profile, task.project_id)
     if (!manages && task.assignee_id !== profile.id) {
       skipped.push(`${task.code} (bukan task Anda)`)
       continue
@@ -215,7 +215,7 @@ async function decideOne(
   note: string | null,
   autoReturn: boolean
 ): Promise<string | null> {
-  if (!(await hasPermission(profile.id, 'tasks.edit', t.task.project_id))) return DENIED
+  if (!(await canDecideTasks(profile, t.task.project_id))) return DENIED
   if (t.requested_by === profile.id) return 'pengajuan sendiri harus diputuskan PM/Admin lain'
   if (t.status !== 'PENDING') return 'sudah diputuskan'
   if (decision === 'approve') {
@@ -282,7 +282,7 @@ export async function cancelTransfer(_prev: TransferFormState, formData: FormDat
     const t = await loadTransfer(id)
     if (!t || !t.task) continue
     taskIds.push(t.task.id)
-    const manages = await hasPermission(profile.id, 'tasks.edit', t.task.project_id)
+    const manages = await canDecideTasks(profile, t.task.project_id)
     if (!manages && t.requested_by !== profile.id) {
       failed.push(`${t.task.code} (tanpa izin)`)
       continue
@@ -312,7 +312,7 @@ export async function endTransferAction(_prev: TransferFormState, formData: Form
   if (action !== 'return' && action !== 'keep' && action !== 'extend') return { error: 'Pilihan tidak valid.' }
   const t = await loadTransfer(readLimitedField(formData, 'id'))
   if (!t || !t.task) return { error: 'Alih task tidak ditemukan.' }
-  if (!(await hasPermission(profile.id, 'tasks.edit', t.task.project_id))) return { error: DENIED }
+  if (!(await canDecideTasks(profile, t.task.project_id))) return { error: DENIED }
   const newEnd = action === 'extend' ? wibLocalToISO(readLimitedField(formData, 'ends_at')) : undefined
   if (action === 'extend' && !newEnd) return { error: 'Isi waktu selesai baru.' }
   const err = await resolveTransfer(t, action, profile.id, newEnd)

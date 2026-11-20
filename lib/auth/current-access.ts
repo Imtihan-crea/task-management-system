@@ -1,4 +1,5 @@
 import 'server-only'
+import { isTaskDeciderRole } from '@/lib/auth/task-access'
 
 import { cache } from 'react'
 import { redirect } from 'next/navigation'
@@ -100,3 +101,14 @@ export const menuPermissions = cache(async (userId: string): Promise<string[]> =
   if (clients) allowed.push('clients.view')
   return allowed
 })
+
+/** Pemutus review PM / alih task di project ini: Admin/PM + tasks.edit (lib/auth/task-access.ts). */
+export async function canDecideTasks(profile: { id: string; role: string }, projectId: string): Promise<boolean> {
+  return isTaskDeciderRole(profile.role) && (await hasPermission(profile.id, 'tasks.edit', projectId))
+}
+
+/** Project tempat ia bisa memutuskan review / alih task (kosong untuk Project Officer dan Guest). */
+export async function decisionProjects(profile: { id: string; role: string }): Promise<ProjectScope> {
+  if (!isTaskDeciderRole(profile.role)) return { all: false, include: [], exclude: [] }
+  return permissionProjects(profile.id, 'tasks.edit')
+}

@@ -15,6 +15,22 @@ export type UpdateLogEntry = {
 export const UPDATE_LOG: UpdateLogEntry[] = [
   {
     date: '2026-11-21',
+    title: 'Portal aplikasi, wewenang sesuai bagan Kasuat, pilih massal, tampilan HP',
+    added: [
+      'Portal setelah login: kartu aplikasi yang boleh dibuka (Project & Task, Meeting, Daily Tracker & HR, Cuti, Client Management, Admin & Sistem) dengan ringkasan kecil. Menu samping hanya menampilkan aplikasi yang sedang dibuka; logo dan tombol Portal kembali ke Portal.',
+      'Wewenang mengikuti bagan Kasuat. Peran kini bernama Admin, Project Manager, Project Officer, dan Guest. PM dan Project Officer bisa melihat rekap HR, memeriksa Daily Tracker, melihat Client Management, dan mengelola meeting; Project Officer bisa membuat dan mengubah task. Guest hanya melihat project dan task miliknya, dan boleh mengusulkan task.',
+      'Pilih massal di semua daftar (Tasks, Projects, Users, Meetings, Usulan, Cuti, Client Management, Master Reference, Daily Tracker, Rekap, Notifications, Workstreams, Activity Log): pilih satu, sebagian, atau semua, lalu jalankan aksi untuk yang dipilih.',
+      'Jenis cuti diatur HR di Master Reference (nama, dihitung jam kerja atau tidak, memotong saldo atau tidak, batas hari). Master Reference kini satu tab per daftar.',
+      'Tampilan lebih ringan dan rapi di HP: filter bisa dilipat, daftar padat, target sentuh lebih besar; Daily Tracker, Cuti, dan Master Reference rapi di layar kecil. Dashboard: KPI rapi, workload berupa batang, warna To Do/Cancelled tidak lagi mirip.',
+      'Export Monthly Summary mengikuti urutan kolom sheet.',
+    ],
+    removed: [
+      'Membuat dan mengubah project kini hanya untuk Admin (sesuai bagan wewenang); PM tetap mengelola isi project yang ia pegang.',
+    ],
+    pending: ['Backup harian terenkripsi lewat email sudah dipasang, tetapi belum berjalan sampai alamat penerima dan kata sandi backup diisi.'],
+  },
+  {
+    date: '2026-11-21',
     title: 'Review PM, alih task, dan notifikasi lebih hemat',
     added: [
       'Task yang diserahkan consultant kini berstatus Menunggu Review PM. PM atau Admin project memilih Setujui (Done) atau Kembalikan ke Consultant dengan catatan. Selama menunggu review, consultant tidak bisa mengubah status, dan task tidak dihitung terlambat. PM yang menyerahkan task sendiri tetap langsung Done. Tab baru Menunggu Review di daftar Tasks.',

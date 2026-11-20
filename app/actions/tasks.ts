@@ -2,7 +2,7 @@
 
 import { revalidatePath } from 'next/cache'
 import { requireProfile } from '@/lib/auth/session'
-import { hasPermission, requirePermission } from '@/lib/auth/current-access'
+import { canDecideTasks, hasPermission, requirePermission } from '@/lib/auth/current-access'
 import type { Permission } from '@/lib/auth/permissions'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { isTaskPriority, isTaskStatus, taskStatusLabel } from '@/lib/auth/roles'
@@ -265,6 +265,10 @@ export async function updateTask(
   if (status === 'REVIEW' && before?.status !== 'REVIEW') {
     return { error: 'Status Menunggu Review PM hanya lewat tombol Submit.' }
   }
+  // Keluar dari REVIEW = keputusan PM/Admin; Project Officer (bisa ubah task) tidak.
+  if (before?.status === 'REVIEW' && status !== 'REVIEW' && !(await canDecideTasks(profile, scope.projectId))) {
+    return { error: 'Task ini menunggu review PM. Tunggu PM menyetujui atau mengembalikannya.' }
+  }
 
   const { data: updated, error } = await adminClient
     .from('tasks')
@@ -450,7 +454,7 @@ export async function changeTaskStatus(
     return { error: 'Task ini terkunci. Minta PM atau Admin untuk membukanya kembali.' }
   }
   // REVIEW hanya lewat Submit; consultant tidak bisa keluar dari REVIEW.
-  if (!canPickStatus(await hasPermission(profile.id, 'tasks.edit', task.project_id), before.status, status)) {
+  if (!canPickStatus(await canDecideTasks(profile, task.project_id), before.status, status)) {
     return {
       error: before.status === 'REVIEW'
         ? 'Task ini menunggu review PM. Tunggu PM menyetujui atau mengembalikannya.'
@@ -559,7 +563,7 @@ export async function submitTask(
     return { error: 'Task yang CANCELLED tidak dapat di-submit.' }
   }
 
-  const target = submitTarget(await hasPermission(profile.id, 'tasks.edit', task.project_id))
+  const target = submitTarget(await canDecideTasks(profile, task.project_id))
   if (task.status === 'REVIEW' && target === 'REVIEW') return { success: 'Task sudah menunggu review PM.' }
 
   // PM men-submit task yang menunggu review = menyetujui; tanggal submit consultant tetap.
@@ -637,7 +641,7 @@ export async function decideReview(
     .eq('is_deleted', false)
     .single<{ id: string; code: string; title: string; assignee_id: string; project_id: string; status: TaskStatus; completed_at: string | null }>()
   if (!task) return { error: 'Task tidak ditemukan.' }
-  if (!(await hasPermission(profile.id, 'tasks.edit', task.project_id))) {
+  if (!(await canDecideTasks(profile, task.project_id))) {
     return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
   if (task.status !== 'REVIEW') return { error: 'Task ini tidak sedang menunggu review. Muat ulang halaman.' }

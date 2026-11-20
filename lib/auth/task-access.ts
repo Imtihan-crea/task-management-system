@@ -50,3 +50,13 @@ export function canPickStatus(
   if (from === 'REVIEW') return managesProject
   return true
 }
+
+/**
+ * Pemutus review PM dan alih task: hanya Admin dan Project Manager (yang juga
+ * memegang tasks.edit di project itu). Project Officer (TEAM_MEMBER) boleh
+ * mengubah task menurut bagan COA, tetapi tetap consultant yang diperiksa PM;
+ * Guest (VIEWER) tidak pernah.
+ */
+export function isTaskDeciderRole(role: string): boolean {
+  return role === 'ADMIN' || role === 'PROJECT_MANAGER'
+}

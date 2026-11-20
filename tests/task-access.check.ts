@@ -2,7 +2,7 @@
  * Uji lib/auth/task-access.ts — siapa boleh ubah status/submit/cancel/evidence task.
  * Jalankan: npm run test:task-access
  */
-import { canActOnTask, canCancelTask, canPickStatus, submitTarget } from '../lib/auth/task-access'
+import { canActOnTask, canCancelTask, canPickStatus, isTaskDeciderRole, submitTarget } from '../lib/auth/task-access'
 import type { UserRole } from '../types/profile'
 
 let ok = 0
@@ -69,6 +69,12 @@ const pilihKasus: [boolean, string, string, boolean][] = [
 for (const [pm, from, to, harap] of pilihKasus) {
   cek(`pilih ${from}->${to} pm=${pm}`, canPickStatus(pm, from, to), harap)
 }
+
+// Pemutus review/alih task (COA, 21 Nov 2026): Project Officer dan Guest tidak pernah.
+cek('pemutus: ADMIN', isTaskDeciderRole('ADMIN'), true)
+cek('pemutus: PROJECT_MANAGER', isTaskDeciderRole('PROJECT_MANAGER'), true)
+cek('pemutus: Project Officer (TEAM_MEMBER) tidak', isTaskDeciderRole('TEAM_MEMBER'), false)
+cek('pemutus: Guest (VIEWER) tidak', isTaskDeciderRole('VIEWER'), false)
 
 console.log(`LULUS: ${ok}`)
 console.log(`GAGAL: ${gagal}`)
