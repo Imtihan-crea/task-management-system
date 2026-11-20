@@ -83,7 +83,7 @@ try {
   check('proyek internal tertaut, nama dari master', b && b.internal_project_ref && b.project_name === 'Manajemen Perusahaan' && !b.project_id, JSON.stringify(b))
   check('kategori teks bebas tersimpan apa adanya', b && b.category === FREE_CAT && b.category_ref === null, JSON.stringify(b))
   await page.goto(`${BASE}/tracker?tanggal=${today}`, { waitUntil: 'networkidle' })
-  check('daftar menandai teks bebas', (await page.getByText('(teks bebas)').count()) === 1)
+  check('daftar tanpa tanda teks bebas', (await page.getByText('(teks bebas)').count()) === 0 && (await page.getByRole('cell', { name: FREE_CAT, exact: true }).count()) === 1)
   check('output kosong ditandai di daftar', (await page.getByText('Kosong', { exact: true }).count()) === 1)
 
   // 3. Bentrok & lewat tengah malam ditolak
@@ -154,7 +154,7 @@ try {
   check('rekap: baris karyawan 4 jam', (await row.getByRole('cell', { name: '4', exact: true }).count()) >= 1, await row.innerText().catch(() => ''))
   await row.getByRole('link').click()
   check('rekap: rincian proyek internal', await dp.getByRole('cell', { name: 'Manajemen Perusahaan', exact: true }).first().waitFor({ timeout: 10000 }).then(() => true, () => false))
-  check('rekap: kategori teks bebas ditandai', (await dp.getByRole('cell', { name: `${FREE_CAT} (teks bebas)` }).count()) >= 1)
+  check('rekap: kategori teks bebas tampil tanpa tanda', (await dp.getByRole('cell', { name: FREE_CAT, exact: true }).count()) >= 1 && (await dp.getByText('(teks bebas)').count()) === 0)
 
   await dp.goto(`${BASE}/master-reference`, { waitUntil: 'networkidle' })
   // Tambah pilihan

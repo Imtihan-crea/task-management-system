@@ -1,7 +1,7 @@
 import type { NextRequest } from 'next/server'
 import { requirePermission } from '@/lib/auth/current-access'
 import { loadReviewLogs } from '@/lib/hr/data'
-import { dailyDataColumns, plain, summaryColumns } from '@/lib/hr/export-columns'
+import { dailyDataColumns, summaryColumns } from '@/lib/hr/export-columns'
 import { loadRekap, type RekapPerson } from '@/lib/hr/rekap'
 import { parsePeriod } from '@/lib/hr/period'
 import { breakdown, type Breakdown } from '@/lib/hr/tracker'
@@ -18,7 +18,7 @@ const name = (p: { full_name: string | null; email: string }) => p.full_name || 
 const breakdownColumns = (keyLabel: string): ExcelColumn<PersonBreakdown>[] => [
   { header: 'Nama', width: 22, value: (r) => name(r.person) },
   { header: 'Divisi', width: 14, value: (r) => r.person.division },
-  { header: keyLabel, width: 28, value: (r) => plain(r.key) },
+  { header: keyLabel, width: 28, value: (r) => r.key },
   { header: 'Jam', width: 9, format: '0.00', value: (r) => r.hours },
   { header: 'Jumlah Aktivitas', width: 10, value: (r) => r.count },
   { header: '% dari Jam Orang Ini', width: 12, format: '0.00', value: (r) => r.percent },

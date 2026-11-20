@@ -2,7 +2,7 @@ import type { NextRequest } from 'next/server'
 import { requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadLeave, loadPeriodBasis, loadReviewLogs, loadRules } from '@/lib/hr/data'
-import { dailyDataColumns, plain, summaryColumns } from '@/lib/hr/export-columns'
+import { dailyDataColumns, summaryColumns } from '@/lib/hr/export-columns'
 import { leaveDaysIn, paidLeaveDays, type LeaveRow } from '@/lib/hr/leave'
 import { parsePeriod, periodSummary } from '@/lib/hr/period'
 import { breakdown, type Breakdown } from '@/lib/hr/tracker'
@@ -13,7 +13,7 @@ import { exportResponse } from '@/lib/export'
 export const dynamic = 'force-dynamic'
 
 const clientColumns: ExcelColumn<Breakdown>[] = [
-  { header: 'Klien', width: 28, value: (r) => plain(r.key) },
+  { header: 'Klien', width: 28, value: (r) => r.key },
   { header: 'Jam', width: 9, format: '0.00', value: (r) => r.hours },
   { header: 'Jumlah Aktivitas', width: 10, value: (r) => r.count },
   { header: '% dari Total Jam', width: 12, format: '0.00', value: (r) => r.percent },

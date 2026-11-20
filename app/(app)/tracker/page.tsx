@@ -6,7 +6,7 @@ import { ExportLink } from '@/components/export/ExportLink'
 import { AppShell } from '@/components/layout/AppShell'
 import { KpiCard, PageHeader } from '@/components/ui/primitives'
 import { WorkLogForm, DeleteWorkLogButton, type WorkLogValues } from '@/components/tracker/WorkLogForm'
-import { FREE_TEXT_MARK, loadComments, loadLeave, loadLogs, loadMonthBasis, loadPeriodBasis, loadReferences, loadRules, loadTrackerProjects } from '@/lib/hr/data'
+import { loadComments, loadLeave, loadLogs, loadMonthBasis, loadPeriodBasis, loadReferences, loadRules, loadTrackerProjects } from '@/lib/hr/data'
 import { parsePeriod, periodSummary } from '@/lib/hr/period'
 import { BreakdownTable } from '@/components/tracker/BreakdownTable'
 import { PeriodFilter } from '@/components/tracker/PeriodFilter'
@@ -27,9 +27,7 @@ type DbRow = Omit<WorkLogValues, 'project'> & {
   location_ref: string | null
   duration_minutes: number
 }
-type Row = DbRow & WorkLogValues & { free: string[] }
-
-const FreeMark = () => <span className="text-xs text-zinc-600 dark:text-zinc-400">{FREE_TEXT_MARK}</span>
+type Row = DbRow & WorkLogValues
 
 const hours = (min: number) => (min / 60).toLocaleString('id-ID', { maximumFractionDigits: 2 })
 
@@ -70,12 +68,7 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
     const project = l.project_id ? l.project_name : l.internal_project_ref ? label.get(l.internal_project_ref) ?? l.project_name : l.project_name
     const category = l.category_ref ? label.get(l.category_ref) ?? l.category : l.category
     const location = l.location_ref ? label.get(l.location_ref) ?? l.location : l.location
-    const free = [
-      !l.project_id && !l.internal_project_ref ? 'project' : '',
-      !l.category_ref ? 'category' : '',
-      !l.location_ref ? 'location' : '',
-    ].filter(Boolean)
-    return { ...l, project, category, location, free }
+    return { ...l, project, category, location }
   })
   const active = (list: string) => refs.filter((r) => r.list === list && !r.archived_at).map((r) => r.label)
   const dayLogs = logs.filter((l) => l.work_date === date)
@@ -159,10 +152,10 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
                 {dayLogs.map((l) => (
                   <tr key={l.id} className="border-b align-top last:border-0">
                     <td className="py-2 pr-3 whitespace-nowrap">{l.start_time.slice(0, 5)}–{l.end_time.slice(0, 5)} ({hours(l.duration_minutes)} j)</td>
-                    <td className="py-2 pr-3">{l.project}{l.free.includes('project') && <FreeMark />}</td>
+                    <td className="py-2 pr-3">{l.project}</td>
                     <td className="py-2 pr-3">{l.activity}<CommentThread comments={comments.get(l.id) ?? []} /></td>
-                    <td className="py-2 pr-3">{l.category}{l.free.includes('category') && <FreeMark />}</td>
-                    <td className="py-2 pr-3">{l.location}{l.free.includes('location') && <FreeMark />}</td>
+                    <td className="py-2 pr-3">{l.category}</td>
+                    <td className="py-2 pr-3">{l.location}</td>
                     <td className="py-2 pr-3">{l.output || <span className="font-semibold text-red-700">Kosong</span>}</td>
                     <td className="py-2 whitespace-nowrap">
                       <Link href={`/tracker?tanggal=${date}&ubah=${l.id}&${pq}`} className="inline-block min-h-[44px] px-2 py-3 text-sm font-semibold text-kasuat-deep-gold hover:underline">Ubah</Link>
