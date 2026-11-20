@@ -95,8 +95,11 @@ try {
 
   // Saldo & rekap
   await m.goto(`${BASE}/cuti`, { waitUntil: 'networkidle' })
-  const sisa = await m.locator('text=Sisa cuti').locator('..').innerText()
-  check('saldo sisa 10 (12 − 2)', /\b10\b/.test(sisa), sisa)
+  // Hanya Cuti Tahunan dan cuti bersama (hari kerja di kalender) yang memotong saldo.
+  const num = async (label) => Number((await m.locator(`text=${label}`).locator('..').innerText()).match(/\d+/g)?.pop())
+  const joint = await num('Cuti bersama (memotong)')
+  const sisa = await num('Sisa cuti')
+  check(`saldo sisa = 12 − 2 diambil − ${joint} cuti bersama`, Number.isFinite(joint) && sisa === 12 - 2 - joint, `sisa ${sisa}, cuti bersama ${joint}`)
   await a.goto(`${BASE}/cuti/persetujuan`, { waitUntil: 'networkidle' })
   const bal = a.locator('section').filter({ hasText: 'Saldo cuti tahunan' }).getByRole('row').filter({ hasText: `${P} Karyawan Cuti` })
   check('tabel saldo penyetuju', /12\s+2\s+0\s+10/.test((await bal.innerText()).replace(/\s+/g, ' ')), await bal.innerText())
