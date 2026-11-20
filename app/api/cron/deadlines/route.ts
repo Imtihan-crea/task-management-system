@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
 import { runMorningDigest } from '@/lib/meetings/digest'
 import { allRows } from '@/lib/utils/paginate'
 import { todayISO } from '@/lib/utils/dates'
 import { isCronAuthorized } from '@/lib/auth/cron'
-import { deadlineTodayBody, taskOverdueBody } from '@/lib/email/templates'
 
 export const dynamic = 'force-dynamic'
 
@@ -29,6 +27,7 @@ type DueTask = {
  * - DONE dikecualikan (§39): query hanya status != DONE, jadi task yang
  *   sudah DONE otomatis berhenti dapat notifikasi.
  * - Semua lewat unified service: idempotent + preferensi dihormati.
+ * - In-app saja (20 Nov 2026): email rutin digantikan digest pagi dan sore.
  * - Gagal di satu task tidak menghentikan task lain, dan tidak merusak
  *   data task apa pun (§75: scheduler failure tidak corrupt data).
  */
@@ -57,6 +56,7 @@ export async function GET(request: Request) {
         .eq('is_deleted', false)
         .neq('status', 'DONE')
         .neq('status', 'CANCELLED')
+        .neq('status', 'REVIEW') // menunggu PM: bukan tanggungan assignee lagi
         .lte('deadline', today)
         .order('id')
         .range(from, to)
@@ -66,24 +66,15 @@ export async function GET(request: Request) {
     return NextResponse.json({ error: 'Gagal mengambil task.', ...digest }, { status: 500 })
   }
 
-  let baseUrl = ''
-  try {
-    baseUrl = getAppBaseUrl()
-  } catch {
-    console.error('[cron] APP_URL missing, links will be relative.')
-  }
-
-  // Nama project sekali jalan.
+  // Status project sekali jalan.
   const projectIds = [...new Set(tasks.map((t) => t.project_id))]
-  let projectNames: Record<string, string> = {}
   let closedProjects = new Set<string>()
   if (projectIds.length > 0) {
     const { data: projects } = await admin
       .from('projects')
-      .select('id, code, name, status')
+      .select('id, status')
       .in('id', projectIds)
-    const rows = (projects ?? []) as { id: string; code: string; name: string; status: string }[]
-    projectNames = Object.fromEntries(rows.map((p) => [p.id, `${p.code} · ${p.name}`]))
+    const rows = (projects ?? []) as { id: string; status: string }[]
     closedProjects = new Set(
       rows.filter((p) => p.status === 'COMPLETED' || p.status === 'CANCELLED').map((p) => p.id)
     )
@@ -104,11 +95,7 @@ export async function GET(request: Request) {
       message: `"${task.title}" deadline hari ini (${task.deadline}).`,
       entityType: 'task',
       entityId: task.id,
-      email: {
-        subject: `[Jatuh Tempo Hari Ini] ${task.code} ${task.title}`,
-        html: deadlineTodayBody({ baseUrl, taskId: task.id, code: task.code, title: task.title, projectLabel: projectNames[task.project_id] ?? '-' }),
-        category: 'deadline',
-      },
+      email: null, // rutin: in-app + digest pagi/sore
     })
     if (result.emitted) dueTodaySent += 1
   }
@@ -123,11 +110,7 @@ export async function GET(request: Request) {
       message: `"${task.title}" melewati deadline (${task.deadline}).`,
       entityType: 'task',
       entityId: task.id,
-      email: {
-        subject: `[Overdue] ${task.code} ${task.title}`,
-        html: taskOverdueBody({ baseUrl, taskId: task.id, code: task.code, title: task.title, projectLabel: projectNames[task.project_id] ?? '-', deadline: task.deadline }),
-        category: 'deadline',
-      },
+      email: null, // rutin: in-app + digest pagi/sore
     })
     if (result.emitted) overdueSent += 1
   }

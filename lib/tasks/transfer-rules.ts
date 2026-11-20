@@ -1,0 +1,144 @@
+/**
+ * Aturan alih task (20 Nov 2026). Murni supaya bisa dites.
+ * Waktu dari form memakai <input type="datetime-local"> dan dibaca sebagai WIB.
+ */
+
+export type TransferKind = 'PERMANENT' | 'TEMPORARY'
+export type TransferStatus = 'PENDING' | 'SCHEDULED' | 'ACTIVE' | 'EXPIRED' | 'DONE' | 'REJECTED' | 'CANCELLED'
+
+/** Status yang masih berjalan (satu per task, dijaga unique index di 032). */
+export const OPEN_TRANSFER_STATUSES: TransferStatus[] = ['PENDING', 'SCHEDULED', 'ACTIVE', 'EXPIRED']
+
+export const TRANSFER_STATUS_LABEL: Record<TransferStatus, string> = {
+  PENDING: 'Menunggu PM',
+  SCHEDULED: 'Terjadwal',
+  ACTIVE: 'Berjalan',
+  EXPIRED: 'Masa habis, menunggu PM',
+  DONE: 'Selesai',
+  REJECTED: 'Ditolak',
+  CANCELLED: 'Dibatalkan',
+}
+
+/** Batas pengajuan consultant bila daftar Durasi alih task di Master Reference kosong. PM/Admin bebas. */
+export const MAX_REQUEST_DAYS = 92
+
+const UNIT_MINUTES: Record<string, number> = { menit: 1, jam: 60, hari: 1440, minggu: 10080, bulan: 43200 }
+
+/** "3 hari", "2 Jam (rapat)", "1 bulan" -> menit; null bila label tidak memuat angka + satuan. */
+export function parseDurationMinutes(label: string): number | null {
+  const m = /(\d+)\s*(menit|jam|hari|minggu|bulan)\b/i.exec(label)
+  if (!m) return null
+  const n = Number(m[1])
+  return n > 0 ? n * UNIT_MINUTES[m[2].toLowerCase()] : null
+}
+
+/** Pilihan durasi dari Master Reference (label yang bisa dibaca saja), urut dari terpendek. */
+export function durationOptions(labels: string[]): { label: string; minutes: number }[] {
+  return labels
+    .map((label) => ({ label, minutes: parseDurationMinutes(label) }))
+    .filter((o): o is { label: string; minutes: number } => o.minutes !== null)
+    .sort((a, b) => a.minutes - b.minutes)
+}
+
+/** Batas pengajuan consultant (menit): durasi terpanjang yang aktif, atau MAX_REQUEST_DAYS. */
+export function maxRequestMinutes(labels: string[]): number {
+  const opts = durationOptions(labels)
+  return opts.length ? opts[opts.length - 1].minutes : MAX_REQUEST_DAYS * 1440
+}
+
+/** "4320 menit" -> "3 hari" (untuk pesan galat). */
+export function durationText(minutes: number): string {
+  for (const [unit, size] of [['bulan', 43200], ['minggu', 10080], ['hari', 1440], ['jam', 60]] as const) {
+    if (minutes % size === 0) return `${minutes / size} ${unit}`
+  }
+  return `${minutes} menit`
+}
+/** Toleransi "waktu mulai di masa lalu" (form diisi beberapa menit). */
+const PAST_GRACE_MS = 10 * 60 * 1000
+
+/** "2026-11-21T08:00" (WIB) -> ISO UTC; '' bila tidak valid. */
+export function wibLocalToISO(value: string): string {
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) return ''
+  const d = new Date(`${value}:00+07:00`)
+  return Number.isNaN(d.getTime()) ? '' : d.toISOString()
+}
+
+/** ISO -> "YYYY-MM-DDTHH:MM" WIB (nilai awal datetime-local). */
+export function isoToWibLocal(iso: string): string {
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return ''
+  return new Date(d.getTime() + 7 * 3600 * 1000).toISOString().slice(0, 16)
+}
+
+/** Pesan galat pengajuan/pengalihan, atau null bila sah. */
+export function transferError(i: {
+  kind: string
+  fromUserId: string
+  toUserId: string
+  startsAt: string
+  endsAt: string
+  byManager: boolean
+  now: Date
+  /** Batas pengajuan consultant dalam menit (maxRequestMinutes); bawaan MAX_REQUEST_DAYS. */
+  maxMinutes?: number
+}): string | null {
+  if (i.kind !== 'PERMANENT' && i.kind !== 'TEMPORARY') return 'Pilih jenis alih task.'
+  if (!i.toUserId) return 'Pilih consultant pengganti.'
+  if (i.toUserId === i.fromUserId) return 'Pengganti harus orang lain, bukan pemegang task sekarang.'
+  if (i.kind === 'PERMANENT') return null
+  if (!i.startsAt || !i.endsAt) return 'Isi waktu mulai dan waktu selesai.'
+  const start = new Date(i.startsAt).getTime()
+  const end = new Date(i.endsAt).getTime()
+  if (Number.isNaN(start) || Number.isNaN(end)) return 'Masukkan waktu yang valid.'
+  if (end <= start) return 'Waktu selesai harus setelah waktu mulai.'
+  if (end <= i.now.getTime()) return 'Waktu selesai sudah lewat.'
+  if (!i.byManager) {
+    if (start < i.now.getTime() - PAST_GRACE_MS) return 'Waktu mulai tidak boleh di masa lalu.'
+    const max = i.maxMinutes ?? MAX_REQUEST_DAYS * 1440
+    if (end - start > max * 60 * 1000) return `Rentang paling lama ${durationText(max)}. Untuk lebih lama, minta PM mengalihkan.`
+  }
+  return null
+}
+
+/** Langkah penjadwal untuk satu alih task: mulai, akhiri, atau tidak ada. */
+export function transferTick(
+  t: { status: string; starts_at: string | null; ends_at: string | null },
+  now: Date
+): 'start' | 'end' | null {
+  const due = (iso: string | null) => iso !== null && new Date(iso).getTime() <= now.getTime()
+  if (t.status === 'SCHEDULED' && (t.starts_at === null || due(t.starts_at))) return 'start'
+  if (t.status === 'ACTIVE' && due(t.ends_at)) return 'end'
+  return null
+}
+
+/** Status sesudah dimulai: permanen langsung selesai, sementara berjalan. */
+export function statusAfterStart(kind: string): TransferStatus {
+  return kind === 'PERMANENT' ? 'DONE' : 'ACTIVE'
+}
+
+/**
+ * Isian awal alih task dari cuti/sakit: hari pertama 00:00 s/d hari terakhir
+ * 23:59 (WIB). Cuti yang sudah mulai: mulai = sekarang, supaya pengajuan
+ * consultant tidak ditolak karena "waktu mulai di masa lalu".
+ */
+export function leaveTransferRange(leave: { start_date: string; end_date: string }, now: Date): { start: string; end: string } {
+  const start = `${leave.start_date}T00:00`
+  const nowLocal = isoToWibLocal(now.toISOString())
+  return { start: start < nowLocal ? nowLocal : start, end: `${leave.end_date}T23:59` }
+}
+
+/** Pengajuan sementara yang waktu selesainya sudah lewat tidak boleh disetujui lagi. */
+export function approvalError(t: { kind: string; ends_at: string | null }, now: Date): string | null {
+  if (t.kind === 'TEMPORARY' && t.ends_at && new Date(t.ends_at).getTime() <= now.getTime()) {
+    return 'masa alih yang diajukan sudah lewat; minta pengaju mengajukan ulang'
+  }
+  return null
+}
+
+/**
+ * Task yang perlu dialihkan selama cuti: deadline sampai hari terakhir cuti
+ * (termasuk yang sudah lewat deadline, supaya tidak terbengkalai).
+ */
+export function tasksDueByLeaveEnd<T extends { deadline: string | null }>(tasks: T[], endDate: string): T[] {
+  return tasks.filter((t) => t.deadline !== null && t.deadline <= endDate)
+}

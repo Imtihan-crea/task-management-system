@@ -28,6 +28,7 @@
     "test:permissions": "tsx tests/permissions.check.ts",
     "test:alert": "tsx tests/error-alert.check.ts",
     "test:task-access": "tsx tests/task-access.check.ts",
+    "test:task-transfer": "tsx tests/task-transfer.check.ts",
     "test:project-access": "tsx tests/project-access.check.ts",
     "emails:render": "tsx scripts/render-emails.ts",
     "e2e:smoke": "node scripts/e2e/smoke.mjs",
@@ -43,6 +44,7 @@
     "e2e:tracker": "node scripts/e2e/tracker.mjs",
     "e2e:hr": "node scripts/e2e/hr.mjs",
     "e2e:leave": "node scripts/e2e/leave.mjs",
+    "e2e:review-alih": "node scripts/e2e/review-alih.mjs",
     "e2e:a11y": "node scripts/e2e/a11y.mjs",
     "e2e:mobile": "node scripts/e2e/mobile.mjs",
     "e2e:a3": "node scripts/e2e/a3-password.mjs",
@@ -72,7 +74,7 @@
     "test:backup": "tsx tests/backup.check.ts",
     "check:secrets": "node scripts/check-secrets.mjs",
     "test:db": "tsx tests/postgrest-or.check.ts",
-    "test:logic": "npm run test:time && npm run test:dates && npm run test:rules && npm run test:email && npm run test:layout && npm run test:digest && npm run test:task && npm run test:auth && npm run test:canonical && npm run test:cron && npm run test:permissions && npm run test:alert && npm run test:task-access && npm run test:project-access && npm run test:user-status && npm run test:limits && npm run test:paginate && npm run test:filter-values && npm run test:ws-code && npm run test:import && npm run test:super-admin && npm run test:access && npm run test:portal && npm run test:hr-tracker && npm run test:hr-reference && npm run test:hr-import && npm run test:hr-employee && npm run test:hr-reminder && npm run test:hr-leave && npm run test:hr-holidays && npm run test:export-excel && npm run test:export-lists && npm run test:combobox && npm run test:export-formats && npm run test:hr-period && npm run test:clients && npm run test:bulk && npm run test:backup && npm run check:secrets"
+    "test:logic": "npm run test:time && npm run test:dates && npm run test:rules && npm run test:email && npm run test:layout && npm run test:digest && npm run test:task && npm run test:auth && npm run test:canonical && npm run test:cron && npm run test:permissions && npm run test:alert && npm run test:task-access && npm run test:task-transfer && npm run test:project-access && npm run test:user-status && npm run test:limits && npm run test:paginate && npm run test:filter-values && npm run test:ws-code && npm run test:import && npm run test:super-admin && npm run test:access && npm run test:portal && npm run test:hr-tracker && npm run test:hr-reference && npm run test:hr-import && npm run test:hr-employee && npm run test:hr-reminder && npm run test:hr-leave && npm run test:hr-holidays && npm run test:export-excel && npm run test:export-lists && npm run test:combobox && npm run test:export-formats && npm run test:hr-period && npm run test:clients && npm run test:bulk && npm run test:backup && npm run check:secrets"
   },
   "dependencies": {
     "@sentry/nextjs": "11.11.0",

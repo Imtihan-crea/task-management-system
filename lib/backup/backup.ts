@@ -45,6 +45,7 @@ export const BACKUP_TABLES: readonly (readonly [string, readonly string[]])[] = 
   ['work_logs', ['id']],
   ['work_log_comments', ['id']],
   ['leave_requests', ['id']],
+  ['task_transfers', ['id']],
   ['client_leads', ['id']],
   ['client_lead_events', ['id']],
 ]

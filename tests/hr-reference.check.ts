@@ -69,7 +69,7 @@ cek('kelompok usulan', groupFreeText([
 // Jenis cuti (migrasi 027)
 cek('LEAVE_TYPE adalah daftar', isReferenceList('LEAVE_TYPE'), true)
 cek('tab terakhir = Jenis cuti', REFERENCE_LISTS[REFERENCE_LISTS.length - 1].list, 'LEAVE_TYPE')
-cek('tab: 6 daftar', REFERENCE_LISTS.length, 6)
+cek('tab: 7 daftar (termasuk Durasi alih task)', REFERENCE_LISTS.length, 7)
 cek('max_days kosong = tanpa batas', parseMaxDays(' '), { value: null })
 cek('max_days 5', parseMaxDays('5'), { value: 5 })
 cek('max_days 0 ditolak', 'error' in parseMaxDays('0'), true)

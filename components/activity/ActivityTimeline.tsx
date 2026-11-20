@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
-import { formatDate } from '@/lib/utils/dates'
+import { formatDate, formatDateTime } from '@/lib/utils/dates'
+import { taskStatusLabel } from '@/lib/auth/roles'
 import { BulkCheckbox } from '@/components/ui/BulkSelect'
 
 export type ActivityEntry = {
@@ -22,9 +23,13 @@ export function describeActivity(entry: Pick<ActivityEntry, 'action' | 'metadata
 
   switch (entry.action) {
     case 'TASK_STATUS_CHANGED':
-      return `Status diubah ${str(m.old_status).replace('_', ' ')} → ${str(m.new_status).replace('_', ' ')}`
+      return `Status diubah ${taskStatusLabel(str(m.old_status))} → ${taskStatusLabel(str(m.new_status))}${str(m.note) ? ` — Catatan: ${str(m.note)}` : ''}`
     case 'TASK_ASSIGNED':
       return 'Task ditugaskan'
+    case 'TASK_TRANSFERRED':
+      return m.step === 'return'
+        ? `Alih task berakhir, kembali ke ${str(m.to_name)}`
+        : `Dialihkan ${str(m.from_name)} → ${str(m.to_name)}${m.kind === 'TEMPORARY' ? ` sampai ${formatDateTime(str(m.ends_at))}` : ' (permanen)'}`
     case 'TASK_PRIORITY_CHANGED':
       return `Prioritas diubah ${str(m.old_priority)} → ${str(m.new_priority)}`
     case 'TASK_DEADLINE_CHANGED':

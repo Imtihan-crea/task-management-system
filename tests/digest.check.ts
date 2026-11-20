@@ -2,7 +2,7 @@
  * Uji boundary lib/meetings/digest-body.ts — body Morning Digest.
  * Jalankan: npm run test:digest
  */
-import { buildDigestBody } from '../lib/meetings/digest-body'
+import { buildDigestBody, digestHasContent } from '../lib/meetings/digest-body'
 
 let ok = 0
 let gagal = 0
@@ -94,6 +94,30 @@ const noBase = buildDigestBody({
   tasksOverdue: [],
 })
 cek('tanpa baseUrl = tanpa link tapi tetap informatif', !noBase.includes('<a href') && noBase.includes('Daily Standup'), true)
+
+
+// Pengingat sore + persetujuan + Daily Tracker (20 Nov 2026)
+const sore = buildDigestBody({
+  userName: 'Rina',
+  dateLabel: 'Jumat, 20 Nov 2026',
+  baseUrl: 'https://app.test',
+  meetings: [],
+  tasksDue: [],
+  tasksOverdue: [],
+  variant: 'sore',
+  approvals: [{ title: 'T-07 <Laporan>', detail: 'Menunggu review PM · 001 · Yoora', path: '/tasks/t7' }],
+  trackerMissing: true,
+  dateISO: '2026-11-20',
+})
+cek('sore: pembuka', sore.includes('Pengingat sore Jumat, 20 Nov 2026'), true)
+cek('sore: bagian persetujuan', sore.includes('Menunggu Persetujuan Anda (1)'), true)
+cek('sore: judul persetujuan di-escape', sore.includes('T-07 &lt;Laporan&gt;'), true)
+cek('sore: tautan persetujuan', sore.includes('href="https://app.test/tasks/t7"'), true)
+cek('sore: tautan tracker', sore.includes('href="https://app.test/tracker?tanggal=2026-11-20"'), true)
+cek('pagi tanpa tracker/persetujuan: tidak ada bagian itu', /Daily Tracker|Persetujuan/.test(buildDigestBody({ userName: 'A', dateLabel: 'x', baseUrl: '', meetings: [], tasksDue: [], tasksOverdue: [] })), false)
+cek('kosong = tidak dikirim', digestHasContent({ meetings: [], tasksDue: [], tasksOverdue: [] }), false)
+cek('hanya persetujuan = dikirim', digestHasContent({ meetings: [], tasksDue: [], tasksOverdue: [], approvals: [{}] }), true)
+cek('hanya tracker = dikirim', digestHasContent({ meetings: [], tasksDue: [], tasksOverdue: [], trackerMissing: true }), true)
 
 console.log(`LULUS: ${ok}`)
 console.log(`GAGAL: ${gagal}`)

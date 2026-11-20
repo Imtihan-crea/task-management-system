@@ -1,6 +1,6 @@
 import 'server-only'
 import { hasPermission } from '@/lib/auth/current-access'
-import { OPEN_TASK_STATUSES, TASK_PRIORITIES } from '@/lib/auth/roles'
+import { OPEN_TASK_STATUSES, TASK_PRIORITIES, taskStatusLabel } from '@/lib/auth/roles'
 import { getActiveUsers } from '@/lib/data/users'
 import { displayName } from '@/lib/data/user-options'
 import { bulkCancelTasks, bulkChangeTaskStatus, bulkSetTaskAssignee, bulkSetTaskPriority } from '@/app/actions/tasks'
@@ -22,7 +22,7 @@ export async function taskBulkActions(userId: string, role: UserRole | string): 
       key: 'status',
       label: 'Ubah status',
       run: bulkChangeTaskStatus,
-      select: { name: 'status', label: 'Status baru', options: OPEN_TASK_STATUSES.map((s) => ({ value: s, label: s.replace('_', ' ') })) },
+      select: { name: 'status', label: 'Status baru', options: OPEN_TASK_STATUSES.map((s) => ({ value: s, label: taskStatusLabel(s) })) },
     },
   ]
   if (canEdit) {

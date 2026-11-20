@@ -2,7 +2,7 @@
  * Uji lib/auth/task-access.ts — siapa boleh ubah status/submit/cancel/evidence task.
  * Jalankan: npm run test:task-access
  */
-import { canActOnTask, canCancelTask } from '../lib/auth/task-access'
+import { canActOnTask, canCancelTask, canPickStatus, submitTarget } from '../lib/auth/task-access'
 import type { UserRole } from '../types/profile'
 
 let ok = 0
@@ -45,6 +45,29 @@ const cancelKasus: [UserRole, boolean, boolean][] = [
 ]
 for (const [role, managesProject, harap] of cancelKasus) {
   cek(`cancel ${role} pm=${managesProject}`, canCancelTask(role, { managesProject }), harap)
+}
+
+
+// Review PM (20 Nov 2026): submit consultant -> REVIEW, pengelola -> DONE.
+cek('submit pengelola = DONE', submitTarget(true), 'DONE')
+cek('submit consultant = REVIEW', submitTarget(false), 'REVIEW')
+
+// Dropdown status. [managesProject, from, to, boleh?]
+const pilihKasus: [boolean, string, string, boolean][] = [
+  [false, 'TODO', 'IN_PROGRESS', true],
+  [false, 'IN_PROGRESS', 'BLOCKED', true],
+  [false, 'IN_PROGRESS', 'REVIEW', false], // REVIEW hanya lewat Submit
+  [true, 'IN_PROGRESS', 'REVIEW', false],
+  [false, 'REVIEW', 'IN_PROGRESS', false], // consultant tidak bisa keluar dari REVIEW
+  [false, 'REVIEW', 'TODO', false],
+  [true, 'REVIEW', 'IN_PROGRESS', true], // PM boleh membuka kembali
+  [true, 'REVIEW', 'REVIEW', true],
+  [false, 'REVIEW', 'REVIEW', true], // tidak berubah
+  [true, 'TODO', 'DONE', false],
+  [true, 'TODO', 'CANCELLED', false],
+]
+for (const [pm, from, to, harap] of pilihKasus) {
+  cek(`pilih ${from}->${to} pm=${pm}`, canPickStatus(pm, from, to), harap)
 }
 
 console.log(`LULUS: ${ok}`)

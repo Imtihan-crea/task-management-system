@@ -5,6 +5,7 @@ import { getDashboardScope } from '@/lib/data/dashboard'
 import { seesOwnProjectsOnly } from '@/lib/auth/roles'
 import { todayISO } from '@/lib/utils/dates'
 import { allRows } from '@/lib/utils/paginate'
+import { taskStatusLabel } from '@/lib/auth/roles'
 
 type GanttProject = {
   id: string
@@ -429,7 +430,7 @@ async function ProjectTaskGantt({
                       <div
                         className={`absolute top-0 h-6 rounded-full ${done ? 'bg-green-500' : 'bg-kasuat-gold'}`}
                         style={{ left: `${leftPct}%`, width: `${widthPct}%` }}
-                        title={`${t.code} · ${t.status.replace('_', ' ')}`}
+                        title={`${t.code} · ${taskStatusLabel(t.status)}`}
                       />
                       {todayPct !== null && (
                         <div

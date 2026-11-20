@@ -3,7 +3,7 @@ import { Tabs } from '@/components/ui/Tabs'
 import { fetchTaskRows, type TaskRow, type TaskScope } from '@/lib/data/task-list'
 import type { TaskStatus } from '@/types/task'
 
-export type TaskTabKey = 'all' | 'mine' | 'ongoing' | 'todo' | 'blocked' | 'done' | 'cancelled' | 'overdue'
+export type TaskTabKey = 'all' | 'mine' | 'ongoing' | 'todo' | 'blocked' | 'review' | 'done' | 'cancelled' | 'overdue'
 
 const TAB_DEFS: { key: TaskTabKey; label: string }[] = [
   { key: 'all', label: 'Semua' },
@@ -11,6 +11,7 @@ const TAB_DEFS: { key: TaskTabKey; label: string }[] = [
   { key: 'ongoing', label: 'Berjalan' },
   { key: 'todo', label: 'To Do' },
   { key: 'blocked', label: 'Blocked' },
+  { key: 'review', label: 'Menunggu Review' },
   { key: 'done', label: 'Done' },
   { key: 'cancelled', label: 'Cancelled' },
   { key: 'overdue', label: 'Overdue' },
@@ -25,6 +26,7 @@ export function parseTaskTab(view: string): TaskTabKey {
     'on-going': 'ongoing',
     todo: 'todo',
     blocked: 'blocked',
+    review: 'review',
     done: 'done',
     cancelled: 'cancelled',
     overdue: 'overdue',
@@ -66,6 +68,8 @@ function matchesTab(
       return t.status === 'TODO'
     case 'blocked':
       return t.status === 'BLOCKED'
+    case 'review':
+      return t.status === 'REVIEW'
     case 'done':
       return t.status === 'DONE'
     case 'cancelled':

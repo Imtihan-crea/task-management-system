@@ -16,7 +16,7 @@ export type ExportTaskRow = {
 }
 
 /** Label status/prioritas sama dengan badge di UI. */
-export const statusLabel = (s: string) => s.replace('_', ' ')
+export { taskStatusLabel as statusLabel } from '@/lib/auth/roles'
 
 /** ISO timestamp -> tanggal kalender WIB (bukan UTC), sama dengan filter tanggal di halaman. */
 export function wibDate(iso: string | null | undefined): Date | null {
@@ -37,7 +37,7 @@ export function taskColumns(opts: { withProject: boolean }): ExcelColumn<ExportT
     { header: 'Prioritas', width: 11, value: (r) => r.priority },
     { header: 'Mulai', width: 12, value: (r) => excelDate(r.start_date) },
     { header: 'Deadline', width: 12, value: (r) => excelDate(r.deadline) },
-    { header: 'Selesai', width: 12, value: (r) => wibDate(r.completed_at) },
+    { header: 'Selesai', width: 12, value: (r) => (r.status === 'DONE' ? wibDate(r.completed_at) : null) },
     { header: 'Dibuat', width: 12, value: (r) => wibDate(r.created_at) },
   ]
   return opts.withProject ? cols : cols.filter((c) => c.header !== 'Project')

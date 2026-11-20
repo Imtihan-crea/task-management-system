@@ -83,7 +83,8 @@ export async function loadTaskResults(filters: TaskFilters): Promise<TaskResults
         t.deadline >= todayISO() &&
         t.deadline <= weekISO &&
         t.status !== 'DONE' &&
-        t.status !== 'CANCELLED'
+        t.status !== 'CANCELLED' &&
+        t.status !== 'REVIEW'
     )
   }
 

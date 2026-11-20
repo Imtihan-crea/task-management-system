@@ -1,3 +1,4 @@
+import Link from 'next/link'
 import { requireProfile } from '@/lib/auth/session'
 import { canApproveLeave } from '@/lib/auth/current-access'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -61,7 +62,16 @@ export default async function LeavePage() {
             actions={[{ key: 'cancel', label: 'Batalkan yang menunggu', run: bulkCancelOwnLeave, danger: true, irreversible: true }]}
             exportHref="/cuti/export"
           />
-          <LeaveTable rows={rows} labels={kindLabels(types)} selectable={() => true} actions={(l) => (l.status === 'PENDING' ? <CancelOwnLeaveButton id={l.id} /> : null)} />
+          <LeaveTable rows={rows} labels={kindLabels(types)} selectable={() => true} actions={(l) => (
+              <div className="flex flex-col gap-1">
+                {l.status === 'PENDING' && <CancelOwnLeaveButton id={l.id} />}
+                {(l.status === 'PENDING' || l.status === 'APPROVED') && l.end_date >= today && (
+                  <Link href={`/tasks/alih?cuti=${l.id}`} className="inline-flex min-h-[44px] items-center text-sm font-semibold underline">
+                    Alih task selama cuti
+                  </Link>
+                )}
+              </div>
+            )} />
         </BulkSelectProvider>
       </section>
       <LeaveGuide types={activeTypes(types)} jointUsesQuota={rules.jointLeaveUsesQuota} />

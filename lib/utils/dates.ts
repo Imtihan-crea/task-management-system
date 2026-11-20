@@ -57,7 +57,8 @@ export function appDateOf(ts: string | null): string {
  * tidak pernah overdue — dipakai tab Overdue, KPI, scheduler, workload).
  */
 export function isOverdue(deadline: string | null, status: string): boolean {
-  if (!deadline || status === 'DONE' || status === 'CANCELLED') return false
+  // REVIEW (menunggu PM) sudah diserahkan consultant: bukan overdue (20 Nov 2026).
+  if (!deadline || status === 'DONE' || status === 'CANCELLED' || status === 'REVIEW') return false
   return deadline < todayISO()
 }
 
@@ -76,7 +77,8 @@ export function showsOverdueBadge(
   cancelledAt: string | null
 ): boolean {
   if (!deadline) return false
-  if (status === 'DONE') {
+  // REVIEW dinilai dari tanggal submit consultant, sama seperti DONE.
+  if (status === 'DONE' || status === 'REVIEW') {
     const ref = appDateOf(completedAt) || todayISO()
     return deadline < ref
   }

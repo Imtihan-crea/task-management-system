@@ -1,0 +1,87 @@
+/**
+ * Uji lib/tasks/transfer-rules.ts — alih task permanen/sementara.
+ * Jalankan: npm run test:task-transfer
+ */
+import { approvalError, durationOptions, durationText, isoToWibLocal, maxRequestMinutes, parseDurationMinutes, leaveTransferRange, statusAfterStart, tasksDueByLeaveEnd, transferError, transferTick, wibLocalToISO } from '../lib/tasks/transfer-rules'
+
+let ok = 0
+let gagal = 0
+function cek(label: string, aktual: unknown, harap: unknown): void {
+  if (JSON.stringify(aktual) === JSON.stringify(harap)) ok++
+  else {
+    gagal++
+    console.log(`  [GAGAL] ${label} -> ${JSON.stringify(aktual)} (harus ${JSON.stringify(harap)})`)
+  }
+}
+
+const now = new Date('2026-11-20T10:00:00Z') // 17:00 WIB
+const base = { fromUserId: 'a', toUserId: 'b', startsAt: '', endsAt: '', byManager: false, now }
+const iso = (h: number) => new Date(now.getTime() + h * 3600 * 1000).toISOString()
+
+// Waktu WIB
+cek('WIB -> UTC', wibLocalToISO('2026-11-21T08:00'), '2026-11-21T01:00:00.000Z')
+cek('WIB tidak valid', wibLocalToISO('21/11/2026 08:00'), '')
+cek('UTC -> WIB', isoToWibLocal('2026-11-21T01:00:00.000Z'), '2026-11-21T08:00')
+cek('WIB pulang-pergi', isoToWibLocal(wibLocalToISO('2026-12-31T23:59')), '2026-12-31T23:59')
+
+// Validasi
+cek('jenis wajib', transferError({ ...base, kind: '' }), 'Pilih jenis alih task.')
+cek('pengganti wajib', transferError({ ...base, kind: 'PERMANENT', toUserId: '' }), 'Pilih consultant pengganti.')
+cek('pengganti = pemegang', transferError({ ...base, kind: 'PERMANENT', toUserId: 'a' }), 'Pengganti harus orang lain, bukan pemegang task sekarang.')
+cek('permanen sah', transferError({ ...base, kind: 'PERMANENT' }), null)
+cek('sementara tanpa waktu', transferError({ ...base, kind: 'TEMPORARY' }), 'Isi waktu mulai dan waktu selesai.')
+cek('sementara selesai <= mulai', transferError({ ...base, kind: 'TEMPORARY', startsAt: iso(2), endsAt: iso(2) }), 'Waktu selesai harus setelah waktu mulai.')
+cek('sementara 30 menit sah', transferError({ ...base, kind: 'TEMPORARY', startsAt: iso(1), endsAt: iso(1.5) }), null)
+cek('sementara selesai sudah lewat', transferError({ ...base, kind: 'TEMPORARY', startsAt: iso(-5), endsAt: iso(-1), byManager: true }), 'Waktu selesai sudah lewat.')
+cek('consultant mulai di masa lalu', transferError({ ...base, kind: 'TEMPORARY', startsAt: iso(-1), endsAt: iso(5) }), 'Waktu mulai tidak boleh di masa lalu.')
+cek('consultant mulai 5 menit lalu boleh', transferError({ ...base, kind: 'TEMPORARY', startsAt: iso(-5 / 60), endsAt: iso(5) }), null)
+cek('PM mulai di masa lalu boleh', transferError({ ...base, kind: 'TEMPORARY', startsAt: iso(-24), endsAt: iso(5), byManager: true }), null)
+cek('consultant > batas bawaan', transferError({ ...base, kind: 'TEMPORARY', startsAt: iso(1), endsAt: iso(1 + 24 * 93) }), 'Rentang paling lama 92 hari. Untuk lebih lama, minta PM mengalihkan.')
+// Durasi dari Master Reference
+cek('parse 3 hari', parseDurationMinutes('3 hari'), 4320)
+cek('parse 2 Jam (rapat)', parseDurationMinutes('2 Jam (rapat)'), 120)
+cek('parse 1 bulan', parseDurationMinutes('1 bulan'), 43200)
+cek('parse tanpa satuan', parseDurationMinutes('Selama cuti'), null)
+cek('parse nol', parseDurationMinutes('0 hari'), null)
+cek('pilihan urut + yang tak terbaca dibuang', durationOptions(['1 minggu', 'Lainnya', '4 jam']).map((o) => o.label), ['4 jam', '1 minggu'])
+cek('batas = terpanjang', maxRequestMinutes(['1 hari', '2 minggu']), 20160)
+cek('batas bawaan bila kosong', maxRequestMinutes([]), 92 * 1440)
+cek('teks durasi', [durationText(20160), durationText(90), durationText(120)], ['2 minggu', '90 menit', '2 jam'])
+cek('consultant melewati batas Master Reference', transferError({ ...base, kind: 'TEMPORARY', startsAt: iso(1), endsAt: iso(1 + 24 * 15), maxMinutes: 20160 }), 'Rentang paling lama 2 minggu. Untuk lebih lama, minta PM mengalihkan.')
+cek('PM tidak terikat batas', transferError({ ...base, kind: 'TEMPORARY', startsAt: iso(1), endsAt: iso(1 + 24 * 15), maxMinutes: 20160, byManager: true }), null)
+cek('PM > 3 bulan boleh', transferError({ ...base, kind: 'TEMPORARY', startsAt: iso(1), endsAt: iso(1 + 24 * 200), byManager: true }), null)
+
+// Penjadwal
+cek('terjadwal belum waktunya', transferTick({ status: 'SCHEDULED', starts_at: iso(1), ends_at: iso(2) }, now), null)
+cek('terjadwal sudah waktunya', transferTick({ status: 'SCHEDULED', starts_at: iso(-0.1), ends_at: iso(2) }, now), 'start')
+cek('permanen terjadwal (tanpa mulai)', transferTick({ status: 'SCHEDULED', starts_at: null, ends_at: null }, now), 'start')
+cek('berjalan belum habis', transferTick({ status: 'ACTIVE', starts_at: iso(-1), ends_at: iso(1) }, now), null)
+cek('berjalan sudah habis', transferTick({ status: 'ACTIVE', starts_at: iso(-2), ends_at: iso(0) }, now), 'end')
+cek('menunggu PM tidak diproses', transferTick({ status: 'PENDING', starts_at: iso(-2), ends_at: iso(-1) }, now), null)
+cek('masa habis tidak diproses lagi', transferTick({ status: 'EXPIRED', starts_at: iso(-2), ends_at: iso(-1) }, now), null)
+cek('sesudah mulai: permanen selesai', statusAfterStart('PERMANENT'), 'DONE')
+cek('sesudah mulai: sementara berjalan', statusAfterStart('TEMPORARY'), 'ACTIVE')
+
+// Kaitan cuti (Fase 3)
+cek('rentang dari cuti', leaveTransferRange({ start_date: '2026-11-21', end_date: '2026-11-23' }, now), { start: '2026-11-21T00:00', end: '2026-11-23T23:59' })
+cek('rentang cuti valid untuk form', wibLocalToISO(leaveTransferRange({ start_date: '2026-11-21', end_date: '2026-11-21' }, now).end), '2026-11-21T16:59:00.000Z')
+// Regresi (review): cuti yang sudah mulai hari ini -> mulai = sekarang, lolos validasi consultant
+const sakitHariIni = leaveTransferRange({ start_date: '2026-11-20', end_date: '2026-11-21' }, now)
+cek('cuti sudah mulai: mulai = sekarang (WIB)', sakitHariIni.start, '2026-11-20T17:00')
+cek('cuti sudah mulai: lolos validasi consultant', transferError({ ...base, kind: 'TEMPORARY', startsAt: wibLocalToISO(sakitHariIni.start), endsAt: wibLocalToISO(sakitHariIni.end) }), null)
+// Regresi (review): pengajuan sementara yang sudah lewat tidak bisa disetujui
+cek('setujui pengajuan lewat ditolak', approvalError({ kind: 'TEMPORARY', ends_at: iso(-1) }, now), 'masa alih yang diajukan sudah lewat; minta pengaju mengajukan ulang')
+cek('setujui pengajuan berjalan boleh', approvalError({ kind: 'TEMPORARY', ends_at: iso(1) }, now), null)
+cek('setujui permanen boleh', approvalError({ kind: 'PERMANENT', ends_at: null }, now), null)
+const tugas = [
+  { id: 'lewat', deadline: '2026-11-10' },
+  { id: 'di-masa-cuti', deadline: '2026-11-22' },
+  { id: 'hari-terakhir', deadline: '2026-11-23' },
+  { id: 'sesudah', deadline: '2026-11-24' },
+  { id: 'tanpa', deadline: null },
+]
+cek('task sampai akhir cuti', tasksDueByLeaveEnd(tugas, '2026-11-23').map((t) => t.id), ['lewat', 'di-masa-cuti', 'hari-terakhir'])
+
+console.log(`LULUS: ${ok}`)
+console.log(`GAGAL: ${gagal}`)
+if (gagal > 0) process.exit(1)

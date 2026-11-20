@@ -4,11 +4,12 @@ import { useFormAction } from '@/lib/forms/use-form-action'
 import {
   cancelTask,
   changeTaskStatus,
+  decideReview,
   deleteTask,
   submitTask,
   type TaskFormState,
 } from '@/app/actions/tasks'
-import { OPEN_TASK_STATUSES } from '@/lib/auth/roles'
+import { OPEN_TASK_STATUSES, taskStatusLabel } from '@/lib/auth/roles'
 import type { TaskStatus } from '@/types/task'
 
 const INITIAL: TaskFormState = undefined
@@ -35,10 +36,10 @@ export function ChangeStatusForm({
           defaultValue={current}
           className="min-h-[44px] flex-1 rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
         >
-          {/* DONE/CANCELLED hanya lewat tombol submit di bawah. */}
-          {OPEN_TASK_STATUSES.map((s) => (
+          {/* DONE/CANCELLED/REVIEW hanya lewat tombol submit di bawah. */}
+          {(current === 'REVIEW' ? ['REVIEW' as const, ...OPEN_TASK_STATUSES] : OPEN_TASK_STATUSES).map((s) => (
             <option key={s} value={s}>
-              {s.replace('_', ' ')}
+              {taskStatusLabel(s)}
             </option>
           ))}
         </select>
@@ -85,7 +86,8 @@ function SubmitStateMessage({ state }: { state: TaskFormState }) {
   )
 }
 
-export function SubmitTaskForm({ id }: { id: string }) {
+/** `toReview`: consultant (bukan pengelola project) -> task masuk Menunggu Review PM. */
+export function SubmitTaskForm({ id, toReview = false }: { id: string; toReview?: boolean }) {
   const [state, formAction, pending] = useFormAction(submitTask, INITIAL)
 
   return (
@@ -96,8 +98,55 @@ export function SubmitTaskForm({ id }: { id: string }) {
         disabled={pending}
         className="inline-flex min-h-[44px] items-center justify-center rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
       >
-        {pending ? 'Mengirim...' : 'Submit sebagai Done'}
+        {pending ? 'Mengirim...' : toReview ? 'Submit untuk Review PM' : 'Submit sebagai Done'}
       </button>
+      <SubmitStateMessage state={state} />
+    </form>
+  )
+}
+
+/** PM/Admin memutuskan task yang menunggu review (20 Nov 2026). */
+export function ReviewDecisionForm({ id }: { id: string }) {
+  const [state, formAction, pending] = useFormAction(decideReview, INITIAL, (fd) =>
+    fd.get('decision') === 'return' ? 'Kembalikan task ini ke consultant? Status kembali IN PROGRESS.' : null
+  )
+
+  return (
+    <form {...formAction} className="flex flex-col gap-2">
+      <input type="hidden" name="id" value={id} />
+      <p className="text-sm text-zinc-600 dark:text-zinc-400">
+        Task ini sudah diserahkan consultant dan menunggu keputusan Anda.
+      </p>
+      <label htmlFor={`review_note_${id}`} className="text-sm font-medium">
+        Catatan untuk consultant (opsional)
+      </label>
+      <textarea
+        id={`review_note_${id}`}
+        name="note"
+        rows={2}
+        maxLength={1000}
+        className="rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800"
+      />
+      <div className="flex flex-col gap-2 sm:flex-row">
+        <button
+          type="submit"
+          name="decision"
+          value="approve"
+          disabled={pending}
+          className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-lg bg-green-700 px-4 py-2 text-sm font-semibold text-white disabled:opacity-50"
+        >
+          Setujui (Done)
+        </button>
+        <button
+          type="submit"
+          name="decision"
+          value="return"
+          disabled={pending}
+          className="inline-flex min-h-[44px] flex-1 items-center justify-center rounded-lg border border-amber-500 px-4 py-2 text-sm font-semibold text-amber-700 disabled:opacity-50 dark:text-amber-300"
+        >
+          Kembalikan ke Consultant
+        </button>
+      </div>
       <SubmitStateMessage state={state} />
     </form>
   )

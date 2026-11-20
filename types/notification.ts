@@ -4,6 +4,10 @@ export type NotificationType =
   | 'TASK_DONE'
   | 'TASK_DEADLINE_APPROACHING'
   | 'TASK_OVERDUE'
+  // --- Review PM (20 Nov 2026) ---
+  | 'TASK_REVIEW_REQUESTED'
+  | 'TASK_REVIEW_RETURNED'
+  | 'TASK_TRANSFER'
   | 'SUGGESTION_CREATED'
   | 'SUGGESTION_APPROVED'
   | 'SUGGESTION_REVISION_REQUESTED'
@@ -27,8 +31,8 @@ export type NotificationType =
   | 'LEAVE_DECIDED'
 
 /** 'tracker': entityId = tanggal YYYY-MM-DD (tautan ke Daily Tracker hari itu). */
-/** 'leave' = pengajuan milik sendiri (/cuti); 'leave_review' = untuk penyetuju (/cuti/persetujuan). */
-export type NotificationEntityType = 'task' | 'project' | 'suggestion' | 'meeting' | 'tracker' | 'leave' | 'leave_review' | ''
+/** 'leave' = pengajuan milik sendiri (/cuti); 'leave_review' = untuk penyetuju (/cuti/persetujuan); 'task_transfer' = daftar alih task (/tasks/alih; entityId = id cuti untuk isian awal). */
+export type NotificationEntityType = 'task' | 'project' | 'suggestion' | 'meeting' | 'tracker' | 'leave' | 'leave_review' | 'task_transfer' | ''
 
 export interface NotificationItem {
   id: string
@@ -66,6 +70,7 @@ export function notificationHref(
   if (entityType === 'meeting' && entityId) return `/meetings/${entityId}`
   if (entityType === 'leave') return '/cuti'
   if (entityType === 'leave_review') return '/cuti/persetujuan'
+  if (entityType === 'task_transfer') return entityId ? `/tasks/alih?cuti=${entityId}` : '/tasks/alih'
   if (entityType === 'tracker' && /^\d{4}-\d{2}-\d{2}$/.test(entityId)) return `/tracker?tanggal=${entityId}`
   return '/dashboard'
 }

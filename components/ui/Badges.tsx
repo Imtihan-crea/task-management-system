@@ -1,5 +1,6 @@
 import type { ProjectStatus } from '@/types/project'
 import type { TaskPriority, TaskStatus } from '@/types/task'
+import { taskStatusLabel } from '@/lib/auth/roles'
 
 // Pil berwarna lembut tanpa bingkai: tetap terbaca (teks >= 4.5:1) tanpa membuat baris terasa berat.
 const BASE = 'inline-flex items-center whitespace-nowrap rounded-full px-2 py-0.5 text-xs font-semibold leading-5'
@@ -30,7 +31,7 @@ const PROJECT_STATUS_STYLE: Record<ProjectStatus, string> = {
 export function TaskStatusBadge({ status }: { status: TaskStatus }) {
   return (
     <span className={`${BASE} ${TASK_STATUS_STYLE[status]}`}>
-      {status.replace('_', ' ')}
+      {taskStatusLabel(status)}
     </span>
   )
 }

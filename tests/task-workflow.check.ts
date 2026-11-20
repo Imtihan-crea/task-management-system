@@ -27,6 +27,7 @@ cek('IN_PROGRESS lewat deadline = overdue', isOverdue(PAST, 'IN_PROGRESS'), true
 cek('BLOCKED lewat deadline = overdue', isOverdue(PAST, 'BLOCKED'), true)
 cek('DONE lewat deadline = BUKAN overdue', isOverdue(PAST, 'DONE'), false)
 cek('CANCELLED lewat deadline = BUKAN overdue', isOverdue(PAST, 'CANCELLED'), false)
+cek('REVIEW lewat deadline = BUKAN overdue', isOverdue(PAST, 'REVIEW'), false)
 cek('TODO belum deadline = bukan', isOverdue(FUTURE, 'TODO'), false)
 cek('deadline null = bukan', isOverdue(null, 'TODO'), false)
 
@@ -49,6 +50,17 @@ cek(
 cek(
   'DONE H+1 = label',
   showsOverdueBadge('2026-10-04', 'DONE', '2026-10-05T10:00:00+00:00', null),
+  true
+)
+// REVIEW: dinilai dari tanggal submit consultant
+cek(
+  'REVIEW submit tepat waktu = tanpa label',
+  showsOverdueBadge('2026-10-10', 'REVIEW', '2026-10-05T10:00:00+00:00', null),
+  false
+)
+cek(
+  'REVIEW submit telat = label',
+  showsOverdueBadge('2026-10-04', 'REVIEW', '2026-10-05T10:00:00+00:00', null),
   true
 )
 // CANCELLED sebelum deadline -> tanpa label

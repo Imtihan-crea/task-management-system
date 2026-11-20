@@ -25,18 +25,16 @@ const cases: Record<string, string> = {
   'task-ditugaskan': t.taskAssignedBody({ ...common, taskId: id }),
   'task-ditugaskan-dari-meeting': t.taskAssignedBody({ ...common, taskId: id, fromMeetingCode: 'M-009' }),
   'task-blocked': t.taskBlockedBody({ ...common, taskId: id, fromStatus: 'IN_PROGRESS' }),
-  'task-done': t.taskDoneBody({ ...common, taskId: id, assigneeName: EVIL, evidenceUrl: 'https://example.com/bukti?a=1&b="2"' }),
-  'task-done-tanpa-evidence': t.taskDoneBody({ ...common, taskId: id, assigneeName: 'Budi', evidenceUrl: null }),
-  'deadline-hari-ini': t.deadlineTodayBody({ ...common, taskId: id }),
-  'task-overdue': t.taskOverdueBody({ ...common, taskId: id, deadline: '2026-11-01' }),
+  'task-review-pm': t.taskReviewBody({ ...common, taskId: id, returned: false, actorName: EVIL, note: '' }),
+  'task-review-dikembalikan': t.taskReviewBody({ ...common, taskId: id, returned: true, actorName: EVIL, note: EVIL }),
+  'alih-task-diajukan': t.taskTransferBody({ ...common, taskId: id, intro: 'Budi mengajukan alih task dan <strong>menunggu persetujuan Anda</strong>:', rows: [{ label: 'Catatan', text: EVIL }], linkToList: true }),
+  'alih-task-ditolak': t.taskTransferBody({ ...common, taskId: id, intro: 'Pengajuan alih task Anda <strong>ditolak</strong>.', rows: [] }),
+  'alih-task-dari-cuti': t.taskTransferBody({ ...common, taskId: id, intro: 'Budi cuti sakit <strong>2026-11-21 s/d 2026-11-23</strong>. Task berikut perlu dialihkan sementara:', linkToList: true, listQuery: `cuti=${id}` }),
+  'cuti-diajukan': t.leaveRequestedBody({ baseUrl: base, name: EVIL, kindLabel: 'Cuti Sakit', start: '2026-11-21', end: '2026-11-23', days: 2 }),
   'project-pm': t.projectAssignedBody({ baseUrl: base, projectId: id, code: '001', name: EVIL }),
-  'suggestion-baru': t.suggestionNewBody({ ...common, id, actorName: EVIL, resubmitted: false }),
-  'suggestion-revisi-dikirim': t.suggestionNewBody({ ...common, id, actorName: 'Budi', resubmitted: true }),
-  'suggestion-review': t.suggestionReviewBody({ baseUrl: base, id, message: `Suggestion Anda "${EVIL}" disetujui.`, projectLabel: EVIL, reviewNote: EVIL, convertedTaskId: id }),
   'meeting-undangan': t.meetingInvitationBody({ baseUrl: base, meetingId: id, code: 'M-009', title: EVIL, projectLabel: EVIL }),
   'meeting-dibatalkan': t.meetingNoticeBody({ baseUrl: base, meetingId: id, code: 'M-009', title: EVIL, projectLabel: EVIL, intro: 'Meeting berikut dibatalkan:' }),
   'meeting-reminder': t.meetingReminderBody({ baseUrl: base, meetingId: id, code: 'M-009', title: EVIL, date: '2026-11-10', time: '09:00', projectLabel: EVIL }),
-  'meeting-perlu-notes': t.meetingNotesPendingBody({ baseUrl: base, meetingId: id, code: 'M-009', title: EVIL, date: '2026-11-10', projectLabel: EVIL }),
   'meeting-selesai': buildCompletionEmailBody({
     code: 'M-009', title: EVIL, projectLabel: EVIL, meetingUrl: `${base}/meetings/${id}`, notes: EVIL,
     decisions: [{ decision: EVIL, rationale: EVIL }],
@@ -49,12 +47,17 @@ const cases: Record<string, string> = {
     tasksDue: [{ id, code: 'T-99', title: EVIL, deadline: '2026-11-09', projectLabel: EVIL, overdue: false }],
     tasksOverdue: [{ id, code: 'T-98', title: EVIL, deadline: '2026-11-01', projectLabel: EVIL, overdue: true }],
   }),
+  'pengingat-sore': buildDigestBody({
+    userName: EVIL, dateLabel: 'Jumat, 20 Nov 2026', baseUrl: base, variant: 'sore', dateISO: '2026-11-20', trackerMissing: true,
+    meetings: [], tasksDue: [], tasksOverdue: [{ id, code: 'T-98', title: EVIL, deadline: '2026-11-01', projectLabel: EVIL, overdue: true }],
+    approvals: [{ title: EVIL, detail: EVIL, path: `/tasks/${id}` }],
+  }),
   'error-alert': buildErrorAlert({ error: new Error(EVIL), path: `/x?q=${EVIL}`, method: 'GET', routePath: '/x', routeType: 'render', now: new Date('2026-11-09T01:00:00Z') }).html,
 }
 
 // Subject diambil dari kode sumber (template literal `subject: ...`).
 const repo = path.resolve(import.meta.dirname, '..')
-const subjectFiles = ['app/actions/tasks.ts', 'app/actions/projects.ts', 'app/actions/meetings.ts', 'app/actions/suggestions.ts', 'app/api/cron/deadlines/route.ts', 'lib/meetings/scheduler.ts', 'lib/meetings/digest.ts', 'lib/notifications/task-assigned.ts', 'lib/monitoring/error-alert.ts']
+const subjectFiles = ['app/actions/tasks.ts', 'app/actions/projects.ts', 'app/actions/meetings.ts', 'app/actions/suggestions.ts', 'app/actions/leave.ts', 'app/actions/task-transfers.ts', 'lib/tasks/transfers.ts', 'lib/tasks/leave-transfers.ts', 'app/api/cron/deadlines/route.ts', 'lib/meetings/scheduler.ts', 'lib/meetings/digest.ts', 'lib/notifications/task-assigned.ts', 'lib/monitoring/error-alert.ts']
 const subjects: string[] = []
 for (const f of subjectFiles) {
   const src = fs.readFileSync(path.join(repo, f), 'utf8')

@@ -12,6 +12,7 @@ import {
 } from '@/lib/data/dashboard'
 import { assigneeName, fetchTaskLookups, type TaskAssignee } from '@/lib/data/task-list'
 import type { TaskPriority, TaskStatus } from '@/types/task'
+import { taskStatusLabel } from '@/lib/auth/roles'
 
 type Ctx = {
   userId: string
@@ -118,7 +119,7 @@ export async function ChartsSection({ userId, role, filters }: Ctx & { filters: 
       { status: 'DONE', label: 'Done' },
       { status: 'BLOCKED', label: 'Blocked' },
       { status: 'TODO', label: 'To Do' },
-      { status: 'REVIEW', label: 'Review' },
+      { status: 'REVIEW', label: 'Menunggu Review PM' },
       { status: 'CANCELLED', label: 'Cancelled' },
     ] as const
   ).map((s) => ({ ...s, value: tasks.filter((t) => t.status === s.status).length }))
@@ -302,7 +303,7 @@ export async function FilterSection({ filters }: { filters: DashboardFilters }) 
         <select id="f-status" name="status" defaultValue={filters.status} className={FIELD}>
           <option value="">Semua</option>
           {(['TODO', 'IN_PROGRESS', 'REVIEW', 'BLOCKED', 'DONE', 'CANCELLED'] as const).map((s) => (
-            <option key={s} value={s}>{s.replace('_', ' ')}</option>
+            <option key={s} value={s}>{taskStatusLabel(s)}</option>
           ))}
         </select>
       </div>

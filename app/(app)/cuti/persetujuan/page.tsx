@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { requireProfile } from '@/lib/auth/session'
-import { canApproveLeave } from '@/lib/auth/current-access'
+import { canApproveLeave, permissionProjects } from '@/lib/auth/current-access'
+import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ExportLink } from '@/components/export/ExportLink'
 import { AppShell } from '@/components/layout/AppShell'
@@ -26,7 +27,7 @@ export default async function LeaveApprovalPage({ searchParams }: { searchParams
   const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(sp.bulan ?? '') ? sp.bulan! : today.slice(0, 7)
   const [from, to] = monthRange(month)
 
-  const [pending, monthRows, yearRows, calendar, peopleRes, types, rules] = await Promise.all([
+  const [pending, monthRows, yearRows, calendar, peopleRes, types, rules, taskScope] = await Promise.all([
     loadLeave({ from: '2000-01-01', to: '2100-12-31', statuses: ['PENDING'] }),
     loadLeave({ from, to }),
     loadLeave({ from: `${year}-01-01`, to: `${year}-12-31`, statuses: ['APPROVED', 'PENDING'] }),
@@ -34,9 +35,18 @@ export default async function LeaveApprovalPage({ searchParams }: { searchParams
     createAdminClient().from('profiles').select('id, full_name, email, annual_leave_quota, tracker_required, status').is('deleted_at', null).order('full_name'),
     loadLeaveTypes(),
     loadRules(today),
+    permissionProjects(profile.id, 'tasks.edit'),
   ])
   const labels = kindLabels(types)
   const joint = jointQuotaDays(calendar, rules.jointLeaveUsesQuota)
+  // Alih task selama cuti: hanya untuk yang bisa mengalihkan task (PM/Admin).
+  const canTransfer = taskScope.all || taskScope.include.length > 0
+  const transferLink = (l: { id: string; status: string; end_date: string; user_id: string }) =>
+    canTransfer && l.status === 'APPROVED' && l.end_date >= today && l.user_id !== profile.id ? (
+      <Link href={`/tasks/alih?cuti=${l.id}`} className="inline-flex min-h-[44px] items-center text-sm font-semibold underline">
+        Alih task
+      </Link>
+    ) : null
   type Person = { id: string; full_name: string | null; email: string; annual_leave_quota: number | null; tracker_required: boolean; status: string }
   const people = (peopleRes.data ?? []) as Person[]
   const name = new Map(people.map((p) => [p.id, p.full_name || p.email]))
@@ -84,7 +94,14 @@ export default async function LeaveApprovalPage({ searchParams }: { searchParams
             actions={[{ key: 'cancel', label: 'Batalkan yang disetujui', run: bulkCancelApprovedLeave, danger: true, irreversible: true, text: { name: 'decision_note', label: 'Catatan untuk semua', maxLength: 1000 } }]}
             exportHref={`/cuti/persetujuan/export?bulan=${month}`}
           />
-        <LeaveTable rows={monthRows} labels={labels} person={person} selectable={() => true} actions={(l) => (l.status === 'APPROVED' && l.user_id !== profile.id ? <DecideLeaveForm id={l.id} mode="approved" /> : null)} />
+        <LeaveTable rows={monthRows} labels={labels} person={person} selectable={() => true} actions={(l) =>
+            l.status === 'APPROVED' && l.user_id !== profile.id ? (
+              <div className="flex flex-col gap-1">
+                <DecideLeaveForm id={l.id} mode="approved" />
+                {transferLink(l)}
+              </div>
+            ) : null
+          } />
         </BulkSelectProvider>
       </section>
 

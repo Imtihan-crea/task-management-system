@@ -8,13 +8,22 @@ import { logActivity } from '@/lib/activity-log/service'
 import { emitNotification } from '@/lib/notifications/service'
 import { readLimitedField } from '@/lib/forms/limits'
 import { getAppBaseUrl } from '@/lib/app-url'
-import { leaveDecisionBody } from '@/lib/email/templates'
+import { leaveDecisionBody, leaveRequestedBody } from '@/lib/email/templates'
+import { cancelLeaveTransfers, notifyLeaveTransfers } from '@/lib/tasks/leave-transfers'
 import { loadCalendar, loadLeave, loadLeaveTypes } from '@/lib/hr/data'
 import { kindError, kindLabels, leaveDays, overlappingLeave, rangeError, SPECIAL_KIND, SPECIAL_LABEL, type LeaveKind } from '@/lib/hr/leave'
 import { readInput, toForm } from '@/lib/bulk'
 import { bulk } from '@/lib/bulk-server'
 
 export type LeaveFormState = { error?: string; success?: string } | undefined
+
+function appBaseUrl(): string {
+  try {
+    return getAppBaseUrl()
+  } catch {
+    return '' // tautan tidak ditampilkan
+  }
+}
 
 function done() {
   revalidatePath('/cuti', 'layout')
@@ -76,7 +85,8 @@ export async function submitLeave(_prev: LeaveFormState, formData: FormData): Pr
     message: `${profile.full_name || profile.email}: ${kindName(kind)} ${start === end ? start : `${start} s/d ${end}`} (${days} hari kerja).`,
     entityType: 'leave_review',
     entityId: data.id,
-    email: null,
+    // Mendesak (perlu keputusan): in-app + email ke penyetuju.
+    email: { subject: `[Pengajuan ${kindName(kind)}] ${profile.full_name || profile.email}`, html: leaveRequestedBody({ baseUrl: appBaseUrl(), name: profile.full_name || profile.email, kindLabel: kindName(kind), start, end, days }), category: 'task' },
   })
   done()
   return { success: `Pengajuan ${kindName(kind)} (${days} hari kerja) terkirim, menunggu persetujuan.` }
@@ -95,6 +105,7 @@ export async function cancelOwnLeave(_prev: LeaveFormState, formData: FormData):
     .select('id, kind, start_date, end_date')
     .maybeSingle<{ id: string; kind: LeaveKind; start_date: string; end_date: string }>()
   if (!data) return { error: 'Pengajuan tidak ditemukan atau sudah diputuskan.' }
+  await cancelLeaveTransfers(id, profile.id)
   const kindLabel = kindLabels(await loadLeaveTypes())[data.kind] ?? data.kind
   await logActivity({ actorUserId: profile.id, action: 'LEAVE_CANCELLED', entityType: 'leave', entityId: id, metadata: { ...data, kind_label: kindLabel } })
   done()
@@ -137,6 +148,13 @@ export async function decideLeave(_prev: LeaveFormState, formData: FormData): Pr
 
   const label = kindLabels(await loadLeaveTypes())[req.kind] ?? req.kind
   const meta = { kind: req.kind, kind_label: label, start_date: req.start_date, end_date: req.end_date, note }
+  // Alih task (20 Nov 2026): disetujui -> PM diminta mencarikan pengganti; batal/tolak -> alih task terkait dibatalkan.
+  if (to === 'APPROVED') {
+    const { data: who } = await admin.from('profiles').select('full_name, email').eq('id', req.user_id).single<{ full_name: string | null; email: string }>()
+    await notifyLeaveTransfers(req, who ? who.full_name || who.email : '-', label)
+  } else {
+    await cancelLeaveTransfers(req.id, profile.id)
+  }
   await logActivity({
     actorUserId: profile.id,
     action: to === 'APPROVED' ? 'LEAVE_APPROVED' : to === 'REJECTED' ? 'LEAVE_REJECTED' : 'LEAVE_CANCELLED',
@@ -144,12 +162,7 @@ export async function decideLeave(_prev: LeaveFormState, formData: FormData): Pr
     entityId: id,
     metadata: meta,
   })
-  let baseUrl = ''
-  try {
-    baseUrl = getAppBaseUrl()
-  } catch {
-    /* tautan relatif */
-  }
+  const baseUrl = appBaseUrl()
   const range = req.start_date === req.end_date ? req.start_date : `${req.start_date} s/d ${req.end_date}`
   const verb = to === 'APPROVED' ? 'disetujui' : to === 'REJECTED' ? 'ditolak' : 'dibatalkan'
   await emitNotification({

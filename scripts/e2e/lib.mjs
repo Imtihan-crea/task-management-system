@@ -122,7 +122,9 @@ export async function runCleanup(db) {
   const sugIds = await ids('task_suggestions', 'project_id', 'in', inP)
   const meetIds = uniq(await ids('meetings', 'project_id', 'in', inP), await ids('meetings', 'title', 'like', `${PREFIX}%`))
   const wsIds = await ids('workstreams', 'project_id', 'in', inP)
-  const entityIds = [...taskIds, ...sugIds, ...meetIds, ...wsIds, ...projectIds, ...userIds]
+  // Alih task (032): barisnya ikut terhapus bersama task (cascade); id-nya dipakai kunci notifikasi.
+  const transferIds = taskIds.length ? (await db.from('task_transfers').select('id').in('task_id', taskIds)).data?.map((r) => r.id) ?? [] : []
+  const entityIds = [...taskIds, ...sugIds, ...meetIds, ...wsIds, ...projectIds, ...userIds, ...transferIds]
   out.push(`ditemukan projects=${projectIds.length} users=${userIds.length} tasks=${taskIds.length} suggestions=${sugIds.length} meetings=${meetIds.length} workstreams=${wsIds.length}`)
 
   const del = async (table, build) => {

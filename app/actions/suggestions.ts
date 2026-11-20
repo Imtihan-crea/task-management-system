@@ -12,7 +12,6 @@ import {
   isProjectManager,
 } from '@/lib/data/projects'
 import { canSuggestForProject } from '@/lib/auth/project-access'
-import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
 import { emitTaskAssigned } from '@/lib/notifications/task-assigned'
 import { logActivity } from '@/lib/activity-log/service'
@@ -22,7 +21,6 @@ import type { TaskPriority } from '@/types/task'
 import { assertActiveUser } from '@/lib/data/assertions'
 import { readLimitedField } from '@/lib/forms/limits'
 import { isValidDateInput } from '@/lib/forms/dates'
-import { suggestionNewBody, suggestionReviewBody } from '@/lib/email/templates'
 import { readInput, toForm } from '@/lib/bulk'
 import { bulk } from '@/lib/bulk-server'
 
@@ -128,7 +126,7 @@ export async function createSuggestion(
     return { error: 'Tidak dapat mengirim Suggestion. Silakan coba lagi.' }
   }
 
-  // Event: SUGGESTION_CREATED → semua PM project (in-app + email).
+  // Event: SUGGESTION_CREATED → semua PM project (in-app; dirangkum di digest).
   await notifySuggestionPms({
     id: created.id,
     code: created.code,
@@ -155,7 +153,7 @@ export async function createSuggestion(
   return { success: `Suggestion ${created.code} berhasil dikirim.` }
 }
 
-/** Notifikasi usulan baru / dikirim ulang ke semua PM project (in-app + email). */
+/** Notifikasi usulan baru / dikirim ulang ke semua PM project (in-app; dirangkum di digest). */
 async function notifySuggestionPms(input: {
   id: string
   code: string
@@ -172,13 +170,6 @@ async function notifySuggestionPms(input: {
   ])
   const pmIds = ((links ?? []) as { user_id: string }[]).map((l) => l.user_id)
 
-  let baseUrl = ''
-  try {
-    baseUrl = getAppBaseUrl()
-  } catch {
-    console.error('[notify] APP_URL missing, skipping suggestion email.')
-  }
-
   const projectText = project ? `${project.code} · ${project.name}` : 'sebuah Project'
   const verb = input.resubmitted ? 'mengirim ulang Suggestion yang direvisi' : 'mengusulkan task baru'
 
@@ -190,13 +181,7 @@ async function notifySuggestionPms(input: {
     message: `${input.actorName} ${verb} di ${projectText}.`,
     entityType: 'suggestion',
     entityId: input.id,
-    email: baseUrl
-      ? {
-          subject: `[Suggestion ${input.code}] ${input.title}`,
-          html: suggestionNewBody({ baseUrl, id: input.id, code: input.code, title: input.title, projectLabel: project ? `${project.code} · ${project.name}` : '-', actorName: input.actorName, resubmitted: Boolean(input.resubmitted) }),
-          category: 'suggestion',
-        }
-      : null,
+    email: null, // rutin: in-app + digest (kebijakan notifikasi 20 Nov 2026)
   })
 }
 
@@ -548,13 +533,6 @@ async function emitReviewEvent(
       .single<{ code: string; name: string }>(),
   ])
 
-  let baseUrl = ''
-  try {
-    baseUrl = getAppBaseUrl()
-  } catch {
-    console.error('[notify] APP_URL missing, skipping suggestion email.')
-  }
-
   const projectLabel = project ? `${project.code} · ${project.name}` : '-'
 
   const config = {
@@ -562,23 +540,20 @@ async function emitReviewEvent(
       type: 'SUGGESTION_APPROVED' as const,
       title: `Suggestion ${suggestion.code} disetujui`,
       message: `Suggestion Anda "${suggestion.title}" disetujui dan dikonversi menjadi task resmi.`,
-      subject: `[Suggestion ${suggestion.code}] Disetujui`,
     },
     REVISION_REQUESTED: {
       type: 'SUGGESTION_REVISION_REQUESTED' as const,
       title: `Suggestion ${suggestion.code} perlu revisi`,
       message: `Reviewer meminta revisi: ${reviewNote}`,
-      subject: `[Suggestion ${suggestion.code}] Revisi diminta`,
     },
     REJECTED: {
       type: 'SUGGESTION_REJECTED' as const,
       title: `Suggestion ${suggestion.code} ditolak`,
       message: `Suggestion Anda ditolak. Alasan: ${reviewNote}`,
-      subject: `[Suggestion ${suggestion.code}] Ditolak`,
     },
   }[outcome]
 
-  // Event notifikasi ke creator (in-app + email).
+  // Event notifikasi ke creator (in-app saja).
   await emitNotification({
     key: `suggestion-${outcome.toLowerCase()}:${suggestion.id}:${suggestion.updated_at}`,
     type: config.type,
@@ -587,13 +562,7 @@ async function emitReviewEvent(
     message: `${config.message} (Project: ${projectLabel})`,
     entityType: 'suggestion',
     entityId: suggestion.id,
-    email: baseUrl
-      ? {
-          subject: config.subject,
-          html: suggestionReviewBody({ baseUrl, id: suggestion.id, message: config.message, projectLabel, reviewNote, convertedTaskId: convertedTaskId ?? null }),
-          category: 'suggestion',
-        }
-      : null,
+    email: null, // rutin: in-app saja (kebijakan notifikasi 20 Nov 2026)
   })
 
   // Event tambahan saat convert: beri tahu creator + PM (in-app). Assignee
