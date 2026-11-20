@@ -21,6 +21,8 @@ const alertWith = (page, text) => page.getByRole('alert').filter({ hasText: text
 const today = day(0)
 const FREE_CAT = `${P} Kategori Bebas`
 const LOC = `${P} Lokasi Uji`
+const FREE_PROJ = `${P} Klien Bebas`
+const FREE_LOC = `${P} Gudang Bebas`
 
 const browser = await loadPlaywright().chromium.launch({ headless: true })
 let cleanupResult
@@ -83,7 +85,8 @@ try {
   check('proyek internal tertaut, nama dari master', b && b.internal_project_ref && b.project_name === 'Manajemen Perusahaan' && !b.project_id, JSON.stringify(b))
   check('kategori teks bebas tersimpan apa adanya', b && b.category === FREE_CAT && b.category_ref === null, JSON.stringify(b))
   await page.goto(`${BASE}/tracker?tanggal=${today}`, { waitUntil: 'networkidle' })
-  check('daftar tanpa tanda teks bebas', (await page.getByText('(teks bebas)').count()) === 0 && (await page.getByRole('cell', { name: FREE_CAT, exact: true }).count()) === 1)
+  check('daftar tanpa tanda teks bebas', (await page.getByText('(teks bebas)').count()) === 0, await page.getByText('(teks bebas)').count())
+  check('daftar menampilkan kategori teks bebas apa adanya', (await page.getByText(FREE_CAT, { exact: true }).count()) >= 1, await page.getByText(FREE_CAT).count())
   check('output kosong ditandai di daftar', (await page.getByText('Kosong', { exact: true }).count()) === 1)
 
   // 3. Bentrok & lewat tengah malam ditolak
@@ -193,6 +196,24 @@ try {
   check('kukuhkan: pilihan baru dibuat', await until(async () => Boolean(await ref(FREE_CAT))))
   const promoted = await ref(FREE_CAT)
   check('kukuhkan: entri tertaut, teks asli tetap', await until(async () => { const l = (await logs(member.id))[1]; return l?.category_ref === promoted?.id && l.category === FREE_CAT }))
+
+  // Proyek + Lokasi teks bebas: tersimpan tanpa ACC, jadi usulan, dikukuhkan, lalu muncul di pilihan karyawan (20 Nov 2026).
+  await fill({ start: '14:00', end: '14:30', activity: `${P} Klien baru`, project: FREE_PROJ, location: FREE_LOC })
+  check('proyek+lokasi bebas: tersimpan tanpa ACC', await until(async () => (await logs(member.id)).some((l) => l.project_name === FREE_PROJ && !l.project_id && !l.internal_project_ref && !l.location_ref)))
+  await dp.goto(`${BASE}/master-reference`, { waitUntil: 'networkidle' })
+  for (const [list, text] of [['INTERNAL_PROJECT', FREE_PROJ], ['WORK_LOCATION', FREE_LOC]]) {
+    const s = dp.locator(`#${list} li`, { hasText: text })
+    check(`usulan ${list} tampil`, (await s.count()) === 1)
+    await s.getByRole('button', { name: 'Kukuhkan' }).click()
+    check(`kukuhkan ${list}: pilihan baru dibuat`, await until(async () => Boolean(await ref(text))))
+  }
+  check('kukuhkan proyek+lokasi: entri tertaut', await until(async () => (await logs(member.id)).some((l) => l.project_name === FREE_PROJ && l.internal_project_ref && l.location_ref)))
+  await page.goto(`${BASE}/tracker?tanggal=${today}`, { waitUntil: 'networkidle' })
+  for (const [id, text] of [['project', FREE_PROJ], ['location', FREE_LOC]]) {
+    await page.fill(`#${id}`, text.slice(0, -2))
+    check(`pilihan ${id} karyawan memuat hasil kukuhkan`, await page.getByRole('option', { name: text, exact: true }).waitFor({ timeout: 5000 }).then(() => true, () => false))
+    await page.keyboard.press('Escape')
+  }
   await dctx.close()
   await mctx.close()
 } catch (e) {

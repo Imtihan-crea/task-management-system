@@ -62,7 +62,7 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
   ])
   const periodOwnLeave = leaveDaysIn(periodLeave as LeaveRow[], period.from, period.to, periodBasis.calendar)
   const periodSum = periodSummary(period, periodLogs, periodBasis.workdays.length, rules, periodBasis.lockedTarget, paidLeaveDays(periodOwnLeave))
-  // Tampilkan label master terkini bila tertaut; teks bebas apa adanya (ditandai).
+  // Tampilkan label master terkini bila tertaut; teks bebas apa adanya.
   const label = new Map(refs.map((r) => [r.id, r.label]))
   const logs: Row[] = ((logsRes.data ?? []) as DbRow[]).map((l) => {
     const project = l.project_id ? l.project_name : l.internal_project_ref ? label.get(l.internal_project_ref) ?? l.project_name : l.project_name
