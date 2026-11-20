@@ -7,7 +7,7 @@ import { AppShell } from '@/components/layout/AppShell'
 import { PageHeader } from '@/components/ui/primitives'
 import { TransferCancelForm, TransferDecisionForm, TransferRequestForm } from '@/components/tasks/TransferForms'
 import { TransferCard, transferRange } from '@/components/tasks/TransferCard'
-import { transferLists, transferUsers, type TransferView } from '@/lib/data/task-transfers'
+import { transferDurations, transferLists, transferUsers, type TransferView } from '@/lib/data/task-transfers'
 import { TRANSFER_STATUS_LABEL, leaveTransferRange, tasksDueByLeaveEnd, wibLocalToISO } from '@/lib/tasks/transfer-rules'
 import { KIND_LABEL, type LeaveKind } from '@/lib/hr/leave'
 import { formatDate, formatDateTime } from '@/lib/utils/dates'
@@ -39,10 +39,11 @@ export default async function TaskTransfersPage({
 }) {
   const profile = await requireProfile()
   const sp = await searchParams
-  const [lists, users, scope] = await Promise.all([
+  const [lists, users, scope, durations] = await Promise.all([
     transferLists(profile.id),
     transferUsers(),
     permissionProjects(profile.id, 'tasks.edit'),
+    transferDurations(),
   ])
   const isManager = scope.all || scope.include.length > 0
 
@@ -172,6 +173,7 @@ export default async function TaskTransfersPage({
             defaultEnd={selesai}
             leaveRequestId={fromLeave?.id}
             checkedIds={checkedIds}
+            durations={durations}
           />
         )}
       </section>

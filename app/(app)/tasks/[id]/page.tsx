@@ -11,7 +11,7 @@ import { CancelTaskForm, ChangeStatusForm, DeleteTaskForm, ReviewDecisionForm, S
 import { EvidenceForm } from '@/components/tasks/EvidenceForm'
 import { TransferRequestForm } from '@/components/tasks/TransferForms'
 import { TransferCard } from '@/components/tasks/TransferCard'
-import { openTransferForTask, transferUsers } from '@/lib/data/task-transfers'
+import { openTransferForTask, transferDurations, transferUsers } from '@/lib/data/task-transfers'
 import {
   ActivityTimeline,
   resolveActorNames,
@@ -75,7 +75,7 @@ export default async function TaskDetailPage({
   const isOpenTask = task.status !== 'DONE' && task.status !== 'CANCELLED'
   const openTransfer = await openTransferForTask(task.id)
   const canTransfer = isOpenTask && (canFullEdit || (isOwner && canChangeStatus))
-  const transferCandidates = canTransfer && !openTransfer ? await transferUsers() : []
+  const [transferCandidates, durations] = canTransfer && !openTransfer ? await Promise.all([transferUsers(), transferDurations()]) : [[], []]
 
   const [{ data: project }, { data: workstream }, { data: assignee }, { data: creator }] =
     await Promise.all([
@@ -268,6 +268,7 @@ export default async function TaskDetailPage({
                       tasks={[{ id: task.id, code: task.code, title: task.title }]}
                       users={transferCandidates.filter((u) => u.id !== task.assignee_id)}
                       byManager={canFullEdit}
+                      durations={durations}
                     />
                   </div>
                 </details>

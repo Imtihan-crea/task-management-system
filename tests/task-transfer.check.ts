@@ -2,7 +2,7 @@
  * Uji lib/tasks/transfer-rules.ts — alih task permanen/sementara.
  * Jalankan: npm run test:task-transfer
  */
-import { approvalError, isoToWibLocal, leaveTransferRange, statusAfterStart, tasksDueByLeaveEnd, transferError, transferTick, wibLocalToISO } from '../lib/tasks/transfer-rules'
+import { approvalError, durationOptions, durationText, isoToWibLocal, maxRequestMinutes, parseDurationMinutes, leaveTransferRange, statusAfterStart, tasksDueByLeaveEnd, transferError, transferTick, wibLocalToISO } from '../lib/tasks/transfer-rules'
 
 let ok = 0
 let gagal = 0
@@ -36,7 +36,19 @@ cek('sementara selesai sudah lewat', transferError({ ...base, kind: 'TEMPORARY',
 cek('consultant mulai di masa lalu', transferError({ ...base, kind: 'TEMPORARY', startsAt: iso(-1), endsAt: iso(5) }), 'Waktu mulai tidak boleh di masa lalu.')
 cek('consultant mulai 5 menit lalu boleh', transferError({ ...base, kind: 'TEMPORARY', startsAt: iso(-5 / 60), endsAt: iso(5) }), null)
 cek('PM mulai di masa lalu boleh', transferError({ ...base, kind: 'TEMPORARY', startsAt: iso(-24), endsAt: iso(5), byManager: true }), null)
-cek('consultant > 3 bulan', transferError({ ...base, kind: 'TEMPORARY', startsAt: iso(1), endsAt: iso(1 + 24 * 93) }), 'Rentang paling lama 3 bulan. Untuk lebih lama, minta PM mengalihkan.')
+cek('consultant > batas bawaan', transferError({ ...base, kind: 'TEMPORARY', startsAt: iso(1), endsAt: iso(1 + 24 * 93) }), 'Rentang paling lama 92 hari. Untuk lebih lama, minta PM mengalihkan.')
+// Durasi dari Master Reference
+cek('parse 3 hari', parseDurationMinutes('3 hari'), 4320)
+cek('parse 2 Jam (rapat)', parseDurationMinutes('2 Jam (rapat)'), 120)
+cek('parse 1 bulan', parseDurationMinutes('1 bulan'), 43200)
+cek('parse tanpa satuan', parseDurationMinutes('Selama cuti'), null)
+cek('parse nol', parseDurationMinutes('0 hari'), null)
+cek('pilihan urut + yang tak terbaca dibuang', durationOptions(['1 minggu', 'Lainnya', '4 jam']).map((o) => o.label), ['4 jam', '1 minggu'])
+cek('batas = terpanjang', maxRequestMinutes(['1 hari', '2 minggu']), 20160)
+cek('batas bawaan bila kosong', maxRequestMinutes([]), 92 * 1440)
+cek('teks durasi', [durationText(20160), durationText(90), durationText(120)], ['2 minggu', '90 menit', '2 jam'])
+cek('consultant melewati batas Master Reference', transferError({ ...base, kind: 'TEMPORARY', startsAt: iso(1), endsAt: iso(1 + 24 * 15), maxMinutes: 20160 }), 'Rentang paling lama 2 minggu. Untuk lebih lama, minta PM mengalihkan.')
+cek('PM tidak terikat batas', transferError({ ...base, kind: 'TEMPORARY', startsAt: iso(1), endsAt: iso(1 + 24 * 15), maxMinutes: 20160, byManager: true }), null)
 cek('PM > 3 bulan boleh', transferError({ ...base, kind: 'TEMPORARY', startsAt: iso(1), endsAt: iso(1 + 24 * 200), byManager: true }), null)
 
 // Penjadwal

@@ -13,6 +13,7 @@
 -- semua kolom FK ke profiles dan check itu akan menggagalkan gabung akun. Validasi di server.
 -- Tulis hanya lewat server (service role); user membaca alih task yang melibatkannya.
 -- Nomor 032: 031 dipakai cabang rilis (Guest).
+-- Juga: daftar Master Reference TRANSFER_DURATION (durasi alih task) + isian awal.
 -- Rollback: database/migrations/down/032_task_transfers.down.sql
 
 create table if not exists public.task_transfers (
@@ -55,6 +56,23 @@ drop policy if exists "Users read own transfers" on public.task_transfers;
 create policy "Users read own transfers" on public.task_transfers
   for select to authenticated
   using (from_user_id = (select auth.uid()) or to_user_id = (select auth.uid()) or requested_by = (select auth.uid()));
+
+-- Durasi alih task di Master Reference (daftar TRANSFER_DURATION): pilihan cepat di form
+-- dan batas pengajuan consultant (durasi terpanjang yang aktif). LEAVE_TYPE ikut disebut
+-- supaya check ini tetap benar bila migrasi 027 (cabang rilis) diterapkan lebih dulu;
+-- 027 di cabang rilis juga menyebut TRANSFER_DURATION.
+alter table public.master_references drop constraint if exists master_references_list_check;
+alter table public.master_references add constraint master_references_list_check
+  check (list in ('ACTIVITY_CATEGORY', 'WORK_LOCATION', 'DIVISION', 'POSITION', 'INTERNAL_PROJECT', 'LEAVE_TYPE', 'TRANSFER_DURATION'));
+insert into public.master_references (list, code, label, sort_order) values
+  ('TRANSFER_DURATION', 'JAM_4', '4 jam', 10),
+  ('TRANSFER_DURATION', 'HARI_1', '1 hari', 20),
+  ('TRANSFER_DURATION', 'HARI_3', '3 hari', 30),
+  ('TRANSFER_DURATION', 'MINGGU_1', '1 minggu', 40),
+  ('TRANSFER_DURATION', 'MINGGU_2', '2 minggu', 50),
+  ('TRANSFER_DURATION', 'BULAN_1', '1 bulan', 60),
+  ('TRANSFER_DURATION', 'BULAN_3', '3 bulan', 70)
+on conflict (list, code) do nothing;
 
 insert into public.app_migrations (version, name, note)
 values ('032', '032_task_transfers', 'tabel task_transfers (alih task permanen/sementara)')

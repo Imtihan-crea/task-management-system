@@ -7,7 +7,7 @@
  * - teks bebas staf tetap tersimpan dan menjadi usulan untuk dikukuhkan.
  */
 
-export type ReferenceList = 'ACTIVITY_CATEGORY' | 'WORK_LOCATION' | 'DIVISION' | 'POSITION' | 'INTERNAL_PROJECT'
+export type ReferenceList = 'ACTIVITY_CATEGORY' | 'WORK_LOCATION' | 'DIVISION' | 'POSITION' | 'INTERNAL_PROJECT' | 'TRANSFER_DURATION'
 
 export const REFERENCE_LISTS: { list: ReferenceList; title: string; hint: string; freeText: boolean }[] = [
   { list: 'ACTIVITY_CATEGORY', title: 'Kategori aktivitas', hint: 'Pilihan kategori di Daily Tracker.', freeText: true },
@@ -15,6 +15,12 @@ export const REFERENCE_LISTS: { list: ReferenceList; title: string; hint: string
   { list: 'INTERNAL_PROJECT', title: 'Proyek', hint: 'Daftar pilihan Proyek di Daily Tracker (proyek klien, calon klien, dan urusan kantor). Nama yang sama persis dengan project TMS ikut tertaut ke project itu.', freeText: true },
   { list: 'DIVISION', title: 'Divisi', hint: 'Divisi karyawan di profil.', freeText: false },
   { list: 'POSITION', title: 'Jabatan', hint: 'Jabatan karyawan di profil.', freeText: false },
+  {
+    list: 'TRANSFER_DURATION',
+    title: 'Durasi alih task',
+    hint: 'Pilihan durasi di form Alih Task. Tulis label sebagai angka + menit/jam/hari/minggu/bulan (mis. "3 hari"; 1 bulan = 30 hari). Durasi terpanjang yang aktif menjadi batas pengajuan consultant; PM/Admin tidak dibatasi.',
+    freeText: false,
+  },
 ]
 
 export const isReferenceList = (v: string): v is ReferenceList => REFERENCE_LISTS.some((l) => l.list === v)

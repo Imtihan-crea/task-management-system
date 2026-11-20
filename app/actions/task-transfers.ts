@@ -12,7 +12,8 @@ import { escapeEmailHtml } from '@/lib/email/layout'
 import { taskTransferBody } from '@/lib/email/templates'
 import { formatDateTime } from '@/lib/utils/dates'
 import { projectDeciders } from '@/lib/tasks/deciders'
-import { approvalError, transferError, wibLocalToISO } from '@/lib/tasks/transfer-rules'
+import { approvalError, maxRequestMinutes, transferError, wibLocalToISO } from '@/lib/tasks/transfer-rules'
+import { loadReferences } from '@/lib/hr/data'
 import { processDueTransfers, resolveTransfer, TRANSFER_COLUMNS, type TransferRow } from '@/lib/tasks/transfers'
 
 export type TransferFormState = { error?: string; success?: string } | undefined
@@ -74,6 +75,8 @@ export async function requestTransfer(_prev: TransferFormState, formData: FormDa
   const tasks = (data ?? []) as TaskLite[]
 
   const now = new Date()
+  // Batas pengajuan consultant: durasi terpanjang yang aktif di Master Reference.
+  const maxMinutes = maxRequestMinutes((await loadReferences(['TRANSFER_DURATION'])).filter((r) => !r.archived_at).map((r) => r.label))
   const skipped: string[] = []
   const pendingByProject = new Map<string, TaskLite[]>()
   const approvedIds: string[] = []
@@ -89,7 +92,7 @@ export async function requestTransfer(_prev: TransferFormState, formData: FormDa
       skipped.push(`${task.code} (bukan task Anda)`)
       continue
     }
-    const err = transferError({ kind, fromUserId: task.assignee_id, toUserId, startsAt, endsAt, byManager: manages, now })
+    const err = transferError({ kind, fromUserId: task.assignee_id, toUserId, startsAt, endsAt, byManager: manages, now, maxMinutes })
     if (err) {
       firstError ??= err
       skipped.push(`${task.code} (${err})`)

@@ -5,7 +5,8 @@ import { permissionProjects } from '@/lib/auth/current-access'
 import { getActiveUsers } from '@/lib/data/users'
 import { displayName } from '@/lib/data/user-options'
 import { TRANSFER_COLUMNS, type TransferRow } from '@/lib/tasks/transfers'
-import { OPEN_TRANSFER_STATUSES } from '@/lib/tasks/transfer-rules'
+import { OPEN_TRANSFER_STATUSES, durationOptions } from '@/lib/tasks/transfer-rules'
+import { loadReferences } from '@/lib/hr/data'
 
 export type TransferView = TransferRow & {
   task: { id: string; code: string; title: string; project_id: string; status: string } | null
@@ -15,6 +16,11 @@ export type TransferView = TransferRow & {
   decision_note: string | null
   note: string | null
   created_at: string
+}
+
+/** Pilihan durasi alih task dari Master Reference (yang aktif dan terbaca). */
+export async function transferDurations(): Promise<{ label: string; minutes: number }[]> {
+  return durationOptions((await loadReferences(['TRANSFER_DURATION'])).filter((r) => !r.archived_at).map((r) => r.label))
 }
 
 /** Calon pengganti: user aktif selain VIEWER. */

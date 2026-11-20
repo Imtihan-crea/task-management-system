@@ -19,8 +19,40 @@ export const TRANSFER_STATUS_LABEL: Record<TransferStatus, string> = {
   CANCELLED: 'Dibatalkan',
 }
 
-/** Pengajuan consultant paling lama ±3 bulan; PM/Admin bebas. */
+/** Batas pengajuan consultant bila daftar Durasi alih task di Master Reference kosong. PM/Admin bebas. */
 export const MAX_REQUEST_DAYS = 92
+
+const UNIT_MINUTES: Record<string, number> = { menit: 1, jam: 60, hari: 1440, minggu: 10080, bulan: 43200 }
+
+/** "3 hari", "2 Jam (rapat)", "1 bulan" -> menit; null bila label tidak memuat angka + satuan. */
+export function parseDurationMinutes(label: string): number | null {
+  const m = /(\d+)\s*(menit|jam|hari|minggu|bulan)\b/i.exec(label)
+  if (!m) return null
+  const n = Number(m[1])
+  return n > 0 ? n * UNIT_MINUTES[m[2].toLowerCase()] : null
+}
+
+/** Pilihan durasi dari Master Reference (label yang bisa dibaca saja), urut dari terpendek. */
+export function durationOptions(labels: string[]): { label: string; minutes: number }[] {
+  return labels
+    .map((label) => ({ label, minutes: parseDurationMinutes(label) }))
+    .filter((o): o is { label: string; minutes: number } => o.minutes !== null)
+    .sort((a, b) => a.minutes - b.minutes)
+}
+
+/** Batas pengajuan consultant (menit): durasi terpanjang yang aktif, atau MAX_REQUEST_DAYS. */
+export function maxRequestMinutes(labels: string[]): number {
+  const opts = durationOptions(labels)
+  return opts.length ? opts[opts.length - 1].minutes : MAX_REQUEST_DAYS * 1440
+}
+
+/** "4320 menit" -> "3 hari" (untuk pesan galat). */
+export function durationText(minutes: number): string {
+  for (const [unit, size] of [['bulan', 43200], ['minggu', 10080], ['hari', 1440], ['jam', 60]] as const) {
+    if (minutes % size === 0) return `${minutes / size} ${unit}`
+  }
+  return `${minutes} menit`
+}
 /** Toleransi "waktu mulai di masa lalu" (form diisi beberapa menit). */
 const PAST_GRACE_MS = 10 * 60 * 1000
 
@@ -47,6 +79,8 @@ export function transferError(i: {
   endsAt: string
   byManager: boolean
   now: Date
+  /** Batas pengajuan consultant dalam menit (maxRequestMinutes); bawaan MAX_REQUEST_DAYS. */
+  maxMinutes?: number
 }): string | null {
   if (i.kind !== 'PERMANENT' && i.kind !== 'TEMPORARY') return 'Pilih jenis alih task.'
   if (!i.toUserId) return 'Pilih consultant pengganti.'
@@ -60,7 +94,8 @@ export function transferError(i: {
   if (end <= i.now.getTime()) return 'Waktu selesai sudah lewat.'
   if (!i.byManager) {
     if (start < i.now.getTime() - PAST_GRACE_MS) return 'Waktu mulai tidak boleh di masa lalu.'
-    if (end - start > MAX_REQUEST_DAYS * 86400 * 1000) return 'Rentang paling lama 3 bulan. Untuk lebih lama, minta PM mengalihkan.'
+    const max = i.maxMinutes ?? MAX_REQUEST_DAYS * 1440
+    if (end - start > max * 60 * 1000) return `Rentang paling lama ${durationText(max)}. Untuk lebih lama, minta PM mengalihkan.`
   }
   return null
 }

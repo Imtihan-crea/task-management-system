@@ -9,6 +9,7 @@ import {
   requestTransfer,
   type TransferFormState,
 } from '@/app/actions/task-transfers'
+import { isoToWibLocal, wibLocalToISO } from '@/lib/tasks/transfer-rules'
 
 const INITIAL: TransferFormState = undefined
 const INPUT = 'min-h-[44px] w-full rounded-lg border px-3 py-2 text-base dark:border-zinc-700 dark:bg-zinc-800'
@@ -113,7 +114,9 @@ export function TransferRequestForm({
   defaultEnd = '',
   leaveRequestId,
   checkedIds,
+  durations = [],
 }: {
+  durations?: { label: string; minutes: number }[]
   tasks: TransferTaskOption[]
   users: TransferUser[]
   byManager: boolean
@@ -125,6 +128,16 @@ export function TransferRequestForm({
 }) {
   const [kind, setKind] = useState<'TEMPORARY' | 'PERMANENT'>('TEMPORARY')
   const [state, formAction, pending] = useFormAction(requestTransfer, INITIAL)
+  const startRef = useRef<HTMLInputElement>(null)
+  const endRef = useRef<HTMLInputElement>(null)
+
+  // Pilihan durasi (Master Reference): selesai = mulai + durasi; mulai kosong = sekarang (WIB).
+  function applyDuration(minutes: number) {
+    if (!startRef.current || !endRef.current || !minutes) return
+    const startIso = wibLocalToISO(startRef.current.value) || new Date().toISOString()
+    if (!startRef.current.value) startRef.current.value = isoToWibLocal(startIso)
+    endRef.current.value = isoToWibLocal(new Date(new Date(startIso).getTime() + minutes * 60000).toISOString())
+  }
 
   return (
     <form {...formAction} className="flex flex-col gap-3">
@@ -178,17 +191,37 @@ export function TransferRequestForm({
 
       {kind === 'TEMPORARY' && (
         <div className="grid gap-3 sm:grid-cols-2">
+          {durations.length > 0 && (
+            <div className="sm:col-span-2">
+              <label htmlFor="transfer_duration" className="mb-1 block text-sm font-medium">
+                Durasi
+              </label>
+              <select
+                id="transfer_duration"
+                defaultValue=""
+                onChange={(e) => applyDuration(Number(e.target.value))}
+                className={INPUT}
+              >
+                <option value="">Pilih durasi, atau isi waktu selesai sendiri</option>
+                {durations.map((d) => (
+                  <option key={d.label} value={d.minutes}>
+                    {d.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
           <div>
             <label htmlFor="transfer_start" className="mb-1 block text-sm font-medium">
               Mulai (WIB)
             </label>
-            <input id="transfer_start" type="datetime-local" name="starts_at" required defaultValue={defaultStart} className={INPUT} />
+            <input ref={startRef} id="transfer_start" type="datetime-local" name="starts_at" required defaultValue={defaultStart} className={INPUT} />
           </div>
           <div>
             <label htmlFor="transfer_end" className="mb-1 block text-sm font-medium">
               Selesai (WIB)
             </label>
-            <input id="transfer_end" type="datetime-local" name="ends_at" required defaultValue={defaultEnd} className={INPUT} />
+            <input ref={endRef} id="transfer_end" type="datetime-local" name="ends_at" required defaultValue={defaultEnd} className={INPUT} />
           </div>
           {byManager && (
             <label className="flex min-h-[44px] items-center gap-2 text-sm sm:col-span-2">
