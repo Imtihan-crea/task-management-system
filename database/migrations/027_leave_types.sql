@@ -16,7 +16,8 @@ alter table public.master_references
 
 alter table public.master_references drop constraint if exists master_references_list_check;
 alter table public.master_references add constraint master_references_list_check
-  check (list in ('ACTIVITY_CATEGORY', 'WORK_LOCATION', 'DIVISION', 'POSITION', 'INTERNAL_PROJECT', 'LEAVE_TYPE'));
+  -- TRANSFER_DURATION: daftar dari migrasi 032 (alih task), supaya urutan penerapan 027/032 bebas.
+  check (list in ('ACTIVITY_CATEGORY', 'WORK_LOCATION', 'DIVISION', 'POSITION', 'INTERNAL_PROJECT', 'LEAVE_TYPE', 'TRANSFER_DURATION'));
 
 alter table public.master_references drop constraint if exists master_references_leave_attrs_check;
 alter table public.master_references add constraint master_references_leave_attrs_check
