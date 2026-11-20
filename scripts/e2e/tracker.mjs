@@ -56,7 +56,7 @@ try {
   check('menu Daily Tracker tampil untuk anggota tim', (await page.getByRole('link', { name: 'Daily Tracker' }).count()) >= 1)
   check('menu Master Reference tidak tampil untuk anggota tim', (await page.getByRole('link', { name: 'Master Reference' }).count()) === 0)
 
-  const fill = async ({ start, end, activity, project = `${P} Proyek Tracker`, category = 'Focus Work', location = 'WFA', output = 'Hasil uji' }) => {
+  const fill = async ({ start, end, activity, project = `${P} Proyek Tracker`, category = 'Focus Work', location = 'WFA', output = 'Hasil uji', detail = 'Detail uji' }) => {
     await page.goto(`${BASE}/tracker?tanggal=${today}`, { waitUntil: 'networkidle' })
     await page.fill('#project', project)
     if (start) await page.fill('#start_time', start)
@@ -64,6 +64,7 @@ try {
     await page.fill('#category', category)
     await page.fill('#location', location)
     await page.fill('#activity', activity)
+    await page.fill('#detail', detail)
     await page.fill('#output', output)
     await page.getByRole('button', { name: 'Catat aktivitas' }).click()
   }
@@ -85,7 +86,7 @@ try {
   // 2. Saran jam mulai; proyek internal (beda huruf) + kategori teks bebas + output kosong
   await page.goto(`${BASE}/tracker?tanggal=${today}`, { waitUntil: 'networkidle' })
   check('saran jam mulai 10:00', (await page.inputValue('#start_time')) === '10:00', await page.inputValue('#start_time'))
-  await fill({ end: '11:30', activity: `${P} Aktivitas 2`, project: 'manajemen perusahaan', category: FREE_CAT, output: '' })
+  await fill({ end: '11:30', activity: `${P} Aktivitas 2`, project: 'manajemen perusahaan', category: FREE_CAT })
   check('pesan usulan teks bebas', await page.getByRole('status').filter({ hasText: 'usulan' }).waitFor({ timeout: 10000 }).then(() => true, () => false))
   const b = (await logs(member.id))[1]
   check('proyek internal tertaut, nama dari master', b && b.internal_project_ref && b.project_name === 'Manajemen Perusahaan' && !b.project_id, JSON.stringify(b))
@@ -93,7 +94,13 @@ try {
   await page.goto(`${BASE}/tracker?tanggal=${today}`, { waitUntil: 'networkidle' })
   check('daftar tanpa tanda teks bebas', (await page.getByText('(teks bebas)').count()) === 0, await page.getByText('(teks bebas)').count())
   check('daftar menampilkan kategori teks bebas apa adanya', (await page.getByText(FREE_CAT, { exact: true }).count()) >= 1, await page.getByText(FREE_CAT).count())
-  check('output kosong ditandai di daftar', (await page.getByText('Kosong', { exact: true }).count()) === 1)
+  // Form mengikuti sheet (20 Nov 2026): semua isian wajib, kolom otomatis tampil dan ikut berubah.
+  check('detail dan output wajib diisi', (await page.locator('#detail[required]').count()) === 1 && (await page.locator('#output[required]').count()) === 1)
+  check('otomatis: nama tampil', (await page.getByText(`${P} Karyawan Tracker`, { exact: true }).count()) >= 1)
+  await page.fill('#start_time', '13:00')
+  await page.fill('#end_time', '14:30')
+  check('otomatis: durasi 1,5 jam', await until(async () => (await page.getByText('1,5', { exact: true }).count()) >= 1, 5000), await page.locator('form', { has: page.locator('#work_date') }).innerText().catch((e) => e.message))
+  if (process.env.E2E_SHOT) await page.locator('form', { has: page.locator('#work_date') }).screenshot({ path: process.env.E2E_SHOT })
 
   // 3. Bentrok & lewat tengah malam ditolak
   await fill({ start: '09:00', end: '09:30', activity: `${P} Bentrok` })

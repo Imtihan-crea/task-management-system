@@ -43,7 +43,7 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
   const to = addDays(wFrom, 6) > monthTo ? addDays(wFrom, 6) : monthTo
 
   const { period, error: periodError } = parsePeriod(sp, today)
-  const [rules, refs, basis, logsRes, canRekap, periodLogs, periodBasis, periodLeave] = await Promise.all([
+  const [rules, refs, basis, logsRes, canRekap, periodLogs, periodBasis, periodLeave, ownProfile] = await Promise.all([
     loadRules(date),
     loadReferences(['ACTIVITY_CATEGORY', 'WORK_LOCATION', 'INTERNAL_PROJECT']),
     loadMonthBasis(month),
@@ -58,6 +58,7 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
     loadLogs(period.from, period.to, [profile.id]),
     loadPeriodBasis(period.from, period.to, period.month),
     loadLeave({ from: period.from, to: period.to, userId: profile.id, statuses: ['APPROVED'] }),
+    createAdminClient().from('profiles').select('division').eq('id', profile.id).maybeSingle(),
   ])
   const periodOwnLeave = leaveDaysIn(periodLeave as LeaveRow[], period.from, period.to, periodBasis.calendar)
   const periodSum = periodSummary(period, periodLogs, periodBasis.workdays.length, rules, periodBasis.lockedTarget, paidLeaveDays(periodOwnLeave))
@@ -113,6 +114,8 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
           // Saran jam mulai baru tetap masuk lewat reset() ke defaultValue terbaru.
           key={`${date}-${editing?.id ?? 'baru'}`}
           date={date}
+          name={profile.full_name ?? profile.email}
+          division={(ownProfile.data as { division: string | null } | null)?.division ?? null}
           // Pilihan Proyek hanya dari Master Reference (masukan HR 20 Nov 2026); nama yang sama
           // dengan project TMS tetap tertaut ke project itu saat disimpan (app/actions/tracker.ts).
           projects={active('INTERNAL_PROJECT')}
@@ -143,9 +146,9 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
                   <th className="py-2 pr-3">Jam</th>
                   <th className="py-2 pr-3">Proyek</th>
                   <th className="py-2 pr-3">Aktivitas</th>
-                  <th className="py-2 pr-3">Kategori</th>
                   <th className="py-2 pr-3">Lokasi</th>
-                  <th className="py-2 pr-3">Output</th>
+                  <th className="py-2 pr-3">Kategori Aktivitas</th>
+                  <th className="py-2 pr-3">Output/Deliverables</th>
                   <th className="py-2"><span className="sr-only">Tindakan</span></th>
                 </tr>
               </thead>
@@ -155,8 +158,8 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
                     <td className="py-2 pr-3 whitespace-nowrap">{l.start_time.slice(0, 5)}–{l.end_time.slice(0, 5)} ({hours(l.duration_minutes)} j)</td>
                     <td className="py-2 pr-3">{l.project}</td>
                     <td className="py-2 pr-3">{l.activity}<CommentThread comments={comments.get(l.id) ?? []} /></td>
-                    <td className="py-2 pr-3">{l.category}</td>
                     <td className="py-2 pr-3">{l.location}</td>
+                    <td className="py-2 pr-3">{l.category}</td>
                     <td className="py-2 pr-3">{l.output || <span className="font-semibold text-red-700">Kosong</span>}</td>
                     <td className="py-2 whitespace-nowrap">
                       <Link href={`/tracker?tanggal=${date}&ubah=${l.id}&${pq}`} className="inline-block min-h-[44px] px-2 py-3 text-sm font-semibold text-kasuat-deep-gold hover:underline">Ubah</Link>
