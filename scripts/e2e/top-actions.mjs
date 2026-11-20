@@ -1,4 +1,5 @@
 // Uji tindakan petinggi (16 Nov 2026): set password, ganti email, hapus akun.
+// 20 Nov 2026: keluarkan dari semua perangkat (tombol + otomatis saat set password).
 // Semua data berawalan "UJI-E2E"; server WAJIB tanpa BREVO (guard di lib.mjs).
 // Developer uji (ADMIN + is_developer) melakukan ketiganya lewat klik di /users/[id];
 // Admin uji biasa tidak melihat bagian "Tindakan Super Admin". Rahasia tidak dicetak.
@@ -41,11 +42,25 @@ try {
   check('developer: bagian "Tindakan Super Admin" tampil', (await page.getByText('Tindakan Super Admin').count()) === 1)
   check('developer: bagian Wewenang tampil', (await page.getByRole('heading', { name: 'Wewenang' }).count()) === 1)
 
+  // 0. Celah 20 Nov 2026: perangkat yang sedang login harus keluar setelah dicabut.
+  const victim = await browser.newContext()
+  const vp = await victim.newPage()
+  await loginPassword(vp, target)
+  await page.getByRole('button', { name: 'Keluarkan dari semua perangkat', exact: true }).click()
+  check('keluarkan: pesan sukses tampil', await page.getByRole('status').filter({ hasText: 'dikeluarkan dari' }).waitFor({ timeout: 10000 }).then(() => true, () => false))
+  await vp.goto(`${BASE}/dashboard`, { waitUntil: 'networkidle' })
+  check('keluarkan: perangkat lain kembali ke login', /\/login/.test(vp.url()), vp.url())
+  await loginPassword(vp, target)
+  check('keluarkan: pemilik bisa login lagi dengan password lama', /dashboard/.test(vp.url()))
+
   // 1. Set password
   const newPw = `Uji-${Date.now()}`
   await page.fill('#top_password', newPw)
   await page.getByRole('button', { name: 'Set password', exact: true }).click()
   check('set password: wajib ganti di DB', await until(async () => (await profile(target.id))?.must_change_password === true))
+  await vp.goto(`${BASE}/dashboard`, { waitUntil: 'networkidle' })
+  check('set password: perangkat yang masih login ikut keluar', /\/login/.test(vp.url()), vp.url())
+  await victim.close()
   {
     const c2 = await browser.newContext()
     const p2 = await c2.newPage()

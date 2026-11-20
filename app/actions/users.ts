@@ -586,6 +586,7 @@ export async function updateUser(
     console.error('updateUser failed:', error.message)
     return { error: 'Tidak dapat memperbarui user.' }
   }
+  if (status !== 'ACTIVE' && current.status === 'ACTIVE') await revokeSessions(targetId)
 
   revalidatePath('/users')
   revalidatePath(`/users/${targetId}`)
@@ -702,6 +703,7 @@ export async function setUserStatus(
     console.error('setUserStatus failed:', error.message)
     return { error: 'Tidak dapat memperbarui user.' }
   }
+  if (status !== 'ACTIVE') await revokeSessions(targetId)
 
   revalidatePath('/users')
   revalidatePath(`/users/${targetId}`)
@@ -824,6 +826,20 @@ type TopTargetRow = {
   deleted_at: string | null
 }
 
+/**
+ * Keluarkan akun dari semua perangkat (migrasi 029). Dipanggil otomatis saat password/email
+ * diganti admin, akun dinonaktifkan, atau dihapus, supaya orang yang sempat memegang akun
+ * tidak tetap masuk (kasus akun dibuat ulang, 20 Nov 2026). Mengembalikan jumlah sesi dicabut.
+ */
+async function revokeSessions(userId: string): Promise<number | null> {
+  const { data, error } = await createAdminClient().rpc('revoke_user_sessions', { target: userId })
+  if (error) {
+    console.error('[revoke-sessions] failed:', error.message)
+    return null
+  }
+  return typeof data === 'number' ? data : 0
+}
+
 async function loadTopAction(actorId: string, targetId: string, action: 'password' | 'email' | 'delete') {
   const { data: target } = await createAdminClient()
     .from('profiles')
@@ -859,13 +875,15 @@ export async function setUserPassword(_prev: UserFormState, formData: FormData):
   // Password ketikan admin = sementara, kecuali untuk akun sendiri.
   const requireChange = target.id !== actor.id
   await admin.from('profiles').update({ must_change_password: requireChange }).eq('id', target.id)
+  // Password baru dari admin: perangkat lain yang masih login ikut dikeluarkan.
+  const revoked = requireChange ? await revokeSessions(target.id) : null
 
   await logActivity({
     actorUserId: actor.id,
     action: 'USER_UPDATED',
     entityType: 'user',
     entityId: target.id,
-    metadata: { set_by_admin: 'password', must_change_password: requireChange },
+    metadata: { set_by_admin: 'password', must_change_password: requireChange, ...(revoked !== null ? { sessions_revoked: revoked } : {}) },
   })
   revalidatePath(`/users/${target.id}`)
   return {
@@ -910,7 +928,7 @@ export async function changeUserEmail(_prev: UserFormState, formData: FormData):
     entityType: 'user',
     entityId: target.id,
     entityCode: email,
-    metadata: { set_by_admin: 'email', old_email: target.email, new_email: email },
+    metadata: { set_by_admin: 'email', old_email: target.email, new_email: email, sessions_revoked: target.id === actor.id ? null : await revokeSessions(target.id) },
   })
   revalidatePath('/users')
   revalidatePath(`/users/${target.id}`)
@@ -948,6 +966,7 @@ export async function deleteUserAccount(_prev: UserFormState, formData: FormData
     return { error: 'Tidak dapat menghapus akun. Silakan coba lagi.' }
   }
   await admin.from('user_permissions').delete().eq('user_id', target.id)
+  await revokeSessions(target.id)
 
   await logActivity({
     actorUserId: actor.id,
@@ -962,4 +981,23 @@ export async function deleteUserAccount(_prev: UserFormState, formData: FormData
   revalidatePath('/dashboard')
   const note = await deactivationNote(target.id)
   return { success: `Akun dihapus: tidak bisa login lagi, riwayatnya tetap ada.${note}` }
+}
+
+/** Keluarkan akun dari semua perangkat tanpa mengubah password (tombol di detail user). */
+export async function revokeUserSessions(_prev: UserFormState, formData: FormData): Promise<UserFormState> {
+  const actor = await requireProfile()
+  const { error: guardError, target } = await loadTopAction(actor.id, readLimitedField(formData, 'id'), 'password')
+  if (guardError || !target) return { error: guardError ?? 'User tidak ditemukan.' }
+  if (target.id === actor.id) return { error: 'Untuk akun sendiri, ganti password lewat menu Profil.' }
+  const revoked = await revokeSessions(target.id)
+  if (revoked === null) return { error: 'Gagal mengeluarkan akun dari perangkat. Silakan coba lagi.' }
+  await logActivity({
+    actorUserId: actor.id,
+    action: 'USER_UPDATED',
+    entityType: 'user',
+    entityId: target.id,
+    metadata: { set_by_admin: 'sessions_revoked', sessions_revoked: revoked },
+  })
+  revalidatePath(`/users/${target.id}`)
+  return { success: revoked ? `Akun dikeluarkan dari ${revoked} perangkat. Pemilik akun perlu login lagi.` : 'Akun ini sedang tidak login di perangkat mana pun.' }
 }
