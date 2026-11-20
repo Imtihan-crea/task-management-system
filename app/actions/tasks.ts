@@ -15,6 +15,7 @@ import { canActOnTask, canPickStatus, submitTarget } from '@/lib/auth/task-acces
 import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
 import { emitTaskAssigned } from '@/lib/notifications/task-assigned'
+import { projectDeciders } from '@/lib/tasks/deciders'
 import { logActivity } from '@/lib/activity-log/service'
 import type { TaskPriority, TaskStatus } from '@/types/task'
 import type { UserRole } from '@/types/profile'
@@ -711,7 +712,7 @@ export async function decideReview(
 async function emitReviewRequested(taskId: string): Promise<void> {
   const ctx = await getTaskContext(taskId)
   if (!ctx) return
-  const recipients = ctx.managerIds.length > 0 ? ctx.managerIds : await activeAdminIds()
+  const recipients = await projectDeciders(ctx.task.project_id)
   const { data: assignee } = await createAdminClient()
     .from('profiles')
     .select('full_name, email')
@@ -738,11 +739,6 @@ async function emitReviewRequested(taskId: string): Promise<void> {
       category: 'task',
     },
   })
-}
-
-async function activeAdminIds(): Promise<string[]> {
-  const { data } = await createAdminClient().from('profiles').select('id').eq('role', 'ADMIN').eq('status', 'ACTIVE').is('deleted_at', null)
-  return ((data ?? []) as { id: string }[]).map((p) => p.id)
 }
 
 /**

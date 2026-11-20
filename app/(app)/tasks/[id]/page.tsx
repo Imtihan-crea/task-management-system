@@ -9,6 +9,9 @@ import { formatDate, formatDateTime, showsOverdueBadge } from '@/lib/utils/dates
 import { TaskForm } from '@/components/tasks/TaskForm'
 import { CancelTaskForm, ChangeStatusForm, DeleteTaskForm, ReviewDecisionForm, SubmitTaskForm } from '@/components/tasks/TaskStatusForms'
 import { EvidenceForm } from '@/components/tasks/EvidenceForm'
+import { TransferRequestForm } from '@/components/tasks/TransferForms'
+import { TransferCard } from '@/components/tasks/TransferCard'
+import { openTransferForTask, transferUsers } from '@/lib/data/task-transfers'
 import {
   ActivityTimeline,
   resolveActorNames,
@@ -67,6 +70,12 @@ export default async function TaskDetailPage({
     canFullEdit ||
     (profile.role === 'ADMIN' ? isOwner : canActOnTask(profile.role, { isAssignee: isOwner, managesProject: false }))
   const canSubmitEvidence = can(profile.role, 'tasks.submitEvidenceOwn') && canChangeStatus
+
+  // Alih task (20 Nov 2026): assignee mengajukan, PM/Admin project langsung mengalihkan.
+  const isOpenTask = task.status !== 'DONE' && task.status !== 'CANCELLED'
+  const openTransfer = await openTransferForTask(task.id)
+  const canTransfer = isOpenTask && (canFullEdit || (isOwner && canChangeStatus))
+  const transferCandidates = canTransfer && !openTransfer ? await transferUsers() : []
 
   const [{ data: project }, { data: workstream }, { data: assignee }, { data: creator }] =
     await Promise.all([
@@ -243,6 +252,28 @@ export default async function TaskDetailPage({
                 )}
               </div>
             )}
+
+          {(openTransfer || canTransfer) && (
+            <div className="mt-4 border-t pt-4 dark:border-zinc-700">
+              <h3 className="mb-2 text-base font-bold">Alih Task (Backup)</h3>
+              {openTransfer ? (
+                <TransferCard t={openTransfer} canManage={canFullEdit} userId={profile.id} />
+              ) : (
+                <details>
+                  <summary className="flex min-h-[44px] cursor-pointer items-center text-sm font-semibold">
+                    {canFullEdit ? 'Alihkan task ini ke consultant lain' : 'Ajukan alih task (cuti, sakit, berhalangan)'}
+                  </summary>
+                  <div className="mt-2">
+                    <TransferRequestForm
+                      tasks={[{ id: task.id, code: task.code, title: task.title }]}
+                      users={transferCandidates.filter((u) => u.id !== task.assignee_id)}
+                      byManager={canFullEdit}
+                    />
+                  </div>
+                </details>
+              )}
+            </div>
+          )}
 
           {canDelete && (
             <div className="mt-4 max-w-[220px]">

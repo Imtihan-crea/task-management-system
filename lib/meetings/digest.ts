@@ -256,7 +256,8 @@ async function runDigest(now: Date, variant: 'pagi' | 'sore'): Promise<{
  * Hal yang menunggu keputusan, per penerima:
  * - task REVIEW -> PM project (tanpa PM: semua Admin aktif);
  * - usulan task PENDING -> PM project (tanpa PM: Admin);
- * - pengajuan cuti PENDING -> penyetuju cuti selain pengaju.
+ * - pengajuan cuti PENDING -> penyetuju cuti selain pengaju;
+ * - alih task PENDING (pengajuan consultant) / EXPIRED (masa habis) -> PM project.
  */
 async function loadApprovals(activeUserIds: string[]): Promise<Map<string, DigestApproval[]>> {
   const admin = createAdminClient()
@@ -269,21 +270,32 @@ async function loadApprovals(activeUserIds: string[]): Promise<Map<string, Diges
     }
   }
 
-  const [{ data: reviews }, { data: suggestions }, { data: leaves }] = await Promise.all([
+  const [{ data: reviews }, { data: suggestions }, { data: leaves }, { data: transfers }] = await Promise.all([
     admin.from('tasks').select('id, code, title, project_id, assignee_id').eq('status', 'REVIEW').eq('is_deleted', false).limit(500),
     admin.from('task_suggestions').select('id, code, title, project_id').eq('status', 'PENDING').limit(500),
     admin.from('leave_requests').select('id, user_id, kind, start_date, end_date').eq('status', 'PENDING').limit(500),
+    admin.from('task_transfers').select('id, status, requested_by, from_user_id, to_user_id, tasks(code, title, project_id)').in('status', ['PENDING', 'EXPIRED']).limit(500),
   ])
   const reviewRows = (reviews ?? []) as { id: string; code: string; title: string; project_id: string; assignee_id: string }[]
   const suggestionRows = (suggestions ?? []) as { id: string; code: string | null; title: string; project_id: string }[]
   const leaveRows = (leaves ?? []) as { id: string; user_id: string; kind: LeaveKind; start_date: string; end_date: string }[]
-  if (reviewRows.length + suggestionRows.length + leaveRows.length === 0) return out
+  const transferRows = ((transfers ?? []) as unknown as {
+    id: string
+    status: string
+    requested_by: string | null
+    from_user_id: string
+    to_user_id: string
+    tasks: { code: string; title: string; project_id: string } | null
+  }[]).filter((t) => t.tasks)
+  if (reviewRows.length + suggestionRows.length + leaveRows.length + transferRows.length === 0) return out
 
-  const projectIds = [...new Set([...reviewRows, ...suggestionRows].map((r) => r.project_id))]
+  const projectIds = [...new Set([...reviewRows, ...suggestionRows, ...transferRows.map((t) => t.tasks!)].map((r) => r.project_id))]
   const [{ data: pms }, { data: admins }, { data: names }] = await Promise.all([
     projectIds.length ? admin.from('project_managers').select('project_id, user_id').in('project_id', projectIds) : Promise.resolve({ data: [] }),
     admin.from('profiles').select('id').eq('role', 'ADMIN').eq('status', 'ACTIVE').is('deleted_at', null),
-    admin.from('profiles').select('id, full_name, email').in('id', [...new Set([...reviewRows.map((r) => r.assignee_id), ...leaveRows.map((l) => l.user_id)])]),
+    admin.from('profiles').select('id, full_name, email').in('id', [
+      ...new Set([...reviewRows.map((r) => r.assignee_id), ...leaveRows.map((l) => l.user_id), ...transferRows.flatMap((t) => [t.from_user_id, t.to_user_id])]),
+    ]),
   ])
   const pmsByProject = new Map<string, string[]>()
   for (const p of (pms ?? []) as { project_id: string; user_id: string }[]) {
@@ -302,6 +314,17 @@ async function loadApprovals(activeUserIds: string[]): Promise<Map<string, Diges
   }
   for (const sg of suggestionRows) {
     add(deciders(sg.project_id), { title: `${sg.code ?? 'Usulan'} ${sg.title}`, detail: 'Usulan task menunggu keputusan', path: `/task-suggestions/${sg.id}` })
+  }
+  for (const t of transferRows) {
+    const task = t.tasks!
+    add(deciders(task.project_id).filter((id) => id !== t.requested_by), {
+      title: `${task.code} ${task.title}`,
+      detail:
+        t.status === 'PENDING'
+          ? `Pengajuan alih task ${nameOf.get(t.from_user_id) ?? '-'} → ${nameOf.get(t.to_user_id) ?? '-'}`
+          : `Masa alih task habis, masih dipegang ${nameOf.get(t.to_user_id) ?? '-'}`,
+      path: '/tasks/alih',
+    })
   }
   if (leaveRows.length > 0) {
     const approvers = (await Promise.all(activeUserIds.map(async (id) => ((await canApproveLeave(id)) ? id : null)))).filter(

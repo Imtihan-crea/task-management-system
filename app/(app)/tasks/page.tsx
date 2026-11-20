@@ -63,6 +63,11 @@ export default async function TasksPage({
                 Import Excel
               </ButtonLink>
             )}
+            {profile.role !== 'VIEWER' && (
+              <ButtonLink href="/tasks/alih" variant="secondary">
+                Alih Task
+              </ButtonLink>
+            )}
             {can(profile.role, 'suggestions.create') && (
               <ButtonLink href="/task-suggestions/new" variant="secondary">
                 + Usulkan Task

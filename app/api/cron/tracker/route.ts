@@ -12,7 +12,7 @@ export const dynamic = 'force-dynamic'
  * aktivitas di hari kerja ini mendapat notifikasi IN-APP. Email-nya ikut
  * pengingat sore (/api/cron/sore, 17:00 WIB) supaya satu email per hari
  * (kebijakan notifikasi 20 Nov 2026).
- * Dijalankan dua kali sehari: `?sesi=1` (15:00) dan `?sesi=2` (17:00).
+ * Dijalankan dua kali sehari: `?sesi=1` (15:00) dan `?sesi=2` atau tanpa parameter (17:00).
  * Auth: `Authorization: Bearer <CRON_SECRET>`. GET (manual) dan POST (pg_net).
  * Saklar: TRACKER_REMINDER_ENABLED=true; mati = tidak mengirim apa pun.
  * Mode uji: TRACKER_REMINDER_ONLY=<id user,...> = hanya akun itu.
@@ -26,7 +26,8 @@ async function handle(request: Request) {
     return NextResponse.json({ error: 'Tidak diizinkan.' }, { status: 401 })
   }
   const today = todayISO()
-  const sesi = new URL(request.url).searchParams.get('sesi') === '2' ? '2' : '1'
+  // Tanpa ?sesi = sesi 2: job pg_cron lama 'tracker-reminder' (17:00 WIB) memanggil tanpa parameter.
+  const sesi = new URL(request.url).searchParams.get('sesi') === '1' ? '1' : '2'
 
   let missing: Awaited<ReturnType<typeof usersMissingTracker>>
   try {

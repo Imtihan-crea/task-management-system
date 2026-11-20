@@ -113,3 +113,13 @@ export function leaveRequestedBody(i: { baseUrl: string; name: string; kindLabel
     url: u(i.baseUrl, '/cuti/persetujuan'),
   })
 }
+
+/** Alih task (20 Nov 2026). `intro` = markup tepercaya (data di dalamnya sudah di-escape pemanggil). */
+export function taskTransferBody(i: { baseUrl: string; taskId: string; code: string; title: string; intro: string; rows?: Row[]; linkToList?: boolean }): string {
+  return notice({
+    introHtml: i.intro,
+    rows: [{ text: `${i.code} ${i.title}` }, ...(i.rows ?? [])],
+    linkLabel: i.linkToList ? 'Putuskan di sini' : 'Lihat task',
+    url: u(i.baseUrl, i.linkToList ? '/tasks/alih' : `/tasks/${i.taskId}`),
+  })
+}
