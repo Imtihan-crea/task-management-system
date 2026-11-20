@@ -1,5 +1,7 @@
 'use server'
 
+import { redirect } from 'next/navigation'
+
 import { revalidatePath } from 'next/cache'
 import { requireProfile } from '@/lib/auth/session'
 import { hasPermission, requirePermission } from '@/lib/auth/current-access'
@@ -1000,4 +1002,37 @@ export async function revokeUserSessions(_prev: UserFormState, formData: FormDat
   })
   revalidatePath(`/users/${target.id}`)
   return { success: revoked ? `Akun dikeluarkan dari ${revoked} perangkat. Pemilik akun perlu login lagi.` : 'Akun ini sedang tidak login di perangkat mana pun.' }
+}
+
+/**
+ * Gabung akun (20 Nov 2026): semua data akun ini (sumber) pindah ke akun tujuan milik orang
+ * yang sama, lalu akun sumber dihapus (tidak tampil, tidak bisa login, sesi dicabut). Untuk
+ * kasus satu orang punya dua akun; jangan buat akun baru untuk akun yang dibobol.
+ */
+export async function mergeUserAccount(_prev: UserFormState, formData: FormData): Promise<UserFormState> {
+  const actor = await requireProfile()
+  const sourceId = readLimitedField(formData, 'id')
+  const targetId = readLimitedField(formData, 'target_id')
+  const { error: guardError, target: source } = await loadTopAction(actor.id, sourceId, 'delete')
+  if (guardError || !source) return { error: guardError ?? 'User tidak ditemukan.' }
+  if (!targetId || targetId === source.id) return { error: 'Pilih akun tujuan yang berbeda.' }
+  const admin = createAdminClient()
+  const { data: target } = await admin.from('profiles').select('id, full_name, email, deleted_at').eq('id', targetId).maybeSingle<{ id: string; full_name: string | null; email: string; deleted_at: string | null }>()
+  if (!target || target.deleted_at) return { error: 'Akun tujuan tidak ditemukan.' }
+  const { data: sourceRow } = await admin.from('profiles').select('full_name').eq('id', source.id).maybeSingle<{ full_name: string | null }>()
+
+  const { data: moved, error } = await admin.rpc('merge_user_into', { source: source.id, target: target.id })
+  if (error) {
+    console.error('[merge-user] failed:', error.message)
+    return { error: 'Gagal menggabung akun. Tidak ada data yang berubah.' }
+  }
+  // Sama dengan hapus akun: login akun sumber diblokir di Supabase Auth.
+  await admin.auth.admin.updateUserById(source.id, { ban_duration: '876000h' })
+  const sourceName = sourceRow?.full_name || source.email
+  const targetName = target.full_name || target.email
+  await logActivity({ actorUserId: actor.id, action: 'USER_MERGED', entityType: 'user', entityId: source.id, metadata: { merged_into: target.id, target_name: targetName, moved } })
+  await logActivity({ actorUserId: actor.id, action: 'USER_MERGED', entityType: 'user', entityId: target.id, metadata: { merged_from: source.id, source_name: sourceName, moved } })
+  revalidatePath('/users')
+  revalidatePath(`/users/${target.id}`)
+  redirect(`/users/${target.id}`)
 }

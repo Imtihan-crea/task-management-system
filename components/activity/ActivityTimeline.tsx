@@ -72,6 +72,8 @@ export function describeActivity(entry: Pick<ActivityEntry, 'action' | 'metadata
       return 'User dinonaktifkan'
     case 'USER_DELETED':
       return 'Akun dihapus (riwayat tetap)'
+    case 'USER_MERGED':
+      return m.merged_into ? `Akun digabung ke ${str(m.target_name)}` : `Akun ${str(m.source_name)} digabung ke akun ini`
     case 'ROLE_CHANGED':
       return `Role diubah ${str(m.old_role)} → ${str(m.new_role)}`
     case 'REFERENCE_ADDED':

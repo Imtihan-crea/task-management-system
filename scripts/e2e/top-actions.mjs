@@ -1,5 +1,5 @@
 // Uji tindakan petinggi (16 Nov 2026): set password, ganti email, hapus akun.
-// 20 Nov 2026: keluarkan dari semua perangkat (tombol + otomatis saat set password).
+// 20 Nov 2026: keluarkan dari semua perangkat (tombol + otomatis saat set password), gabung akun.
 // Semua data berawalan "UJI-E2E"; server WAJIB tanpa BREVO (guard di lib.mjs).
 // Developer uji (ADMIN + is_developer) melakukan ketiganya lewat klik di /users/[id];
 // Admin uji biasa tidak melihat bagian "Tindakan Super Admin". Rahasia tidak dicetak.
@@ -106,6 +106,35 @@ try {
     await p3.waitForTimeout(4000)
     check('hapus: akun tidak bisa login', !/dashboard|change-password/.test(p3.url()))
     await c3.close()
+  }
+
+  // 5. Gabung akun (20 Nov 2026): data sumber pindah, wewenang kembar tidak dobel, sumber hilang.
+  {
+    const lama = await makeUser(db, 'lama', 'TEAM_MEMBER', `${P} Orang Sama Lama`)
+    const baru = await makeUser(db, 'baru', 'TEAM_MEMBER', `${P} Orang Sama Baru`)
+    await db.from('profiles').update({ division: 'HR', tracker_required: true }).eq('id', lama.id)
+    await db.from('notifications').insert([1, 2].map((i) => ({ user_id: lama.id, type: 'TRACKER_REMINDER', title: `${P} notif ${i}`, message: 'uji', entity_type: 'tracker', entity_id: 'x' })))
+    await db.from('user_permissions').insert([
+      { user_id: lama.id, permission: 'hr.view', project_id: null, granted: true },
+      { user_id: baru.id, permission: 'hr.view', project_id: null, granted: true },
+      { user_id: lama.id, permission: 'leave.approve', project_id: null, granted: true },
+    ])
+    await page.goto(`${BASE}/users/${lama.id}`, { waitUntil: 'networkidle' })
+    await page.selectOption('#merge_target', baru.id)
+    await page.getByRole('button', { name: 'Gabung akun', exact: true }).click()
+    check('gabung: diarahkan ke akun tujuan', await page.waitForURL(new RegExp(`/users/${baru.id}`), { timeout: 15000 }).then(() => true, () => false), page.url())
+    const notif = (await db.from('notifications').select('user_id').like('title', `${P} notif%`)).data ?? []
+    check('gabung: notifikasi pindah ke akun tujuan', notif.length === 2 && notif.every((n) => n.user_id === baru.id), JSON.stringify(notif))
+    const perms = ((await db.from('user_permissions').select('permission').eq('user_id', baru.id)).data ?? []).map((p) => p.permission).sort()
+    check('gabung: wewenang digabung tanpa kembar', JSON.stringify(perms) === JSON.stringify(['hr.view', 'leave.approve']), JSON.stringify(perms))
+    const dst = await db.from('profiles').select('division, tracker_required').eq('id', baru.id).single()
+    check('gabung: data karyawan kosong diisi dari akun lama', dst.data?.division === 'HR' && dst.data?.tracker_required === true, JSON.stringify(dst.data))
+    const src = await profile(lama.id)
+    check('gabung: akun lama terhapus', Boolean(src?.deleted_at) && src?.status === 'INACTIVE')
+    const { data: banned2 } = await db.auth.admin.getUserById(lama.id)
+    check('gabung: akun lama tidak bisa login', Boolean(banned2?.user?.banned_until))
+    await page.goto(`${BASE}/users`, { waitUntil: 'networkidle' })
+    check('gabung: hanya satu akun tampil di daftar', (await page.getByText(`${P} Orang Sama Lama`).count()) === 0 && (await page.getByText(`${P} Orang Sama Baru`).count()) >= 1)
   }
 
   // Developer tidak bisa menghapus dirinya (tombol tidak ada).

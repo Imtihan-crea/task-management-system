@@ -1,7 +1,7 @@
 'use client'
 
 import { useFormAction } from '@/lib/forms/use-form-action'
-import { changeUserEmail, deleteUserAccount, revokeUserSessions, setUserPassword } from '@/app/actions/users'
+import { changeUserEmail, deleteUserAccount, mergeUserAccount, revokeUserSessions, setUserPassword } from '@/app/actions/users'
 import { MIN_ADMIN_PASSWORD_LENGTH } from '@/lib/auth/password'
 
 type State = { error?: string; success?: string } | undefined
@@ -20,9 +20,12 @@ function Status({ state }: { state: State }) {
 export function TopActionForms({
   user,
   canDelete,
+  mergeTargets = [],
 }: {
   user: { id: string; email: string; full_name: string | null }
   canDelete: boolean
+  /** Akun lain yang bisa jadi tujuan gabung akun. */
+  mergeTargets?: { id: string; label: string }[]
 }) {
   const [pwState, pwAction, pwPending] = useFormAction(setUserPassword, INITIAL)
   const [emailState, emailAction, emailPending] = useFormAction(changeUserEmail, INITIAL)
@@ -31,6 +34,10 @@ export function TopActionForms({
     INITIAL,
     () => `Keluarkan ${user.full_name || user.email} dari semua perangkat? Pemilik akun perlu login lagi.`
   )
+  const [mergeState, mergeAction, mergePending] = useFormAction(mergeUserAccount, INITIAL, (fd) => {
+    const to = mergeTargets.find((t) => t.id === fd.get('target_id'))?.label ?? 'akun tujuan'
+    return `Gabung ${user.full_name || user.email} ke ${to}? Semua data pindah ke ${to}, lalu akun ini dihapus. Tidak bisa dibatalkan dari aplikasi.`
+  })
   const [delState, delAction, delPending] = useFormAction(
     deleteUserAccount,
     INITIAL,
@@ -82,6 +89,25 @@ export function TopActionForms({
         </button>
         <Status state={emailState} />
       </form>
+
+      {canDelete && mergeTargets.length > 0 && (
+        <form {...mergeAction} className="flex flex-col gap-2">
+          <input type="hidden" name="id" value={user.id} />
+          <label htmlFor="merge_target" className="text-sm font-medium">Gabung ke akun lain (satu orang punya dua akun)</label>
+          <select id="merge_target" name="target_id" required defaultValue="" className={FIELD}>
+            <option value="" disabled>Pilih akun tujuan</option>
+            {mergeTargets.map((t) => <option key={t.id} value={t.id}>{t.label}</option>)}
+          </select>
+          <p className="text-xs text-zinc-600 dark:text-zinc-400">
+            Semua data akun ini (task, Daily Tracker, cuti, meeting, notifikasi, wewenang) pindah ke akun tujuan.
+            Data karyawan tujuan yang kosong diisi dari akun ini. Akun ini lalu dihapus dan hanya tersisa satu akun.
+          </p>
+          <button type="submit" disabled={mergePending} className="min-h-[44px] rounded-lg border border-red-300 px-4 py-2 font-semibold text-red-600 disabled:opacity-50 dark:border-red-700 dark:text-red-300">
+            {mergePending ? 'Menggabung...' : 'Gabung akun'}
+          </button>
+          <Status state={mergeState} />
+        </form>
+      )}
 
       {canDelete && (
         <form {...delAction} className="flex flex-col gap-2">
