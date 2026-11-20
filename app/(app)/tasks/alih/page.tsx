@@ -8,7 +8,8 @@ import { PageHeader } from '@/components/ui/primitives'
 import { TransferCancelForm, TransferDecisionForm, TransferRequestForm } from '@/components/tasks/TransferForms'
 import { TransferCard, transferRange } from '@/components/tasks/TransferCard'
 import { transferLists, transferUsers, type TransferView } from '@/lib/data/task-transfers'
-import { TRANSFER_STATUS_LABEL, wibLocalToISO } from '@/lib/tasks/transfer-rules'
+import { TRANSFER_STATUS_LABEL, leaveTransferRange, tasksDueByLeaveEnd, wibLocalToISO } from '@/lib/tasks/transfer-rules'
+import { KIND_LABEL, type LeaveKind } from '@/lib/hr/leave'
 import { formatDate, formatDateTime } from '@/lib/utils/dates'
 
 const SECTION = 'mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900'
@@ -27,8 +28,9 @@ function label(t: TransferView) {
 
 /**
  * Alih task (backup saat cuti/sakit, 20 Nov 2026).
- * ?user=<id>&mulai=<YYYY-MM-DDTHH:MM>&selesai=...&cuti=<leave id>: isian awal
- * (dipakai dari persetujuan cuti). Tanpa ?user: task milik sendiri.
+ * ?cuti=<leave id>: isian dari cuti/sakit (orang, rentang, task yang deadline-nya
+ * sampai akhir cuti). ?user=<id>&mulai=&selesai=: isian manual PM. Tanpa ?user:
+ * task milik sendiri.
  */
 export default async function TaskTransfersPage({
   searchParams,
@@ -43,7 +45,20 @@ export default async function TaskTransfersPage({
     permissionProjects(profile.id, 'tasks.edit'),
   ])
   const isManager = scope.all || scope.include.length > 0
-  const targetId = isManager && sp.user ? sp.user : profile.id
+
+  // ?cuti=<id>: isian dari cuti/sakit (pemilik cuti sendiri, atau PM/Admin).
+  const { data: leave } = sp.cuti
+    ? await createAdminClient()
+        .from('leave_requests')
+        .select('id, user_id, kind, start_date, end_date, status')
+        .eq('id', sp.cuti)
+        .in('status', ['PENDING', 'APPROVED'])
+        .maybeSingle<{ id: string; user_id: string; kind: LeaveKind; start_date: string; end_date: string; status: string }>()
+    : { data: null }
+  const fromLeave = leave && (isManager || leave.user_id === profile.id) ? leave : null
+  const leaveRange = fromLeave ? leaveTransferRange(fromLeave) : null
+
+  const targetId = fromLeave ? fromLeave.user_id : isManager && sp.user ? sp.user : profile.id
   const targetName = users.find((u) => u.id === targetId)?.name ?? profile.full_name ?? profile.email
 
   // Task terbuka milik orang yang dialihkan (PM: hanya di project yang ia kelola).
@@ -59,9 +74,11 @@ export default async function TaskTransfersPage({
   const { data: taskRows } = await taskQuery
   const busy = new Set([...lists.manage, ...lists.mine].map((t) => t.task_id))
   const tasks = ((taskRows ?? []) as { id: string; code: string; title: string; deadline: string }[]).filter((t) => !busy.has(t.id))
-  // Isian awal rentang dari persetujuan cuti (Fase 3).
-  const mulai = wibLocalToISO(sp.mulai ?? '') ? sp.mulai! : ''
-  const selesai = wibLocalToISO(sp.selesai ?? '') ? sp.selesai! : ''
+  // Isian awal rentang: dari cuti, atau ?mulai/?selesai.
+  const mulai = leaveRange?.start ?? (wibLocalToISO(sp.mulai ?? '') ? sp.mulai! : '')
+  const selesai = leaveRange?.end ?? (wibLocalToISO(sp.selesai ?? '') ? sp.selesai! : '')
+  // Dari cuti: yang tercentang hanya task dengan deadline sampai hari terakhir cuti.
+  const checkedIds = fromLeave ? tasksDueByLeaveEnd(tasks, fromLeave.end_date).map((t) => t.id) : undefined
 
   const pending = lists.manage.filter((t) => t.status === 'PENDING' && t.requested_by !== profile.id)
   const expired = lists.manage.filter((t) => t.status === 'EXPIRED')
@@ -104,7 +121,13 @@ export default async function TaskTransfersPage({
           {isManager ? 'Alihkan task' : 'Ajukan alih task saya'}
           {targetId !== profile.id ? `: ${targetName}` : ''}
         </h2>
-        {isManager && (
+        {fromLeave && (
+          <p className="mb-3 text-sm text-zinc-600 dark:text-zinc-400">
+            Untuk {KIND_LABEL[fromLeave.kind]} {formatDate(fromLeave.start_date)} – {formatDate(fromLeave.end_date)}
+            {fromLeave.status === 'PENDING' ? ' (masih menunggu persetujuan)' : ''}. Task dengan deadline sampai hari terakhir cuti sudah dicentang.
+          </p>
+        )}
+        {isManager && !fromLeave && (
           <form className="mb-3 flex flex-wrap items-end gap-2">
             <div>
               <label htmlFor="pick_user" className="mb-1 block text-sm font-medium">
@@ -132,7 +155,8 @@ export default async function TaskTransfersPage({
             byManager={isManager}
             defaultStart={mulai}
             defaultEnd={selesai}
-            leaveRequestId={sp.cuti}
+            leaveRequestId={fromLeave?.id}
+            checkedIds={checkedIds}
           />
         )}
       </section>

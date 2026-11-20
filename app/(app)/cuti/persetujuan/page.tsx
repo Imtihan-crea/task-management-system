@@ -1,6 +1,7 @@
 import { redirect } from 'next/navigation'
 import { requireProfile } from '@/lib/auth/session'
-import { canApproveLeave } from '@/lib/auth/current-access'
+import { canApproveLeave, permissionProjects } from '@/lib/auth/current-access'
+import Link from 'next/link'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { ExportLink } from '@/components/export/ExportLink'
 import { AppShell } from '@/components/layout/AppShell'
@@ -24,13 +25,22 @@ export default async function LeaveApprovalPage({ searchParams }: { searchParams
   const month = /^\d{4}-(0[1-9]|1[0-2])$/.test(sp.bulan ?? '') ? sp.bulan! : today.slice(0, 7)
   const [from, to] = monthRange(month)
 
-  const [pending, monthRows, yearRows, calendar, peopleRes] = await Promise.all([
+  const [pending, monthRows, yearRows, calendar, peopleRes, taskScope] = await Promise.all([
     loadLeave({ from: '2000-01-01', to: '2100-12-31', statuses: ['PENDING'] }),
     loadLeave({ from, to }),
     loadLeave({ from: `${year}-01-01`, to: `${year}-12-31`, statuses: ['APPROVED', 'PENDING'] }),
     loadCalendar(`${year}-01-01`, `${year}-12-31`),
     createAdminClient().from('profiles').select('id, full_name, email, annual_leave_quota, tracker_required, status').is('deleted_at', null).order('full_name'),
+    permissionProjects(profile.id, 'tasks.edit'),
   ])
+  // Alih task selama cuti: hanya untuk yang bisa mengalihkan task (PM/Admin).
+  const canTransfer = taskScope.all || taskScope.include.length > 0
+  const transferLink = (l: { id: string; status: string; end_date: string; user_id: string }) =>
+    canTransfer && l.status === 'APPROVED' && l.end_date >= today && l.user_id !== profile.id ? (
+      <Link href={`/tasks/alih?cuti=${l.id}`} className="inline-flex min-h-[44px] items-center text-sm font-semibold underline">
+        Alih task
+      </Link>
+    ) : null
   type Person = { id: string; full_name: string | null; email: string; annual_leave_quota: number | null; tracker_required: boolean; status: string }
   const people = (peopleRes.data ?? []) as Person[]
   const name = new Map(people.map((p) => [p.id, p.full_name || p.email]))
@@ -61,7 +71,18 @@ export default async function LeaveApprovalPage({ searchParams }: { searchParams
             <button type="submit" className="min-h-[44px] rounded-lg border px-3 py-2 text-sm font-semibold dark:border-zinc-700">Tampilkan</button>
           </form>
         </div>
-        <LeaveTable rows={monthRows} person={person} actions={(l) => (l.status === 'APPROVED' && l.user_id !== profile.id ? <DecideLeaveForm id={l.id} mode="approved" /> : null)} />
+        <LeaveTable
+          rows={monthRows}
+          person={person}
+          actions={(l) =>
+            l.status === 'APPROVED' && l.user_id !== profile.id ? (
+              <div className="flex flex-col gap-1">
+                <DecideLeaveForm id={l.id} mode="approved" />
+                {transferLink(l)}
+              </div>
+            ) : null
+          }
+        />
       </section>
 
       <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">

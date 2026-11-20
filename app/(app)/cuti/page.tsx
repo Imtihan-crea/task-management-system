@@ -51,7 +51,19 @@ export default async function LeavePage() {
       </section>
       <section className="mt-6 rounded-2xl bg-white p-5 shadow dark:bg-zinc-900">
         <h2 className="mb-3 text-lg font-bold">Pengajuan saya</h2>
-        <LeaveTable rows={rows} actions={(l) => (l.status === 'PENDING' ? <CancelOwnLeaveButton id={l.id} /> : null)} />
+        <LeaveTable
+          rows={rows}
+          actions={(l) => (
+            <div className="flex flex-col gap-1">
+              {l.status === 'PENDING' && <CancelOwnLeaveButton id={l.id} />}
+              {(l.status === 'PENDING' || l.status === 'APPROVED') && l.end_date >= today && (
+                <Link href={`/tasks/alih?cuti=${l.id}`} className="inline-flex min-h-[44px] items-center text-sm font-semibold underline">
+                  Alih task selama cuti
+                </Link>
+              )}
+            </div>
+          )}
+        />
       </section>
       <LeaveGuide />
     </AppShell>

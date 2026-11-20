@@ -43,14 +43,19 @@ export function CheckList({
   name,
   items,
   initiallyChecked = true,
+  initialIds,
   label,
 }: {
   name: string
   items: { id: string; label: ReactNode }[]
   initiallyChecked?: boolean
+  /** Bila diisi: hanya id ini yang tercentang di awal. */
+  initialIds?: string[]
   label: string
 }) {
-  const [checked, setChecked] = useState<Set<string>>(() => new Set(initiallyChecked ? items.map((i) => i.id) : []))
+  const [checked, setChecked] = useState<Set<string>>(
+    () => new Set(initialIds ?? (initiallyChecked ? items.map((i) => i.id) : []))
+  )
   const allRef = useRef<HTMLInputElement>(null)
   const all = items.length > 0 && checked.size === items.length
   useEffect(() => {
@@ -107,6 +112,7 @@ export function TransferRequestForm({
   defaultStart = '',
   defaultEnd = '',
   leaveRequestId,
+  checkedIds,
 }: {
   tasks: TransferTaskOption[]
   users: TransferUser[]
@@ -114,6 +120,8 @@ export function TransferRequestForm({
   defaultStart?: string
   defaultEnd?: string
   leaveRequestId?: string
+  /** Task yang tercentang di awal (mis. deadline di masa cuti); bawaan semua. */
+  checkedIds?: string[]
 }) {
   const [kind, setKind] = useState<'TEMPORARY' | 'PERMANENT'>('TEMPORARY')
   const [state, formAction, pending] = useFormAction(requestTransfer, INITIAL)
@@ -126,6 +134,7 @@ export function TransferRequestForm({
       ) : (
         <CheckList
           name="task_id"
+          initialIds={checkedIds}
           label="Task yang dialihkan"
           items={tasks.map((t) => ({
             id: t.id,

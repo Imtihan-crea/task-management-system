@@ -80,3 +80,16 @@ export function transferTick(
 export function statusAfterStart(kind: string): TransferStatus {
   return kind === 'PERMANENT' ? 'DONE' : 'ACTIVE'
 }
+
+/** Isian awal alih task dari cuti/sakit: seluruh hari pertama s/d akhir hari terakhir (WIB). */
+export function leaveTransferRange(leave: { start_date: string; end_date: string }): { start: string; end: string } {
+  return { start: `${leave.start_date}T00:00`, end: `${leave.end_date}T23:59` }
+}
+
+/**
+ * Task yang perlu dialihkan selama cuti: deadline sampai hari terakhir cuti
+ * (termasuk yang sudah lewat deadline, supaya tidak terbengkalai).
+ */
+export function tasksDueByLeaveEnd<T extends { deadline: string | null }>(tasks: T[], endDate: string): T[] {
+  return tasks.filter((t) => t.deadline !== null && t.deadline <= endDate)
+}

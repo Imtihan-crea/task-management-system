@@ -115,11 +115,11 @@ export function leaveRequestedBody(i: { baseUrl: string; name: string; kindLabel
 }
 
 /** Alih task (20 Nov 2026). `intro` = markup tepercaya (data di dalamnya sudah di-escape pemanggil). */
-export function taskTransferBody(i: { baseUrl: string; taskId: string; code: string; title: string; intro: string; rows?: Row[]; linkToList?: boolean }): string {
+export function taskTransferBody(i: { baseUrl: string; taskId: string; code: string; title: string; intro: string; rows?: Row[]; linkToList?: boolean; listQuery?: string }): string {
   return notice({
     introHtml: i.intro,
     rows: [{ text: `${i.code} ${i.title}` }, ...(i.rows ?? [])],
     linkLabel: i.linkToList ? 'Putuskan di sini' : 'Lihat task',
-    url: u(i.baseUrl, i.linkToList ? '/tasks/alih' : `/tasks/${i.taskId}`),
+    url: u(i.baseUrl, i.linkToList ? `/tasks/alih${i.listQuery ? `?${encodeURI(i.listQuery)}` : ''}` : `/tasks/${i.taskId}`),
   })
 }

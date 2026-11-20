@@ -9,6 +9,7 @@ import { emitNotification } from '@/lib/notifications/service'
 import { readLimitedField } from '@/lib/forms/limits'
 import { getAppBaseUrl } from '@/lib/app-url'
 import { leaveDecisionBody, leaveRequestedBody } from '@/lib/email/templates'
+import { cancelLeaveTransfers, notifyLeaveTransfers } from '@/lib/tasks/leave-transfers'
 import { loadCalendar, loadLeave } from '@/lib/hr/data'
 import { KIND_LABEL, kindError, leaveDays, overlappingLeave, rangeError, SPECIAL_LABEL, type LeaveKind } from '@/lib/hr/leave'
 
@@ -99,6 +100,7 @@ export async function cancelOwnLeave(_prev: LeaveFormState, formData: FormData):
     .select('id, kind, start_date, end_date')
     .maybeSingle<{ id: string; kind: LeaveKind; start_date: string; end_date: string }>()
   if (!data) return { error: 'Pengajuan tidak ditemukan atau sudah diputuskan.' }
+  await cancelLeaveTransfers(id, profile.id)
   await logActivity({ actorUserId: profile.id, action: 'LEAVE_CANCELLED', entityType: 'leave', entityId: id, metadata: { ...data, kind_label: KIND_LABEL[data.kind] } })
   done()
   return { success: 'Pengajuan dibatalkan.' }
@@ -140,6 +142,13 @@ export async function decideLeave(_prev: LeaveFormState, formData: FormData): Pr
 
   const label = KIND_LABEL[req.kind]
   const meta = { kind: req.kind, kind_label: label, start_date: req.start_date, end_date: req.end_date, note }
+  // Alih task (20 Nov 2026): disetujui -> PM diminta mencarikan pengganti; batal/tolak -> alih task terkait dibatalkan.
+  if (to === 'APPROVED') {
+    const { data: who } = await admin.from('profiles').select('full_name, email').eq('id', req.user_id).single<{ full_name: string | null; email: string }>()
+    await notifyLeaveTransfers(req, who ? who.full_name || who.email : '-', label)
+  } else {
+    await cancelLeaveTransfers(req.id, profile.id)
+  }
   await logActivity({
     actorUserId: profile.id,
     action: to === 'APPROVED' ? 'LEAVE_APPROVED' : to === 'REJECTED' ? 'LEAVE_REJECTED' : 'LEAVE_CANCELLED',

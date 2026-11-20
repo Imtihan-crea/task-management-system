@@ -29,6 +29,7 @@ const cases: Record<string, string> = {
   'task-review-dikembalikan': t.taskReviewBody({ ...common, taskId: id, returned: true, actorName: EVIL, note: EVIL }),
   'alih-task-diajukan': t.taskTransferBody({ ...common, taskId: id, intro: 'Budi mengajukan alih task dan <strong>menunggu persetujuan Anda</strong>:', rows: [{ label: 'Catatan', text: EVIL }], linkToList: true }),
   'alih-task-ditolak': t.taskTransferBody({ ...common, taskId: id, intro: 'Pengajuan alih task Anda <strong>ditolak</strong>.', rows: [] }),
+  'alih-task-dari-cuti': t.taskTransferBody({ ...common, taskId: id, intro: 'Budi cuti sakit <strong>2026-11-21 s/d 2026-11-23</strong>. Task berikut perlu dialihkan sementara:', linkToList: true, listQuery: `cuti=${id}` }),
   'cuti-diajukan': t.leaveRequestedBody({ baseUrl: base, name: EVIL, kindLabel: 'Cuti Sakit', start: '2026-11-21', end: '2026-11-23', days: 2 }),
   'project-pm': t.projectAssignedBody({ baseUrl: base, projectId: id, code: '001', name: EVIL }),
   'meeting-undangan': t.meetingInvitationBody({ baseUrl: base, meetingId: id, code: 'M-009', title: EVIL, projectLabel: EVIL }),
@@ -56,7 +57,7 @@ const cases: Record<string, string> = {
 
 // Subject diambil dari kode sumber (template literal `subject: ...`).
 const repo = path.resolve(import.meta.dirname, '..')
-const subjectFiles = ['app/actions/tasks.ts', 'app/actions/projects.ts', 'app/actions/meetings.ts', 'app/actions/suggestions.ts', 'app/actions/leave.ts', 'app/actions/task-transfers.ts', 'lib/tasks/transfers.ts', 'app/api/cron/deadlines/route.ts', 'lib/meetings/scheduler.ts', 'lib/meetings/digest.ts', 'lib/notifications/task-assigned.ts', 'lib/monitoring/error-alert.ts']
+const subjectFiles = ['app/actions/tasks.ts', 'app/actions/projects.ts', 'app/actions/meetings.ts', 'app/actions/suggestions.ts', 'app/actions/leave.ts', 'app/actions/task-transfers.ts', 'lib/tasks/transfers.ts', 'lib/tasks/leave-transfers.ts', 'app/api/cron/deadlines/route.ts', 'lib/meetings/scheduler.ts', 'lib/meetings/digest.ts', 'lib/notifications/task-assigned.ts', 'lib/monitoring/error-alert.ts']
 const subjects: string[] = []
 for (const f of subjectFiles) {
   const src = fs.readFileSync(path.join(repo, f), 'utf8')

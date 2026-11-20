@@ -2,7 +2,7 @@
  * Uji lib/tasks/transfer-rules.ts — alih task permanen/sementara.
  * Jalankan: npm run test:task-transfer
  */
-import { isoToWibLocal, statusAfterStart, transferError, transferTick, wibLocalToISO } from '../lib/tasks/transfer-rules'
+import { isoToWibLocal, leaveTransferRange, statusAfterStart, tasksDueByLeaveEnd, transferError, transferTick, wibLocalToISO } from '../lib/tasks/transfer-rules'
 
 let ok = 0
 let gagal = 0
@@ -49,6 +49,18 @@ cek('menunggu PM tidak diproses', transferTick({ status: 'PENDING', starts_at: i
 cek('masa habis tidak diproses lagi', transferTick({ status: 'EXPIRED', starts_at: iso(-2), ends_at: iso(-1) }, now), null)
 cek('sesudah mulai: permanen selesai', statusAfterStart('PERMANENT'), 'DONE')
 cek('sesudah mulai: sementara berjalan', statusAfterStart('TEMPORARY'), 'ACTIVE')
+
+// Kaitan cuti (Fase 3)
+cek('rentang dari cuti', leaveTransferRange({ start_date: '2026-11-21', end_date: '2026-11-23' }), { start: '2026-11-21T00:00', end: '2026-11-23T23:59' })
+cek('rentang cuti valid untuk form', wibLocalToISO(leaveTransferRange({ start_date: '2026-11-21', end_date: '2026-11-21' }).end), '2026-11-21T16:59:00.000Z')
+const tugas = [
+  { id: 'lewat', deadline: '2026-11-10' },
+  { id: 'di-masa-cuti', deadline: '2026-11-22' },
+  { id: 'hari-terakhir', deadline: '2026-11-23' },
+  { id: 'sesudah', deadline: '2026-11-24' },
+  { id: 'tanpa', deadline: null },
+]
+cek('task sampai akhir cuti', tasksDueByLeaveEnd(tugas, '2026-11-23').map((t) => t.id), ['lewat', 'di-masa-cuti', 'hari-terakhir'])
 
 console.log(`LULUS: ${ok}`)
 console.log(`GAGAL: ${gagal}`)
