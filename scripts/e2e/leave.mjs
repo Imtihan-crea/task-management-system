@@ -54,7 +54,7 @@ try {
   await submit('TANPA_GAJI', thu)
   check('ajukan izin 1 hari', await until(async () => (await leaves(member.id)).length === 2))
   await m.goto(`${BASE}/cuti`, { waitUntil: 'networkidle' })
-  await m.getByRole('row').filter({ hasText: 'Izin' }).getByRole('button', { name: 'Batalkan' }).click()
+  await m.getByRole('row').filter({ hasText: 'Cuti di Luar Tanggungan' }).getByRole('button', { name: 'Batalkan' }).click()
   check('batalkan pengajuan sendiri', await until(async () => (await leaves(member.id)).some((l) => l.kind === 'TANPA_GAJI' && l.status === 'CANCELLED')))
   await m.goto(`${BASE}/cuti/persetujuan`, { waitUntil: 'networkidle' })
   check('karyawan tanpa izin: persetujuan ditolak', /dashboard/.test(m.url()))

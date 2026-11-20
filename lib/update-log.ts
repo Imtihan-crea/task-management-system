@@ -14,6 +14,21 @@ export type UpdateLogEntry = {
 
 export const UPDATE_LOG: UpdateLogEntry[] = [
   {
+    date: '2026-11-21',
+    title: 'Review PM, alih task, dan notifikasi lebih hemat',
+    added: [
+      'Task yang diserahkan consultant kini berstatus Menunggu Review PM. PM atau Admin project memilih Setujui (Done) atau Kembalikan ke Consultant dengan catatan. Selama menunggu review, consultant tidak bisa mengubah status, dan task tidak dihitung terlambat. PM yang menyerahkan task sendiri tetap langsung Done. Tab baru Menunggu Review di daftar Tasks.',
+      'Alih Task (menu Tasks, tombol Alih Task; juga di detail task): task bisa dialihkan ke consultant lain secara sementara (pilih tanggal dan jam mulai sampai selesai) atau permanen. Consultant mengajukan untuk task miliknya dan PM menyetujui atau menolak, satu atau banyak sekaligus; PM atau Admin bisa langsung mengalihkan. Saat masa sementara habis, PM ditanya untuk mengembalikan, membiarkan, atau memperpanjang; bila tidak dipilih, task tetap pada pemegang terakhir.',
+      'Alih task dari cuti dan sakit: saat cuti disetujui, PM mendapat pemberitahuan task orang itu yang deadline-nya jatuh di masa cuti, dengan tautan yang sudah terisi. Tautan Alih task juga ada di halaman Cuti dan Persetujuan Cuti.',
+      'Master Reference: daftar baru Durasi alih task (4 jam sampai 3 bulan) sebagai pilihan cepat di form; durasi terpanjang menjadi batas pengajuan consultant.',
+      'Email pagi dan email sore memuat bagian Menunggu Persetujuan Anda (review task, usulan, cuti, alih task); email sore juga mengingatkan Daily Tracker yang belum diisi. Pengingat Daily Tracker di aplikasi dua kali, pukul 15.00 dan 17.00.',
+      'Pengajuan cuti baru kini juga dikirim lewat email ke penyetuju.',
+    ],
+    removed: [
+      'Email per kejadian untuk hal rutin dihentikan: task terlambat, jatuh tempo hari ini, task selesai, usulan task, dan notulen meeting. Semuanya tetap muncul di lonceng notifikasi dan dirangkum di email pagi/sore.',
+    ],
+  },
+  {
     date: '2026-11-17',
     title: 'Cuti, izin & sakit',
     added: [
