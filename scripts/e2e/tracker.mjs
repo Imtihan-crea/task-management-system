@@ -169,8 +169,14 @@ try {
   const row = dp.getByRole('row').filter({ hasText: `${P} Karyawan Tracker` })
   check('rekap: baris karyawan 4 jam', (await row.getByRole('cell', { name: '4', exact: true }).count()) >= 1, await row.innerText().catch(() => ''))
   await row.getByRole('link').click()
+  await dp.getByRole('heading', { name: `Rincian ${P} Karyawan Tracker` }).waitFor({ timeout: 10000 }).catch(() => {})
   check('rekap: rincian proyek internal', await dp.getByRole('cell', { name: 'Manajemen Perusahaan', exact: true }).first().waitFor({ timeout: 10000 }).then(() => true, () => false))
   check('rekap: kategori teks bebas tampil tanpa tanda', (await dp.getByRole('cell', { name: FREE_CAT, exact: true }).count()) >= 1 && (await dp.getByText('(teks bebas)').count()) === 0)
+  // PM View sementara (20 Nov 2026): rekap difilter per proyek, seperti sheet "Month Track 2026 - PM View".
+  await dp.goto(`${BASE}/tracker/rekap?bulan=${today.slice(0, 7)}&proyek=${encodeURIComponent('Manajemen Perusahaan')}`, { waitUntil: 'networkidle' })
+  check('PM View: judul proyek tampil', (await dp.getByRole('heading', { name: 'PM View: Manajemen Perusahaan' }).count()) === 1)
+  check('PM View: karyawan uji tercantum dengan aktivitasnya', (await dp.getByText(`${P} Aktivitas 2`).count()) >= 1)
+  check('PM View: aktivitas proyek lain tidak ikut', (await dp.getByText(`${P} Aktivitas 1`).count()) === 0)
 
   await dp.goto(`${BASE}/master-reference`, { waitUntil: 'networkidle' })
   // Tambah pilihan
