@@ -181,8 +181,8 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
           <KpiCard label="Hari aktif" value={`${periodSum.activeDays} / ${periodBasis.workdays.length}`} />
           <KpiCard label="Aktivitas" value={String(periodSum.activities)} />
         </div>
-        <div className="mt-4 grid gap-6 lg:grid-cols-3">
-          <BreakdownTable title="Jam per klien" keyLabel="Klien" rows={breakdown(periodLogs, 'client')} />
+        {/* Tanpa "Jam per klien": sheet tidak punya, dan klien project menu Project berisi nama kontak (masukan HR 20 Nov 2026). */}
+        <div className="mt-4 grid gap-6 lg:grid-cols-2">
           <BreakdownTable title="Jam per proyek" keyLabel="Proyek" rows={breakdown(periodLogs, 'project_name')} />
           <BreakdownTable title="Jam per kategori" keyLabel="Kategori" rows={breakdown(periodLogs, 'category')} />
         </div>

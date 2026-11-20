@@ -24,7 +24,7 @@ const breakdownColumns = (keyLabel: string): ExcelColumn<PersonBreakdown>[] => [
   { header: '% dari Jam Orang Ini', width: 12, format: '0.00', value: (r) => r.percent },
 ]
 
-/** Rekap Daily Tracker -> Excel untuk periode terpilih (Monthly Summary, Daily Data, Jam per Proyek, Jam per Klien, Jam per Kategori). Izin hr.view. */
+/** Rekap Daily Tracker -> Excel untuk periode terpilih (Monthly Summary, Daily Data, Jam per Proyek, Jam per Kategori). Izin hr.view. */
 export async function GET(request: NextRequest) {
   const viewer = await requirePermission('hr.view')
   const sp = request.nextUrl.searchParams
@@ -56,7 +56,6 @@ export async function GET(request: NextRequest) {
     { name: 'Monthly Summary', title: title('MONTHLY SUMMARY'), info, columns: summaryColumns, rows },
     { name: 'Daily Data', title: title('DAILY DATA'), info, columns: dailyDataColumns((id) => divisionOf.get(id) ?? null), rows: activities },
     { name: 'Jam per Proyek', title: title('JAM PER PROYEK'), info, columns: breakdownColumns('Proyek'), rows: perPerson('project_name') },
-    { name: 'Jam per Klien', title: title('JAM PER KLIEN'), info, columns: breakdownColumns('Klien'), rows: perPerson('client') },
     { name: 'Jam per Kategori', title: title('JAM PER KATEGORI'), info, columns: breakdownColumns('Kategori Aktifitas'), rows: perPerson('category') },
   ])
 }

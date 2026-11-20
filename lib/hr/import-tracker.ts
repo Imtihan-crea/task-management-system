@@ -62,7 +62,26 @@ export function parseClock(v: Cell): string | null {
   return `${String(Math.floor(minutes / 60)).padStart(2, '0')}:${String(minutes % 60).padStart(2, '0')}`
 }
 
-export type ImportUser = { id: string; full_name: string | null }
+export type ImportUser = { id: string; full_name: string | null; status?: string }
+
+/**
+ * Cocokkan nama sheet ke profil (masukan HR 20 Nov 2026). Urutan: nama persis (bila
+ * kembar, akun ACTIVE yang menang); lalu nama sheet yang semua katanya ada di nama
+ * profil aktif ("Alghifari" -> "Alghifari Maulana"). Hanya bila tepat satu calon.
+ */
+export function matchUser(users: ImportUser[], name: string): string | null {
+  const one = (hit: ImportUser[]) => {
+    if (hit.length === 1) return hit[0].id
+    const active = hit.filter((u) => u.status === 'ACTIVE')
+    return active.length === 1 ? active[0].id : null
+  }
+  const exact = one(users.filter((u) => u.full_name && sameText(u.full_name, name)))
+  if (exact) return exact
+  const words = (s: string) => normalizeText(s).toLocaleLowerCase('id-ID').split(' ')
+  const want = words(name)
+  const hit = users.filter((u) => u.status === 'ACTIVE' && u.full_name && want.every((w) => words(u.full_name!).includes(w)))
+  return hit.length === 1 ? hit[0].id : null
+}
 export type ImportProject = { id: string; name: string }
 
 export type ImportLog = {
@@ -129,10 +148,7 @@ export function buildImport(sheets: SheetInput[], ctx: ImportContext): ImportBui
   const locRefs = refsOf('WORK_LOCATION')
   const projRefs = refsOf('INTERNAL_PROJECT')
 
-  const findUser = (name: string): string | null => {
-    const hit = ctx.users.filter((u) => u.full_name && sameText(u.full_name, name))
-    return hit.length === 1 ? hit[0].id : null
-  }
+  const findUser = (name: string): string | null => matchUser(ctx.users, name)
 
   for (const { data } of used) {
     for (const r of data.slice(1)) {
@@ -304,8 +320,8 @@ export function buildLeaveImport(sheets: SheetInput[], ctx: Pick<ImportContext, 
   const data = sheets.find((s) => normalizeText(s.sheet).toLowerCase() === 'leave form')?.data ?? []
   const unknown = new Map<string, string>()
   const findUser = (name: string) => {
-    const hit = ctx.users.filter((u) => u.full_name && sameText(u.full_name, name))
-    if (hit.length === 1) return hit[0].id
+    const id = matchUser(ctx.users, name)
+    if (id) return id
     unknown.set(name.toLocaleLowerCase('id-ID'), name)
     return null
   }
