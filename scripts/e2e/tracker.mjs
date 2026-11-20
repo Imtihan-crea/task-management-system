@@ -75,7 +75,13 @@ try {
   check('isi: saran jam mulai terbarui tanpa muat ulang', await until(async () => (await page.inputValue('#start_time')) === '10:00'), await page.inputValue('#start_time'))
   const a = (await logs(member.id))[0]
   check('isi: tertaut project TMS + kategori + lokasi master', a && a.project_id === proj.id && a.category_ref && a.location_ref, JSON.stringify(a))
-
+  // Pilihan Proyek hanya dari Master Reference (20 Nov 2026): project TMS tidak muncul, tapi nama yang diketik tetap tertaut.
+  await page.goto(`${BASE}/tracker?tanggal=${today}`, { waitUntil: 'networkidle' })
+  await page.fill('#project', 'Manajemen')
+  check('pilihan proyek memuat Master Reference', await page.getByRole('option', { name: 'Manajemen Perusahaan', exact: true }).waitFor({ timeout: 5000 }).then(() => true, () => false))
+  await page.fill('#project', `${P} Proyek`)
+  check('pilihan proyek tidak memuat project TMS', (await page.getByRole('option', { name: `${P} Proyek Tracker` }).count()) === 0)
+  
   // 2. Saran jam mulai; proyek internal (beda huruf) + kategori teks bebas + output kosong
   await page.goto(`${BASE}/tracker?tanggal=${today}`, { waitUntil: 'networkidle' })
   check('saran jam mulai 10:00', (await page.inputValue('#start_time')) === '10:00', await page.inputValue('#start_time'))

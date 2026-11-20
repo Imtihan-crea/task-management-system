@@ -27,7 +27,7 @@ export default async function ImportTrackerPage() {
         <ul className="mt-2 list-disc pl-5 text-zinc-600 dark:text-zinc-400">
           <li>Nama dicocokkan dengan nama di profil user. Bila ada nama yang tidak cocok, tidak ada yang disimpan dan daftar namanya ditampilkan.</li>
           <li>
-            Proyek dicocokkan ke project TMS, lalu ke Proyek internal di Master Reference; bila tidak ada, ditulis
+            Proyek dicocokkan ke project TMS, lalu ke daftar Proyek di Master Reference; bila tidak ada, ditulis
             apa adanya sebagai teks bebas. Kategori dan Lokasi dicocokkan ke Master Reference dengan cara yang sama.
           </li>
           <li>

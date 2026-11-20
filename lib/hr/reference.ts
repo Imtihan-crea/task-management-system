@@ -12,7 +12,7 @@ export type ReferenceList = 'ACTIVITY_CATEGORY' | 'WORK_LOCATION' | 'DIVISION' |
 export const REFERENCE_LISTS: { list: ReferenceList; title: string; hint: string; freeText: boolean }[] = [
   { list: 'ACTIVITY_CATEGORY', title: 'Kategori aktivitas', hint: 'Pilihan kategori di Daily Tracker.', freeText: true },
   { list: 'WORK_LOCATION', title: 'Lokasi kerja', hint: 'Pilihan lokasi di Daily Tracker.', freeText: true },
-  { list: 'INTERNAL_PROJECT', title: 'Proyek internal', hint: 'Pekerjaan di luar project TMS (mis. urusan kantor, calon klien); tampil di pilihan proyek Daily Tracker.', freeText: true },
+  { list: 'INTERNAL_PROJECT', title: 'Proyek', hint: 'Daftar pilihan Proyek di Daily Tracker (proyek klien, calon klien, dan urusan kantor). Nama yang sama persis dengan project TMS ikut tertaut ke project itu.', freeText: true },
   { list: 'DIVISION', title: 'Divisi', hint: 'Divisi karyawan di profil.', freeText: false },
   { list: 'POSITION', title: 'Jabatan', hint: 'Jabatan karyawan di profil.', freeText: false },
 ]

@@ -6,7 +6,7 @@ import { ExportLink } from '@/components/export/ExportLink'
 import { AppShell } from '@/components/layout/AppShell'
 import { KpiCard, PageHeader } from '@/components/ui/primitives'
 import { WorkLogForm, DeleteWorkLogButton, type WorkLogValues } from '@/components/tracker/WorkLogForm'
-import { loadComments, loadLeave, loadLogs, loadMonthBasis, loadPeriodBasis, loadReferences, loadRules, loadTrackerProjects } from '@/lib/hr/data'
+import { loadComments, loadLeave, loadLogs, loadMonthBasis, loadPeriodBasis, loadReferences, loadRules } from '@/lib/hr/data'
 import { parsePeriod, periodSummary } from '@/lib/hr/period'
 import { BreakdownTable } from '@/components/tracker/BreakdownTable'
 import { PeriodFilter } from '@/components/tracker/PeriodFilter'
@@ -43,9 +43,8 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
   const to = addDays(wFrom, 6) > monthTo ? addDays(wFrom, 6) : monthTo
 
   const { period, error: periodError } = parsePeriod(sp, today)
-  const [rules, projects, refs, basis, logsRes, canRekap, periodLogs, periodBasis, periodLeave] = await Promise.all([
+  const [rules, refs, basis, logsRes, canRekap, periodLogs, periodBasis, periodLeave] = await Promise.all([
     loadRules(date),
-    loadTrackerProjects(),
     loadReferences(['ACTIVITY_CATEGORY', 'WORK_LOCATION', 'INTERNAL_PROJECT']),
     loadMonthBasis(month),
     createAdminClient()
@@ -114,7 +113,9 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
           // Saran jam mulai baru tetap masuk lewat reset() ke defaultValue terbaru.
           key={`${date}-${editing?.id ?? 'baru'}`}
           date={date}
-          projects={[...projects.map((p) => p.name), ...active('INTERNAL_PROJECT')]}
+          // Pilihan Proyek hanya dari Master Reference (masukan HR 20 Nov 2026); nama yang sama
+          // dengan project TMS tetap tertaut ke project itu saat disimpan (app/actions/tracker.ts).
+          projects={active('INTERNAL_PROJECT')}
           categories={active('ACTIVITY_CATEGORY')}
           locations={active('WORK_LOCATION')}
           suggestedStart={suggestStart(dayLogs.map((l) => ({ start: l.start_time, end: l.end_time })))}
