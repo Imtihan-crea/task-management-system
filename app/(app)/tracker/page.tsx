@@ -6,7 +6,7 @@ import { ExportLink } from '@/components/export/ExportLink'
 import { AppShell } from '@/components/layout/AppShell'
 import { ButtonLink, KpiCard, PageHeader } from '@/components/ui/primitives'
 import { WorkLogForm, DeleteWorkLogButton, type WorkLogValues } from '@/components/tracker/WorkLogForm'
-import { FREE_TEXT_MARK, loadComments, loadLeave, loadLeaveTypes, loadLogs, loadMonthBasis, loadPeriodBasis, loadReferences, loadRules, loadTrackerProjects } from '@/lib/hr/data'
+import { loadComments, loadLeave, loadLeaveTypes, loadLogs, loadMonthBasis, loadPeriodBasis, loadReferences, loadRules } from '@/lib/hr/data'
 import { parsePeriod, periodSummary } from '@/lib/hr/period'
 import { BreakdownTable } from '@/components/tracker/BreakdownTable'
 import { PeriodFilter } from '@/components/tracker/PeriodFilter'
@@ -29,9 +29,7 @@ type DbRow = Omit<WorkLogValues, 'project'> & {
   location_ref: string | null
   duration_minutes: number
 }
-type Row = DbRow & WorkLogValues & { free: string[] }
-
-const FreeMark = () => <span className="text-xs text-zinc-600 dark:text-zinc-400">{FREE_TEXT_MARK}</span>
+type Row = DbRow & WorkLogValues
 
 const hours = (min: number) => (min / 60).toLocaleString('id-ID', { maximumFractionDigits: 2 })
 
@@ -47,9 +45,8 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
   const to = addDays(wFrom, 6) > monthTo ? addDays(wFrom, 6) : monthTo
 
   const { period, error: periodError } = parsePeriod(sp, today)
-  const [rules, projects, refs, basis, logsRes, canRekap, periodLogs, periodBasis, periodLeave, leaveTypes] = await Promise.all([
+  const [rules, refs, basis, logsRes, canRekap, periodLogs, periodBasis, periodLeave, leaveTypes, ownProfile] = await Promise.all([
     loadRules(date),
-    loadTrackerProjects(),
     loadReferences(['ACTIVITY_CATEGORY', 'WORK_LOCATION', 'INTERNAL_PROJECT']),
     loadMonthBasis(month),
     createAdminClient()
@@ -64,21 +61,17 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
     loadPeriodBasis(period.from, period.to, period.month),
     loadLeave({ from: period.from, to: period.to, userId: profile.id, statuses: ['APPROVED'] }),
     loadLeaveTypes(),
+    createAdminClient().from('profiles').select('division').eq('id', profile.id).maybeSingle(),
   ])
   const periodOwnLeave = leaveDaysIn(periodLeave as LeaveRow[], period.from, period.to, periodBasis.calendar)
   const periodSum = periodSummary(period, periodLogs, periodBasis.workdays.length, rules, periodBasis.lockedTarget, paidLeaveDays(periodOwnLeave, leaveTypes))
-  // Tampilkan label master terkini bila tertaut; teks bebas apa adanya (ditandai).
+  // Tampilkan label master terkini bila tertaut; teks bebas apa adanya.
   const label = new Map(refs.map((r) => [r.id, r.label]))
   const logs: Row[] = ((logsRes.data ?? []) as DbRow[]).map((l) => {
     const project = l.project_id ? l.project_name : l.internal_project_ref ? label.get(l.internal_project_ref) ?? l.project_name : l.project_name
     const category = l.category_ref ? label.get(l.category_ref) ?? l.category : l.category
     const location = l.location_ref ? label.get(l.location_ref) ?? l.location : l.location
-    const free = [
-      !l.project_id && !l.internal_project_ref ? 'project' : '',
-      !l.category_ref ? 'category' : '',
-      !l.location_ref ? 'location' : '',
-    ].filter(Boolean)
-    return { ...l, project, category, location, free }
+    return { ...l, project, category, location }
   })
   const active = (list: string) => refs.filter((r) => r.list === list && !r.archived_at).map((r) => r.label)
   const dayLogs = logs.filter((l) => l.work_date === date)
@@ -124,7 +117,11 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
           // Saran jam mulai baru tetap masuk lewat reset() ke defaultValue terbaru.
           key={`${date}-${editing?.id ?? 'baru'}`}
           date={date}
-          projects={[...projects.map((p) => p.name), ...active('INTERNAL_PROJECT')]}
+          name={profile.full_name ?? profile.email}
+          division={(ownProfile.data as { division: string | null } | null)?.division ?? null}
+          // Pilihan Proyek hanya dari Master Reference (masukan HR 20 Nov 2026); nama yang sama
+          // dengan project TMS tetap tertaut ke project itu saat disimpan (app/actions/tracker.ts).
+          projects={active('INTERNAL_PROJECT')}
           categories={active('ACTIVITY_CATEGORY')}
           locations={active('WORK_LOCATION')}
           suggestedStart={suggestStart(dayLogs.map((l) => ({ start: l.start_time, end: l.end_time })))}
@@ -155,9 +152,9 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
                   <th className="py-2 pr-3">Jam</th>
                   <th className="py-2 pr-3">Proyek</th>
                   <th className="py-2 pr-3">Aktivitas</th>
-                  <th className="py-2 pr-3">Kategori</th>
                   <th className="py-2 pr-3">Lokasi</th>
-                  <th className="py-2 pr-3">Output</th>
+                  <th className="py-2 pr-3">Kategori Aktivitas</th>
+                  <th className="py-2 pr-3">Output/Deliverables</th>
                   <th className="py-2"><span className="sr-only">Tindakan</span></th>
                 </tr>
               </thead>
@@ -166,10 +163,10 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
                   <tr key={l.id} className="border-b align-top last:border-0">
                     <td className="py-0"><BulkCheckbox id={l.id} label={`${l.start_time.slice(0, 5)} ${l.activity}`} /></td>
                     <td className="py-2 pr-3 whitespace-nowrap">{l.start_time.slice(0, 5)}–{l.end_time.slice(0, 5)} ({hours(l.duration_minutes)} j)</td>
-                    <td className="py-2 pr-3">{l.project}{l.free.includes('project') && <FreeMark />}</td>
+                    <td className="py-2 pr-3">{l.project}</td>
                     <td className="py-2 pr-3">{l.activity}<CommentThread comments={comments.get(l.id) ?? []} /></td>
-                    <td className="py-2 pr-3">{l.category}{l.free.includes('category') && <FreeMark />}</td>
-                    <td className="py-2 pr-3">{l.location}{l.free.includes('location') && <FreeMark />}</td>
+                    <td className="py-2 pr-3">{l.location}</td>
+                    <td className="py-2 pr-3">{l.category}</td>
                     <td className="py-2 pr-3">{l.output || <span className="font-semibold text-red-700">Kosong</span>}</td>
                     <td className="py-2 whitespace-nowrap">
                       <Link href={`/tracker?tanggal=${date}&ubah=${l.id}&${pq}`} className="inline-block min-h-[44px] px-2 py-3 text-sm font-semibold text-kasuat-deep-gold hover:underline">Ubah</Link>
@@ -192,8 +189,8 @@ export default async function TrackerPage({ searchParams }: { searchParams: Prom
           <KpiCard label="Hari aktif" value={`${periodSum.activeDays} / ${periodBasis.workdays.length}`} />
           <KpiCard label="Aktivitas" value={String(periodSum.activities)} />
         </div>
-        <div className="mt-4 grid gap-6 lg:grid-cols-3">
-          <BreakdownTable title="Jam per klien" keyLabel="Klien" rows={breakdown(periodLogs, 'client')} />
+        {/* Tanpa "Jam per klien": sheet tidak punya, dan klien project menu Project berisi nama kontak (masukan HR 20 Nov 2026). */}
+        <div className="mt-4 grid gap-6 lg:grid-cols-2">
           <BreakdownTable title="Jam per proyek" keyLabel="Proyek" rows={breakdown(periodLogs, 'project_name')} />
           <BreakdownTable title="Jam per kategori" keyLabel="Kategori" rows={breakdown(periodLogs, 'category')} />
         </div>

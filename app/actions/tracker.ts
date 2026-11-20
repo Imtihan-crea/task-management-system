@@ -59,6 +59,9 @@ export async function saveWorkLog(_prev: TrackerFormState, formData: FormData): 
   if (!DATE_RE.test(workDate) || Number.isNaN(Date.parse(workDate))) return { error: 'Tanggal tidak valid.' }
   if (workDate > todayISO()) return { error: 'Tanggal tidak boleh di masa depan.' }
   if (!activity) return { error: 'Aktivitas wajib diisi.' }
+  // Sheet Daily Tracker: semua kolom wajib kecuali durasi (keputusan pemilik 20 Nov 2026).
+  if (!detail.trim()) return { error: 'Detail Pekerjaan wajib diisi.' }
+  if (!output.trim()) return { error: 'Output/Deliverables wajib diisi.' }
   if (projectTyped.length > 150) return { error: 'Nama proyek paling panjang 150 karakter.' }
   if (normalizeText(locationTyped).length > 60) return { error: 'Lokasi paling panjang 60 karakter.' }
   if (durationMinutes(start, end) === null) {

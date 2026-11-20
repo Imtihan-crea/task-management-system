@@ -1,13 +1,10 @@
 import 'server-only'
 
-import { FREE_TEXT_MARK, type ReviewLog } from '@/lib/hr/data'
+import { type ReviewLog } from '@/lib/hr/data'
 import type { LeaveType } from '@/lib/hr/leave'
 import type { loadRekap } from '@/lib/hr/rekap'
 import { STATUS_LABEL, isoWeek } from '@/lib/hr/tracker'
 import { excelDate, hoursOf, type ExcelColumn } from '@/lib/export/excel'
-
-/** Label "(teks bebas)" hanya penanda di layar; di Excel tidak perlu. */
-export const plain = (s: string | null | undefined) => (s ? s.replace(FREE_TEXT_MARK, '') : s)
 
 /** Daily Data (kolom mengikuti sheet "Daily Data" Kasuat). Dipakai export rekap HR, tracker pribadi, dan tab Tracker project. */
 export function dailyDataColumns(division: (userId: string) => string | null): ExcelColumn<ReviewLog>[] {
@@ -16,14 +13,14 @@ export function dailyDataColumns(division: (userId: string) => string | null): E
     { header: 'Minggu Ke -', width: 8, value: (r) => isoWeek(r.work_date) },
     { header: 'Nama', width: 20, value: (r) => r.person },
     { header: 'Divisi', width: 14, value: (r) => division(r.user_id) },
-    { header: 'Proyek', width: 22, value: (r) => plain(r.project) },
+    { header: 'Proyek', width: 22, value: (r) => r.project },
     { header: 'Aktifitas', width: 28, value: (r) => r.activity },
     { header: 'Detail Pekerjaan', width: 40, value: (r) => r.detail },
     { header: 'Jam Mulai', width: 9, value: (r) => r.start_time?.slice(0, 5) },
     { header: 'Jam Selesai', width: 9, value: (r) => r.end_time?.slice(0, 5) },
     { header: 'Durasi (Jam)', width: 9, format: '0.00', value: (r) => hoursOf(r.duration_minutes) },
     { header: 'Lokasi', width: 14, value: (r) => r.location },
-    { header: 'Kategori Aktifitas', width: 18, value: (r) => plain(r.category) },
+    { header: 'Kategori Aktifitas', width: 18, value: (r) => r.category },
     { header: 'Output/Deliverables', width: 30, value: (r) => r.output },
   ]
 }

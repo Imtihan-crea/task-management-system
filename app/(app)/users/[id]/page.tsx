@@ -58,6 +58,10 @@ export default async function UserDetailPage({
 
   if (!profile) notFound()
   const refs = canViewHr || canManageHr ? await loadReferences(['DIVISION', 'POSITION']) : []
+  // Calon akun tujuan gabung akun: semua akun lain yang belum dihapus.
+  const mergeTargets = canManagePermissions && !profile.deleted_at
+    ? ((await admin.from('profiles').select('id, full_name, email, status').is('deleted_at', null).neq('id', id).order('full_name')).data ?? []) as { id: string; full_name: string | null; email: string; status: UserStatus }[]
+    : []
 
   // Last Login diambil dari Supabase Auth (data reliable, bukan dummy).
   // Sengaja tidak disimpan di profiles.
@@ -137,6 +141,7 @@ export default async function UserDetailPage({
           <TopActionForms
             user={profile}
             canDelete={!profile.is_super_admin && !profile.is_developer && viewer.id !== profile.id}
+            mergeTargets={mergeTargets.map((u) => ({ id: u.id, label: `${u.full_name || u.email}${u.status === 'ACTIVE' ? '' : ` (${STATUS_LABELS[u.status]})`}` }))}
           />
         </section>
       )}

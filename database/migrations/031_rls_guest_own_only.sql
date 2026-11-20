@@ -1,4 +1,4 @@
--- 029_rls_guest_own_only.sql
+-- 031_rls_guest_own_only.sql
 -- 19 Nov 2026: bagan wewenang Kasuat (COA). VIEWER (label "Guest") adalah pihak luar,
 -- jadi hanya membaca task dan project miliknya, sama dengan aplikasi
 -- (lib/auth/roles.ts seesOwnProjectsOnly). Migrasi 016 masih memberi VIEWER baca semua
@@ -11,8 +11,9 @@
 --   workstreams tetap ikut project yang terbaca (policy 016, tidak diubah).
 -- Aplikasi membaca lewat service role, jadi perilaku aplikasi tidak berubah karena file ini.
 -- Tidak ada data yang diubah.
--- Rollback: database/migrations/down/029_rls_guest_own_only.down.sql
+-- Rollback: database/migrations/down/031_rls_guest_own_only.down.sql
 -- Status: BELUM dijalankan di produksi.
+-- Nomor 031 (20 Nov 2026): 029 dan 030 sudah dipakai di produksi (cabut sesi, gabung akun).
 
 drop policy if exists "Tasks readable by scope" on public.tasks;
 create policy "Tasks readable by scope"
@@ -42,5 +43,5 @@ create policy "Projects readable by scope"
   );
 
 insert into public.app_migrations (version, name, note)
-values ('029', '029_rls_guest_own_only', 'Guest (VIEWER) hanya membaca task/project miliknya')
+values ('031', '031_rls_guest_own_only', 'Guest (VIEWER) hanya membaca task/project miliknya')
 on conflict (version) do nothing;

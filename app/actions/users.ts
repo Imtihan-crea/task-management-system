@@ -1,5 +1,7 @@
 'use server'
 
+import { redirect } from 'next/navigation'
+
 import { revalidatePath } from 'next/cache'
 import { requireProfile } from '@/lib/auth/session'
 import { hasPermission, requirePermission } from '@/lib/auth/current-access'
@@ -588,6 +590,7 @@ export async function updateUser(
     console.error('updateUser failed:', error.message)
     return { error: 'Tidak dapat memperbarui user.' }
   }
+  if (status !== 'ACTIVE' && current.status === 'ACTIVE') await revokeSessions(targetId)
 
   revalidatePath('/users')
   revalidatePath(`/users/${targetId}`)
@@ -704,6 +707,7 @@ export async function setUserStatus(
     console.error('setUserStatus failed:', error.message)
     return { error: 'Tidak dapat memperbarui user.' }
   }
+  if (status !== 'ACTIVE') await revokeSessions(targetId)
 
   revalidatePath('/users')
   revalidatePath(`/users/${targetId}`)
@@ -826,6 +830,20 @@ type TopTargetRow = {
   deleted_at: string | null
 }
 
+/**
+ * Keluarkan akun dari semua perangkat (migrasi 029). Dipanggil otomatis saat password/email
+ * diganti admin, akun dinonaktifkan, atau dihapus, supaya orang yang sempat memegang akun
+ * tidak tetap masuk (kasus akun dibuat ulang, 20 Nov 2026). Mengembalikan jumlah sesi dicabut.
+ */
+async function revokeSessions(userId: string): Promise<number | null> {
+  const { data, error } = await createAdminClient().rpc('revoke_user_sessions', { target: userId })
+  if (error) {
+    console.error('[revoke-sessions] failed:', error.message)
+    return null
+  }
+  return typeof data === 'number' ? data : 0
+}
+
 async function loadTopAction(actorId: string, targetId: string, action: 'password' | 'email' | 'delete') {
   const { data: target } = await createAdminClient()
     .from('profiles')
@@ -861,13 +879,15 @@ export async function setUserPassword(_prev: UserFormState, formData: FormData):
   // Password ketikan admin = sementara, kecuali untuk akun sendiri.
   const requireChange = target.id !== actor.id
   await admin.from('profiles').update({ must_change_password: requireChange }).eq('id', target.id)
+  // Password baru dari admin: perangkat lain yang masih login ikut dikeluarkan.
+  const revoked = requireChange ? await revokeSessions(target.id) : null
 
   await logActivity({
     actorUserId: actor.id,
     action: 'USER_UPDATED',
     entityType: 'user',
     entityId: target.id,
-    metadata: { set_by_admin: 'password', must_change_password: requireChange },
+    metadata: { set_by_admin: 'password', must_change_password: requireChange, ...(revoked !== null ? { sessions_revoked: revoked } : {}) },
   })
   revalidatePath(`/users/${target.id}`)
   return {
@@ -912,7 +932,7 @@ export async function changeUserEmail(_prev: UserFormState, formData: FormData):
     entityType: 'user',
     entityId: target.id,
     entityCode: email,
-    metadata: { set_by_admin: 'email', old_email: target.email, new_email: email },
+    metadata: { set_by_admin: 'email', old_email: target.email, new_email: email, sessions_revoked: target.id === actor.id ? null : await revokeSessions(target.id) },
   })
   revalidatePath('/users')
   revalidatePath(`/users/${target.id}`)
@@ -950,6 +970,7 @@ export async function deleteUserAccount(_prev: UserFormState, formData: FormData
     return { error: 'Tidak dapat menghapus akun. Silakan coba lagi.' }
   }
   await admin.from('user_permissions').delete().eq('user_id', target.id)
+  await revokeSessions(target.id)
 
   await logActivity({
     actorUserId: actor.id,
@@ -973,4 +994,56 @@ export async function bulkActivateUsers(ids: unknown) {
 
 export async function bulkDeactivateUsers(ids: unknown) {
   return bulk(ids, (id) => setUserStatus(undefined, toForm({ id, status: 'INACTIVE' })), 'dinonaktifkan')
+}
+
+/** Keluarkan akun dari semua perangkat tanpa mengubah password (tombol di detail user). */
+export async function revokeUserSessions(_prev: UserFormState, formData: FormData): Promise<UserFormState> {
+  const actor = await requireProfile()
+  const { error: guardError, target } = await loadTopAction(actor.id, readLimitedField(formData, 'id'), 'password')
+  if (guardError || !target) return { error: guardError ?? 'User tidak ditemukan.' }
+  if (target.id === actor.id) return { error: 'Untuk akun sendiri, ganti password lewat menu Profil.' }
+  const revoked = await revokeSessions(target.id)
+  if (revoked === null) return { error: 'Gagal mengeluarkan akun dari perangkat. Silakan coba lagi.' }
+  await logActivity({
+    actorUserId: actor.id,
+    action: 'USER_UPDATED',
+    entityType: 'user',
+    entityId: target.id,
+    metadata: { set_by_admin: 'sessions_revoked', sessions_revoked: revoked },
+  })
+  revalidatePath(`/users/${target.id}`)
+  return { success: revoked ? `Akun dikeluarkan dari ${revoked} perangkat. Pemilik akun perlu login lagi.` : 'Akun ini sedang tidak login di perangkat mana pun.' }
+}
+
+/**
+ * Gabung akun (20 Nov 2026): semua data akun ini (sumber) pindah ke akun tujuan milik orang
+ * yang sama, lalu akun sumber dihapus (tidak tampil, tidak bisa login, sesi dicabut). Untuk
+ * kasus satu orang punya dua akun; jangan buat akun baru untuk akun yang dibobol.
+ */
+export async function mergeUserAccount(_prev: UserFormState, formData: FormData): Promise<UserFormState> {
+  const actor = await requireProfile()
+  const sourceId = readLimitedField(formData, 'id')
+  const targetId = readLimitedField(formData, 'target_id')
+  const { error: guardError, target: source } = await loadTopAction(actor.id, sourceId, 'delete')
+  if (guardError || !source) return { error: guardError ?? 'User tidak ditemukan.' }
+  if (!targetId || targetId === source.id) return { error: 'Pilih akun tujuan yang berbeda.' }
+  const admin = createAdminClient()
+  const { data: target } = await admin.from('profiles').select('id, full_name, email, deleted_at').eq('id', targetId).maybeSingle<{ id: string; full_name: string | null; email: string; deleted_at: string | null }>()
+  if (!target || target.deleted_at) return { error: 'Akun tujuan tidak ditemukan.' }
+  const { data: sourceRow } = await admin.from('profiles').select('full_name').eq('id', source.id).maybeSingle<{ full_name: string | null }>()
+
+  const { data: moved, error } = await admin.rpc('merge_user_into', { source: source.id, target: target.id })
+  if (error) {
+    console.error('[merge-user] failed:', error.message)
+    return { error: 'Gagal menggabung akun. Tidak ada data yang berubah.' }
+  }
+  // Sama dengan hapus akun: login akun sumber diblokir di Supabase Auth.
+  await admin.auth.admin.updateUserById(source.id, { ban_duration: '876000h' })
+  const sourceName = sourceRow?.full_name || source.email
+  const targetName = target.full_name || target.email
+  await logActivity({ actorUserId: actor.id, action: 'USER_MERGED', entityType: 'user', entityId: source.id, metadata: { merged_into: target.id, target_name: targetName, moved } })
+  await logActivity({ actorUserId: actor.id, action: 'USER_MERGED', entityType: 'user', entityId: target.id, metadata: { merged_from: source.id, source_name: sourceName, moved } })
+  revalidatePath('/users')
+  revalidatePath(`/users/${target.id}`)
+  redirect(`/users/${target.id}`)
 }

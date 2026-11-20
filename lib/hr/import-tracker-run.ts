@@ -29,7 +29,7 @@ const chunks = <T,>(a: T[], n: number) => Array.from({ length: Math.ceil(a.lengt
 export async function runTrackerImport(sheets: SheetInput[], actorId: string): Promise<TrackerImportState> {
   const admin = createAdminClient()
   const [users, projects, refs] = await Promise.all([
-    allRows<{ id: string; full_name: string | null }>((f, t) => admin.from('profiles').select('id, full_name').is('deleted_at', null).order('id').range(f, t)),
+    allRows<{ id: string; full_name: string | null; status: string }>((f, t) => admin.from('profiles').select('id, full_name, status').is('deleted_at', null).order('id').range(f, t)),
     allRows<{ id: string; name: string }>((f, t) => admin.from('projects').select('id, name').order('id').range(f, t)),
     loadReferences(['ACTIVITY_CATEGORY', 'WORK_LOCATION', 'INTERNAL_PROJECT']),
   ])

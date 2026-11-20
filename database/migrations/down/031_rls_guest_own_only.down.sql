@@ -1,4 +1,4 @@
--- Rollback 029: kembali ke policy 016 (VIEWER membaca semua task dan project).
+-- Rollback 031: kembali ke policy 016 (VIEWER membaca semua task dan project).
 drop policy if exists "Tasks readable by scope" on public.tasks;
 create policy "Tasks readable by scope"
   on public.tasks for select
@@ -26,4 +26,4 @@ create policy "Projects readable by scope"
     )
   );
 
-delete from public.app_migrations where version = '029';
+delete from public.app_migrations where version = '031';

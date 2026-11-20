@@ -89,9 +89,26 @@ cek('baris kosong dilewati diam', [b.rows.length, Object.values(b.skipped).reduc
 b = buildImport([sheet('Daily Oktober 26', baris({ 2: 'Orang Asing' }), baris({ 2: 'orang asing' }), baris({ 2: 'Zed' }))], ctx)
 cek('nama tak dikenal', b.unknownNames, ['Orang Asing', 'Zed'])
 
+// Regresi 20 Nov 2026: file export aplikasi ("Daily Data", ada baris judul laporan di atas header) bisa diimport ulang
+b = buildImport([{ sheet: 'Daily Data', data: [['DAILY DATA 2026-10'], ['Periode: Bulan 2026-10'], ['Diekspor oleh Admin'], [], HEAD, baris({}) as unknown as unknown[]] as never }], ctx)
+cek('export aplikasi bisa diimport ulang', [b.unknownNames, b.rows.length, b.skipped.noName], [[], 1, 0])
+b = buildImport([sheet('Daily Data', baris({ 7: '22:15', 8: '24:00' }))], ctx)
+cek('selesai "24:00" dari export aplikasi diterima', [b.rows.length, b.rows[0]?.end_time, b.skipped.time], [1, '24:00', 0])
+
 // Nama ganda di profil = tidak dikenal
 const ganda = { ...ctx, users: [...ctx.users, { id: 'u9', full_name: 'Budi Santoso' }] }
 cek('nama ganda tak dikenal', buildImport([sheet('Daily Oktober 26', baris({}))], ganda).unknownNames, ['Budi Santoso'])
+
+// Regresi 20 Nov 2026 (akun Alghifari): nama kembar dengan satu akun nonaktif -> akun aktif dipakai
+const gandaAktif = { ...ctx, users: [{ id: 'lama', full_name: 'Budi Santoso', status: 'INACTIVE' }, { id: 'baru', full_name: 'Budi Santoso', status: 'ACTIVE' }, ...ctx.users.slice(1)] }
+b = buildImport([sheet('Daily Oktober 26', baris({}))], gandaAktif)
+cek('nama kembar: akun aktif dipakai', [b.unknownNames, b.rows[0]?.user_id], [[], 'baru'])
+// Nama sheet sebagian dari nama profil aktif ("Budi" -> "Budi Santoso"), hanya bila satu calon
+const lengkap = { ...ctx, users: [{ id: 'u1', full_name: 'Budi Santoso Putra', status: 'ACTIVE' }, { id: 'old', full_name: 'Budi Santoso (akun lama)', status: 'INACTIVE' }] }
+b = buildImport([sheet('Daily Oktober 26', baris({}))], lengkap)
+cek('nama sebagian cocok ke profil aktif', [b.unknownNames, b.rows[0]?.user_id], [[], 'u1'])
+const duaCalon = { ...ctx, users: [{ id: 'a', full_name: 'Budi Santoso Putra', status: 'ACTIVE' }, { id: 'b', full_name: 'Budi Santoso Jaya', status: 'ACTIVE' }] }
+cek('nama sebagian dua calon ditolak', buildImport([sheet('Daily Oktober 26', baris({}))], duaCalon).unknownNames, ['Budi Santoso'])
 
 // Lewat tengah malam & jam rusak
 b = buildImport([sheet('Daily Oktober 26',

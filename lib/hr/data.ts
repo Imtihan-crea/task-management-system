@@ -102,8 +102,6 @@ export async function loadTrackerProjects(): Promise<TrackerProject[]> {
   return (data ?? []) as TrackerProject[]
 }
 
-export const FREE_TEXT_MARK = ' (teks bebas)'
-
 type RawLog = LogRow & {
   project_id: string | null
   internal_project_ref: string | null
@@ -144,8 +142,8 @@ export async function loadLogs(from: string, to: string, userIds?: string[]): Pr
           ? r.project_name
           : r.internal_project_ref
             ? refs.get(r.internal_project_ref) ?? r.project_name
-            : r.project_name + FREE_TEXT_MARK,
-        category: r.category_ref ? refs.get(r.category_ref) ?? r.category : r.category + FREE_TEXT_MARK,
+            : r.project_name,
+        category: r.category_ref ? refs.get(r.category_ref) ?? r.category : r.category,
       })
     }
     if (!data || data.length < 1000) return out
@@ -232,10 +230,10 @@ export async function loadReviewLogs(filter: { projectId?: string; userId?: stri
     start_time: r.start_time,
     end_time: r.end_time,
     duration_minutes: r.duration_minutes,
-    project: r.project_id ? r.project_name : r.internal_project_ref ? label.get(r.internal_project_ref) ?? r.project_name : r.project_name + FREE_TEXT_MARK,
+    project: r.project_id ? r.project_name : r.internal_project_ref ? label.get(r.internal_project_ref) ?? r.project_name : r.project_name,
     activity: r.activity,
     detail: r.detail,
-    category: r.category_ref ? label.get(r.category_ref) ?? r.category : r.category + FREE_TEXT_MARK,
+    category: r.category_ref ? label.get(r.category_ref) ?? r.category : r.category,
     output: r.output,
     client: r.project_id ? clients.get(r.project_id) ?? null : null,
     location: r.location_ref ? label.get(r.location_ref) ?? r.location : r.location,

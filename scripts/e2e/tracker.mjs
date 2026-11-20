@@ -21,6 +21,8 @@ const alertWith = (page, text) => page.getByRole('alert').filter({ hasText: text
 const today = day(0)
 const FREE_CAT = `${P} Kategori Bebas`
 const LOC = `${P} Lokasi Uji`
+const FREE_PROJ = `${P} Klien Bebas`
+const FREE_LOC = `${P} Gudang Bebas`
 
 const browser = await loadPlaywright().chromium.launch({ headless: true })
 let cleanupResult
@@ -54,7 +56,7 @@ try {
   check('menu Daily Tracker tampil untuk anggota tim', (await page.getByRole('link', { name: 'Daily Tracker' }).count()) >= 1)
   check('menu Master Reference tidak tampil untuk anggota tim', (await page.getByRole('link', { name: 'Master Reference' }).count()) === 0)
 
-  const fill = async ({ start, end, activity, project = `${P} Proyek Tracker`, category = 'Focus Work', location = 'WFA', output = 'Hasil uji' }) => {
+  const fill = async ({ start, end, activity, project = `${P} Proyek Tracker`, category = 'Focus Work', location = 'WFA', output = 'Hasil uji', detail = 'Detail uji' }) => {
     await page.goto(`${BASE}/tracker?tanggal=${today}`, { waitUntil: 'networkidle' })
     await page.fill('#project', project)
     if (start) await page.fill('#start_time', start)
@@ -62,6 +64,7 @@ try {
     await page.fill('#category', category)
     await page.fill('#location', location)
     await page.fill('#activity', activity)
+    await page.fill('#detail', detail)
     await page.fill('#output', output)
     await page.getByRole('button', { name: 'Catat aktivitas' }).click()
   }
@@ -73,18 +76,31 @@ try {
   check('isi: saran jam mulai terbarui tanpa muat ulang', await until(async () => (await page.inputValue('#start_time')) === '10:00'), await page.inputValue('#start_time'))
   const a = (await logs(member.id))[0]
   check('isi: tertaut project TMS + kategori + lokasi master', a && a.project_id === proj.id && a.category_ref && a.location_ref, JSON.stringify(a))
-
+  // Pilihan Proyek hanya dari Master Reference (20 Nov 2026): project TMS tidak muncul, tapi nama yang diketik tetap tertaut.
+  await page.goto(`${BASE}/tracker?tanggal=${today}`, { waitUntil: 'networkidle' })
+  await page.fill('#project', 'Manajemen')
+  check('pilihan proyek memuat Master Reference', await page.getByRole('option', { name: 'Manajemen Perusahaan', exact: true }).waitFor({ timeout: 5000 }).then(() => true, () => false))
+  await page.fill('#project', `${P} Proyek`)
+  check('pilihan proyek tidak memuat project TMS', (await page.getByRole('option', { name: `${P} Proyek Tracker` }).count()) === 0)
+  
   // 2. Saran jam mulai; proyek internal (beda huruf) + kategori teks bebas + output kosong
   await page.goto(`${BASE}/tracker?tanggal=${today}`, { waitUntil: 'networkidle' })
   check('saran jam mulai 10:00', (await page.inputValue('#start_time')) === '10:00', await page.inputValue('#start_time'))
-  await fill({ end: '11:30', activity: `${P} Aktivitas 2`, project: 'manajemen perusahaan', category: FREE_CAT, output: '' })
+  await fill({ end: '11:30', activity: `${P} Aktivitas 2`, project: 'manajemen perusahaan', category: FREE_CAT })
   check('pesan usulan teks bebas', await page.getByRole('status').filter({ hasText: 'usulan' }).waitFor({ timeout: 10000 }).then(() => true, () => false))
   const b = (await logs(member.id))[1]
   check('proyek internal tertaut, nama dari master', b && b.internal_project_ref && b.project_name === 'Manajemen Perusahaan' && !b.project_id, JSON.stringify(b))
   check('kategori teks bebas tersimpan apa adanya', b && b.category === FREE_CAT && b.category_ref === null, JSON.stringify(b))
   await page.goto(`${BASE}/tracker?tanggal=${today}`, { waitUntil: 'networkidle' })
-  check('daftar menandai teks bebas', (await page.getByText('(teks bebas)').count()) === 1)
-  check('output kosong ditandai di daftar', (await page.getByText('Kosong', { exact: true }).count()) === 1)
+  check('daftar tanpa tanda teks bebas', (await page.getByText('(teks bebas)').count()) === 0, await page.getByText('(teks bebas)').count())
+  check('daftar menampilkan kategori teks bebas apa adanya', (await page.getByText(FREE_CAT, { exact: true }).count()) >= 1, await page.getByText(FREE_CAT).count())
+  // Form mengikuti sheet (20 Nov 2026): semua isian wajib, kolom otomatis tampil dan ikut berubah.
+  check('detail dan output wajib diisi', (await page.locator('#detail[required]').count()) === 1 && (await page.locator('#output[required]').count()) === 1)
+  check('otomatis: nama tampil', (await page.getByText(`${P} Karyawan Tracker`, { exact: true }).count()) >= 1)
+  await page.fill('#start_time', '13:00')
+  await page.fill('#end_time', '14:30')
+  check('otomatis: durasi 1,5 jam', await until(async () => (await page.getByText('1,5', { exact: true }).count()) >= 1, 5000), await page.locator('form', { has: page.locator('#work_date') }).innerText().catch((e) => e.message))
+  if (process.env.E2E_SHOT) await page.locator('form', { has: page.locator('#work_date') }).screenshot({ path: process.env.E2E_SHOT })
 
   // 3. Bentrok & lewat tengah malam ditolak
   await fill({ start: '09:00', end: '09:30', activity: `${P} Bentrok` })
@@ -153,8 +169,14 @@ try {
   const row = dp.getByRole('row').filter({ hasText: `${P} Karyawan Tracker` })
   check('rekap: baris karyawan 4 jam', (await row.getByRole('cell', { name: '4', exact: true }).count()) >= 1, await row.innerText().catch(() => ''))
   await row.getByRole('link').click()
+  await dp.getByRole('heading', { name: `Rincian ${P} Karyawan Tracker` }).waitFor({ timeout: 10000 }).catch(() => {})
   check('rekap: rincian proyek internal', await dp.getByRole('cell', { name: 'Manajemen Perusahaan', exact: true }).first().waitFor({ timeout: 10000 }).then(() => true, () => false))
-  check('rekap: kategori teks bebas ditandai', (await dp.getByRole('cell', { name: `${FREE_CAT} (teks bebas)` }).count()) >= 1)
+  check('rekap: kategori teks bebas tampil tanpa tanda', (await dp.getByRole('cell', { name: FREE_CAT, exact: true }).count()) >= 1 && (await dp.getByText('(teks bebas)').count()) === 0)
+  // PM View sementara (20 Nov 2026): rekap difilter per proyek, seperti sheet "Month Track 2026 - PM View".
+  await dp.goto(`${BASE}/tracker/rekap?bulan=${today.slice(0, 7)}&proyek=${encodeURIComponent('Manajemen Perusahaan')}`, { waitUntil: 'networkidle' })
+  check('PM View: judul proyek tampil', (await dp.getByRole('heading', { name: 'PM View: Manajemen Perusahaan' }).count()) === 1)
+  check('PM View: karyawan uji tercantum dengan aktivitasnya', (await dp.getByText(`${P} Aktivitas 2`).count()) >= 1)
+  check('PM View: aktivitas proyek lain tidak ikut', (await dp.getByText(`${P} Aktivitas 1`).count()) === 0)
 
   await dp.goto(`${BASE}/master-reference`, { waitUntil: 'networkidle' })
   // Tambah pilihan
@@ -193,6 +215,24 @@ try {
   check('kukuhkan: pilihan baru dibuat', await until(async () => Boolean(await ref(FREE_CAT))))
   const promoted = await ref(FREE_CAT)
   check('kukuhkan: entri tertaut, teks asli tetap', await until(async () => { const l = (await logs(member.id))[1]; return l?.category_ref === promoted?.id && l.category === FREE_CAT }))
+
+  // Proyek + Lokasi teks bebas: tersimpan tanpa ACC, jadi usulan, dikukuhkan, lalu muncul di pilihan karyawan (20 Nov 2026).
+  await fill({ start: '14:00', end: '14:30', activity: `${P} Klien baru`, project: FREE_PROJ, location: FREE_LOC })
+  check('proyek+lokasi bebas: tersimpan tanpa ACC', await until(async () => (await logs(member.id)).some((l) => l.project_name === FREE_PROJ && !l.project_id && !l.internal_project_ref && !l.location_ref)))
+  await dp.goto(`${BASE}/master-reference`, { waitUntil: 'networkidle' })
+  for (const [list, text] of [['INTERNAL_PROJECT', FREE_PROJ], ['WORK_LOCATION', FREE_LOC]]) {
+    const s = dp.locator(`#${list} li`, { hasText: text })
+    check(`usulan ${list} tampil`, (await s.count()) === 1)
+    await s.getByRole('button', { name: 'Kukuhkan' }).click()
+    check(`kukuhkan ${list}: pilihan baru dibuat`, await until(async () => Boolean(await ref(text))))
+  }
+  check('kukuhkan proyek+lokasi: entri tertaut', await until(async () => (await logs(member.id)).some((l) => l.project_name === FREE_PROJ && l.internal_project_ref && l.location_ref)))
+  await page.goto(`${BASE}/tracker?tanggal=${today}`, { waitUntil: 'networkidle' })
+  for (const [id, text] of [['project', FREE_PROJ], ['location', FREE_LOC]]) {
+    await page.fill(`#${id}`, text.slice(0, -2))
+    check(`pilihan ${id} karyawan memuat hasil kukuhkan`, await page.getByRole('option', { name: text, exact: true }).waitFor({ timeout: 5000 }).then(() => true, () => false))
+    await page.keyboard.press('Escape')
+  }
   await dctx.close()
   await mctx.close()
 } catch (e) {

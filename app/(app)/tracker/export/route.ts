@@ -2,22 +2,14 @@ import type { NextRequest } from 'next/server'
 import { requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { loadLeave, loadLeaveTypes, loadPeriodBasis, loadReviewLogs, loadRules } from '@/lib/hr/data'
-import { dailyDataColumns, plain, summaryColumns } from '@/lib/hr/export-columns'
+import { dailyDataColumns, summaryColumns } from '@/lib/hr/export-columns'
 import { columnTypes, leaveDaysIn, paidLeaveDays, type LeaveRow } from '@/lib/hr/leave'
 import { parsePeriod, periodSummary } from '@/lib/hr/period'
-import { breakdown, type Breakdown } from '@/lib/hr/tracker'
 import { todayISO } from '@/lib/utils/dates'
-import { exportInfo, type ExcelColumn } from '@/lib/export/excel'
+import { exportInfo } from '@/lib/export/excel'
 import { exportResponse } from '@/lib/export'
 
 export const dynamic = 'force-dynamic'
-
-const clientColumns: ExcelColumn<Breakdown>[] = [
-  { header: 'Klien', width: 28, value: (r) => plain(r.key) },
-  { header: 'Jam', width: 9, format: '0.00', value: (r) => r.hours },
-  { header: 'Jumlah Aktivitas', width: 10, value: (r) => r.count },
-  { header: '% dari Total Jam', width: 12, format: '0.00', value: (r) => r.percent },
-]
 
 /** Daily Tracker milik sendiri untuk periode terpilih (?periode=minggu|bulan|rentang, ?bulan= lama tetap jalan). Tanpa izin khusus: hanya data akun yang login. */
 export async function GET(request: NextRequest) {
@@ -54,6 +46,5 @@ export async function GET(request: NextRequest) {
       rows: [{ p: { id: profile.id, full_name: profile.full_name, email: profile.email, division, position_title: me.data?.position_title ?? null }, l, s }],
     },
     { name: 'Daily Data', title: `DAILY DATA ${label}`, info, columns: dailyDataColumns(() => division), rows: sorted },
-    { name: 'Jam per Klien', title: `JAM PER KLIEN ${label}`, info, columns: clientColumns, rows: breakdown(logRows, 'client') },
   ])
 }

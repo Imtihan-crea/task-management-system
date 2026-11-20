@@ -8,6 +8,7 @@ export type ActivityAction =
   | 'USER_ACTIVATED'
   | 'USER_DEACTIVATED'
   | 'USER_DELETED'
+  | 'USER_MERGED'
   | 'ROLE_CHANGED'
   | 'PERMISSION_CHANGED'
   // --- Master Reference (migrasi 022) ---
