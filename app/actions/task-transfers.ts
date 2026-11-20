@@ -12,7 +12,7 @@ import { escapeEmailHtml } from '@/lib/email/layout'
 import { taskTransferBody } from '@/lib/email/templates'
 import { formatDateTime } from '@/lib/utils/dates'
 import { projectDeciders } from '@/lib/tasks/deciders'
-import { transferError, wibLocalToISO } from '@/lib/tasks/transfer-rules'
+import { approvalError, transferError, wibLocalToISO } from '@/lib/tasks/transfer-rules'
 import { processDueTransfers, resolveTransfer, TRANSFER_COLUMNS, type TransferRow } from '@/lib/tasks/transfers'
 
 export type TransferFormState = { error?: string; success?: string } | undefined
@@ -59,6 +59,13 @@ export async function requestTransfer(_prev: TransferFormState, formData: FormDa
   if (!(await assertActiveUser(toUserId))) return { error: 'Pengganti harus user aktif.' }
 
   const admin = createAdminClient()
+  // Viewer hanya membaca: tidak bisa memegang task.
+  const { data: target } = await admin.from('profiles').select('role').eq('id', toUserId).single<{ role: string }>()
+  if (!target || target.role === 'VIEWER') return { error: 'Pengganti harus Admin, PM, atau Team Member.' }
+  // Cuti terkait hanya dipakai untuk task milik orang yang cuti (lihat insert di bawah).
+  const { data: leave } = leaveRequestId
+    ? await admin.from('leave_requests').select('user_id').eq('id', leaveRequestId).maybeSingle<{ user_id: string }>()
+    : { data: null }
   const { data } = await admin
     .from('tasks')
     .select('id, code, title, project_id, assignee_id, status')
@@ -102,7 +109,7 @@ export async function requestTransfer(_prev: TransferFormState, formData: FormDa
         status: manages ? 'SCHEDULED' : 'PENDING',
         requested_by: profile.id,
         note,
-        leave_request_id: leaveRequestId,
+        leave_request_id: leave && leave.user_id === task.assignee_id ? leaveRequestId : null,
         ...(manages ? { decided_by: profile.id, decided_at: now.toISOString() } : {}),
       })
       .select('id')
@@ -208,6 +215,10 @@ async function decideOne(
   if (!(await hasPermission(profile.id, 'tasks.edit', t.task.project_id))) return DENIED
   if (t.requested_by === profile.id) return 'pengajuan sendiri harus diputuskan PM/Admin lain'
   if (t.status !== 'PENDING') return 'sudah diputuskan'
+  if (decision === 'approve') {
+    const late = approvalError(t, new Date())
+    if (late) return late
+  }
 
   const now = new Date().toISOString()
   const { data: claimed } = await createAdminClient()

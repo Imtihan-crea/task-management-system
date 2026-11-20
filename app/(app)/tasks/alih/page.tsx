@@ -1,6 +1,6 @@
 import Link from 'next/link'
 import { requireProfile } from '@/lib/auth/session'
-import { permissionProjects } from '@/lib/auth/current-access'
+import { canApproveLeave, permissionProjects } from '@/lib/auth/current-access'
 import { applyProjectScope } from '@/lib/auth/access'
 import { createAdminClient } from '@/lib/supabase/admin'
 import { AppShell } from '@/components/layout/AppShell'
@@ -55,8 +55,23 @@ export default async function TaskTransfersPage({
         .in('status', ['PENDING', 'APPROVED'])
         .maybeSingle<{ id: string; user_id: string; kind: LeaveKind; start_date: string; end_date: string; status: string }>()
     : { data: null }
-  const fromLeave = leave && (isManager || leave.user_id === profile.id) ? leave : null
-  const leaveRange = fromLeave ? leaveTransferRange(fromLeave) : null
+  // Data cuti (termasuk sakit) hanya untuk: pemiliknya, penyetuju cuti, atau PM/Admin
+  // yang mengelola project tempat orang itu punya task terbuka.
+  let leaveAllowed = Boolean(leave) && (leave!.user_id === profile.id || (await canApproveLeave(profile.id)))
+  if (leave && !leaveAllowed && isManager) {
+    const { data: theirs } = await createAdminClient()
+      .from('tasks')
+      .select('project_id')
+      .eq('assignee_id', leave.user_id)
+      .eq('is_deleted', false)
+      .not('status', 'in', '("DONE","CANCELLED")')
+      .limit(500)
+    leaveAllowed = ((theirs ?? []) as { project_id: string }[]).some((t) =>
+      scope.all ? !scope.exclude.includes(t.project_id) : scope.include.includes(t.project_id)
+    )
+  }
+  const fromLeave = leaveAllowed ? leave : null
+  const leaveRange = fromLeave ? leaveTransferRange(fromLeave, new Date()) : null
 
   const targetId = fromLeave ? fromLeave.user_id : isManager && sp.user ? sp.user : profile.id
   const targetName = users.find((u) => u.id === targetId)?.name ?? profile.full_name ?? profile.email

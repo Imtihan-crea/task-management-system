@@ -108,10 +108,16 @@ async function logTransfer(t: TransferRow, task: TaskInfo, action: 'start' | 're
   })
 }
 
-/** Mulai: assignee pindah ke pengganti. Gagal guard -> alih task dibatalkan otomatis. */
-async function startTransfer(t: TransferRow): Promise<void> {
+/**
+ * Mulai: assignee pindah ke pengganti. Gagal guard -> alih task dibatalkan otomatis.
+ * Mengembalikan false bila baris sudah diklaim proses lain (jangan lanjut mengakhiri).
+ * shortcut: klaim dan pindah assignee dua query terpisah (bukan satu transaksi); bila
+ * proses mati di antaranya, status sudah maju tanpa assignee pindah. Pindah ke RPC SQL
+ * bila pernah terjadi (cek activity TASK_TRANSFERRED vs status).
+ */
+async function startTransfer(t: TransferRow): Promise<boolean> {
   const next = statusAfterStart(t.kind)
-  if (!(await claim(t.id, 'SCHEDULED', { status: next }))) return
+  if (!(await claim(t.id, 'SCHEDULED', { status: next }))) return false
 
   const moved = t.from_user_id === t.to_user_id ? null : await moveAssignee(t.task_id, t.from_user_id, t.to_user_id)
   const task = moved ?? (await loadTask(t.task_id))
@@ -129,7 +135,7 @@ async function startTransfer(t: TransferRow): Promise<void> {
         email: null,
       })
     }
-    return
+    return false
   }
 
   const n = await names([t.from_user_id, t.to_user_id])
@@ -148,6 +154,7 @@ async function startTransfer(t: TransferRow): Promise<void> {
     email: null,
   })
   await logTransfer(t, moved, 'start', fromName, toName)
+  return true
 }
 
 /** Masa sementara habis: kembali otomatis, atau PM ditanya (task tetap pada pemegang terakhir). */
@@ -217,7 +224,14 @@ async function endTransfer(t: TransferRow): Promise<void> {
  * sudah lewat ikut diakhiri dalam putaran yang sama.
  */
 export async function processDueTransfers(now: Date = new Date(), onlyId?: string): Promise<{ started: number; ended: number }> {
-  let query = createAdminClient().from('task_transfers').select(TRANSFER_COLUMNS).in('status', ['SCHEDULED', 'ACTIVE']).limit(500)
+  // Hanya yang jatuh tempo, terlama dulu: baris yang belum waktunya tidak memenuhi batas 500.
+  const at = now.toISOString()
+  let query = createAdminClient()
+    .from('task_transfers')
+    .select(TRANSFER_COLUMNS)
+    .or(`and(status.eq.SCHEDULED,or(starts_at.is.null,starts_at.lte.${at})),and(status.eq.ACTIVE,ends_at.lte.${at})`)
+    .order('created_at', { ascending: true })
+    .limit(500)
   if (onlyId) query = query.eq('id', onlyId)
   const { data, error } = await query
   if (error) throw new Error(error.message)
@@ -228,7 +242,8 @@ export async function processDueTransfers(now: Date = new Date(), onlyId?: strin
     for (let step = 0; step < 2; step++) {
       const action = transferTick(t, now)
       if (action === 'start') {
-        await startTransfer(t)
+        // Diklaim proses lain / batal otomatis: jangan lanjut mengakhiri dari salinan lama.
+        if (!(await startTransfer(t))) break
         started += 1
         t = { ...t, status: statusAfterStart(t.kind) }
       } else if (action === 'end') {

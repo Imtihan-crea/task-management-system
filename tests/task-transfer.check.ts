@@ -2,7 +2,7 @@
  * Uji lib/tasks/transfer-rules.ts — alih task permanen/sementara.
  * Jalankan: npm run test:task-transfer
  */
-import { isoToWibLocal, leaveTransferRange, statusAfterStart, tasksDueByLeaveEnd, transferError, transferTick, wibLocalToISO } from '../lib/tasks/transfer-rules'
+import { approvalError, isoToWibLocal, leaveTransferRange, statusAfterStart, tasksDueByLeaveEnd, transferError, transferTick, wibLocalToISO } from '../lib/tasks/transfer-rules'
 
 let ok = 0
 let gagal = 0
@@ -51,8 +51,16 @@ cek('sesudah mulai: permanen selesai', statusAfterStart('PERMANENT'), 'DONE')
 cek('sesudah mulai: sementara berjalan', statusAfterStart('TEMPORARY'), 'ACTIVE')
 
 // Kaitan cuti (Fase 3)
-cek('rentang dari cuti', leaveTransferRange({ start_date: '2026-11-21', end_date: '2026-11-23' }), { start: '2026-11-21T00:00', end: '2026-11-23T23:59' })
-cek('rentang cuti valid untuk form', wibLocalToISO(leaveTransferRange({ start_date: '2026-11-21', end_date: '2026-11-21' }).end), '2026-11-21T16:59:00.000Z')
+cek('rentang dari cuti', leaveTransferRange({ start_date: '2026-11-21', end_date: '2026-11-23' }, now), { start: '2026-11-21T00:00', end: '2026-11-23T23:59' })
+cek('rentang cuti valid untuk form', wibLocalToISO(leaveTransferRange({ start_date: '2026-11-21', end_date: '2026-11-21' }, now).end), '2026-11-21T16:59:00.000Z')
+// Regresi (review): cuti yang sudah mulai hari ini -> mulai = sekarang, lolos validasi consultant
+const sakitHariIni = leaveTransferRange({ start_date: '2026-11-20', end_date: '2026-11-21' }, now)
+cek('cuti sudah mulai: mulai = sekarang (WIB)', sakitHariIni.start, '2026-11-20T17:00')
+cek('cuti sudah mulai: lolos validasi consultant', transferError({ ...base, kind: 'TEMPORARY', startsAt: wibLocalToISO(sakitHariIni.start), endsAt: wibLocalToISO(sakitHariIni.end) }), null)
+// Regresi (review): pengajuan sementara yang sudah lewat tidak bisa disetujui
+cek('setujui pengajuan lewat ditolak', approvalError({ kind: 'TEMPORARY', ends_at: iso(-1) }, now), 'masa alih yang diajukan sudah lewat; minta pengaju mengajukan ulang')
+cek('setujui pengajuan berjalan boleh', approvalError({ kind: 'TEMPORARY', ends_at: iso(1) }, now), null)
+cek('setujui permanen boleh', approvalError({ kind: 'PERMANENT', ends_at: null }, now), null)
 const tugas = [
   { id: 'lewat', deadline: '2026-11-10' },
   { id: 'di-masa-cuti', deadline: '2026-11-22' },

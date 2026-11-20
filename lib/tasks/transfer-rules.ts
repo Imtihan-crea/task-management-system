@@ -81,9 +81,23 @@ export function statusAfterStart(kind: string): TransferStatus {
   return kind === 'PERMANENT' ? 'DONE' : 'ACTIVE'
 }
 
-/** Isian awal alih task dari cuti/sakit: seluruh hari pertama s/d akhir hari terakhir (WIB). */
-export function leaveTransferRange(leave: { start_date: string; end_date: string }): { start: string; end: string } {
-  return { start: `${leave.start_date}T00:00`, end: `${leave.end_date}T23:59` }
+/**
+ * Isian awal alih task dari cuti/sakit: hari pertama 00:00 s/d hari terakhir
+ * 23:59 (WIB). Cuti yang sudah mulai: mulai = sekarang, supaya pengajuan
+ * consultant tidak ditolak karena "waktu mulai di masa lalu".
+ */
+export function leaveTransferRange(leave: { start_date: string; end_date: string }, now: Date): { start: string; end: string } {
+  const start = `${leave.start_date}T00:00`
+  const nowLocal = isoToWibLocal(now.toISOString())
+  return { start: start < nowLocal ? nowLocal : start, end: `${leave.end_date}T23:59` }
+}
+
+/** Pengajuan sementara yang waktu selesainya sudah lewat tidak boleh disetujui lagi. */
+export function approvalError(t: { kind: string; ends_at: string | null }, now: Date): string | null {
+  if (t.kind === 'TEMPORARY' && t.ends_at && new Date(t.ends_at).getTime() <= now.getTime()) {
+    return 'masa alih yang diajukan sudah lewat; minta pengaju mengajukan ulang'
+  }
+  return null
 }
 
 /**
