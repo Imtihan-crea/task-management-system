@@ -25,6 +25,27 @@ export type DigestTask = {
   overdue: boolean
 }
 
+/** Hal yang menunggu keputusan user ini (review task, usulan, cuti, alih task). */
+export type DigestApproval = {
+  title: string
+  detail: string
+  path: string
+}
+
+/** Digest punya isi? User tanpa isi tidak dikirimi apa pun (anti-nyampah). */
+export function digestHasContent(i: {
+  meetings: unknown[]
+  tasksDue: unknown[]
+  tasksOverdue: unknown[]
+  approvals?: unknown[]
+  trackerMissing?: boolean
+}): boolean {
+  return (
+    i.meetings.length + i.tasksDue.length + i.tasksOverdue.length + (i.approvals?.length ?? 0) > 0 ||
+    Boolean(i.trackerMissing)
+  )
+}
+
 /**
  * Susun fragmen HTML digest untuk satu user.
  * Branding (header/footer Kasuat) dipasang otomatis di `sendEmail`.
@@ -37,13 +58,38 @@ export function buildDigestBody(input: {
   meetings: DigestMeeting[]
   tasksDue: DigestTask[]
   tasksOverdue: DigestTask[]
+  /** 'sore' = pengingat akhir hari (20 Nov 2026). Bawaan 'pagi'. */
+  variant?: 'pagi' | 'sore'
+  approvals?: DigestApproval[]
+  trackerMissing?: boolean
+  /** Tanggal YYYY-MM-DD untuk tautan Daily Tracker. */
+  dateISO?: string
 }): string {
   const parts: string[] = []
   parts.push(`<p>Halo ${escapeEmailHtml(input.userName)},</p>`)
-  parts.push(`<p>Brief pagi ${escapeEmailHtml(input.dateLabel)}:</p>`)
+  parts.push(`<p>${input.variant === 'sore' ? 'Pengingat sore' : 'Brief pagi'} ${escapeEmailHtml(input.dateLabel)}:</p>`)
 
   const link = (url: string, text: string) =>
     input.baseUrl ? `<a href="${url}">${text}</a>` : text
+
+  if (input.trackerMissing) {
+    parts.push(
+      `<h3>Daily Tracker</h3><p>Daily Tracker hari ini belum diisi. ` +
+        `${link(`${input.baseUrl}/tracker?tanggal=${escapeEmailHtml(input.dateISO ?? '')}`, 'Isi sekarang')} sebelum pulang.</p>`
+    )
+  }
+
+  const approvals = input.approvals ?? []
+  if (approvals.length > 0) {
+    const items = approvals
+      .map(
+        (a) =>
+          `<li><strong>${link(`${input.baseUrl}${a.path}`, escapeEmailHtml(a.title))}</strong>` +
+          `<br><span>${escapeEmailHtml(a.detail)}</span></li>`
+      )
+      .join('')
+    parts.push(`<h3>Menunggu Persetujuan Anda (${approvals.length})</h3><ul>${items}</ul>`)
+  }
 
   if (input.meetings.length > 0) {
     const items = input.meetings

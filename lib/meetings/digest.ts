@@ -5,8 +5,13 @@ import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
 import { allRows } from '@/lib/utils/paginate'
 import { formatMeetingDate, todayInAppTime } from '@/lib/utils/meeting-time'
+import { canApproveLeave } from '@/lib/auth/current-access'
+import { usersMissingTracker } from '@/lib/hr/reminder-run'
+import { KIND_LABEL, type LeaveKind } from '@/lib/hr/leave'
 import {
   buildDigestBody,
+  digestHasContent,
+  type DigestApproval,
   type DigestMeeting,
   type DigestTask,
 } from '@/lib/meetings/digest-body'
@@ -22,13 +27,26 @@ import {
  * - Kategori email sendiri (`digest`) + checkbox opt-out di Settings.
  * - Dijalankan di dalam cron deadline yang sudah ada (00:00 UTC = 07:00 WIB),
  *   jadi tidak perlu jatah cron Vercel baru (Hobby hanya boleh 1×/hari).
+ *
+ * Pengingat sore (20 Nov 2026, kebijakan notifikasi): varian 'sore' ±17:00 WIB
+ * lewat /api/cron/sore. Isinya task jatuh tempo/overdue yang masih terbuka,
+ * Daily Tracker yang belum diisi, dan hal yang menunggu persetujuan. Dua
+ * email rutin ini menggantikan email per kejadian untuk hal rutin.
  */
 
 export type { DigestMeeting, DigestTask } from '@/lib/meetings/digest-body'
 
 type ActiveUser = { id: string; full_name: string | null; email: string }
 
-export async function runMorningDigest(now: Date = new Date()): Promise<{
+export function runMorningDigest(now: Date = new Date()) {
+  return runDigest(now, 'pagi')
+}
+
+export function runEveningDigest(now: Date = new Date()) {
+  return runDigest(now, 'sore')
+}
+
+async function runDigest(now: Date, variant: 'pagi' | 'sore'): Promise<{
   usersNotified: number
   emailsSent: number
 }> {
@@ -59,13 +77,15 @@ export async function runMorningDigest(now: Date = new Date()): Promise<{
   if (activeUsers.length === 0) return { usersNotified: 0, emailsSent: 0 }
   const userIds = activeUsers.map((u) => u.id)
 
-  // 2. Meeting SCHEDULED hari ini (1 query) + pesertanya (1 query).
-  const { data: meetings } = await admin
-    .from('meetings')
-    .select('id, code, title, project_id, start_time, organizer_id, created_by')
-    .eq('status', 'SCHEDULED')
-    .eq('meeting_date', today)
-    .limit(500)
+  // 2. Meeting SCHEDULED hari ini (1 query) + pesertanya (1 query). Sore: tidak perlu.
+  const { data: meetings } = variant === 'sore'
+    ? { data: [] }
+    : await admin
+        .from('meetings')
+        .select('id, code, title, project_id, start_time, organizer_id, created_by')
+        .eq('status', 'SCHEDULED')
+        .eq('meeting_date', today)
+        .limit(500)
 
   const meetingRows = (meetings ?? []) as {
     id: string
@@ -103,6 +123,7 @@ export async function runMorningDigest(now: Date = new Date()): Promise<{
       .eq('is_deleted', false)
       .neq('status', 'DONE')
       .neq('status', 'CANCELLED')
+      .neq('status', 'REVIEW') // menunggu PM: bukan tanggungan assignee lagi
       .in('assignee_id', userIds)
       .lte('deadline', today)
       .order('id')
@@ -146,7 +167,13 @@ export async function runMorningDigest(now: Date = new Date()): Promise<{
     )
   }
 
-  // 5. Emit per user — hanya yang punya isi (anti-nyampah).
+  // 5. Persetujuan menunggu + (sore) Daily Tracker belum diisi.
+  const approvalsByUser = await loadApprovals(userIds)
+  const trackerMissing = new Set(
+    variant === 'sore' ? (await usersMissingTracker(today).catch(() => ({ userIds: [] as string[] }))).userIds : []
+  )
+
+  // 6. Emit per user — hanya yang punya isi (anti-nyampah).
   let usersNotified = 0
   let emailsSent = 0
 
@@ -183,33 +210,35 @@ export async function runMorningDigest(now: Date = new Date()): Promise<{
       else tasksDue.push(item)
     }
 
-    if (myMeetings.length === 0 && tasksOverdue.length === 0 && tasksDue.length === 0) {
-      continue
-    }
+    const approvals = approvalsByUser.get(u.id) ?? []
+    const content = { meetings: myMeetings, tasksDue, tasksOverdue, approvals, trackerMissing: trackerMissing.has(u.id) }
+    if (!digestHasContent(content)) continue
 
     const userName = u.full_name || u.email
     const totalTasks = tasksOverdue.length + tasksDue.length
+    const pending = approvals.length > 0 ? ` · ${approvals.length} menunggu persetujuan` : ''
     const result = await emitNotification({
-      key: `morning-digest:${u.id}:${today}`,
+      key: `${variant === 'sore' ? 'evening' : 'morning'}-digest:${u.id}:${today}`,
       type: 'DAILY_DIGEST',
       userIds: [u.id],
-      title: `Brief pagi: ${myMeetings.length} meeting, ${totalTasks} task`,
+      title:
+        variant === 'sore'
+          ? `Pengingat sore: ${totalTasks} task${pending}${content.trackerMissing ? ' · Daily Tracker belum diisi' : ''}`
+          : `Brief pagi: ${myMeetings.length} meeting, ${totalTasks} task${pending}`,
       message:
         myMeetings.length > 0
           ? `Hari ini ada ${myMeetings.length} meeting: ${myMeetings.map((m) => m.code).join(', ')}.`
-          : `${totalTasks} task perlu perhatian hari ini.`,
+          : approvals.length > 0
+            ? `${approvals.length} hal menunggu persetujuan Anda.`
+            : `${totalTasks} task perlu perhatian hari ini.`,
       entityType: '',
       entityId: '',
       email: {
-        subject: `[Brief Pagi ${dateLabel}] ${myMeetings.length} meeting · ${totalTasks} task`,
-        html: buildDigestBody({
-          userName,
-          dateLabel,
-          baseUrl,
-          meetings: myMeetings,
-          tasksDue,
-          tasksOverdue,
-        }),
+        subject:
+          variant === 'sore'
+            ? `[Pengingat Sore ${dateLabel}] ${totalTasks} task${pending}`
+            : `[Brief Pagi ${dateLabel}] ${myMeetings.length} meeting · ${totalTasks} task${pending}`,
+        html: buildDigestBody({ userName, dateLabel, baseUrl, variant, dateISO: today, ...content }),
         category: 'digest',
       },
     })
@@ -221,4 +250,71 @@ export async function runMorningDigest(now: Date = new Date()): Promise<{
   }
 
   return { usersNotified, emailsSent }
+}
+
+/**
+ * Hal yang menunggu keputusan, per penerima:
+ * - task REVIEW -> PM project (tanpa PM: semua Admin aktif);
+ * - usulan task PENDING -> PM project (tanpa PM: Admin);
+ * - pengajuan cuti PENDING -> penyetuju cuti selain pengaju.
+ */
+async function loadApprovals(activeUserIds: string[]): Promise<Map<string, DigestApproval[]>> {
+  const admin = createAdminClient()
+  const out = new Map<string, DigestApproval[]>()
+  const add = (userIds: string[], item: DigestApproval) => {
+    for (const id of userIds) {
+      if (!activeUserIds.includes(id)) continue
+      if (!out.has(id)) out.set(id, [])
+      out.get(id)!.push(item)
+    }
+  }
+
+  const [{ data: reviews }, { data: suggestions }, { data: leaves }] = await Promise.all([
+    admin.from('tasks').select('id, code, title, project_id, assignee_id').eq('status', 'REVIEW').eq('is_deleted', false).limit(500),
+    admin.from('task_suggestions').select('id, code, title, project_id').eq('status', 'PENDING').limit(500),
+    admin.from('leave_requests').select('id, user_id, kind, start_date, end_date').eq('status', 'PENDING').limit(500),
+  ])
+  const reviewRows = (reviews ?? []) as { id: string; code: string; title: string; project_id: string; assignee_id: string }[]
+  const suggestionRows = (suggestions ?? []) as { id: string; code: string | null; title: string; project_id: string }[]
+  const leaveRows = (leaves ?? []) as { id: string; user_id: string; kind: LeaveKind; start_date: string; end_date: string }[]
+  if (reviewRows.length + suggestionRows.length + leaveRows.length === 0) return out
+
+  const projectIds = [...new Set([...reviewRows, ...suggestionRows].map((r) => r.project_id))]
+  const [{ data: pms }, { data: admins }, { data: names }] = await Promise.all([
+    projectIds.length ? admin.from('project_managers').select('project_id, user_id').in('project_id', projectIds) : Promise.resolve({ data: [] }),
+    admin.from('profiles').select('id').eq('role', 'ADMIN').eq('status', 'ACTIVE').is('deleted_at', null),
+    admin.from('profiles').select('id, full_name, email').in('id', [...new Set([...reviewRows.map((r) => r.assignee_id), ...leaveRows.map((l) => l.user_id)])]),
+  ])
+  const pmsByProject = new Map<string, string[]>()
+  for (const p of (pms ?? []) as { project_id: string; user_id: string }[]) {
+    pmsByProject.set(p.project_id, [...(pmsByProject.get(p.project_id) ?? []), p.user_id])
+  }
+  const adminIds = ((admins ?? []) as { id: string }[]).map((a) => a.id)
+  const deciders = (projectId: string) => pmsByProject.get(projectId) ?? adminIds
+  const nameOf = new Map(((names ?? []) as { id: string; full_name: string | null; email: string }[]).map((p) => [p.id, p.full_name || p.email]))
+
+  for (const t of reviewRows) {
+    add(deciders(t.project_id).filter((id) => id !== t.assignee_id), {
+      title: `${t.code} ${t.title}`,
+      detail: `Menunggu review PM · diserahkan ${nameOf.get(t.assignee_id) ?? '-'}`,
+      path: `/tasks/${t.id}`,
+    })
+  }
+  for (const sg of suggestionRows) {
+    add(deciders(sg.project_id), { title: `${sg.code ?? 'Usulan'} ${sg.title}`, detail: 'Usulan task menunggu keputusan', path: `/task-suggestions/${sg.id}` })
+  }
+  if (leaveRows.length > 0) {
+    const approvers = (await Promise.all(activeUserIds.map(async (id) => ((await canApproveLeave(id)) ? id : null)))).filter(
+      (id): id is string => id !== null
+    )
+    for (const l of leaveRows) {
+      const range = l.start_date === l.end_date ? l.start_date : `${l.start_date} s/d ${l.end_date}`
+      add(approvers.filter((id) => id !== l.user_id), {
+        title: `${KIND_LABEL[l.kind]} ${nameOf.get(l.user_id) ?? '-'}`,
+        detail: `Pengajuan ${range} menunggu persetujuan`,
+        path: '/cuti/persetujuan',
+      })
+    }
+  }
+  return out
 }

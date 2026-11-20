@@ -1,5 +1,6 @@
 import { createAdminClient } from '@/lib/supabase/admin'
 import { formatDate } from '@/lib/utils/dates'
+import { taskStatusLabel } from '@/lib/auth/roles'
 
 export type ActivityEntry = {
   id: string
@@ -21,7 +22,7 @@ export function describeActivity(entry: Pick<ActivityEntry, 'action' | 'metadata
 
   switch (entry.action) {
     case 'TASK_STATUS_CHANGED':
-      return `Status diubah ${str(m.old_status).replace('_', ' ')} → ${str(m.new_status).replace('_', ' ')}`
+      return `Status diubah ${taskStatusLabel(str(m.old_status))} → ${taskStatusLabel(str(m.new_status))}${str(m.note) ? ` — Catatan: ${str(m.note)}` : ''}`
     case 'TASK_ASSIGNED':
       return 'Task ditugaskan'
     case 'TASK_PRIORITY_CHANGED':

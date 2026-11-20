@@ -4,6 +4,7 @@ import { ExportLink } from '@/components/export/ExportLink'
 import { PriorityBadge, TaskStatusBadge, OverdueBadge } from '@/components/ui/Badges'
 import { showsOverdueBadge } from '@/lib/utils/dates'
 import type { UserRole } from '@/types/profile'
+import { taskStatusLabel } from '@/lib/auth/roles'
 
 export async function TasksTab({
   projectId,
@@ -79,7 +80,7 @@ export async function TasksTab({
             <option value="">Semua</option>
             {(['TODO', 'IN_PROGRESS', 'REVIEW', 'BLOCKED', 'DONE', 'CANCELLED'] as const).map((s) => (
               <option key={s} value={s}>
-                {s.replace('_', ' ')}
+                {taskStatusLabel(s)}
               </option>
             ))}
           </select>

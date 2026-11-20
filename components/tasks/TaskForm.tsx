@@ -3,7 +3,7 @@
 import { useState } from 'react'
 import { useFormAction } from '@/lib/forms/use-form-action'
 import { createTask, updateTask, type TaskFormState } from '@/app/actions/tasks'
-import { TASK_PRIORITIES, OPEN_TASK_STATUSES } from '@/lib/auth/roles'
+import { TASK_PRIORITIES, OPEN_TASK_STATUSES, taskStatusLabel } from '@/lib/auth/roles'
 import { displayName, type UserOption } from '@/lib/data/user-options'
 import type { TaskPriority, TaskStatus } from '@/types/task'
 
@@ -176,12 +176,12 @@ export function TaskForm({
             {/* DONE/CANCELLED hanya lewat tombol submit (ada tanggalnya).
                 Task yang sudah selesai: status lama jadi pilihan default,
                 memilih status terbuka berarti membuka ulang (reopen). */}
-            {(values.status === 'DONE' || values.status === 'CANCELLED') && (
-              <option value={values.status}>{values.status} (tidak diubah)</option>
+            {(values.status === 'DONE' || values.status === 'CANCELLED' || values.status === 'REVIEW') && (
+              <option value={values.status}>{taskStatusLabel(values.status)} (tidak diubah)</option>
             )}
             {OPEN_TASK_STATUSES.map((s) => (
               <option key={s} value={s}>
-                {s.replace('_', ' ')}
+                {taskStatusLabel(s)}
               </option>
             ))}
           </select>

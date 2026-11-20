@@ -5,13 +5,13 @@ import { requireProfile } from '@/lib/auth/session'
 import { hasPermission, requirePermission } from '@/lib/auth/current-access'
 import type { Permission } from '@/lib/auth/permissions'
 import { createAdminClient } from '@/lib/supabase/admin'
-import { isTaskPriority, isTaskStatus } from '@/lib/auth/roles'
+import { isTaskPriority, isTaskStatus, taskStatusLabel } from '@/lib/auth/roles'
 import {
   CLOSED_PROJECT_ERROR,
   canManageProjectFor,
   isProjectClosed,
 } from '@/lib/data/projects'
-import { canActOnTask } from '@/lib/auth/task-access'
+import { canActOnTask, canPickStatus, submitTarget } from '@/lib/auth/task-access'
 import { getAppBaseUrl } from '@/lib/app-url'
 import { emitNotification } from '@/lib/notifications/service'
 import { emitTaskAssigned } from '@/lib/notifications/task-assigned'
@@ -21,7 +21,7 @@ import type { UserRole } from '@/types/profile'
 import { assertActiveUser, assertWorkstreamInProject } from '@/lib/data/assertions'
 import { readLimitedField } from '@/lib/forms/limits'
 import { isValidDateInput } from '@/lib/forms/dates'
-import { taskBlockedBody, taskDoneBody } from '@/lib/email/templates'
+import { taskBlockedBody, taskReviewBody } from '@/lib/email/templates'
 
 export type TaskFormState = {
   error?: string
@@ -111,9 +111,9 @@ export async function createTask(
   })
   if (fieldError) return { error: fieldError }
 
-  // Task baru selalu terbuka — DONE/CANCELLED hanya lewat tombol submit.
-  if (status === 'DONE' || status === 'CANCELLED') {
-    return { error: 'Task baru tidak dapat dibuat sebagai DONE atau CANCELLED.' }
+  // Task baru selalu terbuka — DONE/CANCELLED/REVIEW hanya lewat tombol submit.
+  if (status === 'DONE' || status === 'CANCELLED' || status === 'REVIEW') {
+    return { error: 'Task baru tidak dapat dibuat sebagai DONE, CANCELLED, atau Menunggu Review PM.' }
   }
 
   // PM hanya boleh buat task di project miliknya.
@@ -259,6 +259,9 @@ export async function updateTask(
   if (isTerminal && before?.status !== status) {
     return { error: 'Gunakan tombol Submit / Batalkan di bawah untuk menutup task.' }
   }
+  if (status === 'REVIEW' && before?.status !== 'REVIEW') {
+    return { error: 'Status Menunggu Review PM hanya lewat tombol Submit.' }
+  }
 
   const { data: updated, error } = await adminClient
     .from('tasks')
@@ -273,7 +276,8 @@ export async function updateTask(
       deadline,
       // Status terminal yang tidak diubah: biarkan status dan tanggalnya.
       // Status terbuka: tanggal submit dibersihkan (reopen oleh PM/Admin).
-      ...(isTerminal
+      // REVIEW yang tidak diubah: tanggal submit consultant tetap.
+      ...(isTerminal || status === 'REVIEW'
         ? {}
         : { status: status as TaskStatus, completed_at: null, cancelled_at: null }),
     })
@@ -287,7 +291,7 @@ export async function updateTask(
   }
 
   // Catatan: transisi ke DONE tidak mungkin lewat sini (guard di atas
-  // menolak status terminal) — email DONE hanya dari submitTask.
+  // menolak status terminal) — notifikasi DONE hanya dari submitTask/decideReview.
 
   // Event: assignee berubah → TASK_ASSIGNED ke assignee baru.
   if (before && before.assignee_id !== assigneeId) {
@@ -428,7 +432,7 @@ export async function changeTaskStatus(
     return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
   }
 
-  // Email notifikasi HANYA saat transisi menjadi DONE.
+  // Baca status lama (guard balapan + notifikasi perubahan).
   const { data: before } = await admin
     .from('tasks')
     .select('status, title, code')
@@ -442,11 +446,20 @@ export async function changeTaskStatus(
   if (before.status === 'DONE' || before.status === 'CANCELLED') {
     return { error: 'Task ini terkunci. Minta PM atau Admin untuk membukanya kembali.' }
   }
+  // REVIEW hanya lewat Submit; consultant tidak bisa keluar dari REVIEW.
+  if (!canPickStatus(await hasPermission(profile.id, 'tasks.edit', task.project_id), before.status, status)) {
+    return {
+      error: before.status === 'REVIEW'
+        ? 'Task ini menunggu review PM. Tunggu PM menyetujui atau mengembalikannya.'
+        : 'Gunakan tombol Submit untuk menyerahkan task ke PM.',
+    }
+  }
 
   // Guard status: kalau status sudah berubah (balapan), jangan timpa & jangan kirim notifikasi.
   const { data: changed, error } = await admin
     .from('tasks')
-    .update({ status: status as TaskStatus })
+    // Keluar dari REVIEW (PM membuka kembali): tanggal submit dibersihkan.
+    .update({ status: status as TaskStatus, ...(before.status === 'REVIEW' ? { completed_at: null } : {}) })
     .eq('id', id)
     .eq('is_deleted', false)
     .eq('status', before.status)
@@ -500,8 +513,9 @@ export async function changeTaskStatus(
 }
 
 /**
- * Tombol submit: tandai DONE + catat completed_at (7 Okt 2026).
- * Idempoten: submit dua kali tidak mengirim email dua kali.
+ * Tombol submit: catat completed_at (7 Okt 2026). Pengelola project (pemegang
+ * tasks.edit) langsung DONE; consultant masuk REVIEW dan PM yang memutuskan
+ * lewat decideReview (20 Nov 2026). Idempoten.
  */
 export async function submitTask(
   _prev: TaskFormState,
@@ -542,11 +556,15 @@ export async function submitTask(
     return { error: 'Task yang CANCELLED tidak dapat di-submit.' }
   }
 
-  const now = new Date().toISOString()
+  const target = submitTarget(await hasPermission(profile.id, 'tasks.edit', task.project_id))
+  if (task.status === 'REVIEW' && target === 'REVIEW') return { success: 'Task sudah menunggu review PM.' }
+
+  // PM men-submit task yang menunggu review = menyetujui; tanggal submit consultant tetap.
+  const patch = task.status === 'REVIEW' ? { status: target } : { status: target, completed_at: new Date().toISOString() }
   // Guard status: kalau status sudah berubah (balapan), jangan timpa & jangan kirim notifikasi.
   const { data: changed, error } = await admin
     .from('tasks')
-    .update({ status: 'DONE', completed_at: now })
+    .update(patch)
     .eq('id', id)
     .eq('is_deleted', false)
     .eq('status', task.status)
@@ -558,11 +576,12 @@ export async function submitTask(
   }
   if (!changed || changed.length === 0) {
     // Klik ganda: permintaan lain sudah menutup task dengan status yang sama -> anggap sukses.
-    if ((await currentTaskStatus(id)) === 'DONE') return { success: 'Task sudah di-submit.' }
+    if ((await currentTaskStatus(id)) === target) return { success: 'Task sudah di-submit.' }
     return { error: 'Status Task sudah berubah oleh pengguna lain. Muat ulang halaman lalu coba lagi.' }
   }
 
-  await sendDoneEmail(id)
+  if (target === 'DONE') await notifyTaskDone(id)
+  else await emitReviewRequested(id)
 
   await logActivity({
     actorUserId: profile.id,
@@ -575,7 +594,7 @@ export async function submitTask(
       task_code: task.code,
       task_title: task.title,
       old_status: task.status,
-      new_status: 'DONE',
+      new_status: target,
     },
   })
 
@@ -583,7 +602,147 @@ export async function submitTask(
   revalidatePath(`/tasks/${id}`)
   revalidatePath('/projects')
   revalidatePath(`/projects/${task.project_id}`)
-  return { success: `Task ${task.code} di-submit sebagai Done.` }
+  return {
+    success: target === 'DONE'
+      ? `Task ${task.code} di-submit sebagai Done.`
+      : `Task ${task.code} dikirim ke PM untuk direview.`,
+  }
+}
+
+/**
+ * Keputusan PM/Admin (pemegang tasks.edit di project) atas task REVIEW:
+ * approve = DONE (tanggal submit consultant tetap); return = kembali
+ * IN_PROGRESS, tanggal submit dibersihkan, catatan masuk riwayat aktivitas.
+ */
+export async function decideReview(
+  _prev: TaskFormState,
+  formData: FormData
+): Promise<TaskFormState> {
+  const profile = await requireProfile()
+  const id = readLimitedField(formData, 'id')
+  const decision = readLimitedField(formData, 'decision')
+  const note = readLimitedField(formData, 'note') || null
+  if (!id) return { error: 'Task tidak ditemukan.' }
+  if (decision !== 'approve' && decision !== 'return') return { error: 'Keputusan tidak valid.' }
+  if (note && note.length > 1000) return { error: 'Catatan paling panjang 1000 karakter.' }
+
+  const admin = createAdminClient()
+  const { data: task } = await admin
+    .from('tasks')
+    .select('id, code, title, assignee_id, project_id, status, completed_at')
+    .eq('id', id)
+    .eq('is_deleted', false)
+    .single<{ id: string; code: string; title: string; assignee_id: string; project_id: string; status: TaskStatus; completed_at: string | null }>()
+  if (!task) return { error: 'Task tidak ditemukan.' }
+  if (!(await hasPermission(profile.id, 'tasks.edit', task.project_id))) {
+    return { error: 'Anda tidak punya izin untuk melakukan aksi ini.' }
+  }
+  if (task.status !== 'REVIEW') return { error: 'Task ini tidak sedang menunggu review. Muat ulang halaman.' }
+
+  const to: TaskStatus = decision === 'approve' ? 'DONE' : 'IN_PROGRESS'
+  const patch = decision === 'approve'
+    ? { status: to, completed_at: task.completed_at ?? new Date().toISOString() }
+    : { status: to, completed_at: null }
+  const { data: changed, error } = await admin
+    .from('tasks')
+    .update(patch)
+    .eq('id', id)
+    .eq('is_deleted', false)
+    .eq('status', 'REVIEW')
+    .select('id, updated_at')
+  if (error) {
+    console.error('decideReview failed:', error.message)
+    return { error: 'Tidak dapat menyimpan keputusan review.' }
+  }
+  if (!changed || changed.length === 0) {
+    return { error: 'Status Task sudah berubah oleh pengguna lain. Muat ulang halaman lalu coba lagi.' }
+  }
+
+  if (to === 'DONE') {
+    await notifyTaskDone(id)
+  } else {
+    let baseUrl = ''
+    try {
+      baseUrl = getAppBaseUrl()
+    } catch {
+      console.error('[notify] APP_URL missing, review-returned email without link.')
+    }
+    const ctx = await getTaskContext(id)
+    // Dikembalikan = consultant harus bertindak: in-app + email (mendesak).
+    await emitNotification({
+      key: `task-review-returned:${id}:${(changed[0] as { updated_at: string }).updated_at}`,
+      type: 'TASK_REVIEW_RETURNED',
+      userIds: [task.assignee_id],
+      title: `Task ${task.code} dikembalikan PM`,
+      message: note ? `Catatan PM: ${note}` : `Oleh ${profile.full_name || profile.email}.`,
+      entityType: 'task',
+      entityId: id,
+      email: {
+        subject: `[Dikembalikan] ${task.code} ${task.title}`,
+        html: taskReviewBody({ baseUrl, taskId: id, code: task.code, title: task.title, projectLabel: ctx?.projectLabel ?? '-', returned: true, actorName: profile.full_name || profile.email, note: note ?? '' }),
+        category: 'task',
+      },
+    })
+  }
+
+  await logActivity({
+    actorUserId: profile.id,
+    action: 'TASK_STATUS_CHANGED',
+    entityType: 'task',
+    entityId: id,
+    entityCode: task.code,
+    projectId: task.project_id,
+    metadata: { task_code: task.code, task_title: task.title, old_status: 'REVIEW', new_status: to, note },
+  })
+
+  revalidatePath('/tasks')
+  revalidatePath(`/tasks/${id}`)
+  revalidatePath('/projects')
+  revalidatePath(`/projects/${task.project_id}`)
+  return {
+    success: to === 'DONE' ? `Task ${task.code} disetujui (Done).` : `Task ${task.code} dikembalikan ke consultant.`,
+  }
+}
+
+/**
+ * Consultant men-submit: in-app + email ke PM project (mendesak, perlu
+ * keputusan). Project tanpa PM: ke semua Admin aktif supaya tidak tertahan.
+ */
+async function emitReviewRequested(taskId: string): Promise<void> {
+  const ctx = await getTaskContext(taskId)
+  if (!ctx) return
+  const recipients = ctx.managerIds.length > 0 ? ctx.managerIds : await activeAdminIds()
+  const { data: assignee } = await createAdminClient()
+    .from('profiles')
+    .select('full_name, email')
+    .eq('id', ctx.task.assignee_id)
+    .single<{ full_name: string | null; email: string }>()
+  const assigneeName = assignee ? assignee.full_name || assignee.email : '-'
+  let baseUrl = ''
+  try {
+    baseUrl = getAppBaseUrl()
+  } catch {
+    console.error('[notify] APP_URL missing, review email without link.')
+  }
+  await emitNotification({
+    key: `task-review:${taskId}:${ctx.task.updated_at}`,
+    type: 'TASK_REVIEW_REQUESTED',
+    userIds: recipients.filter((id) => id !== ctx.task.assignee_id),
+    title: `Task ${ctx.task.code} menunggu review Anda`,
+    message: `${assigneeName} menyerahkan "${ctx.task.title}" di ${ctx.projectLabel}.`,
+    entityType: 'task',
+    entityId: taskId,
+    email: {
+      subject: `[Review PM] ${ctx.task.code} ${ctx.task.title}`,
+      html: taskReviewBody({ baseUrl, taskId, code: ctx.task.code, title: ctx.task.title, projectLabel: ctx.projectLabel, returned: false, actorName: assigneeName, note: '' }),
+      category: 'task',
+    },
+  })
+}
+
+async function activeAdminIds(): Promise<string[]> {
+  const { data } = await createAdminClient().from('profiles').select('id').eq('role', 'ADMIN').eq('status', 'ACTIVE').is('deleted_at', null)
+  return ((data ?? []) as { id: string }[]).map((p) => p.id)
 }
 
 /**
@@ -769,8 +928,8 @@ async function emitTaskStatusChanged(input: {
     key: `task-status:${input.taskId}:${ctx.task.updated_at}`,
     type: 'TASK_STATUS_CHANGED',
     userIds: [...ctx.managerIds, ...(data ? [data.assignee_id] : [])],
-    title: `Task ${input.taskCode} → ${input.toStatus.replace('_', ' ')}`,
-    message: `"${input.taskTitle}" berubah dari ${input.fromStatus.replace('_', ' ')} menjadi ${input.toStatus.replace('_', ' ')}.`,
+    title: `Task ${input.taskCode} → ${taskStatusLabel(input.toStatus)}`,
+    message: `"${input.taskTitle}" berubah dari ${taskStatusLabel(input.fromStatus)} menjadi ${taskStatusLabel(input.toStatus)}.`,
     entityType: 'task',
     entityId: input.taskId,
     email,
@@ -778,16 +937,17 @@ async function emitTaskStatusChanged(input: {
 }
 
 /**
- * Task menjadi DONE: in-app ke assignee + semua PM, email ke semua PM.
+ * Task menjadi DONE: in-app ke assignee + semua PM. Tanpa email (rutin,
+ * kebijakan notifikasi 20 Nov 2026: email hanya untuk yang mendesak).
  * Dijalankan lewat unified service (§52, §69): SATU-SATUNYA mekanisme
  * DONE notification. Gagal kirim tidak menggagalkan update status.
  */
-async function sendDoneEmail(taskId: string): Promise<void> {
+async function notifyTaskDone(taskId: string): Promise<void> {
   const admin = createAdminClient()
 
   const { data: task } = await admin
     .from('tasks')
-    .select('id, code, title, project_id, assignee_id, evidence_url, updated_at')
+    .select('id, code, title, project_id, assignee_id, updated_at')
     .eq('id', taskId)
     .single<{
       id: string
@@ -795,7 +955,6 @@ async function sendDoneEmail(taskId: string): Promise<void> {
       title: string
       project_id: string
       assignee_id: string
-      evidence_url: string | null
       updated_at: string
     }>()
 
@@ -815,14 +974,6 @@ async function sendDoneEmail(taskId: string): Promise<void> {
   const assigneeName = assignee ? assignee.full_name || assignee.email : '-'
   const projectLabel = project ? `${project.code} · ${project.name}` : '-'
 
-  let baseUrl = ''
-  try {
-    baseUrl = getAppBaseUrl()
-  } catch {
-    console.error('[notify] APP_URL is not configured, skipping DONE notification.')
-    return
-  }
-
   await emitNotification({
     key: `task-done:${task.id}:${task.updated_at}`,
     type: 'TASK_DONE',
@@ -831,11 +982,7 @@ async function sendDoneEmail(taskId: string): Promise<void> {
     message: `${assigneeName} menyelesaikan task ${task.code} di ${projectLabel}.`,
     entityType: 'task',
     entityId: task.id,
-    email: {
-      subject: `[DONE] ${task.code} ${task.title} — ${project?.name ?? '-'}`,
-      html: taskDoneBody({ baseUrl, taskId: task.id, code: task.code, title: task.title, projectLabel, assigneeName, evidenceUrl: task.evidence_url }),
-      category: 'task',
-    },
+    email: null,
   })
 }
 

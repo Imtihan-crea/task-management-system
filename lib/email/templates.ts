@@ -6,6 +6,7 @@
  * Branding (header/footer Kasuat) dipasang di `sendEmail`.
  */
 import { escapeEmailHtml as h } from '@/lib/email/layout'
+import { taskStatusLabel } from '@/lib/auth/roles'
 
 type Row = { label?: string; text: string }
 
@@ -43,41 +44,8 @@ export function taskBlockedBody(i: { baseUrl: string; taskId: string; code: stri
     rows: [
       { text: `${i.code} ${i.title}` },
       { label: 'Project', text: i.projectLabel },
-      { label: 'Status sebelumnya', text: i.fromStatus.replace('_', ' ') },
+      { label: 'Status sebelumnya', text: taskStatusLabel(i.fromStatus) },
     ],
-    url: u(i.baseUrl, `/tasks/${i.taskId}`),
-  })
-}
-
-export function taskDoneBody(i: { baseUrl: string; taskId: string; code: string; title: string; projectLabel: string; assigneeName: string; evidenceUrl: string | null }): string {
-  const evidence = i.evidenceUrl
-    ? `<p>Link evidence:<br><a href="${h(i.evidenceUrl)}">${h(i.evidenceUrl)}</a></p>`
-    : '<p><em>Tidak ada link evidence yang dilampirkan.</em></p>'
-  return notice({
-    introHtml: 'Kabar baik — task berikut sudah selesai dan membutuhkan perhatian Anda:',
-    rows: [
-      { label: 'Task', text: `${i.code} ${i.title}` },
-      { label: 'Project', text: i.projectLabel },
-      { label: 'Dikerjakan oleh', text: i.assigneeName },
-    ],
-    extraHtml: evidence,
-    linkLabel: 'Lihat detail task di sini',
-    url: u(i.baseUrl, `/tasks/${i.taskId}`),
-  }) + '<p>Terima kasih.</p>'
-}
-
-export function deadlineTodayBody(i: { baseUrl: string; taskId: string; code: string; title: string; projectLabel: string }): string {
-  return notice({
-    introHtml: 'Task berikut deadline <strong>hari ini</strong>:',
-    rows: [{ text: `${i.code} ${i.title}` }, { label: 'Project', text: i.projectLabel }],
-    url: u(i.baseUrl, `/tasks/${i.taskId}`),
-  })
-}
-
-export function taskOverdueBody(i: { baseUrl: string; taskId: string; code: string; title: string; projectLabel: string; deadline: string }): string {
-  return notice({
-    introHtml: 'Task berikut <strong>melewati deadline</strong>:',
-    rows: [{ text: `${i.code} ${i.title}` }, { label: 'Project', text: i.projectLabel }, { label: 'Deadline', text: i.deadline }],
     url: u(i.baseUrl, `/tasks/${i.taskId}`),
   })
 }
@@ -88,23 +56,6 @@ export function projectAssignedBody(i: { baseUrl: string; projectId: string; cod
     linkLabel: 'Lihat project',
     url: u(i.baseUrl, `/projects/${i.projectId}`),
   })
-}
-
-export function suggestionNewBody(i: { baseUrl: string; id: string; code: string; title: string; projectLabel: string; actorName: string; resubmitted: boolean }): string {
-  return notice({
-    introHtml: i.resubmitted
-      ? 'Usulan task berikut sudah direvisi dan menunggu review Anda lagi:'
-      : 'Ada usulan task baru yang menunggu review Anda:',
-    rows: [{ text: `${i.code} ${i.title}` }, { label: 'Project', text: i.projectLabel }, { label: 'Diusulkan oleh', text: i.actorName }],
-    linkLabel: 'Review di sini',
-    url: u(i.baseUrl, `/task-suggestions/${i.id}`),
-  })
-}
-
-export function suggestionReviewBody(i: { baseUrl: string; id: string; message: string; projectLabel: string; reviewNote: string; convertedTaskId: string | null }): string {
-  const note = i.reviewNote ? `<p><strong>Catatan review:</strong> ${h(i.reviewNote)}</p>` : ''
-  const taskLink = i.convertedTaskId ? linkHtml('Lihat task', u(i.baseUrl, `/tasks/${i.convertedTaskId}`)) : ''
-  return `<p>Halo,</p><p>${h(i.message)}</p><p><strong>Project:</strong> ${h(i.projectLabel)}</p>${note}${taskLink}${linkHtml('Detail suggestion', u(i.baseUrl, `/task-suggestions/${i.id}`))}`
 }
 
 export function meetingInvitationBody(i: { baseUrl: string; meetingId: string; code: string; title: string; projectLabel: string }): string {
@@ -132,28 +83,33 @@ export function meetingReminderBody(i: { baseUrl: string; meetingId: string; cod
   })
 }
 
-export function meetingNotesPendingBody(i: { baseUrl: string; meetingId: string; code: string; title: string; date: string; projectLabel: string }): string {
-  return notice({
-    introHtml: 'Meeting berikut <strong>belum memiliki notes</strong>:',
-    rows: [{ text: `${i.code} ${i.title}` }, { label: 'Tanggal', text: i.date }, { label: 'Project', text: i.projectLabel }],
-    linkLabel: 'Lengkapi di sini',
-    url: u(i.baseUrl, `/meetings/${i.meetingId}?tab=notes`),
-  })
-}
-
-export function trackerReminderBody(i: { baseUrl: string; date: string }): string {
-  return notice({
-    introHtml: `Daily Tracker Anda untuk <strong>${h(i.date)}</strong> belum diisi. Catat aktivitas hari ini sebelum pulang.`,
-    linkLabel: 'Isi Daily Tracker',
-    url: u(i.baseUrl, `/tracker?tanggal=${i.date}`),
-  })
-}
-
 export function leaveDecisionBody(i: { baseUrl: string; kindLabel: string; start: string; end: string; approved: boolean; note: string }): string {
   return notice({
     introHtml: `Pengajuan <strong>${h(i.kindLabel)}</strong> Anda ${i.approved ? '<strong>disetujui</strong>' : '<strong>ditolak</strong>'}:`,
     rows: [{ label: 'Tanggal', text: i.start === i.end ? i.start : `${i.start} s/d ${i.end}` }, ...(i.note ? [{ label: 'Catatan', text: i.note }] : [])],
     linkLabel: 'Lihat pengajuan',
     url: u(i.baseUrl, '/cuti'),
+  })
+}
+
+/** Review PM (20 Nov 2026): ke PM saat consultant submit, atau ke consultant saat dikembalikan. */
+export function taskReviewBody(i: { baseUrl: string; taskId: string; code: string; title: string; projectLabel: string; returned: boolean; actorName: string; note: string }): string {
+  return notice({
+    introHtml: i.returned
+      ? `Task berikut <strong>dikembalikan</strong> oleh ${h(i.actorName)} dan perlu dikerjakan lagi:`
+      : `${h(i.actorName)} menyerahkan task berikut dan <strong>menunggu review Anda</strong>:`,
+    rows: [{ text: `${i.code} ${i.title}` }, { label: 'Project', text: i.projectLabel }, ...(i.note ? [{ label: 'Catatan', text: i.note }] : [])],
+    linkLabel: i.returned ? 'Lihat task' : 'Setujui atau kembalikan di sini',
+    url: u(i.baseUrl, `/tasks/${i.taskId}`),
+  })
+}
+
+/** Pengajuan cuti baru ke penyetuju (mendesak: perlu keputusan). */
+export function leaveRequestedBody(i: { baseUrl: string; name: string; kindLabel: string; start: string; end: string; days: number }): string {
+  return notice({
+    introHtml: `${h(i.name)} mengajukan <strong>${h(i.kindLabel)}</strong> dan menunggu persetujuan Anda:`,
+    rows: [{ label: 'Tanggal', text: i.start === i.end ? i.start : `${i.start} s/d ${i.end}` }, { label: 'Hari kerja', text: String(i.days) }],
+    linkLabel: 'Putuskan di sini',
+    url: u(i.baseUrl, '/cuti/persetujuan'),
   })
 }

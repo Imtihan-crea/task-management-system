@@ -310,13 +310,16 @@ try {
       const ev = await until(async () => (await get('tasks', id, 'evidence_url'))?.evidence_url === url)
       check(role, a, 'Evidence: klik terkirim + DB evidence_url tersimpan', r1 && ev, await msgOf(ef))
       await go(page, `/tasks/${id}`)
-      const req = await press(page, page.getByRole('button', { name: 'Submit sebagai Done' }), 'task.submit', { id })
-      const t = await until(async () => { const r = await get('tasks', id, 'status, completed_at, evidence_url'); return r?.status === 'DONE' && r.completed_at && r.evidence_url === url && r })
-      check(role, a, 'Submit sebagai Done: klik terkirim', req)
-      check(role, a, 'DB: DONE + completed_at + evidence tetap', t)
+      // Consultant (MEM) -> Menunggu Review PM; pengelola project -> langsung DONE (20 Nov 2026).
+      const target = role === 'MEM' ? 'REVIEW' : 'DONE'
+      const label = target === 'REVIEW' ? 'Submit untuk Review PM' : 'Submit sebagai Done'
+      const req = await press(page, page.getByRole('button', { name: label }), 'task.submit', { id })
+      const t = await until(async () => { const r = await get('tasks', id, 'status, completed_at, evidence_url'); return r?.status === target && r.completed_at && r.evidence_url === url && r })
+      check(role, a, `${label}: klik terkirim`, req)
+      check(role, a, `DB: ${target} + completed_at + evidence tetap`, t)
     } else {
       const res = await go(page, `/tasks/${ids.vTask}`)
-      await blocked(role, a, 'Submit/Evidence tidak tampil/ditolak', page, res, `/tasks/${ids.vTask}`, [btn('Submit sebagai Done'), sel('#evidence_url')])
+      await blocked(role, a, 'Submit/Evidence tidak tampil/ditolak', page, res, `/tasks/${ids.vTask}`, [btn('Submit sebagai Done'), btn('Submit untuk Review PM'), sel('#evidence_url')])
       await denyReplay(role, page, a, 'task.submit', [[recs['task.submit']?.meta.id, ids.vTask]], async () => {
         const r = await get('tasks', ids.vTask, 'status, completed_at'); return [r.status === 'TODO' && !r.completed_at, r.status]
       })

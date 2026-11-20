@@ -1,5 +1,6 @@
 import type { ProjectStatus } from '@/types/project'
 import type { TaskPriority, TaskStatus } from '@/types/task'
+import { taskStatusLabel } from '@/lib/auth/roles'
 
 const BASE = 'inline-flex min-h-[28px] items-center rounded-full border px-2 py-0.5 text-xs font-semibold'
 
@@ -29,7 +30,7 @@ const PROJECT_STATUS_STYLE: Record<ProjectStatus, string> = {
 export function TaskStatusBadge({ status }: { status: TaskStatus }) {
   return (
     <span className={`${BASE} ${TASK_STATUS_STYLE[status]}`}>
-      {status.replace('_', ' ')}
+      {taskStatusLabel(status)}
     </span>
   )
 }

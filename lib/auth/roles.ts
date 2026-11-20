@@ -53,14 +53,19 @@ export const TASK_STATUSES: TaskStatus[] = [
 /**
  * Status yang boleh dipilih lewat dropdown (7 Okt 2026).
  * DONE/CANCELLED hanya lewat tombol submit (submitTask/cancelTask) supaya
- * selalu tercatat tanggalnya (completed_at/cancelled_at).
+ * selalu tercatat tanggalnya (completed_at/cancelled_at). REVIEW juga hanya
+ * lewat Submit consultant (20 Nov 2026).
  */
 export const OPEN_TASK_STATUSES: TaskStatus[] = [
   'TODO',
   'IN_PROGRESS',
-  'REVIEW',
   'BLOCKED',
 ]
+
+/** Label status task di UI, email, dan export. REVIEW = diserahkan consultant, menunggu PM. */
+export function taskStatusLabel(status: string): string {
+  return status === 'REVIEW' ? 'MENUNGGU REVIEW PM' : status.replace('_', ' ')
+}
 
 export const TASK_PRIORITIES: TaskPriority[] = ['LOW', 'MEDIUM', 'HIGH']
 

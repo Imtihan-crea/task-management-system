@@ -1,6 +1,7 @@
 import { fetchTaskLookups } from '@/lib/data/task-list'
 import { DebouncedTaskSearch } from '@/components/tasks/TaskSearch'
 import type { TaskTabKey } from '@/components/tasks/TaskTabs'
+import { taskStatusLabel } from '@/lib/auth/roles'
 
 const SORT_OPTIONS = [
   { value: 'deadline.asc', label: 'Deadline (terdekat, belum selesai dulu)' },
@@ -93,7 +94,7 @@ export async function TaskFilterForm({ state }: { state: TaskFilterState }) {
             <option value="">Semua</option>
             {(['TODO', 'IN_PROGRESS', 'REVIEW', 'BLOCKED', 'DONE', 'CANCELLED'] as const).map((s) => (
               <option key={s} value={s}>
-                {s.replace('_', ' ')}
+                {taskStatusLabel(s)}
               </option>
             ))}
           </select>

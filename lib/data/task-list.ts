@@ -103,12 +103,14 @@ export const fetchTaskRows = cache(async (scope: TaskScope): Promise<TaskRow[]> 
       .lt('deadline', todayISO())
       .neq('status', 'DONE')
       .neq('status', 'CANCELLED')
+      .neq('status', 'REVIEW')
   } else if (scope.deadline === 'week') {
     query = query
       .gte('deadline', todayISO())
       .lte('deadline', daysFromTodayISO(7))
       .neq('status', 'DONE')
       .neq('status', 'CANCELLED')
+      .neq('status', 'REVIEW')
   }
 
   // Select string berisi embed PostgREST, jadi tipenya tidak bisa

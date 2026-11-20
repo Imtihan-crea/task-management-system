@@ -34,9 +34,10 @@ export async function OverviewTab({ projectId }: { projectId: string }) {
   const progress: ProjectProgress = {
     total: activeTasks.length,
     completed: activeTasks.filter((t) => t.status === 'DONE').length,
-    inProgress: activeTasks.filter((t) => t.status === 'IN_PROGRESS').length,
+    // REVIEW = sudah diserahkan, menunggu PM: dihitung berjalan, belum selesai.
+    inProgress: activeTasks.filter((t) => t.status === 'IN_PROGRESS' || t.status === 'REVIEW').length,
     blocked: activeTasks.filter((t) => t.status === 'BLOCKED').length,
-    todo: activeTasks.filter((t) => t.status === 'TODO' || t.status === 'REVIEW').length,
+    todo: activeTasks.filter((t) => t.status === 'TODO').length,
     percent: 0,
   }
   progress.percent =

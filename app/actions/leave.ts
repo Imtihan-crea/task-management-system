@@ -8,11 +8,19 @@ import { logActivity } from '@/lib/activity-log/service'
 import { emitNotification } from '@/lib/notifications/service'
 import { readLimitedField } from '@/lib/forms/limits'
 import { getAppBaseUrl } from '@/lib/app-url'
-import { leaveDecisionBody } from '@/lib/email/templates'
+import { leaveDecisionBody, leaveRequestedBody } from '@/lib/email/templates'
 import { loadCalendar, loadLeave } from '@/lib/hr/data'
 import { KIND_LABEL, kindError, leaveDays, overlappingLeave, rangeError, SPECIAL_LABEL, type LeaveKind } from '@/lib/hr/leave'
 
 export type LeaveFormState = { error?: string; success?: string } | undefined
+
+function appBaseUrl(): string {
+  try {
+    return getAppBaseUrl()
+  } catch {
+    return '' // tautan tidak ditampilkan
+  }
+}
 
 function done() {
   revalidatePath('/cuti', 'layout')
@@ -71,7 +79,8 @@ export async function submitLeave(_prev: LeaveFormState, formData: FormData): Pr
     message: `${profile.full_name || profile.email}: ${KIND_LABEL[kind]} ${start === end ? start : `${start} s/d ${end}`} (${days} hari kerja).`,
     entityType: 'leave_review',
     entityId: data.id,
-    email: null,
+    // Mendesak (perlu keputusan): in-app + email ke penyetuju.
+    email: { subject: `[Pengajuan ${KIND_LABEL[kind]}] ${profile.full_name || profile.email}`, html: leaveRequestedBody({ baseUrl: appBaseUrl(), name: profile.full_name || profile.email, kindLabel: KIND_LABEL[kind], start, end, days }), category: 'task' },
   })
   done()
   return { success: `Pengajuan ${KIND_LABEL[kind]} (${days} hari kerja) terkirim, menunggu persetujuan.` }
@@ -138,12 +147,7 @@ export async function decideLeave(_prev: LeaveFormState, formData: FormData): Pr
     entityId: id,
     metadata: meta,
   })
-  let baseUrl = ''
-  try {
-    baseUrl = getAppBaseUrl()
-  } catch {
-    /* tautan relatif */
-  }
+  const baseUrl = appBaseUrl()
   const range = req.start_date === req.end_date ? req.start_date : `${req.start_date} s/d ${req.end_date}`
   const verb = to === 'APPROVED' ? 'disetujui' : to === 'REJECTED' ? 'ditolak' : 'dibatalkan'
   await emitNotification({

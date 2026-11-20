@@ -18,7 +18,7 @@ const MANAGERS = ['ADMIN', 'PM_A']
 const CATS = [
   ['delete', /^Hapus (Task|Project|Workstream)/i],
   ['delete-item', /^Hapus\b/i],
-  ['submit', /^(Submit sebagai Done|Submit Evidence)/i],
+  ['submit', /^(Submit sebagai Done|Submit untuk Review PM|Submit Evidence)/i],
   ['status', /^Perbarui/i],
   ['approve', /^(Setujui|Tolak|Minta Revisi)/i],
   ['schedule', /^Jadwalkan Meeting/i],

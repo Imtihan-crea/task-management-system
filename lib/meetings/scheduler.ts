@@ -10,7 +10,7 @@ import {
   todayInAppTime,
 } from '@/lib/utils/meeting-time'
 import { needsNotes } from '@/types/meeting'
-import { meetingReminderBody, meetingNotesPendingBody } from '@/lib/email/templates'
+import { meetingReminderBody } from '@/lib/email/templates'
 
 /**
  * Scheduler Meeting (Phase 11, §31).
@@ -206,14 +206,10 @@ export async function runMeetingScheduler(now: Date = new Date()): Promise<{
         type: 'MEETING_NOTES_PENDING',
         userIds,
         title: `Meeting ${m.code} perlu Notes`,
-        message: `"${m.title}" (${m.meeting_date}) sudah selesai dan belum ada notes.`,
+        message: `"${m.title}" (${m.meeting_date}, ${label}) sudah selesai dan belum ada notes.`,
         entityType: 'meeting',
         entityId: m.id,
-        email: {
-          subject: `[Perlu Notes] ${m.code} ${m.title}`,
-          html: meetingNotesPendingBody({ baseUrl, meetingId: m.id, code: m.code, title: m.title, date: m.meeting_date, projectLabel: label }),
-          category: 'meeting',
-        },
+        email: null, // rutin: in-app saja (kebijakan notifikasi 20 Nov 2026)
       })
       if (result.emitted) notesReminders += 1
     }
