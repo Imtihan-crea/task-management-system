@@ -106,6 +106,8 @@ const SHOT_VIEWS = [
 /** Kartu aplikasi yang tampil di Portal dibandingkan dengan CARDS[role]. */
 async function portalCards(page, role) {
   await page.goto(BASE + '/portal', { waitUntil: 'networkidle', timeout: 45000 })
+  // Portal di balik saklar NEXT_PUBLIC_PORTAL_ENABLED: mati = dialihkan ke /dashboard, tidak ada kartu.
+  if (!page.url().includes('/portal')) return { page: 'portal:kartu', path: '/portal', role, observed: 'saklar mati -> ' + page.url().replace(BASE, ''), actions: [], mismatch: [], texts: [] }
   const seen = await page.locator('main ul li a .font-heading').allInnerTexts()
   const want = CARDS[role]
   const mismatch = JSON.stringify(seen) === JSON.stringify(want) ? [] : [`kartu: seharusnya ${want.join(', ')}; nyata ${seen.join(', ')}`]
@@ -178,7 +180,8 @@ try {
     ['activity', '/activity'], ['users', '/users'], ['users/[id]', `/users/${users.MEMBER.id}`], ['users/new', '/users/new'],
     ['notifications', '/notifications'], ['profile', '/profile'],
     // Portal dan URL halaman berizin (COA): dibuka langsung, harus ditolak bila tak berizin.
-    ['portal', '/portal'], ['projects/new', '/projects/new'], ['tracker/rekap', '/tracker/rekap'], ['master-reference', '/master-reference'],
+    // Portal hanya diuji bila saklar NEXT_PUBLIC_PORTAL_ENABLED=true (mati = dialihkan ke /dashboard, diuji portal-flag.mjs).
+    ...(process.env.NEXT_PUBLIC_PORTAL_ENABLED === 'true' ? [['portal', '/portal']] : []), ['projects/new', '/projects/new'], ['tracker/rekap', '/tracker/rekap'], ['master-reference', '/master-reference'],
     ['settings/hr', '/settings/hr'], ['cuti/persetujuan', '/cuti/persetujuan'], ['clients', '/clients'],
   ]
 

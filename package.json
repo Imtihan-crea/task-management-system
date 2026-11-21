@@ -45,6 +45,7 @@
     "e2e:hr": "node scripts/e2e/hr.mjs",
     "e2e:leave": "node scripts/e2e/leave.mjs",
     "e2e:review-alih": "node scripts/e2e/review-alih.mjs",
+    "e2e:portal-flag": "node scripts/e2e/portal-flag.mjs",
     "e2e:a11y": "node scripts/e2e/a11y.mjs",
     "e2e:mobile": "node scripts/e2e/mobile.mjs",
     "e2e:a3": "node scripts/e2e/a3-password.mjs",

@@ -1,5 +1,6 @@
 'use client'
 
+import { HOME_PATH } from '@/lib/portal/flag'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -82,7 +83,7 @@ export function LoginForm({ inactiveMessage }: { inactiveMessage?: string }) {
         return
       }
 
-      router.push('/portal')
+      router.push(HOME_PATH)
       router.refresh()
     } catch {
       setError('Terjadi kesalahan. Silakan coba lagi.')

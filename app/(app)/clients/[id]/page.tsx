@@ -1,3 +1,4 @@
+import { DENIED_PATH } from '@/lib/portal/flag'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { requireProfile } from '@/lib/auth/session'
@@ -15,7 +16,7 @@ const CARD = 'mt-6 rounded-2xl bg-white p-4 shadow-sm sm:p-5 dark:bg-zinc-900'
 
 export default async function LeadDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const profile = await requireProfile()
-  if (!(await canViewClients(profile.id))) redirect('/portal?denied=1')
+  if (!(await canViewClients(profile.id))) redirect(DENIED_PATH)
   const { id } = await params
   const lead = await loadLead(id)
   if (!lead) notFound()

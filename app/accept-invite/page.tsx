@@ -1,5 +1,6 @@
 'use client'
 
+import { HOME_PATH } from '@/lib/portal/flag'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -174,7 +175,7 @@ export default function AcceptInvitePage() {
   useEffect(() => {
     if (phase !== 'already-active') return
     completeInvite().catch(() => {
-      router.replace('/portal')
+      router.replace(HOME_PATH)
     })
   }, [phase, router])
 

@@ -1,3 +1,4 @@
+import { HOME_PATH } from '@/lib/portal/flag'
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
 import {
@@ -73,7 +74,7 @@ export async function updateSession(request: NextRequest) {
     response = NextResponse.redirect(new URL('/login', request.url))
   } else if (user && isLoginPage) {
     // Sudah login tapi buka /login -> ke Portal
-    response = NextResponse.redirect(new URL('/portal', request.url))
+    response = NextResponse.redirect(new URL(HOME_PATH, request.url))
   } else if (user && !isTokenEntry) {
     // Cek status user. Session aktif harus dianggap tidak valid
     // pada akses berikutnya kalau user sudah di-deactivate (PRD section 21).

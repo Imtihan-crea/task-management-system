@@ -1,3 +1,4 @@
+import { DENIED_PATH } from '@/lib/portal/flag'
 import Link from 'next/link'
 import { notFound, redirect } from 'next/navigation'
 import { requireProfile } from '@/lib/auth/session'
@@ -22,7 +23,7 @@ export default async function NewMeetingPage({
   const profile = await requireProfile()
 
   if (!can(profile.role, 'meetings.create')) {
-    redirect('/portal?denied=1')
+    redirect(DENIED_PATH)
   }
 
   const params = await searchParams

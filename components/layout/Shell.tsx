@@ -1,5 +1,6 @@
 'use client'
 
+import { PORTAL_ENABLED } from '@/lib/portal/flag'
 import Link from 'next/link'
 import { useState } from 'react'
 import { Sidebar, SidebarBrand } from '@/components/layout/Sidebar'
@@ -101,6 +102,7 @@ export function Shell({
             </button>
             <GlobalSearch />
             <div className="ml-auto flex items-center gap-1">
+              {PORTAL_ENABLED && (
               <Link
                 href="/portal"
                 aria-label="Portal, semua aplikasi"
@@ -111,6 +113,7 @@ export function Shell({
                 </svg>
                 <span className="hidden sm:inline">Portal</span>
               </Link>
+              )}
               <BellPopover />
               <ProfileMenu name={name} email={email} role={roleLabel} />
             </div>

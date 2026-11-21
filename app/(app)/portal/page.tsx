@@ -1,3 +1,5 @@
+import { redirect } from 'next/navigation'
+import { PORTAL_ENABLED } from '@/lib/portal/flag'
 import Link from 'next/link'
 import { requireProfile } from '@/lib/auth/session'
 import { createAdminClient } from '@/lib/supabase/admin'
@@ -45,6 +47,7 @@ export default async function PortalPage({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>
 }) {
+  if (!PORTAL_ENABLED) redirect('/dashboard')
   const profile = await requireProfile()
   const params = await searchParams
   const [allowed, access] = await Promise.all([menuPermissions(profile.id), loadAccess(profile.id)])

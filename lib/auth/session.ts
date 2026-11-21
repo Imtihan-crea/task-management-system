@@ -1,4 +1,5 @@
 import 'server-only'
+import { DENIED_PATH } from '@/lib/portal/flag'
 
 import { cache } from 'react'
 import { redirect } from 'next/navigation'
@@ -116,7 +117,7 @@ export async function requireAdmin(): Promise<CurrentProfile> {
   const profile = await requireProfile()
 
   if (profile.role !== 'ADMIN') {
-    redirect('/portal?denied=1')
+    redirect(DENIED_PATH)
   }
 
   return profile
@@ -130,7 +131,7 @@ export async function requireManager(): Promise<CurrentProfile> {
   const profile = await requireProfile()
 
   if (profile.role !== 'ADMIN' && profile.role !== 'PROJECT_MANAGER') {
-    redirect('/portal?denied=1')
+    redirect(DENIED_PATH)
   }
 
   return profile

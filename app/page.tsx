@@ -1,5 +1,6 @@
 'use client'
 
+import { HOME_PATH } from '@/lib/portal/flag'
 import { useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -54,7 +55,7 @@ export default function RootPage() {
       if (cancelled) return
 
       if (data.session) {
-        router.replace('/portal')
+        router.replace(HOME_PATH)
       } else {
         router.replace('/login')
       }

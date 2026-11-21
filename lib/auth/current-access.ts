@@ -1,4 +1,5 @@
 import 'server-only'
+import { DENIED_PATH } from '@/lib/portal/flag'
 import { isTaskDeciderRole } from '@/lib/auth/task-access'
 
 import { cache } from 'react'
@@ -65,7 +66,7 @@ export async function permissionProjects(userId: string, permission: Permission)
 /** Pengganti requireAdmin/requireManager: tanpa izin -> Portal dengan pesan ditolak. */
 export async function requirePermission(permission: Permission) {
   const profile = await requireProfile()
-  if (!(await hasPermission(profile.id, permission))) redirect('/portal?denied=1')
+  if (!(await hasPermission(profile.id, permission))) redirect(DENIED_PATH)
   return profile
 }
 

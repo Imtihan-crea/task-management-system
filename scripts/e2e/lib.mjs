@@ -100,7 +100,7 @@ export async function loginPassword(page, u) {
   await page.fill('input[type="email"]', u.email)
   await page.fill('input[type="password"]', u.password)
   await page.click('button[type="submit"]')
-  await page.waitForURL(/portal/, { timeout: 30000 })
+  await page.waitForURL(/\/(portal|dashboard)/, { timeout: 30000 }) // Portal di balik saklar NEXT_PUBLIC_PORTAL_ENABLED
 }
 
 /** Hapus permanen semua data berawalan UJI-E2E (urutan aman FK). Mengembalikan baris log + sisa. */

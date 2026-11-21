@@ -1,3 +1,4 @@
+import { DENIED_PATH } from '@/lib/portal/flag'
 import Link from 'next/link'
 import { requireProfile } from '@/lib/auth/session'
 import { canViewClients, hasPermission } from '@/lib/auth/current-access'
@@ -16,7 +17,7 @@ import { bulkChangeLeadStage, bulkSetLeadOwner } from '@/app/actions/clients'
 /** Pipeline lead: ringkasan per tahap + daftar dengan filter tahap, PIC, dan nama. */
 export default async function ClientsPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const profile = await requireProfile()
-  if (!(await canViewClients(profile.id))) redirect('/portal?denied=1')
+  if (!(await canViewClients(profile.id))) redirect(DENIED_PATH)
   const params = await searchParams
   const str = (k: string) => (typeof params[k] === 'string' ? (params[k] as string) : '')
   const stage = isStage(str('stage')) ? str('stage') : ''

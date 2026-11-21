@@ -1,5 +1,6 @@
 'use client'
 
+import { HOME_PATH } from '@/lib/portal/flag'
 import { useEffect, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -182,7 +183,7 @@ export default function ResetPasswordPage() {
     const { error: signInError } = email
       ? await supabase.auth.signInWithPassword({ email, password })
       : { error: new Error('no email') }
-    router.push(signInError ? '/login' : '/portal')
+    router.push(signInError ? '/login' : HOME_PATH)
     router.refresh()
   }
 

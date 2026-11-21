@@ -1,5 +1,6 @@
 'use client'
 
+import { HOME_PATH } from '@/lib/portal/flag'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { createClient } from '@/lib/supabase/client'
@@ -59,7 +60,7 @@ export function ChangePasswordForm({ email }: { email: string }) {
       // Ganti password di server mencabut sesi lama; masuk lagi dengan
       // password baru supaya user tetap di aplikasi.
       const { error: signInError } = await supabase.auth.signInWithPassword({ email, password })
-      router.push(signInError ? '/login' : '/portal')
+      router.push(signInError ? '/login' : HOME_PATH)
       router.refresh()
     } catch {
       setError('Terjadi kesalahan. Silakan coba lagi.')

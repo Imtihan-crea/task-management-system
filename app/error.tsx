@@ -1,5 +1,6 @@
 'use client'
 
+import { HOME_PATH, PORTAL_ENABLED } from '@/lib/portal/flag'
 import * as Sentry from '@sentry/nextjs'
 import Link from 'next/link'
 import { useEffect } from 'react'
@@ -29,10 +30,10 @@ export default function Error({
       <div className="flex flex-wrap justify-center gap-2">
         <Button onClick={reset}>Coba lagi</Button>
         <Link
-          href="/portal"
+          href={HOME_PATH}
           className="inline-flex min-h-[44px] items-center rounded-lg border border-zinc-600 px-6 py-2 text-sm font-semibold text-zinc-100"
         >
-          Kembali ke Portal
+          {PORTAL_ENABLED ? 'Kembali ke Portal' : 'Kembali ke Dashboard'}
         </Link>
       </div>
     </main>

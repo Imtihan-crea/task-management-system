@@ -1,3 +1,4 @@
+import { DENIED_PATH } from '@/lib/portal/flag'
 import { redirect } from 'next/navigation'
 import type { NextRequest } from 'next/server'
 import { requireProfile } from '@/lib/auth/session'
@@ -15,7 +16,7 @@ export const dynamic = 'force-dynamic'
 /** Persetujuan cuti: pengajuan menunggu + semua pengajuan ?bulan=YYYY-MM. Izin leave.approve atau hr.manage (sama dengan halamannya). */
 export async function GET(request: NextRequest) {
   const profile = await requireProfile()
-  if (!(await canApproveLeave(profile.id))) redirect('/portal?denied=1')
+  if (!(await canApproveLeave(profile.id))) redirect(DENIED_PATH)
   const month = parseMonth(request.nextUrl.searchParams.get('bulan'))
   const [from, to] = monthRange(month)
   const [allPending, allMonth, types] = await Promise.all([

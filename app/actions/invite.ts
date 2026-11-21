@@ -1,5 +1,6 @@
 'use server'
 
+import { HOME_PATH } from '@/lib/portal/flag'
 import { revalidatePath } from 'next/cache'
 import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
@@ -37,5 +38,5 @@ export async function completeInvite() {
   }
 
   revalidatePath('/dashboard')
-  redirect('/portal')
+  redirect(HOME_PATH)
 }

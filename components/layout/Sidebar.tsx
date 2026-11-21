@@ -1,5 +1,6 @@
 'use client'
 
+import { HOME_PATH, PORTAL_ENABLED } from '@/lib/portal/flag'
 import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
@@ -57,6 +58,26 @@ export function Sidebar({
   const app = activeApp(pathname)
   const current = activeItem(pathname)?.item.href
 
+  // Portal mati: menu lengkap semua aplikasi yang boleh dibuka, per kelompok (seperti sebelum Portal).
+  if (!PORTAL_ENABLED) {
+    return (
+      <nav aria-label="Navigasi utama" className="flex h-full flex-col gap-1 overflow-y-auto p-3">
+        {visibleApps(allowed).map((a) => (
+          <div key={a.key} className="flex flex-col gap-1">
+            {!collapsed ? (
+              <p className="px-3 pb-1 pt-3 text-[11px] font-semibold uppercase tracking-wider text-zinc-400">{a.title}</p>
+            ) : (
+              <div className="pt-3" />
+            )}
+            {visibleItems(a, allowed).map((item) => (
+              <NavLink key={item.href} href={item.href} label={item.label} active={item.href === current} collapsed={collapsed} onNavigate={onNavigate} />
+            ))}
+          </div>
+        ))}
+      </nav>
+    )
+  }
+
   return (
     <nav aria-label="Navigasi utama" className="flex h-full flex-col gap-1 overflow-y-auto p-3">
       <NavLink
@@ -113,14 +134,14 @@ export function Sidebar({
 export function SidebarBrand({ collapsed }: { collapsed?: boolean }) {
   if (!collapsed) {
     return (
-      <Link href="/portal" aria-label="Kasuat, ke Portal" className="flex h-14 items-center px-6">
+      <Link href={HOME_PATH} aria-label={PORTAL_ENABLED ? 'Kasuat, ke Portal' : 'Kasuat, ke Dashboard'} className="flex h-14 items-center px-6">
         <KasuatLogo />
       </Link>
     )
   }
   // Mode icon: hanya area mark dari aset resmi (bukan redraw).
   return (
-    <Link href="/portal" aria-label="Kasuat, ke Portal" className="flex h-14 items-center justify-center px-2">
+    <Link href={HOME_PATH} aria-label={PORTAL_ENABLED ? 'Kasuat, ke Portal' : 'Kasuat, ke Dashboard'} className="flex h-14 items-center justify-center px-2">
       <span className="block w-7 overflow-hidden" aria-hidden="true">
         <Image
           src="/brand/kasuat-logo-white.png"
