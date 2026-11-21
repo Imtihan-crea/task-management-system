@@ -209,7 +209,7 @@ export async function decideTransfer(_prev: TransferFormState, formData: FormDat
 }
 
 async function decideOne(
-  profile: { id: string; full_name: string | null; email: string },
+  profile: { id: string; role: string; full_name: string | null; email: string },
   t: TransferRow & { task: TaskLite },
   decision: 'approve' | 'reject',
   note: string | null,
